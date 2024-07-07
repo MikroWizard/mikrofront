@@ -1,0 +1,28 @@
+<c-row >
+  <c-col *ngFor="let sensor of devicedata['sensors']; index as i" [sm]="6" [xl]="count_calc(devicedata)" >
+    <c-widget-stat-a
+      class="mb-2"
+      [color]="colors[i]"
+      [title]="sensor"
+    >
+      <ng-template cTemplateId="widgetValueTemplate" ngPreserveWhitespaces>
+        {{show_number(sensor,devicedata)}}
+        
+      </ng-template>
+
+      <ng-template cTemplateId="widgetChartTemplate">
+        <c-chart [data]="devicedata[sensor]" [options]="(sensor=='rxp/txp-total') ? options[4] :options[2]" class="mt-3 mx-3" height="70" [type]="(sensor=='rxp/txp-total') ? 'bar' :'line'"></c-chart>
+        <div [innerHTML]='show_date(devicedata[sensor]["labels"][devicedata[sensor]["datasets"][0]["data"].length-1])' class="fs-6 fw-normal" style="
+        padding: 5px;
+        width: 200px;
+        text-align: center;
+        font-size: 0.8rem!important;
+        border-top: 1px solid #d5d5d55e;
+        display: inline-block;
+        margin: 0 auto;
+        "></div>  
+      </ng-template>
+    </c-widget-stat-a>
+   
+  </c-col>
+</c-row>

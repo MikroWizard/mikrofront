@@ -1,0 +1,68 @@
+<c-row>
+  <c-col xs>
+    <c-card class="mb-4">
+      <c-card-header>Backups</c-card-header>
+      <c-card-body>
+        <c-badge color="warning" *ngIf="devid!=0">Filtered Result For Device ID {{devid}}</c-badge>
+
+        <gui-grid [source]="source" [searching]="searching" [paging]="paging" [columnMenu]="columnMenu"
+          [sorting]="sorting" [infoPanel]="infoPanel" [columnMenu]="columnMenu" [sorting]="sorting"
+          [infoPanel]="infoPanel" [autoResizeWidth]=true>
+          <gui-grid-column header="#No" type="NUMBER" field="index" width=25 align="CENTER">
+            <ng-template let-value="item.index" let-item="item" let-index="index">
+              {{value}}
+            </ng-template>
+          </gui-grid-column>
+          <gui-grid-column header="Device Name" field="devname">
+            <ng-template let-value="item.devname" let-item="item" let-index="index">
+              {{value}}
+            </ng-template>
+          </gui-grid-column>
+          <gui-grid-column header="Device IP" field="devip">
+            <ng-template let-value="item.devip" let-item="item" let-index="index">
+              {{value}}
+            </ng-template>
+          </gui-grid-column>
+          <gui-grid-column header="backup Time" field="createdC">
+            <ng-template let-value="item.createdC" let-item="item" let-index="index">
+              {{value}}
+            </ng-template>
+          </gui-grid-column>
+          <gui-grid-column header="File Size" field="filesize">
+            <ng-template let-value="item.filesize" let-item="item" let-index="index">
+              {{value}}
+            </ng-template>
+          </gui-grid-column>
+          <gui-grid-column header="MAC" field="devmac" [enabled]="false">
+            <ng-template let-value="item.devmac" let-item="item" let-index="index">
+              {{value}}
+            </ng-template>
+          </gui-grid-column>
+          <gui-grid-column header="Action" field="id">
+            <ng-template let-value="item.id" let-item="item" let-index="index">
+              <button cButton color="info" size="sm" (click)="ShowBackup(item.id)" class="mx-1"><i
+                  style="margin: 1px 5px;color:#ffffff;" class="fa-solid fa-eye"></i>Show backup</button>
+            </ng-template>
+          </gui-grid-column>
+        </gui-grid>
+      </c-card-body>
+    </c-card>
+  </c-col>
+</c-row>
+
+<c-modal #BakcupModal backdrop="static" [(visible)]="BakcupModalVisible" id="BakcupModal" size="xl">
+  <c-modal-header>
+    <h6 cModalTitle>Please Confirm Action </h6>
+    <button [cModalToggle]="BakcupModal.id" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body>
+    <pre>
+    <code *ngIf="!loading" language="properties" style="height:70vh" [highlight]="codeForHighlightAuto" 
+    lineNumbers></code></pre>
+  </c-modal-body>
+  <c-modal-footer>
+    <button [cModalToggle]="BakcupModal.id" cButton color="info">
+      Close
+    </button>
+  </c-modal-footer>
+</c-modal>

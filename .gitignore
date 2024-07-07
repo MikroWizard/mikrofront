@@ -1,0 +1,8 @@
+/node_modules/
+*.log
+*.swo
+*.swp
+.vimrc
+.nvimrc
+.angular/
+/dist/

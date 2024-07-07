@@ -1,0 +1,227 @@
+<c-row>
+  <c-col xs>
+    <c-card class="mb-4">
+      <c-card-header>Firmware Manager</c-card-header>
+      <c-card-body>
+        <c-input-group class="mb-3">
+          <h5>Firmware in repository:</h5>
+          <gui-grid [autoResizeWidth]="true" [source]="source" [columnMenu]="columnMenu" [sorting]="sorting"
+            [infoPanel]="infoPanel" [autoResizeWidth]=true [paging]="paging">
+            <gui-grid-column header="Version" field="version">
+              <ng-template let-value="item.version" let-item="item" let-index="index">
+                &nbsp; {{value}} </ng-template>
+            </gui-grid-column>
+            <gui-grid-column header="arch" field="architecture">
+              <ng-template let-value="item.architecture" let-item="item" let-index="index">
+                {{value}}
+              </ng-template>
+            </gui-grid-column>
+            <gui-grid-column header="sha256" field="sha256">
+              <ng-template let-value="item.sha256" let-item="item" let-index="index">
+                {{value}}
+              </ng-template>
+            </gui-grid-column>
+          </gui-grid>
+        </c-input-group>
+
+        <hr />
+        <table>
+          <td>
+            <span>Add new Permission</span>
+          </td>
+          <td *ngIf="loading">
+            <button cButton class="m-1" disabled>
+              <c-spinner aria-hidden="true" size="sm"></c-spinner>
+              Fetching Information from mikrotik website...
+            </button>
+          </td>
+          <td *ngIf="!loading">
+            <mat-form-field>
+              <mat-select cFormControl [(ngModel)]="firmtodownload" placeholder="Select Version For Download Group"
+                #singleSelect>
+                <mat-option>
+                  <ngx-mat-select-search placeholderLabel="Search"
+                    [hideClearSearchButton]="true"></ngx-mat-select-search>
+                </mat-option>
+                <mat-option *ngFor="let firm of firms" [value]="firm">
+                  {{firm}}
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+          </td>
+          <td>
+            <button *ngIf="!loading" cButton color="primary" (click)="ConfirmModalVisible=true">Download to
+              repository</button>
+            <!-- <button *ngIf="SelectedUser['action']=='add'" cButton color="primary" (click)="loading=!loading">++</button> -->
+          </td>
+        </table>
+
+        <hr />
+        <c-input-group class="mb-3">
+          <label cInputGroupText for="inputGroupSelect01">
+            V6 Firmware update Behavior
+          </label>
+          <select cSelect [(ngModel)]="updateBehavior" id="inputGroupSelect01">
+            <option>Choose...</option>
+            <option value="keep">Keep v6 and don't update to v7</option>
+            <option value="update">install latest</option>
+          </select>
+          <c-form-feedback style="display: block;color: #979797;margin-top: 0;" [valid]="true">
+            * Choose how Mikrowizard should update old v6 firmwares</c-form-feedback>
+        </c-input-group>
+
+        <c-input-group class="mb-3">
+          <label cInputGroupText for="inputGroupSelect01">
+            Firmware version to install
+          </label>
+          <select cSelect [(ngModel)]="firmwaretoinstall" id="inputGroupSelect01">
+            <option>Choose...</option>
+            <option *ngFor="let f of available_firmwares" [value]="f">{{f}}</option>
+
+          </select>
+          <c-form-feedback style="display: block;color: #979797;margin-top: 0;" [valid]="true">
+            * The version of firmware to install routers</c-form-feedback>
+        </c-input-group>
+
+        <c-input-group *ngIf="updateBehavior=='keep'" class="mb-3">
+          <label cInputGroupText for="inputGroupSelect01">
+            Firmware version v6 to install
+          </label>
+          <select cSelect [(ngModel)]="firmwaretoinstallv6" id="inputGroupSelect01">
+            <option>Choose...</option>
+            <option *ngFor="let f of available_firmwaresv6" [value]="f">{{f}}</option>
+          </select>
+          <c-form-feedback style="display: block;color: #979797;margin-top: 0;" [valid]="true">
+            * The version of firmware to install on V6 routers</c-form-feedback>
+        </c-input-group>
+        <button cButton color="primary" (click)="saveFirmwareSetting()">Save</button>
+      </c-card-body>
+
+    </c-card>
+    <c-card class="mb-4">
+      <c-card-header>System Settings</c-card-header>
+      <c-card-body *ngIf="!SysConfigloading">
+
+        <c-input-group class="mt-3">
+          <span cInputGroupText>Rad Secret</span>
+          <input cFormControl id="floatingInput" placeholder="rad_secret"
+            [(ngModel)]="sysconfigs['rad_secret']['value']" />
+            <c-form-feedback style="display: block;color: #979797;margin-top: 0;" [valid]="true">
+              * Radius Secret of Mikrowizard Radius Server</c-form-feedback>
+        </c-input-group>
+
+
+        <c-input-group class="mt-3">
+          <span cInputGroupText>System URL</span>
+          <input cFormControl id="floatingInput" placeholder="System URL"
+            [(ngModel)]="sysconfigs['system_url']['value']" />
+            <c-form-feedback style="display: block;color: #979797;margin-top: 0;" [valid]="true">
+              * Default system access URl</c-form-feedback>
+        </c-input-group>
+
+        <c-input-group class="mt-3">
+          <span cInputGroupText>Default IP</span>
+          <input cFormControl id="floatingInput" placeholder="System URL"
+            [(ngModel)]="sysconfigs['default_ip']['value']" />
+            <c-form-feedback style="display: block;color: #979797;margin-top: 0;" [valid]="true">
+              * Default Mikrowizard Access IP</c-form-feedback>
+        </c-input-group>
+        <c-input-group class="mt-3">
+          <span cInputGroupText>System Time Zone</span>
+          <mat-form-field class="form-control" subscriptSizing="dynamic">
+            <mat-label>Select event type</mat-label>
+            <mat-select cFormControl [(ngModel)]="sysconfigs['timezone']['value']"
+              placeholder="Select Version For Download Group" #singleSelect>
+              <mat-option>
+                <ngx-mat-select-search placeholderLabel="Search" [hideClearSearchButton]="true"></ngx-mat-select-search>
+              </mat-option>
+              <mat-option *ngFor="let tz of timezones" [value]="tz.utc[0]">
+                {{tz.text}}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+          <c-form-feedback style="display: block;color: #979797;margin-top: 0;" [valid]="true">
+            * Default TimeZone for the system</c-form-feedback>
+        </c-input-group>
+
+
+        <c-input-group class="mt-3">
+          <span cInputGroupText>Default User</span>
+          <input aria-label="Username" type="password" [(ngModel)]="sysconfigs['default_user']['value']" cFormControl />
+          <span cInputGroupText>Default password</span>
+          <input aria-label="Password" type="password" [(ngModel)]="sysconfigs['default_password']['value']"
+            cFormControl />
+            <c-form-feedback style="display: block;color: #979797;margin-top: 0;" [valid]="true">
+              * Default username and Password for searching new devices</c-form-feedback>
+        </c-input-group>
+        <c-input-group class="mt-3 mb-3">
+          <span cInputGroupText>License Username</span>
+          <input aria-label="Username" type="text" [(ngModel)]="sysconfigs['username']['value']" cFormControl />
+          <c-form-feedback style="display: block;color: #979797;margin-top: 0;" [valid]="true">
+            * The username that you registred in Mikrowizard.com,Required for License Activation</c-form-feedback>
+        </c-input-group>
+          
+        <c-form-check [switch]="true" sizing="xl">
+          <input cFormCheckInput [(ngModel)]="sysconfigs['force_perms']['value']" type="checkbox" />
+          <label cFormCheckLabel>Force Perms</label>
+          <c-form-feedback style="display: block;color: #979797;margin-top: 0;" [valid]="true">
+            * Force User Groups under user>groups configuration of each router to match Mikrowizard Permissions and
+            monitor for any change to prevent/fix the configuration.</c-form-feedback>
+        </c-form-check>
+
+        <c-form-check [switch]="true" sizing="xl">
+          <input cFormCheckInput [(ngModel)]="sysconfigs['force_radius']['value']" type="checkbox" />
+          <label cFormCheckLabel>Force Radius</label>
+          <c-form-feedback style="display: block;color: #979797;margin-top: 0;" [valid]="true">
+            * Force Radius config under radius>client and user>aaa setting of each router that added to Mikrowizard and
+            monitor for any change to prevent/fix the configuration.</c-form-feedback>
+        </c-form-check>
+
+        <c-form-check [switch]="true" sizing="xl">
+          <input cFormCheckInput [(ngModel)]="sysconfigs['force_syslog']['value']" type="checkbox" />
+          <label cFormCheckLabel>Force Syslog</label>
+          <c-form-feedback style="display: block;color: #979797;margin-top: 0;" [valid]="true">
+            * Force Syslog config under system>logs setting of each router that added to Mikrowizard and monitor syslog
+            setting for any change to prevent/fix the configuration.</c-form-feedback>
+        </c-form-check>
+
+        <c-form-check [switch]="true" sizing="xl">
+          <input cFormCheckInput [(ngModel)]="sysconfigs['safe_install']['value']" type="checkbox" />
+          <label cFormCheckLabel>Safe Update</label>
+          <c-form-feedback style="display: block;color: #979797;margin-top: 0;" [valid]="true">
+            * Download and install reqired firmware before installing the target firmware . for example it will install
+            latest 7.12 then upgrade to newer version >7.13</c-form-feedback>
+        </c-form-check>
+
+
+        <button cButton color="primary" (click)="saveSysSetting()">Save</button>
+
+      </c-card-body>
+    </c-card>
+  </c-col>
+</c-row>
+
+<c-modal #ConfirmModal backdrop="static" [(visible)]="ConfirmModalVisible" id="runConfirmModal">
+  <c-modal-header>
+    <h6 cModalTitle>Downloading RouterOS ver {{firmtodownload}} </h6>
+    <button [cModalToggle]="ConfirmModal.id" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body>
+    Are you sure that You want to download RouterOS version {{firmtodownload}} to the Repository?
+    <br />
+  </c-modal-body>
+  <c-modal-footer>
+    <button *ngIf="loading" cButton cButton color="danger" class="m-1" disabled>
+      <c-spinner aria-hidden="true" size="sm"></c-spinner>
+      Downloading...
+    </button>
+    <button *ngIf="!loading" (click)="start_download()" cButton color="danger">
+      Yes,Download!
+    </button>
+    <button [cModalToggle]="ConfirmModal.id" cButton color="info">
+      No!,Close
+    </button>
+  </c-modal-footer>
+</c-modal>
+
+<c-toaster position="fixed" placement="top-end"></c-toaster>

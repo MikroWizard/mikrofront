@@ -1,0 +1,346 @@
+<c-row>
+  <c-col xs>
+    <c-card class="mb-4">
+      <c-card-header>
+        <c-row>
+          <c-col xs [lg]="3">
+            Devices
+          </c-col>
+          <c-col xs [lg]="9">
+            <h6 style="text-align: right;">
+              <button cButton color="danger" class="mx-1" size="sm" style="color: #fff;">{{updates.length}} Updatable
+              </button>
+              <button cButton color="warning" class="mx-1" size="sm" style="color: #fff;">{{upgrades.length}}
+                Upgradable</button>
+              |
+              <button cButton color="dark" (click)="scanwizard(1,'')" [cModalToggle]="ScannerModal.id" class="mx-1"
+                size="sm" style="color: #fff;"><i class="fa-solid fa-magnifying-glass"></i> Scanner</button>
+            </h6>
+          </c-col>
+        </c-row>
+      </c-card-header>
+      <c-card-body>
+        <c-row>
+          <c-col [lg]="3">
+            <c-input-group *ngIf="groups.length>0">
+              <span cInputGroupText>Group</span>
+              <select [(ngModel)]="selected_group" (change)="groupselected($event)" cSelect>
+                <option value="0" [selected]="selected_group == 0">Select a group</option>
+                <option *ngFor="let g of groups" [value]="g.id" [selected]=" selected_group == g.id ">{{g.name}}
+                </option>
+              </select>
+            </c-input-group>
+
+          </c-col>
+        </c-row>
+        <gui-grid #grid [rowClass]="rowClass" [source]="source" [searching]="searching" [paging]="paging"
+          [columnMenu]="columnMenu" [sorting]="sorting" [infoPanel]="infoPanel" [rowSelection]="rowSelection"
+          (selectedRows)="onSelectedRows($event)" [autoResizeWidth]=true>
+          <gui-grid-column header="Name" field="name">
+            <ng-template let-value="item.name" let-item="item" let-index="index">
+              <img *ngIf="item.status=='updating'" width="20px" src="assets/img/loading.svg" />
+              <i *ngIf="item.status=='updated'" cTooltip="Tooltip text"
+                style="color: green; margin-right: 3px;font-size: .7em;" class="fa-solid fa-check"></i>
+              <i *ngIf="item.status=='failed'" cTooltip="Update failed"
+                style="color: red; margin-right: 3px;font-size: .7em;" class="fa-solid fa-x"></i>
+              {{value}}
+            </ng-template>
+          </gui-grid-column>
+          <gui-grid-column header="CPU Type" field="arch">
+            <ng-template let-value="item.arch" let-item="item" let-index="index">
+              {{value}}
+            </ng-template>
+          </gui-grid-column>
+          <gui-grid-column header="Firmware" field="current_firmware">
+            <ng-template let-value="item.current_firmware" let-item="item" let-index="index">
+              <div>{{value}}</div>
+              <i *ngIf="item.update_availble" cTooltip="Firmware Update availble"
+                class="fa-solid fa-up-long text-primary mx-1"></i>
+              <i *ngIf="item.update_availble" cTooltip="Device Firmware not Upgraded"
+                class="fa-solid fa-microchip text-danger mx-1"></i>
+            </ng-template>
+          </gui-grid-column>
+          <gui-grid-column header="IP Address" field="ip">
+            <ng-template let-value="item.ip" let-item="item" let-index="index">
+              {{value}}
+            </ng-template>
+          </gui-grid-column>
+          <gui-grid-column header="MAC Address" field="mac">
+            <ng-template let-value="item.mac" let-item="item" let-index="index">
+              {{value}}
+            </ng-template>
+          </gui-grid-column>
+          <gui-grid-column header="License" field="license" [enabled]="false">
+            <ng-template let-value="item.license" let-item="item" let-index="index">
+              {{value}}
+            </ng-template>
+          </gui-grid-column>
+          <gui-grid-column header="Interface" field="interface" [enabled]="false">
+            <ng-template let-value="item.interface" let-item="item" let-index="index">
+              {{value}}
+            </ng-template>
+          </gui-grid-column>
+          <gui-grid-column header="Created" field="created" [enabled]="false">
+            <ng-template let-value="item.created" let-item="item.id" let-index="index">
+              {{value}}
+            </ng-template>
+          </gui-grid-column>
+          <gui-grid-column header="Uptime" field="uptime">
+            <ng-template let-value="item.uptime" let-item="item" let-index="index">
+              {{value}}
+            </ng-template>
+          </gui-grid-column>
+          <gui-grid-column header="Created" field="created" [enabled]="false">
+            <ng-template let-value="item.created" let-item="item.id" let-index="index">
+              {{value}}
+            </ng-template>
+          </gui-grid-column>
+          <gui-grid-column align="center" [cellEditing]="false" [sorting]="false" header="Action">
+            <ng-template let-value="value" let-item="item">
+              <button size="sm" shape="rounded-0" variant="outline" cButton color="primary" (click)="show_detail(item)"
+                style="border: none;padding: 4px 7px;"><i class="fa-regular fa-eye"></i><small> Details</small>
+              </button>
+              <button color="primary" shape="rounded-0" variant="ghost" style="padding: 4px 7px;"
+                [matMenuTriggerFor]="menu" cButton>
+                <i class="fa-solid fa-bars"></i>
+              </button>
+              <mat-menu #menu="matMenu">
+                <div cListGroup>
+                  <li cListGroupItem [active]="false" color="dark">Actions Menu</li>
+                  <button size="sm" (click)="single_device_action(item,'edit')" style="padding: 4px 7px;"
+                    cListGroupItem><i class="fa-solid fa-pencil"></i><small>
+                      Edit Device</small></button>
+                  <button size="sm" (click)="single_device_action(item,'firmware')" style="padding: 4px 7px;"
+                    cListGroupItem><i class="text-primary fa-solid fa-magnifying-glass"></i><small>
+                      Check Firmware</small></button>
+                  <button size="sm" (click)="single_device_action(item,'update')" style="padding: 4px 7px;"
+                    cListGroupItem><i class="text-primary fa-solid fa-upload"></i><small>
+                      Update Firmware</small></button>
+                  <!-- <button size="sm" (click)="single_device_action(item,'upgrade')" style="padding: 4px 7px;"
+                    cListGroupItem><i class="text-primary fa-solid fa-microchip"></i><small>
+                      Upgrade Firmware</small></button> -->
+                  <button size="sm" (click)="single_device_action(item,'logauth')" style="padding: 4px 7px;"
+                    cListGroupItem><i class="text-primary fa-regular fa-clock"></i><small>
+                      Show Auth Logs</small></button>
+                  <button size="sm" (click)="single_device_action(item,'logacc')" style="padding: 4px 7px;"
+                    cListGroupItem><i class="text-primary fa-solid fa-table-list"></i><small>
+                      Show Acc Logs</small></button>
+                  <button size="sm" (click)="single_device_action(item,'backup')" style="padding: 4px 7px;"
+                    cListGroupItem><i class="text-success fa-solid fa-database"></i><small>
+                      Show Backups</small></button>
+                  <button size="sm" (click)="single_device_action(item,'delete')" style="padding: 4px 7px;"
+                    cListGroupItem><i class="text-danger fa-solid fa-trash"></i><small>
+                      Delete Device</small></button>
+                </div>
+              </mat-menu>
+            </ng-template>
+          </gui-grid-column>
+        </gui-grid>
+        <c-navbar *ngIf="rows.length!= 0" class="bg-light" colorScheme="light" expand="lg">
+          <c-container [fluid]="true">
+            <a cNavbarBrand href="javascript:;">
+              Batch Action :
+            </a>
+            <button [cNavbarToggler]="collapseRef"></button>
+            <div #collapseRef="cCollapse" [navbar]="true" cCollapse>
+              <c-navbar-nav class="me-auto mb-2 mb-lg-0">
+                <c-nav-item>
+                  <c-dropdown variant="nav-item" [popper]="false">
+                    <a cDropdownToggle cNavLink>Select</a>
+                    <ul cDropdownMenu dark>
+                      <li><button cDropdownItem (click)="ConfirmAction='checkfirm';ConfirmModalVisible=true">Check
+                          Firmware</button></li>
+                      <li><button cDropdownItem
+                          (click)="ConfirmAction='update';ConfirmModalVisible=true">Update</button></li>
+                      <!-- <li><button cDropdownItem>Upgrade</button></li>
+                      <li><button cDropdownItem>Update and Upgrade</button></li> -->
+                    </ul>
+                  </c-dropdown>
+                </c-nav-item>
+              </c-navbar-nav>
+            </div>
+          </c-container>
+        </c-navbar>
+      </c-card-body>
+    </c-card>
+  </c-col>
+</c-row>
+
+
+<c-modal #ScannerModal [visible]="scanwizard_modal" (visibleChange)="handleScanwizard_modal($event)" backdrop="static"
+  id="ScannerModal">
+  <c-modal-header>
+    <h5 cModalTitle>Scanner Wizard</h5>
+    <button [cModalToggle]="ScannerModal.id" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body>
+    <div *ngIf="scanwizard_step==1" class="mb-5" style="text-align: center;">
+      <h5 class="mb-5">Please select searching method</h5>
+      <button cButton color="info" (click)="scanwizard(2,'chip')" [disabled]="true" class="mx-1" size="lg"><img width="100px"
+          src="assets/img/chip.png" /><br />Layer2 Scan</button>
+      <button cButton color="info" (click)="scanwizard(2,'ip')" class="mx-1" size="lg"><img width="100px"
+          src="assets/img/tcpip.png" /><br />TCP/IP Scan</button>
+    </div>
+    <div *ngIf="scanwizard_step==2 && scan_type=='ip'" class="mb-2" style="text-align: center;">
+      <h5 class="mb-5">Please Provide needed information</h5>
+      <c-input-group class="mb-3">
+        <span cInputGroupText>Start IP</span>
+        <input aria-label="start" cFormControl [(ngModel)]="ip_scanner['start']" [valid]="checkvalid('start')"
+          placeholder="192.168.1.1" />
+        <span cInputGroupText>End IP</span>
+        <input aria-label="end" cFormControl [(ngModel)]="ip_scanner['end']" [valid]="checkvalid('end')"
+          placeholder="192.168.1.255" />
+      </c-input-group>
+      <c-input-group class="mb-3">
+        <span cInputGroupText>Username</span>
+        <input aria-label="start" cFormControl [(ngModel)]="ip_scanner['user']" placeholder="Default username" />
+      </c-input-group>
+      <c-input-group class="mb-3">
+        <span cInputGroupText>Password</span>
+        <input aria-label="end" cFormControl [(ngModel)]="ip_scanner['password']" placeholder="********" />
+      </c-input-group>
+      <c-input-group class="mb-3">
+        <span cInputGroupText>Port</span>
+        <input aria-label="end" cFormControl [valid]="checkvalid('port')" [(ngModel)]="ip_scanner['port']"
+          placeholder="8728" />
+      </c-input-group>
+      <button cButton color="info" (click)="scanwizard(3,'ip')" class="mx-1" size="lg">Start Scanning</button>
+    </div>
+    <div class="mwand" *ngIf="scanwizard_step==3">
+      <svg viewBox="0 0 203 148.27">
+        <g id="wand">
+          <g class="cls-1">
+            <path d="M194.63,152.18v-7.76C194.6,147,194.6,149.59,194.63,152.18Z" transform="translate(-10 -31.06)" />
+          </g>
+          <rect class="cls-2" x="5.07" y="129.83" width="117.08" height="17.1"
+            transform="translate(-77.95 30.6) rotate(-35.06)" />
+          <rect class="cls-3" x="106.38" y="88.26" width="32.89" height="17.1"
+            transform="translate(-43.33 57.07) rotate(-35.06)" />
+          <ellipse class="cls-4" cx="136.21" cy="87.42" rx="3.29" ry="8.55"
+            transform="translate(-35.5 63.06) rotate(-35.06)" />
+          <ellipse class="cls-2" cx="15.6" cy="172.07" rx="3.29" ry="8.55"
+            transform="translate(-106.02 9.13) rotate(-35.06)" />
+          <ellipse class="cls-3" cx="109.5" cy="106.16" rx="3.29" ry="8.55"
+            transform="translate(-51.12 51.12) rotate(-35.06)" />
+          <path class="cls-5" d="M138.71,85.25s4.26,6.06,2.68,9L20.15,179.32s-3.27.49-7.53-5.57Z"
+            transform="translate(-10 -31.06)" />
+        </g>
+        <g id="stars">
+          <g id="star1">
+            <polygon class="cls-6"
+              points="142.22 4.88 138.59 13.13 147.13 17.7 137.94 19.78 139.9 28.82 132.07 23.15 125.96 29.86 125.38 20.71 115.81 20.03 122.93 14.3 117.1 6.74 126.55 8.74 128.85 0 133.51 8.22 142.22 4.88" />
+            <polygon class="cls-7"
+              points="142.29 4.89 136.56 13.87 144.96 17.35 136.17 18.98 138.3 26.2 131.33 20.74 125.88 29.85 132.06 23.11 139.91 28.82 137.95 19.81 147.12 17.74 138.59 13.11 142.29 4.89" />
+          </g>
+          <g id="star2">
+            <polygon class="cls-6"
+              points="166.3 14.45 165.13 17.09 167.87 18.55 164.93 19.22 165.55 22.12 163.04 20.3 161.09 22.45 160.9 19.52 157.83 19.3 160.11 17.46 158.25 15.04 161.27 15.68 162.01 12.88 163.51 15.52 166.3 14.45" />
+            <polygon class="cls-7"
+              points="166.32 14.45 164.48 17.33 167.18 18.44 164.36 18.96 165.04 21.28 162.81 19.53 161.06 22.45 163.04 20.29 165.56 22.12 164.93 19.23 167.87 18.57 165.13 17.08 166.32 14.45" />
+          </g>
+          <g id="star3">
+            <polygon class="cls-6"
+              points="202.01 38.12 194.78 46.34 203 54.75 191.61 53.79 190.56 64.97 183.57 55.54 174.05 61.06 176.73 50.27 165.91 45.98 176.24 41.95 172.26 31.08 182.46 36.84 188.33 27.58 190.71 38.8 202.01 38.12" />
+            <polygon class="cls-7"
+              points="202.08 38.15 192.17 46.45 200.62 53.55 189.85 52.21 189.67 61.34 183.6 52.48 173.96 61.03 183.58 55.49 190.57 64.97 191.6 53.83 202.97 54.79 194.8 46.31 202.08 38.15" />
+          </g>
+          <g id="star4">
+            <polygon class="cls-6"
+              points="155.07 63.05 153.01 67.75 157.87 70.35 152.64 71.52 153.75 76.67 149.3 73.44 145.83 77.25 145.5 72.05 140.06 71.67 144.1 68.41 140.79 64.11 146.16 65.25 147.47 60.28 150.13 64.95 155.07 63.05" />
+            <polygon class="cls-7"
+              points="155.11 63.06 151.86 68.17 156.63 70.14 151.63 71.07 152.84 75.17 148.88 72.07 145.78 77.25 149.29 73.42 153.76 76.67 152.65 71.54 157.86 70.36 153.01 67.73 155.11 63.06" />
+          </g>
+        </g>
+      </svg>
+      <h5>{{scanwizard_prompt}}</h5>
+    </div>
+  </c-modal-body>
+  <c-modal-footer>
+    <small *ngIf="scan_type=='ip'" style="margin: 0 auto;">Empty username and password means system default
+      configuration</small>
+  </c-modal-footer>
+</c-modal>
+
+
+<c-modal #ConfirmModal backdrop="static" [(visible)]="ConfirmModalVisible" id="runConfirmModal">
+  <c-modal-header>
+    <h6 cModalTitle>Please Confirm Action </h6>
+    <button [cModalToggle]="ConfirmModal.id" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body>
+    <span *ngIf="ConfirmAction=='checkfirm'">Are you sure that You want to Check firmware of selected devices for
+      update?</span>
+    <span *ngIf="ConfirmAction=='update'">Are you sure that You want to <code>update firmware</code> of selected
+      devices?</span>
+    <ng-container *ngIf="ConfirmAction=='delete'">
+      Are you sure that You want to<code>Delete Device {{selected_device.name}} ?</code><br />
+      <hr>
+      <p class="text-danger">
+        All Related Configuration will be deleted/Modified :<br /><br />
+        * User Permision Related to this Device<br />
+        * Device Groups including this Device<br />
+        * All Logs related to this device<br />
+      </p>
+    </ng-container>
+  </c-modal-body>
+  <c-modal-footer>
+    <button *ngIf="ConfirmAction=='checkfirm'" (click)="check_firmware()" cButton color="danger">
+      Yes
+    </button>
+    <button *ngIf="ConfirmAction=='update'" (click)="update_firmware()" cButton color="danger">
+      Yes
+    </button>
+    <button *ngIf="ConfirmAction=='delete'" (click)="delete_device()" cButton color="danger">
+      Yes,Delete Device
+    </button>
+    <button cButton [cModalToggle]="ConfirmModal.id" color="info">
+      Cancel
+    </button>
+
+  </c-modal-footer>
+</c-modal>
+
+<c-modal #EditDevModal backdrop="static" [(visible)]="EditDevModalVisible" id="EditDevModal">
+  <c-modal-header>
+    <h6 cModalTitle>Editing Device</h6>
+    <button [cModalToggle]="EditDevModal.id" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body *ngIf="EditDevModalVisible">
+    <c-input-group class="mb-3">
+      <span cInputGroupText>Username</span>
+      <input aria-label="start" [(ngModel)]="selected_device['editform']['user_name']" cFormControl
+        placeholder=" username" />
+    </c-input-group>
+    <c-input-group class="mb-3">
+      <span cInputGroupText>Password</span>
+      <input aria-label="start" [type]="show_pass ? 'text' : 'password'"
+        [(ngModel)]="selected_device['editform']['password']" cFormControl placeholder=" username" />
+      <button cButton (click)="show_pass=!show_pass" color="secondary" variant="outline">
+        <i *ngIf="show_pass" class="fa-solid fa-eye"></i>
+        <i *ngIf="!show_pass" class="fa-solid fa-eye-slash"></i>
+      </button>
+    </c-input-group>
+    <c-input-group class="mb-3">
+      <span cInputGroupText>ip</span>
+      <input aria-label="start" [(ngModel)]="selected_device['editform']['ip']" cFormControl
+        placeholder="Default username" />
+    </c-input-group>
+    <c-input-group class="mb-3">
+      <span cInputGroupText>peer ip</span>
+      <select aria-label="Default select example" cFormControl [(ngModel)]="selected_device['editform']['peer_ip']" cSelect>
+        <option *ngFor="let o of selected_device['editform']['ips']" [value]="o">{{o}}</option>
+      </select>
+    </c-input-group>
+
+  </c-modal-body>
+  <c-modal-footer>
+    <button cButton (click)="save_device()" color="danger">
+      Save
+    </button>
+    <button cButton [cModalToggle]="EditDevModal.id" color="info">
+      Cancel
+    </button>
+  </c-modal-footer>
+</c-modal>
+
+<c-toaster position="fixed" placement="top-end"></c-toaster>

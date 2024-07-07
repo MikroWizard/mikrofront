@@ -1,0 +1,142 @@
+<c-row>
+  <c-col xs>
+    <c-card class="mb-4">
+      <c-card-header>
+        <c-row>
+          <c-col xs [lg]="11">
+            Authentication Logs
+          </c-col>
+          <c-col xs [lg]="1">
+            <button (click)="toggleCollapse()" cButton class="me-1" color="primary"><i
+                class="fa-solid fa-filter mr-1"></i>Filter</button>
+          </c-col>
+        </c-row>
+      </c-card-header>
+      <c-card-body>
+        <c-row>
+          <div  [visible]="filters_visible" cCollapse>
+            <c-col xs [lg]="12" class="example-form">
+              <mat-form-field>
+                <mat-label>Start date</mat-label>
+                <input matInput [matDatepicker]="picker1" (dateChange)="reinitgrid('start',$event)"
+                  [(ngModel)]="filters['start_time']" />
+                <mat-datepicker-toggle matIconSuffix [for]="picker1"></mat-datepicker-toggle>
+                <mat-datepicker #picker1></mat-datepicker>
+              </mat-form-field>
+              <mat-form-field>
+                <mat-label>End date</mat-label>
+                <input matInput [matDatepicker]="picker2" (dateChange)="reinitgrid('end',$event)"
+                  [(ngModel)]="filters['end_time']" />
+                <mat-datepicker-toggle matIconSuffix [for]="picker2"></mat-datepicker-toggle>
+                <mat-datepicker #picker2></mat-datepicker>
+              </mat-form-field>
+              <mat-form-field>
+                <mat-label>Connection Type</mat-label>
+                <mat-select placeholder="Connection Type" (ngModelChange)="reinitgrid('connection_type',$event)"
+                  [(ngModel)]="filters['connection_type']" #multiSelect>
+                  <mat-option value="All">All</mat-option>
+                  <mat-option *ngFor="let con of connection_types " [value]="con">
+                    {{con}}
+                  </mat-option>
+                </mat-select>
+              </mat-form-field>
+              <mat-form-field>
+                <mat-label>Select action</mat-label>
+                <mat-select placeholder="State" (ngModelChange)="reinitgrid('state',$event)"
+                  [(ngModel)]="filters['state']" #multiSelect>
+                  <mat-option value="All">All</mat-option>
+                  <mat-option *ngFor="let ac of ['Logged In','Logged Out','Failed']" [value]="ac">
+                    {{ac}}
+                  </mat-option>
+                </mat-select>
+              </mat-form-field >
+
+              <mat-form-field>
+                <mat-label>Server</mat-label>
+                <mat-select placeholder="Server" (ngModelChange)="reinitgrid('server',$event)"
+                  [(ngModel)]="filters['server']" #multiSelect>
+                  <mat-option value="All">All</mat-option>
+                  <mat-option *ngFor="let ac of ['Local','Mikrowizard']" [value]="ac">
+                    {{ac}}
+                  </mat-option>
+                </mat-select>
+              </mat-form-field >
+              <mat-form-field>
+                <mat-label>Device IP</mat-label>
+                <input (ngModelChange)="reinitgrid('devip',$event)" [(ngModel)]="filters['devip']" matInput>
+              </mat-form-field>
+              <mat-form-field>
+                <mat-label>IP/MAC</mat-label>
+                <input (ngModelChange)="reinitgrid('ip',$event)" [(ngModel)]="filters['ip']" matInput>
+              </mat-form-field>
+              <mat-form-field>
+                <mat-label>Username</mat-label>
+                <input (ngModelChange)="reinitgrid('user',$event)" [(ngModel)]="filters['user']" matInput>
+              </mat-form-field>
+            </c-col>
+
+          </div>
+
+        </c-row>
+        <gui-grid [source]="source" [paging]="paging" [columnMenu]="columnMenu" [sorting]="sorting"
+          [infoPanel]="infoPanel" [autoResizeWidth]=true>
+          <gui-grid-column header="#No" type="NUMBER" field="index" width=25 align="CENTER">
+            <ng-template let-value="item.index" let-item="item" let-index="index">
+              {{value}}
+            </ng-template>
+          </gui-grid-column>
+          <gui-grid-column header="Device Name" field="name">
+            <ng-template let-value="item.name" let-item="item" let-index="index">
+              <i *ngIf="item.stype=='local'" cTooltip="local user"
+                style="color: rgb(255, 42, 0); margin-right: 3px;font-size: .7em;" class="fa-solid fa-user-tie"></i>
+              <i *ngIf="item.stype=='radius'" cTooltip="Update failed"
+                style="color: rgb(9, 97, 20); margin-right: 3px;font-size: .7em;" class="fa-solid fa-server"></i>
+              {{value}}
+            </ng-template>
+          </gui-grid-column>
+          <gui-grid-column header="Device IP" field="devip">
+            <ng-template let-value="item.devip" let-item="item" let-index="index">
+              {{value}}
+            </ng-template>
+          </gui-grid-column>
+          <gui-grid-column header="Username" field="username">
+            <ng-template let-value="item.username" let-item="item" let-index="index">
+              {{value}}
+            </ng-template>
+          </gui-grid-column>
+          <gui-grid-column header="With" field="by">
+            <ng-template let-value="item.by" let-item="item" let-index="index">
+              <div>{{value}}</div>
+            </ng-template>
+          </gui-grid-column>
+          <gui-grid-column header="IP Address" field="ip">
+            <ng-template let-value="item.ip" let-item="item" let-index="index">
+              {{value}}
+            </ng-template>
+          </gui-grid-column>
+
+          <gui-grid-column header="Time/Msg" field="duration">
+            <ng-template let-value="item.duration" let-item="item" let-index="index">
+              <span *ngIf="item.ltype!='failed'">{{value}}</span>
+              <span *ngIf="item.ltype=='failed'">{{item.message}}</span>
+
+            </ng-template>
+          </gui-grid-column>
+
+          <gui-grid-column header="State" field="ltype" [width]="110">
+            <ng-template let-value="item.ltype" let-item="item.id" let-index="index">
+              <c-badge color="success" *ngIf="value=='loggedin'"> Logged In</c-badge>
+              <c-badge color="warning" *ngIf="value=='loggedout'"> Logged Out</c-badge>
+              <c-badge color="danger" *ngIf="value=='failed'"> Failed</c-badge>
+            </ng-template>
+          </gui-grid-column>
+          <gui-grid-column header="Date" field="created">
+            <ng-template let-value="item.created" let-item="item" let-index="index">
+              {{value}}
+            </ng-template>
+          </gui-grid-column>
+        </gui-grid>
+      </c-card-body>
+    </c-card>
+  </c-col>
+</c-row>

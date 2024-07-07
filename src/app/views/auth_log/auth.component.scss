@@ -1,0 +1,36 @@
+
+@use '@angular/material' as mat;
+// Plus imports for other components in your app.
+
+// Include the common styles for Angular Material. We include this here so that you only
+// have to load a single css file for Angular Material in your app.
+// Be sure that you only ever include this mixin once!
+
+// Include theme styles for core and each component used in your app.
+// Alternatively, you can import and @include the theme mixins for each component
+// that you are using.
+.example-form {
+  @include mat.button-density(-5);
+
+  @include mat.form-field-density(-5);
+  @include mat.button-toggle-density(-5);
+  @include mat.datepicker-density(-5);
+  @include mat.all-component-densities(-5);
+  @include mat.icon-button-density(-5);
+  @include mat.icon-density(-5);
+  .mat-mdc-text-field-wrapper:not(.mdc-text-field--outlined) .mat-mdc-floating-label { display: inline; }
+  mat-form-field *{
+    font-size:13px!important;
+  }
+  .mat-mdc-form-field-infix{
+      width:150px;
+  }
+}
+
+:host {
+  .legend {
+    small {
+      font-size: x-small;
+    }
+  }
+}

@@ -1,0 +1,168 @@
+<c-row *ngIf="stats">
+  <c-col xs>
+    <c-card *ngIf="stats" class="mb-1">
+      <c-card-header>Past 24 Hour Statics</c-card-header>
+      <c-card-body>
+        <c-row>
+          <c-col md="12" xl="12" xs="12">
+            <c-row>
+              <c-col class="mb-sm-1 mb-0">
+                <c-widget-stat-f [title]="'Failed Logins'" class="mb-1" color="danger" padding
+                  value="{{stats['FailedLogins']}}">
+                  <ng-template cTemplateId="widgetIconTemplate">
+                    <i style="font-size: 2em;" class="fa-solid fa-person-circle-exclamation"></i>
+                  </ng-template>
+                </c-widget-stat-f>
+              </c-col>
+              <c-col class="mb-sm-1 mb-0">
+                <c-widget-stat-f [title]="'Success Logins'" class="mb-1" color="success" padding
+                  value="{{stats['SuccessfulLogins']}}">
+                  <ng-template cTemplateId="widgetIconTemplate">
+                    <i style="font-size: 2em;" class="fa-solid fa-arrow-right-to-bracket"></i>
+                  </ng-template>
+                </c-widget-stat-f>
+              </c-col>
+              <c-col class="mb-sm-1 mb-0">
+                <c-widget-stat-f [title]="'Critical Events'" class="mb-1" color="danger" padding
+                  value="{{stats['Critical']}}">
+                  <ng-template cTemplateId="widgetIconTemplate">
+                    <i style="font-size: 2em;" class="fa-solid fa-skull-crossbones"></i>
+                  </ng-template>
+                </c-widget-stat-f>
+              </c-col>
+              <c-col class="mb-sm-1 mb-0">
+                <c-widget-stat-f [title]="'Warning Events'" class="mb-1" color="warning" padding
+                  value="{{stats['Warning']}}">
+                  <ng-template cTemplateId="widgetIconTemplate">
+                    <i style="font-size: 2em;" class="fa-solid fa-triangle-exclamation"></i>
+                  </ng-template>
+                </c-widget-stat-f>
+              </c-col>
+              <c-col class="mb-sm-1 mb-0">
+                <c-widget-stat-f [title]="'Info Events'" class="mb-1" color="info" padding value="{{stats['Info']}}">
+                  <ng-template cTemplateId="widgetIconTemplate">
+                    <i style="font-size: 2em;" class="fa-solid fa-circle-info"></i>
+                  </ng-template>
+                </c-widget-stat-f>
+              </c-col>
+            </c-row>
+          </c-col>
+        </c-row>
+      </c-card-body>
+      <c-card-footer class="pb-0">
+        <c-col xs>
+          <c-row>
+            <c-col md="12" xl="12" xs="12">
+              <c-row>
+                <c-col class="mb-0 pb-0">
+                  <div class="border-start border-start-4 border-start-info pt-1 px-3 mb-1">
+                    <div class="text-medium-emphasis small">Total users</div>
+                    <div class="fs-6 fw-semibold">{{stats['Users']}}</div>
+                  </div>
+                </c-col>
+                <c-col class="mb-0 pb-0">
+                  <div class="border-start border-start-4 border-start-warning pt-1 px-3 mb-1">
+                    <div class="text-medium-emphasis small">Total Devices</div>
+                    <div class="fs-6 fw-semibold">{{stats['Devices']}}</div>
+                  </div>
+                </c-col>
+                <c-col class="mb-0 pb-0">
+                  <div class="border-start border-start-4 border-start-success pt-1 px-3 mb-1">
+                    <div class="text-medium-emphasis small">Total Events</div>
+                    <div class="fs-6 fw-semibold">{{stats['Events']}}</div>
+                  </div>
+                </c-col>
+                <c-col class="mb-0 pb-0">
+                  <div class="border-start border-start-4 border-start-success pt-1 px-3 mb-1">
+                    <div class="text-medium-emphasis small">Total Auth Logs</div>
+                    <div class="fs-6 fw-semibold">{{stats['Auth']}}</div>
+                  </div>
+                </c-col>
+                <c-col class="mb-0 pb-0">
+                  <div class="border-start border-start-4 border-start-success pt-1 px-3 mb-1">
+                    <div class="text-medium-emphasis small">Total Acc Logs</div>
+                    <div class="fs-6 fw-semibold">{{stats['Acc']}}</div>
+                  </div>
+                </c-col>
+              </c-row>
+            </c-col>
+          </c-row>
+        </c-col>
+      </c-card-footer>
+    </c-card>
+  </c-col>
+</c-row>
+
+<c-card class="mb-1">
+  <c-card-body>
+    <c-row>
+      <c-col sm="5">
+        <h4 class="card-title mb-0" id="traffic">Total Devices Traffic</h4>
+      </c-col>
+      <c-col class="d-none d-md-block" sm="7">
+        <form [formGroup]="trafficRadioGroup">
+          <c-button-group class="float-end me-3" role="group">
+            <input class="btn-check" formControlName="trafficRadio" type="radio" value="5m" />
+            <label (click)="setTrafficPeriod('5m')" cButton cFormCheckLabel color="secondary" variant="outline">5
+              Minues</label>
+
+            <input class="btn-check" formControlName="trafficRadio" type="radio" value="1h" />
+            <label (click)="setTrafficPeriod('1h')" cButton cFormCheckLabel color="secondary"
+              variant="outline">Hourly</label>
+
+            <input class="btn-check" formControlName="trafficRadio" type="radio" value="daily" />
+            <label (click)="setTrafficPeriod('daily')" cButton cFormCheckLabel color="secondary"
+              variant="outline">Daily</label>
+            <input class="btn-check" formControlName="trafficRadio" type="radio" value="live" />
+            <label (click)="setTrafficPeriod('live')" cButton cFormCheckLabel color="secondary"
+              variant="outline">Live</label>
+          </c-button-group>
+        </form>
+      </c-col>
+    </c-row>
+    <c-chart [data]="chart_data" [options]="options" [height]="200" type="line">
+    </c-chart>
+  </c-card-body>
+</c-card>
+<c-row>
+  <c-col xl="6" *ngIf="stats" lg="12" class="h-100">
+    <c-widget-stat-b [title]="stats['version']" class="mb-1 h-100" value="Version">
+      <div class="my-1">
+        <code style="padding: 0!important;">Serial:</code> <small
+          style="background-color: #ccc;padding: 5px;border-radius: 5px;cursor: pointer;" (click)="copy_this()"
+          [cdkCopyToClipboard]="stats['serial']">{{ stats['serial'] }}</small>
+        <span *ngIf="copy_msg" style="color: #fff!important;" class="badge text-bg-success mx-1"><i
+            class="fa-solid fa-check"></i>Copy</span>
+      </div>
+      <div *ngIf="!stats['license']" class="my-1">
+        <c-badge color="danger">Not Registred</c-badge>
+        <a class="mx-1" target="_blank" href="http://MikroWizard.com">Learn how to register and get automatic
+          updates!</a>
+      </div>
+      <div *ngIf="stats['license']" class="my-1">
+        <c-badge color="success">Registred</c-badge>
+        <c-badge class="mx-1" color="info">License Type : {{stats['license']}}</c-badge>
+      </div>
+    </c-widget-stat-b>
+  </c-col>
+
+  <c-col xl="6" lg="12" class="h-100">
+    <c-card class="mb-1 p-1 h-100" *ngIf="stats">
+      <c-carousel [dark]="true" [animate]="false" [wrap]="false" [interval]="1000000">
+        <c-carousel-indicators></c-carousel-indicators>
+        <c-carousel-inner>
+          <c-carousel-item style="display: flex;" *ngFor="let slide of stats['blog']; index as i;">
+            <img [src]="slide.media_content" alt="{{slide.title}}" class="d-block" loading="lazy" style=" float: left;"
+              height="150px" />
+            <div style="padding: 20px;">
+              <h5>{{slide.title}}</h5>
+              <p style="max-width: 90%;" [innerHTML]="slide.summery"></p>
+            </div>
+          </c-carousel-item>
+        </c-carousel-inner>
+        <c-carousel-control [routerLink] caption="Previous" direction="prev"></c-carousel-control>
+        <c-carousel-control [routerLink] caption="Next" direction="next"></c-carousel-control>
+      </c-carousel>
+    </c-card>
+  </c-col>
+</c-row>

@@ -1,0 +1,178 @@
+<c-row>
+  <c-col xs>
+    <c-card class="mb-4">
+      <c-card-header>
+        <c-row>
+          <c-col xs [lg]="10">
+            Device Groups
+          </c-col>
+          <c-col xs [lg]="2" style="text-align: right;">
+            <button cButton color="primary" (click)="editAddGroup({},'showadd')"><i
+                class="fa-solid fa-plus"></i></button>
+          </c-col>
+        </c-row>
+      </c-card-header>
+      <c-card-body>
+        <gui-grid [source]="source" [columnMenu]="columnMenu" [sorting]="sorting" [infoPanel]="infoPanel"
+          [autoResizeWidth]=true>
+          <gui-grid-column header="Name" field="name">
+            <ng-template let-value="item.name" let-item="item" let-index="index">
+              {{value}}
+            </ng-template>
+          </gui-grid-column>
+          <gui-grid-column header="Devices" field="array_agg" align="CENTER">
+            <ng-template let-value="item.array_agg" let-item="item" let-index="index">
+              <ng-container *ngIf="item.id==1 ; then Default;else NotDefault">
+              </ng-container>
+              <ng-template #Default>
+                <c-badge color="info">All Devices</c-badge>
+              </ng-template>
+              <ng-template #NotDefault>
+                <c-badge color="info" *ngIf="value[0]==null && item.id!=1">0 Members</c-badge>
+                <c-badge color="info" *ngIf="value[0]!=null">{{value.length}} Members</c-badge>
+              </ng-template>
+            </ng-template>
+          </gui-grid-column>
+          <gui-grid-column header="Create Time" field="created">
+            <ng-template let-value="item.created" let-item="item" let-index="index">
+
+              {{value}}
+            </ng-template>
+          </gui-grid-column>
+
+          <gui-grid-column header="Actions" field="action">
+            <ng-template let-value="item.id" let-item="item" let-index="index">
+              <button [disabled]="value==1" cButton color="warning" size="sm" (click)="editAddGroup(item,'showedit');"
+                class="mx-1"><i class="fa-regular fa-pen-to-square"></i></button>
+              <button [disabled]="value==1" cButton color="info" size="sm" (click)="show_members(item.id);"
+                class="mx-1"><i class="fa-regular fa-eye"></i></button>
+              <button [disabled]="value==1" cButton color="danger" size="sm" (click)="show_delete_group(item);"
+                class="mx-1"><i class="fa-regular fa-trash-can"></i></button>
+            </ng-template>
+          </gui-grid-column>
+        </gui-grid>
+
+      </c-card-body>
+    </c-card>
+  </c-col>
+</c-row>
+
+
+
+<c-modal #EditGroupModal backdrop="static" size="lg" [(visible)]="EditGroupModalVisible" id="EditGroupModal">
+  <c-modal-header>
+    <h5 cModalTitle> Group Edit</h5>
+    <button [cModalToggle]="EditGroupModal.id" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body>
+    <c-input-group class="mb-3">
+      <div [cFormFloating]="true" class="mb-3">
+        <input cFormControl id="floatingInput" placeholder="Group Name" [(ngModel)]="currentGroup['name']" />
+        <label cLabel for="floatingInput">Group Name</label>
+      </div>
+    </c-input-group>
+    <c-input-group class="mb-3">
+      <h5>Group Members :</h5>
+      <gui-grid [autoResizeWidth]="true" [searching]="searching" [source]="groupMembers" [columnMenu]="columnMenu"
+        [sorting]="sorting" [infoPanel]="infoPanel" [rowSelection]="rowSelection"
+        (selectedRows)="onSelectedRowsMembers($event)" [autoResizeWidth]=true [paging]="paging">
+        <gui-grid-column header="Member Name" field="name">
+          <ng-template let-value="item.name" let-item="item" let-index="index">
+            &nbsp; {{value}} </ng-template>
+        </gui-grid-column>
+        <gui-grid-column header="perm Name" field="ip">
+          <ng-template let-value="item.ip" let-item="item" let-index="index">
+            {{value}}
+          </ng-template>
+        </gui-grid-column>
+        <gui-grid-column header="Actions" width="120" field="action">
+          <ng-template let-value="item.id" let-item="item" let-index="index">
+            <button cButton color="danger" size="sm" (click)="remove_from_group(item.id)"><i
+                class="fa-regular fa-trash-can"></i></button>
+          </ng-template>
+        </gui-grid-column>
+      </gui-grid>
+      <br />
+      <button *ngIf="MemberRows.length!= 0" style="margin: 10px 0;" cButton color="danger" size="sm"><i
+          class="fa-regular fa-trash-can"></i>Delete {{MemberRows.length}} Selected</button>
+    </c-input-group>
+    <hr />
+    <button cButton color="primary" (click)="show_new_member_form()">+ Add new Members</button>
+  </c-modal-body>
+  <c-modal-footer>
+    <button cButton color="primary" (click)="save_group()">save</button>
+    <button [cModalToggle]="EditGroupModal.id" cButton color="secondary">
+      Close
+    </button>
+  </c-modal-footer>
+</c-modal>
+
+<c-modal #NewMemberModal backdrop="static" size="lg" [(visible)]="NewMemberModalVisible" id="NewMemberModal">
+  <c-modal-header>
+    <h5 cModalTitle>Members not in Group</h5>
+    <button (click)="NewMemberModalVisible=!NewMemberModalVisible" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body>
+    <c-input-group class="mb-3">
+      <h5>Members Availble to add:</h5>
+      <gui-grid [autoResizeWidth]="true" *ngIf="NewMemberModalVisible" [searching]="searching"
+        [source]="availbleMembers" [columnMenu]="columnMenu" [sorting]="sorting" [infoPanel]="infoPanel"
+        [rowSelection]="rowSelection" (selectedRows)="onSelectedRowsNewMembers($event)" [autoResizeWidth]=true
+        [paging]="paging">
+        <gui-grid-column header="Group Name" field="name">
+          <ng-template let-value="item.name" let-item="item" let-index="index">
+            &nbsp; {{value}} </ng-template>
+        </gui-grid-column>
+        <gui-grid-column header="perm Name" field="ip">
+          <ng-template let-value="item.ip" let-item="item" let-index="index">
+            {{value}}
+          </ng-template>
+        </gui-grid-column>
+        <gui-grid-column header="perm Name" field="mac">
+          <ng-template let-value="item.mac" let-item="item" let-index="index">
+            {{value}}
+          </ng-template>
+        </gui-grid-column>
+      </gui-grid>
+      <br />
+    </c-input-group>
+    <hr />
+  </c-modal-body>
+
+  <c-modal-footer>
+    <button *ngIf="NewMemberRows.length!= 0" (click)="add_new_members()" cButton color="primary">Add {{
+      NewMemberRows.length }}</button>
+    <button (click)="NewMemberModalVisible=!NewMemberModalVisible" cButton color="secondary">
+      Close
+    </button>
+  </c-modal-footer>
+</c-modal>
+
+
+
+
+<c-modal #ConfirmModal backdrop="static" [(visible)]="ConfirmModalVisible" id="ConfirmModal">
+  <c-modal-header>
+    <h5 cModalTitle> Are You Sure?</h5>
+    <button [cModalToggle]="ConfirmModal.id" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body>
+    <ng-container *ngIf="ConfirmAction=='delete'">
+      <span>
+        Are you sure that you want to delete <b class="text-danger-emphasis">{{currentGroup['name']}}</b>?
+      </span>
+      <br />
+      <p class="text-danger">
+        All Related Configuration will be deleted/Modified :<br />
+        * User Permision Related to this group<br />
+        * Tasks including this Group<br />
+      </p>
+    </ng-container>
+  </c-modal-body>
+  <c-modal-footer>
+    <button cButton color="danger" (click)="delete_group()">Confirm</button>
+    <button [cModalToggle]="ConfirmModal.id" cButton color="secondary">
+      Close
+    </button>
+  </c-modal-footer>
+</c-modal>

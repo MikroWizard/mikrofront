@@ -1,0 +1,12 @@
+<ng-container>
+  <c-toast-header [closeButton]="closeButton">
+    <i *ngIf="color=='danger'" style="color:#e55353" class="fa-solid fa-xmark mx-1"></i>
+    <i *ngIf="color=='info'" style="color:#3399ff" class="fa-solid fa-exclamation mx-1"></i>
+    <i *ngIf="color=='warning'" style="color:#f9b115" class="fa-solid fa-triangle-exclamation mx-1"></i>
+    <strong style="line-height:1;">{{ title }}</strong>
+  </c-toast-header>
+  <c-toast-body #toastBody [cToastClose]="toastBody.toast">
+    <p class="mb-1" style="color:#fff;">{{ body }} </p>
+    <ng-content />
+  </c-toast-body>
+</ng-container>

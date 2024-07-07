@@ -1,0 +1,139 @@
+<c-row>
+  <c-col xs>
+    <c-card class="mb-4">
+      <c-card-header>
+        <c-row>
+          <c-col xs [lg]="11">
+            Device LOGS
+          </c-col>
+          <c-col xs [lg]="1">
+            <button (click)="toggleCollapse()" cButton class="me-1" color="primary"><i
+                class="fa-solid fa-filter mr-1"></i>Filter</button>
+          </c-col>
+        </c-row>
+      </c-card-header>
+      <c-card-body>
+        <c-row>
+          <div [visible]="filters_visible" cCollapse>
+            <c-col xs [lg]="12" class="example-form">
+              <mat-form-field>
+                <mat-label>Start date</mat-label>
+                <input matInput [matDatepicker]="picker1" (dateChange)="reinitgrid('start',$event)"
+                  [(ngModel)]="filters['start_time']" />
+                <mat-datepicker-toggle matIconSuffix [for]="picker1"></mat-datepicker-toggle>
+                <mat-datepicker #picker1></mat-datepicker>
+              </mat-form-field>
+              <mat-form-field>
+                <mat-label>End date</mat-label>
+                <input matInput [matDatepicker]="picker2" (dateChange)="reinitgrid('end',$event)"
+                  [(ngModel)]="filters['end_time']" />
+                <mat-datepicker-toggle matIconSuffix [for]="picker2"></mat-datepicker-toggle>
+                <mat-datepicker #picker2></mat-datepicker>
+              </mat-form-field>
+              <mat-form-field *ngIf="event_types_filtered.length>0">
+                <mat-label>Select event type</mat-label>
+                <mat-select placeholder="Event Type" [multiple]="true" (ngModelChange)="reinitgrid('detail',$event)"
+                  [(ngModel)]="filters['detail']" #multiSelect>
+                  <mat-option>
+                    <ngx-mat-select-search [showToggleAllCheckbox]="true" placeholderLabel="Find type..."
+                      [formControl]="bankMultiFilterCtrl"></ngx-mat-select-search>
+                  </mat-option>
+                  <mat-option *ngFor="let bank of event_types_filtered " [value]="bank">
+                    {{bank}}
+                  </mat-option>
+                </mat-select>
+              </mat-form-field>
+              <mat-form-field>
+                <mat-label>Select event type</mat-label>
+                <mat-select placeholder="Event Level" (ngModelChange)="reinitgrid('level',$event)"
+                  [(ngModel)]="filters['level']" #multiSelect>
+                  <mat-option value="All">All</mat-option>
+                  <mat-option *ngFor="let level of ['Critical','Warning','Error','info'] " [value]="level">
+                    {{level}}
+                  </mat-option>
+                </mat-select>
+              </mat-form-field>
+              <mat-form-field>
+                <mat-label>Status</mat-label>
+                <mat-select placeholder="Event Status" (ngModelChange)="reinitgrid('status',$event)"
+                  [(ngModel)]="filters['status']" #multiSelect>
+                  <mat-option value="All">All</mat-option>
+                  <mat-option [value]="true">Fixed</mat-option>
+                  <mat-option [value]="false">Not Fixed</mat-option>
+
+                </mat-select>
+              </mat-form-field>
+              <mat-form-field>
+                <mat-label>Comment</mat-label>
+                <input (ngModelChange)="reinitgrid('comment',$event)" [(ngModel)]="filters['comment']" matInput>
+              </mat-form-field>
+            </c-col>
+
+          </div>
+
+        </c-row>
+        <gui-grid wid [rowDetail]="rowDetail" [horizontalGrid]="true" [rowHeight]="52" [source]="source"
+          [columnMenu]="columnMenu" [paging]="paging" [sorting]="sorting" [infoPanel]="infoPanel"
+          [autoResizeWidth]="true">
+          <gui-grid-column header="#No" type="NUMBER" field="index" width="1" align="CENTER">
+            <ng-template let-value="item.index" let-item="item" let-index="index">
+              {{ value }}
+            </ng-template>
+          </gui-grid-column>
+
+          <gui-grid-column header="level" width='90' wid field="level">
+            <ng-template let-value="item.level" let-item="item" let-index="index">
+              <c-badge style="cursor: pointer; font-weight: normal" color="danger" *ngIf="value == 'Critical'">{{ value
+                }}</c-badge>
+              <c-badge style="cursor: pointer; font-weight: normal" color="warning" *ngIf="value == 'Error'">{{ value
+                }}</c-badge>
+              <c-badge style="cursor: pointer; font-weight: normal" color="warning" *ngIf="value == 'Warning'">{{ value
+                }}</c-badge>
+              <c-badge style="cursor: pointer; font-weight: normal; min-width: 60px;" color="info"
+                *ngIf="value == 'info'">{{ value }}</c-badge>
+            </ng-template>
+          </gui-grid-column>
+          <gui-grid-column header="Event" width='200' field="detail">
+            <ng-template let-value="item.detail" let-item="item" let-index="index">
+              {{ value }}
+            </ng-template>
+          </gui-grid-column>
+          <gui-grid-column header="Detail" field="comment">
+            <ng-template let-value="item.comment" let-item="item" let-index="index">
+
+              <div class="gui-dev-info">
+                {{ value }}
+              </div>
+            </ng-template>
+          </gui-grid-column>
+          <gui-grid-column header="Source" width='90' field="src">
+            <ng-template let-value="item.src" let-item="item" let-index="index">
+              {{ value }}
+            </ng-template>
+          </gui-grid-column>
+          <gui-grid-column header="status" width='100' field="status" align="CENTER">
+            <ng-template let-value="item.status" let-item="item" let-index="index">
+              <c-badge style=" cursor: pointer; font-weight: normal" color="success"
+                *ngIf="value == true">Fixed</c-badge>
+              <c-badge style="cursor: pointer; font-weight: normal" color="danger" *ngIf="value != true">Not
+                Fixed</c-badge>
+            </ng-template>
+          </gui-grid-column>
+          <gui-grid-column header="eventtime" width='200' field="eventtime">
+            <ng-template let-value="item.eventtime" let-item="item" let-index="index">
+              {{ value }}
+            </ng-template>
+          </gui-grid-column>
+          <gui-grid-column header="Device" width='200' field="name">
+            <ng-template let-value="item.name" let-item="item" let-index="index">
+              <div class="gui-dev-info">
+                <span class="gui-dev-info-name">{{ value }}</span>
+                <span class="gui-dev-info-ip">{{ item.devip }}</span>
+              </div>
+            </ng-template>
+          </gui-grid-column>
+        </gui-grid>
+      </c-card-body>
+    </c-card>
+  </c-col>
+</c-row>

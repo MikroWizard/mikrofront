@@ -1,0 +1,104 @@
+<c-row>
+  <c-col xs>
+    <c-card class="mb-4">
+      <c-card-header>
+        <c-row>
+          <c-col xs [lg]="11">
+            Devices
+          </c-col>
+          <c-col xs [lg]="1">
+            <button (click)="toggleCollapse()" cButton class="me-1" color="primary"><i
+                class="fa-solid fa-filter mr-1"></i>Filter</button>
+          </c-col>
+        </c-row>
+      </c-card-header>
+      <c-card-body>
+        <c-row>
+          <div [visible]="filters_visible" cCollapse>
+            <c-col xs [lg]="12" class="example-form">
+              <mat-form-field>
+                <mat-label>Start date</mat-label>
+                <input matInput [matDatepicker]="picker1" (dateChange)="reinitgrid('start',$event)"
+                  [(ngModel)]="filters['start_time']" />
+                <mat-datepicker-toggle matIconSuffix [for]="picker1"></mat-datepicker-toggle>
+                <mat-datepicker #picker1></mat-datepicker>
+              </mat-form-field>
+              <mat-form-field>
+                <mat-label>End date</mat-label>
+                <input matInput [matDatepicker]="picker2" (dateChange)="reinitgrid('end',$event)"
+                  [(ngModel)]="filters['end_time']" />
+                <mat-datepicker-toggle matIconSuffix [for]="picker2"></mat-datepicker-toggle>
+                <mat-datepicker #picker2></mat-datepicker>
+              </mat-form-field>
+              <mat-form-field>
+                <mat-label>Select section</mat-label>
+                <mat-select placeholder="Event Section" (ngModelChange)="reinitgrid('section',$event)"
+                  [(ngModel)]="filters['section']" #multiSelect>
+                  <mat-option value="All">All</mat-option>
+                  <mat-option *ngFor="let sec of event_section " [value]="sec">
+                    {{sec}}
+                  </mat-option>
+                </mat-select>
+              </mat-form-field>
+              <mat-form-field>
+                <mat-label>Select action</mat-label>
+                <mat-select placeholder="Event action" (ngModelChange)="reinitgrid('action',$event)"
+                  [(ngModel)]="filters['action']" #multiSelect>
+                  <mat-option value="All">All</mat-option>
+                  <mat-option *ngFor="let ac of event_action" [value]="ac">
+                    {{ac}}
+                  </mat-option>
+                </mat-select>
+              </mat-form-field>
+              <mat-form-field>
+                <mat-label>IP</mat-label>
+                <input (ngModelChange)="reinitgrid('ip',$event)" [(ngModel)]="filters['ip']" matInput>
+              </mat-form-field>
+            </c-col>
+
+          </div>
+
+        </c-row>
+        <gui-grid wid [rowDetail]="rowDetail" [horizontalGrid]="true" [rowHeight]="52" [source]="source"
+          [columnMenu]="columnMenu" [paging]="paging" [sorting]="sorting" [infoPanel]="infoPanel"
+          [autoResizeWidth]="true">
+          <gui-grid-column header="#No" type="NUMBER" field="index" width="1" align="CENTER">
+            <ng-template let-value="item.index" let-item="item" let-index="index">
+              {{ value }}
+            </ng-template>
+          </gui-grid-column>
+
+          <gui-grid-column header="username" field="username">
+            <ng-template let-value="item.username" let-item="item" let-index="index">
+              <div class="gui-dev-info">
+                <span class="gui-dev-info-name">{{ value }}</span>
+                <span class="gui-dev-info-ip">{{ item.first_name }} {{ item.last_name }}</span>
+              </div>
+            </ng-template>
+          </gui-grid-column>
+          <gui-grid-column header="Section" field="section">
+            <ng-template let-value="item.section" let-item="item" let-index="index">
+              {{ value }}
+            </ng-template>
+          </gui-grid-column>
+          <gui-grid-column header="action" field="action">
+            <ng-template let-value="item.action" let-item="item" let-index="index">
+              {{ value }}
+            </ng-template>
+          </gui-grid-column>
+          <gui-grid-column header="ip" field="ip">
+            <ng-template let-value="item.ip" let-item="item" let-index="index">
+              {{ value }}
+            </ng-template>
+          </gui-grid-column>
+          <gui-grid-column header="Time" field="created">
+            <ng-template let-value="item.created" let-item="item" let-index="index">
+              {{ value }}
+            </ng-template>
+          </gui-grid-column>
+        </gui-grid>
+
+      </c-card-body>
+    </c-card>
+  </c-col>
+</c-row>

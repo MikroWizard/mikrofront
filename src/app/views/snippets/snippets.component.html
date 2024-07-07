@@ -1,0 +1,130 @@
+<c-row>
+  <c-col xs>
+    <c-card class="mb-4">
+      <c-card-header>
+        <c-row>
+          <c-col xs [lg]="3">
+            Devices
+          </c-col>
+          <c-col xs [lg]="9">
+            <h6 style="text-align: right;">
+              <button cButton color="dark"  class="mx-1" size="sm" (click)="Edit_Snippet('','showadd')"
+                style="color: #fff;"><i class="fa-solid fa-plus"></i> </button>
+            </h6>
+          </c-col>
+        </c-row>
+      </c-card-header>
+      <c-card-body>
+        <gui-grid [source]="source" [searching]="searching" [paging]="paging" [columnMenu]="columnMenu" [sorting]="sorting" [infoPanel]="infoPanel"
+          [rowSelection]="rowSelection" (selectedRows)="onSelectedRows($event)" [autoResizeWidth]=true>
+          <gui-grid-column header="Name" field="name">
+            <ng-template let-value="item.name" let-item="item" let-index="index">
+              <img *ngIf="item.status=='updating'" width="20px" src="assets/img/loading.svg" />
+              <i *ngIf="item.status=='updated'" style="color: green;margin: 5px;" class="fa-solid fa-check"></i>
+              <i *ngIf="item.status=='failed'" style="color: red;margin: 5px;" class="fa-solid fa-x"></i>
+              {{value}}
+            </ng-template>
+          </gui-grid-column>
+          <gui-grid-column header="Description" field="description">
+            <ng-template let-value="item.description" let-item="item" let-index="index">
+              {{value}}
+            </ng-template>
+          </gui-grid-column>
+          <gui-grid-column header="Created" field="created">
+            <ng-template let-value="item.created" let-item="item" let-index="index">
+
+              <div>{{value}}</div>
+            </ng-template>
+          </gui-grid-column>
+          <gui-grid-column header="Actions" field="action">
+            <ng-template let-value="item.id" let-item="item" let-index="index">
+              <button cButton color="warning" size="sm" (click)="Edit_Snippet(item,'edit')" class="mx-1"><i
+                  class="fa-regular fa-pen-to-square mx-1"></i>Edit</button>
+              <button cButton color="danger" size="sm" (click)="confirm_delete(item,false)" class="mx-1"><i
+                  class="fa-regular fa-trash-can mx-1"></i>Delete</button>
+            </ng-template>
+          </gui-grid-column>
+        </gui-grid>
+      </c-card-body>
+    </c-card>
+  </c-col>
+</c-row>
+
+
+
+<c-modal #EditModal backdrop="static" [(visible)]="EditModalVisible" id="runEditModal">
+  <c-modal-header>
+    <h6 *ngIf="ModalAction=='add'" cModalTitle>Add New Snippet</h6>
+    <h6 *ngIf="ModalAction=='edit'" cModalTitle>Editing snippet {{current_snippet.name}}</h6>
+    <button [cModalToggle]="EditModal.id" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body>
+
+    <c-input-group class="mb-3">
+      <div [cFormFloating]="true" class="mb-3">
+        <input cFormControl id="floatingInput" placeholder="Snippet Name" [(ngModel)]="current_snippet['name']" />
+        <label cLabel for="floatingInput">Name</label>
+      </div>
+    </c-input-group>
+    <c-input-group class="mb-3">
+      <div [cFormFloating]="true" class="mb-3">
+        <input cFormControl id="floatingInput" placeholder="Snippet Description" [(ngModel)]="current_snippet['description']" />
+        <label cLabel for="floatingInput">Description</label>
+      </div>
+    </c-input-group>
+    <c-input-group class="mb-3">
+      <div [cFormFloating]="true" class="mb-3">
+        <textarea   [style.height.px]="50 + (23 * lineNum)"
+        cFormControl (ngModelChange)="calcline($event)" id="floatingInput" placeholder="Snippet code" [(ngModel)]="current_snippet['content']" ></textarea>
+        <label cLabel for="floatingInput">Code</label>
+      </div>
+    </c-input-group>
+    <br />
+  </c-modal-body>
+  <c-modal-footer>
+    <button cButton color="danger" (click)="save_snippet()">save</button>
+    <button cButton [cModalToggle]="EditModal.id" color="info">Close</button>
+  </c-modal-footer>
+</c-modal>
+
+
+
+<c-modal #DeleteConfirmModal backdrop="static"  [(visible)]="DeleteConfirmModalVisible"
+  id="DeleteConfirmModal">
+  <c-modal-header>
+    <h5 cModalTitle>Confirm delete  {{ SelectedSnippet['name'] }}</h5>
+    <button [cModalToggle]="DeleteConfirmModal.id" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body>
+    Are you sure that You want to delete following Snippet ?
+    <br/>
+    <br/>
+    <table style="width: 100%;">
+    <tr>
+    <td><b>Snippet name : </b>{{ SelectedSnippet['name'] }}
+    </tr>
+    <tr>
+    </tr>
+    <tr>
+      <td>
+        <p ><code  style="padding: 0!important;"><b>Warning:</b> ALL <b>Tasks</b> related to this snippet Will be <b>modifed or deleted</b> and stop working!</code></p>
+      </td>
+    </tr>
+    </table>
+  </c-modal-body>
+  <c-modal-footer>
+    <button (click)="confirm_delete('',true)" cButton color="danger">
+      Yes,Delete!
+    </button>
+    <button [cModalToggle]="DeleteConfirmModal.id" cButton color="info">
+      Close
+    </button>
+  </c-modal-footer>
+</c-modal>
+
+
+
+
+<c-toaster position="fixed" placement="top-end"></c-toaster>
+
+

@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 60 60" capture-installed="true">
+    <path
+    id="motionPath"
+    fill="none"
+    stroke-width="0"
+    stroke-miterlimit="10"
+    d="
+    M 23, 23
+    m -17, 0
+    a 17,17 0 1,0 34,0
+    a 17,17 0 1,0 -34,0"
+    />
+    <g fill="none" fill-rule="evenodd" transform="translate(1 1)" stroke-width="0" >
+    <circle id="circle" cx="0" cy="0" r="5" fill="#4FC1EA" fill-opacity="1" ></circle>
+    <circle id="circle2" cx="0" cy="0" r="4.5" fill="#4FC1EA" fill-opacity=".9" ></circle>
+    <circle id="circle3" cx="0" cy="0" r="4" fill="#4FC1EA" fill-opacity=".6" ></circle>
+    <circle id="circle4" cx="0" cy="0" r="3.5" fill="#4FC1EA" fill-opacity=".8" ></circle>
+    <circle id="circle5" cx="0" cy="0" r="3" fill="#4FC1EA" fill-opacity=".4" ></circle>
+    <circle id="circle6" cx="0" cy="0" r="2.5" fill="#4FC1EA" fill-opacity=".7" ></circle>
+    </g>
+    <animateMotion href="#circle" dur="1s" begin="0s" fill="freeze" repeatCount="indefinite" >
+    <mpath href="#motionPath" />
+    </animateMotion>
+    <animateMotion href="#circle2" dur="1s" begin=".09s" fill="freeze" repeatCount="indefinite" >
+    <mpath href="#motionPath" />
+    </animateMotion>
+    <animateMotion href="#circle3" dur="1s" begin=".18s" fill="freeze" repeatCount="indefinite" >
+    <mpath href="#motionPath" />
+    </animateMotion>
+    <animateMotion href="#circle4" dur="1s" begin=".26s" fill="freeze" repeatCount="indefinite" >
+    <mpath href="#motionPath" />
+    </animateMotion>
+    <animateMotion href="#circle5" dur="1s" begin=".34s" fill="freeze" repeatCount="indefinite" >
+    <mpath href="#motionPath" />
+    </animateMotion>
+    <animateMotion href="#circle6" dur="1s" begin=".40s" fill="freeze" repeatCount="indefinite" >
+    <mpath href="#motionPath" />
+    </animateMotion>
+</svg>

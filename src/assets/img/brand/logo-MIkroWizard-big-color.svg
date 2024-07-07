@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   version="1.1"
+   width="1500"
+   height="333"
+   viewBox="-1 0 1500 333"
+   id="svg13"
+   sodipodi:docname="logo-no-background.svg"
+   inkscape:version="1.3 (1:1.3+202307231459+0e150ed6c4)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs13">
+    <linearGradient
+       id="linearGradient13"
+       inkscape:collect="always">
+      <stop
+         style="stop-color:#f7daa2;stop-opacity:1;"
+         offset="0"
+         id="stop13" />
+      <stop
+         style="stop-color:#ffffff;stop-opacity:1;"
+         offset="1"
+         id="stop14" />
+    </linearGradient>
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient13"
+       id="linearGradient14"
+       x1="4.25"
+       y1="-18"
+       x2="289.23"
+       y2="-18"
+       gradientUnits="userSpaceOnUse" />
+  </defs>
+  <sodipodi:namedview
+     id="namedview13"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="0.90066667"
+     inkscape:cx="783.30866"
+     inkscape:cy="208.17913"
+     inkscape:window-width="1920"
+     inkscape:window-height="991"
+     inkscape:window-x="1920"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg10" />
+  <g
+     transform="translate(-0.90909091,0.37614089)"
+     id="g12">
+    <svg
+       viewBox="0 0 396 88"
+       data-background-color="#303c54"
+       preserveAspectRatio="xMidYMid"
+       height="333"
+       width="1500"
+       version="1.1"
+       id="svg12">
+      <g
+         id="tight-bounds"
+         transform="translate(0.24,-0.0994006)">
+        <svg
+           viewBox="0 0 395.52 88.19865"
+           height="88.198647"
+           width="395.51999"
+           version="1.1"
+           id="svg11">
+          <g
+             id="g10"
+             style="display:inline">
+            <svg
+               viewBox="0 0 540.23295 120.46879"
+               height="88.198647"
+               width="395.51999"
+               version="1.1"
+               id="svg10">
+              <g
+                 transform="translate(144.71295,34.560291)"
+                 id="g3"
+                 style="display:inline;fill:url(#linearGradient14)">
+                <svg
+                   viewBox="0 0 395.52 51.348211"
+                   height="51.348209"
+                   width="395.51999"
+                   version="1.1"
+                   id="svg3"
+                   style="fill:url(#linearGradient14)">
+                  <g
+                     id="textblocktransform"
+                     style="fill:url(#linearGradient14)">
+                    <svg
+                       viewBox="0 0 395.52 51.348211"
+                       height="51.348209"
+                       width="395.51999"
+                       id="textblock"
+                       version="1.1"
+                       style="fill:url(#linearGradient14)">
+                      <g
+                         id="g2"
+                         style="fill:url(#linearGradient14)">
+                        <svg
+                           viewBox="0 0 395.52 51.348211"
+                           height="51.348209"
+                           width="395.51999"
+                           version="1.1"
+                           id="svg2"
+                           style="fill:url(#linearGradient14)">
+                          <g
+                             id="g1"
+                             style="fill:url(#linearGradient14)">
+                            <svg
+                               width="395.51999"
+                               viewBox="4.25 -36.5 284.98 37"
+                               height="51.348209"
+                               data-palette-color="#ffffff"
+                               version="1.1"
+                               id="svg1"
+                               style="fill:url(#linearGradient14)">
+                              <path
+                                 d="m 39.45,0 h -4.5 V -27.1 L 23.25,-6.25 H 20.5 L 8.75,-27.1 V 0 H 4.25 V -35.5 H 9 l 12.85,23.05 12.9,-23.05 h 4.7 z m 12.2,0 h -4.4 v -26.1 h 4.4 z m 0,-31 h -4.4 v -5.5 h 4.4 z M 81.9,0 H 77.15 L 68.1,-12.7 63.15,-8.05 V 0 h -4.4 v -36.5 h 4.4 v 23.85 l 13.5,-13.4 H 81.4 L 71,-15.25 Z m 17.59,-26.25 v 4 q -3.3,0.05 -5.82,1.67 -2.53,1.63 -3.58,4.48 v 0 V 0 h -4.4 v -26.1 h 4.1 v 6.05 q 1.35,-2.7 3.58,-4.38 2.22,-1.67 4.67,-1.87 v 0 q 0.5,0 0.85,0 0.35,0 0.6,0.05 z M 114.64,0.5 v 0 q -2.95,0 -5.35,-1.08 -2.4,-1.07 -4.15,-2.95 -1.75,-1.87 -2.7,-4.32 -0.95,-2.45 -0.95,-5.15 v 0 q 0,-2.75 0.95,-5.2 0.95,-2.45 2.7,-4.33 1.75,-1.87 4.18,-2.95 2.42,-1.07 5.37,-1.07 v 0 q 2.9,0 5.3,1.07 2.4,1.08 4.18,2.95 1.77,1.88 2.72,4.33 0.95,2.45 0.95,5.2 v 0 q 0,2.7 -0.95,5.15 -0.95,2.45 -2.7,4.32 -1.75,1.88 -4.17,2.95 -2.43,1.08 -5.38,1.08 z m -8.65,-13.45 v 0 q 0,2.7 1.18,4.9 1.17,2.2 3.12,3.47 1.95,1.28 4.35,1.28 v 0 q 2.4,0 4.38,-1.3 1.97,-1.3 3.15,-3.53 1.17,-2.22 1.17,-4.92 v 0 q 0,-2.7 -1.17,-4.9 -1.18,-2.2 -3.15,-3.5 -1.98,-1.3 -4.38,-1.3 v 0 q -2.4,0 -4.35,1.32 -1.95,1.33 -3.12,3.53 -1.18,2.2 -1.18,4.95 z m 43.6,-6.9 -6.15,-15.45 h 4.25 l 4.7,12.35 4.75,-12.35 h 4.25 l -6.15,15.45 6.1,14.65 12,-30.3 h 4.9 L 163.39,0 h -3.9 L 152.44,-16.75 145.34,0 h -3.9 l -14.8,-35.5 h 4.85 l 12.05,30.3 z m 37,19.85 h -4.4 v -26.1 h 4.4 z m 0,-31 h -4.4 v -5.5 h 4.4 z m 5.04,31 v -2.85 l 16.45,-20.05 h -16 v -3.2 h 20.95 v 2.85 L 196.68,-3.2 h 16.4 V 0 Z m 24.65,-7.55 v 0 q 0,-2.5 1.43,-4.33 1.42,-1.82 3.92,-2.82 2.5,-1 5.8,-1 v 0 q 1.75,0 3.7,0.27 1.95,0.28 3.45,0.83 v 0 -1.9 q 0,-3 -1.8,-4.73 -1.8,-1.72 -5.1,-1.72 v 0 q -2.15,0 -4.12,0.77 -1.98,0.78 -4.18,2.23 v 0 l -1.6,-3.1 q 2.55,-1.75 5.1,-2.63 2.55,-0.87 5.3,-0.87 v 0 q 5,0 7.9,2.77 2.9,2.78 2.9,7.73 v 0 V -5 q 0,0.8 0.33,1.17 0.32,0.38 1.07,0.43 v 0 3.4 q -0.65,0.1 -1.12,0.15 -0.48,0.05 -0.78,0.05 v 0 q -1.55,0 -2.32,-0.85 -0.78,-0.85 -0.88,-1.8 v 0 l -0.1,-1.65 q -1.7,2.2 -4.45,3.4 -2.75,1.2 -5.45,1.2 v 0 q -2.6,0 -4.65,-1.08 -2.05,-1.07 -3.2,-2.9 -1.15,-1.82 -1.15,-4.07 z m 17,1.85 v 0 q 0.6,-0.7 0.95,-1.43 0.35,-0.72 0.35,-1.22 v 0 -3.25 q -1.55,-0.6 -3.25,-0.93 -1.7,-0.32 -3.35,-0.32 v 0 q -3.35,0 -5.42,1.32 -2.08,1.33 -2.08,3.63 v 0 q 0,1.25 0.68,2.42 0.67,1.18 2,1.93 1.32,0.75 3.27,0.75 v 0 q 2.05,0 3.9,-0.83 1.85,-0.82 2.95,-2.07 z m 26.55,-20.55 v 4 q -3.3,0.05 -5.83,1.67 -2.52,1.63 -3.57,4.48 v 0 V 0 h -4.4 v -26.1 h 4.1 v 6.05 q 1.35,-2.7 3.57,-4.38 2.23,-1.67 4.68,-1.87 v 0 q 0.5,0 0.85,0 0.35,0 0.6,0.05 z m 2.2,13.25 v 0 q 0,-3.7 1.52,-6.78 1.53,-3.07 4.2,-4.92 2.68,-1.85 6.13,-1.85 v 0 q 3.15,0 5.65,1.65 2.5,1.65 3.9,4 v 0 -15.6 h 4.4 V -5 q 0,0.8 0.32,1.17 0.33,0.38 1.08,0.43 v 0 3.4 q -1.25,0.2 -1.95,0.2 v 0 q -1.3,0 -2.28,-0.9 -0.97,-0.9 -0.97,-2 v 0 -2.2 q -1.55,2.5 -4.15,3.95 -2.6,1.45 -5.4,1.45 v 0 q -2.7,0 -4.98,-1.08 -2.27,-1.07 -3.95,-2.97 -1.67,-1.9 -2.6,-4.33 -0.92,-2.42 -0.92,-5.12 z m 21.4,3.85 v 0 -7.5 q -0.6,-1.7 -1.95,-3.08 -1.35,-1.37 -3.03,-2.2 -1.67,-0.82 -3.32,-0.82 v 0 q -1.95,0 -3.53,0.82 -1.57,0.83 -2.7,2.2 -1.12,1.38 -1.72,3.13 -0.6,1.75 -0.6,3.65 v 0 q 0,1.95 0.67,3.7 0.68,1.75 1.9,3.1 1.23,1.35 2.85,2.1 1.63,0.75 3.53,0.75 v 0 q 1.2,0 2.47,-0.45 1.28,-0.45 2.43,-1.25 1.15,-0.8 1.95,-1.88 0.8,-1.07 1.05,-2.27 z"
+                                 opacity="1"
+                                 fill="#ffffff"
+                                 class="wordmark-text-0"
+                                 data-fill-palette-color="primary"
+                                 id="text-0"
+                                 style="fill:url(#linearGradient14)" />
+                            </svg>
+                          </g>
+                        </svg>
+                      </g>
+                    </svg>
+                  </g>
+                </svg>
+              </g>
+              <g
+                 id="g9"
+                 style="display:inline;fill:#f7daa2;fill-opacity:1">
+                <svg
+                   viewBox="0 0 120.46879 120.46879"
+                   height="120.4688"
+                   width="120.4688"
+                   version="1.1"
+                   id="svg9"
+                   inkscape:label="svg9"
+                   style="fill:#f7daa2;fill-opacity:1">
+                  <g
+                     id="g4"
+                     style="fill:#f7daa2;fill-opacity:1">
+                    <svg
+                       version="1.1"
+                       id="svg4"
+                       width="100%"
+                       height="100%"
+                       style="fill:#f7daa2;fill-opacity:1" />
+                  </g>
+                  <g
+                     id="icon-0"
+                     style="display:inline;fill:#f7daa2;fill-opacity:1">
+                    <svg
+                       viewBox="0 0 120.46879 120.46879"
+                       height="120.4688"
+                       width="120.4688"
+                       version="1.1"
+                       id="svg8"
+                       style="fill:#f7daa2;fill-opacity:1">
+                      <g
+                         id="g5"
+                         style="display:inline;fill:#f7daa2;fill-opacity:1">
+                        <path
+                           d="M 0,60.234 C 0,26.967 26.968,0 60.234,0 c 33.267,0 60.234,26.968 60.235,60.234 0,33.267 -26.968,60.234 -60.235,60.235 C 26.967,120.469 0,93.501 0,60.234 Z m 60.234,55.604 c 30.709,0 55.604,-24.895 55.604,-55.604 0,-30.709 -24.895,-55.604 -55.604,-55.603 -30.709,0 -55.604,24.895 -55.603,55.603 0,30.709 24.895,55.604 55.603,55.604 z"
+                           data-fill-palette-color="accent"
+                           fill="#ffffff"
+                           stroke="transparent"
+                           id="path4"
+                           style="fill:#f7daa2;fill-opacity:1" />
+                      </g>
+                      <g
+                         transform="translate(30.690719,29.558553)"
+                         id="g8"
+                         style="display:inline;fill:#f7daa2;fill-opacity:1">
+                        <svg
+                           viewBox="0 0 59.087355 61.351687"
+                           height="61.351688"
+                           width="59.087357"
+                           version="1.1"
+                           id="svg7"
+                           style="fill:#f7daa2;fill-opacity:1">
+                          <g
+                             id="g7"
+                             style="fill:#f7daa2;fill-opacity:1">
+                            <svg
+                               version="1.1"
+                               x="0"
+                               y="0"
+                               viewBox="5.021 3.2976885 89.957 93.404312"
+                               enable-background="new 0 0 100 100"
+                               xml:space="preserve"
+                               height="61.351688"
+                               width="59.087357"
+                               class="icon-cg-0"
+                               data-fill-palette-color="accent"
+                               id="cg-0"
+                               style="fill:#f7daa2;fill-opacity:1"><path
+                                 d="m 68.84,60.533 c 0.076,2.981 0.114,6.083 0.114,9.313 0,5.141 -5.936,9.197 -13.67,9.5 -0.473,3.237 -3.26,5.735 -6.627,5.735 -3.37,0 -6.159,-2.502 -6.628,-5.743 -6.134,-0.38 -10.984,-4.486 -10.984,-9.492 0,-2.465 0.556,-5.571 1.404,-9.558 -16.468,2.988 -27.428,9.916 -27.428,17.445 0,10.459 20.178,18.969 44.979,18.969 24.801,0 44.978,-8.51 44.978,-18.969 C 94.979,70.48 84.525,63.641 68.84,60.533 Z"
+                                 fill="#ffffff"
+                                 data-fill-palette-color="accent"
+                                 id="path5"
+                                 style="fill:#f7daa2;fill-opacity:1" /><path
+                                 d="m 43.952,78.375 c 0,2.595 2.111,4.706 4.705,4.706 2.595,0 4.705,-2.111 4.705,-4.706 0,-2.595 -2.11,-4.705 -4.705,-4.705 -2.594,0 -4.705,2.11 -4.705,4.705 z"
+                                 fill="#ffffff"
+                                 data-fill-palette-color="accent"
+                                 id="path6"
+                                 style="fill:#f7daa2;fill-opacity:1" /><path
+                                 d="M 66.954,69.846 C 66.954,48.265 65.589,18.326 53.781,7.529 50.439,4.473 46.504,3.098 41.768,3.321 41.673,27.762 37.84,45.108 35.293,56.634 c -1.256,5.688 -2.249,10.18 -2.249,13.212 0,3.918 3.959,7.143 8.996,7.494 0.5,-3.206 3.272,-5.67 6.617,-5.67 3.347,0 6.121,2.468 6.618,5.678 6.517,-0.283 11.679,-3.535 11.679,-7.502 z"
+                                 fill="#ffffff"
+                                 data-fill-palette-color="accent"
+                                 id="path7"
+                                 style="fill:#f7daa2;fill-opacity:1" /></svg>
+                          </g>
+                        </svg>
+                      </g>
+                    </svg>
+                  </g>
+                </svg>
+              </g>
+            </svg>
+          </g>
+          <defs
+             id="defs10" />
+        </svg>
+        <rect
+           width="395.51999"
+           height="88.198647"
+           fill="none"
+           stroke="none"
+           visibility="hidden"
+           id="rect11"
+           x="0"
+           y="0" />
+      </g>
+    </svg>
+  </g>
+</svg>

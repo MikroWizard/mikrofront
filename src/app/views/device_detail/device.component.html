@@ -1,0 +1,167 @@
+<c-alert style="margin-bottom: 5px;margin-top: 5px;" *ngIf="!loading && devdata['update_availble']"
+  (click)="logger(devdata['sensors'])" color="warning">Firmware
+  Update availble For This Device!</c-alert>
+<c-alert style="margin-bottom: 5px;margin-top: 5px;" *ngIf="!loading && devdata['upgrade_availble']"
+  (click)="logger(devdata['upgrade_availble'])" color="info">Device is updated but needs to upgrade firmware!</c-alert>
+
+<c-row *ngIf="!loading">
+  <c-col xs>
+    <c-card class="mb-1">
+      <c-card-header>
+        <c-row>
+          <c-col md="3">
+            <h3>{{devdata['name'] }}<small style="font-size: 50%;"> ( {{devdata['ip'] }} )</small></h3>
+          </c-col>
+          <c-col md="9" class="justify-content-end" style="text-align: end;">
+            <c-button-group class="mb-2" aria-label="Upate interval" role="group">
+              <button cButton color="primary" (click)="delta='5m';updateData()" [active]="delta=='5m'">5 minute</button>
+              <button cButton color="primary" (click)="delta='1h';updateData()" [active]="delta=='1h'">Hourly</button>
+              <button cButton color="primary" (click)="delta='daily';updateData()"
+                [active]="delta=='daily'">Daily</button>
+              <button cButton color="primary" (click)="delta='live';updateData()" [active]="delta=='live'">Live</button>
+            </c-button-group>
+          </c-col>
+        </c-row>
+
+      </c-card-header>
+
+      <c-card-body>
+        <app-widgets-dropdown *ngIf="!loading" [devicedata]=devsensors></app-widgets-dropdown>
+      </c-card-body>
+    </c-card>
+  </c-col>
+</c-row>
+
+<c-row>
+  <c-col xs>
+    <c-card class="mb-1">
+      <c-card-body>
+        <c-row style="flex-direction:row">
+          <ng-container *ngFor="let item of devdata | keyvalue; index as i">
+            <!-- <c-col *ngIf="checkitem(item)" class="mb-2" >
+              <c-card color="dark" textColor="white" class="h-100 ">
+                <c-card-header  style="padding: 5px 0 2px 9px;text-transform: capitalize;">{{item.key}}</c-card-header>
+                <c-card-body class="bg-gradient"  style="padding:2px  0  2px 9px;">
+                <p cCardText>{{item.value}}</p>
+                </c-card-body>
+              </c-card> 
+          </c-col> -->
+            <c-input-group *ngIf="checkitem(item)" class="mr-0 ml-0 mb-1"
+              style="padding-right:unset;width: auto;flex: 1 1 auto;flex-flow:  nowrap;flex: unset;">
+              <span
+                style="padding: 0.175rem 0.35rem;background-color:#4f5d73;text-transform: capitalize;color:#fff;font-size:0.7rem"
+                cInputGroupText>{{item.key}}</span>
+              <!-- <input cFormControl disabled style="font-size:0.8rem"   [value]="item.value"/> -->
+              <span _ngcontent-ng-c666080582="" cinputgrouptext=""
+                style="padding: 0.175rem 0.35rem;color: rgba(44, 56, 74, 0.95);font-size: 0.7rem;background-color: #d8dbe0;border-color: #b1b7c1;"
+                class="input-group-text">{{ item.value }}</span>
+              <!-- <span style="background-color:#4f5d73;text-transform: capitalize;color:#fff;font-size:0.8rem" cInputGroupText >{{item.key}}</span> -->
+
+            </c-input-group>
+          </ng-container>
+        </c-row>
+      </c-card-body>
+    </c-card>
+  </c-col>
+</c-row>
+<!-- Mikrotik interfaces table -->
+<c-row>
+  <c-col xs>
+    <c-card class="mb-1">
+      <c-card-body>
+        <c-row style="flex-direction:row">
+          <gui-grid [source]="interfaces" [columnMenu]="columnMenu" [sorting]="sorting" [infoPanel]="infoPanel"
+            [rowSelection]="rowSelection" [autoResizeWidth]=true>
+            <gui-grid-column header="Name" field="name">
+              <ng-template let-value="item.name" let-item="item" let-index="index">
+
+                {{value}} - {{item['default-name']}}
+              </ng-template>
+            </gui-grid-column>
+
+            <gui-grid-column header="MAC" field="mac-address">
+              <ng-template let-value="item['mac-address']" let-item="item" let-index="index">
+
+                {{value}}
+              </ng-template>
+            </gui-grid-column>
+            <gui-grid-column header="rx" field="rx-byte">
+              <ng-template let-value="item['rx-byte']" let-item="item" let-index="index">
+
+                <div>{{convert_bw_human(value,'rx')}}</div>
+              </ng-template>
+            </gui-grid-column>
+            <gui-grid-column header="tx" field="tx-byte">
+              <ng-template let-value="item['tx-byte']" let-item="item" let-index="index">
+
+                {{convert_bw_human(value,'tx')}}
+              </ng-template>
+            </gui-grid-column>
+            <gui-grid-column header="l2mtu" field="l2mtu">
+              <ng-template let-value="item.l2mtu" let-item="item" let-index="index">
+
+                curr:{{value}}<br />
+                max : {{item['max-l2mtu']}}
+              </ng-template>
+            </gui-grid-column>
+            <gui-grid-column header="rx/s" field="rx-bits-per-second" [enabled]="false">
+              <ng-template let-value="item['rx-bits-per-second']" let-item="item" let-index="index">
+
+                {{convert_bw_human(value,'rx')}}
+
+              </ng-template>
+            </gui-grid-column>
+            <gui-grid-column header="tx/s" field="tx-bits-per-second" [enabled]="false">
+              <ng-template let-value="item['tx-bits-per-second']" let-item="item" let-index="index">
+
+                {{convert_bw_human(value,'tx')}}
+              </ng-template>
+            </gui-grid-column>
+            <gui-grid-column header="Created" field="created" [enabled]="false">
+              <ng-template let-value="item.created" let-item="item.id" let-index="index">
+
+                {{value}}
+              </ng-template>
+            </gui-grid-column>
+            <gui-grid-column header="Last Up" field="last-link-up-time">
+              <ng-template let-value="item['last-link-up-time']" let-item="item" let-index="index">
+
+                {{value}}
+              </ng-template>
+            </gui-grid-column>
+            <gui-grid-column header="Created" field="created" [enabled]="false">
+              <ng-template let-value="item.created" let-item="item.id" let-index="index">
+                {{value}}
+              </ng-template>
+            </gui-grid-column>
+            <gui-grid-column header="Actions" field="action" width="100" align="center">
+              <ng-template let-value="item.id" let-item="item" let-index="index">
+                <button cButton color="info" size="sm" (click)="show_interface_rate(item['default-name'])"
+                  class="mx-1"><i class="fa-solid fa-chart-line"></i></button>
+              </ng-template>
+            </gui-grid-column>
+          </gui-grid>
+        </c-row>
+      </c-card-body>
+    </c-card>
+  </c-col>
+</c-row>
+
+
+
+<c-modal #staticBackdropModal backdrop="static" size="xl" [visible]="InterfaceChartModalVisible"
+  id="InterfaceChartModal">
+  <c-modal-header>
+    <h5 cModalTitle>{{interface_rate['name']}}</h5>
+    <button [cModalToggle]="staticBackdropModal.id" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body>
+    <c-chart [data]="interface_rate" [options]="options" type="line">
+    </c-chart>
+  </c-modal-body>
+  <c-modal-footer>
+    <button [cModalToggle]="staticBackdropModal.id" cButton color="secondary">
+      Close
+    </button>
+  </c-modal-footer>
+</c-modal>

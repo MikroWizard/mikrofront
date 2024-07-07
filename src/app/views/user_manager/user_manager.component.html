@@ -1,0 +1,261 @@
+<c-row>
+  <c-col xs>
+    <c-card class="mb-4">
+      <c-card-header>
+        <c-row>
+          <c-col xs [lg]="10">
+            Users
+          </c-col>
+          <c-col xs [lg]="2" style="text-align: right;">
+            <button cButton color="primary" (click)="editAddUser({},'showadd')"><i
+                class="fa-solid fa-plus"></i></button>
+          </c-col>
+        </c-row>
+      </c-card-header>
+      <c-card-body >
+        <gui-grid [autoResizeWidth]="true" [source]="source" [columnMenu]="columnMenu" [sorting]="sorting"
+          [autoResizeWidth]=true [paging]="paging">
+          <gui-grid-column header="User Name" field="username">
+            <ng-template let-value="item.username" let-item="item" let-index="index">
+              &nbsp; {{value}} </ng-template>
+          </gui-grid-column>
+          <gui-grid-column header="First Name" field="first_name">
+            <ng-template let-value="item.first_name" let-item="item" let-index="index">
+              {{value}}
+            </ng-template>
+          </gui-grid-column>
+          <gui-grid-column header="Last Name" field="last_name">
+            <ng-template let-value="item.last_name" let-item="item" let-index="index">
+              {{value}}
+            </ng-template>
+          </gui-grid-column>
+          <gui-grid-column header="Role" field="role">
+            <ng-template let-value="item.role" let-item="item" let-index="index">
+              {{value}}
+            </ng-template>
+          </gui-grid-column>
+          <gui-grid-column header="Actions" width="120" field="action">
+            <ng-template let-value="item.id" let-item="item" let-index="index">
+              <button cButton color="warning" size="sm" (click)="editAddUser(item,'edit');" class="mx-1"><i
+                  class="fa-regular fa-pen-to-square"></i></button>
+              <button cButton color="danger" size="sm" (click)="confirm_delete(item);"><i
+                  class="fa-regular fa-trash-can"></i></button>
+            </ng-template>
+          </gui-grid-column>
+        </gui-grid>
+      </c-card-body>
+    </c-card>
+  </c-col>
+</c-row>
+<c-modal-header>
+
+
+<c-modal #EditTaskModal backdrop="static" size="lg" [(visible)]="EditTaskModalVisible" id="EditTaskModal">
+  <c-modal-header>
+    <h5 *ngIf="SelectedUser['action']=='edit'" cModalTitle>Editing User {{SelectedUser['name']}}</h5>
+    <h5 *ngIf="SelectedUser['action']=='add'" cModalTitle>Adding new User</h5>
+    <button [cModalToggle]="EditTaskModal.id" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body>
+    <div [cFormFloating]="true" class="mb-3">
+      <input cFormControl id="floatingInput" placeholder="User Name" [(ngModel)]="SelectedUser['username']" />
+      <label cLabel for="floatingInput">User Name</label>
+    </div>
+
+    <c-input-group class="mb-3">
+      <span cInputGroupText>First Name</span>
+      <input cFormControl id="floatingInput" placeholder="First Name" [(ngModel)]="SelectedUser['first_name']" />
+
+      <span cInputGroupText>Last Name</span>
+      <input cFormControl id="floatingInput" placeholder="Last Name" [(ngModel)]="SelectedUser['last_name']" />
+    </c-input-group>
+
+    <div [cFormFloating]="true" class="mb-3">
+      <input cFormControl id="floatingInput" placeholder="Email Address" [(ngModel)]="SelectedUser['email']" />
+      <label cLabel for="floatingInput">Email Address</label>
+    </div>
+
+    <div [cFormFloating]="true" class="mb-3">
+      <input type="password" cFormControl id="floatingInput" placeholder="Password" [(ngModel)]="SelectedUser['password']" />
+      <label cLabel for="floatingInput">Password</label>
+    </div>
+
+    <!-- <c-input-group class="mb-3">
+      <label cInputGroupText for="inputGroupSelect01">
+        Options
+      </label>
+      <select cSelect id="inputGroupSelect01" [(ngModel)]="SelectedUser['role']" (change)="get_user_perms(SelectedUser['id'])">
+        <option>Choose...</option>
+        <option value="admin">admin</option>
+        <option value="user">Customer</option>
+      </select>
+    </c-input-group> -->
+    <c-input-group>
+    <h5>MikroWizard permisssions :</h5>
+    <c-container>
+      <c-row>
+        <c-col *ngFor='let perm of adminperms | keyvalue' [md]="6" class="mb-1">
+          <label cFormCheckLabel style="text-transform: capitalize">{{ perm.key}} :</label>
+          <c-form-check class="md-6" [switch]="true" style="float: right;">
+            <c-button-group>
+              <c-button-group aria-label="Basic  example" role="group">
+                <button cButton color="info"  variant="outline" size="sm" [active]="adminperms[perm.key]=='read'"
+                  (click)="setRadioValue(perm.key,'read')">Read</button>
+                <button cButton color="danger"  variant="outline" size="sm" [active]="adminperms[perm.key]=='write'"
+                  (click)="setRadioValue(perm.key,'write')">Write</button>
+                  <button cButton color="success"  variant="outline" size="sm" [active]="adminperms[perm.key]=='full'"
+                    (click)="setRadioValue(perm.key,'full')">Full</button>
+                <button cButton color="dark"  variant="outline" size="sm" [active]="adminperms[perm.key]=='none'"
+                  (click)="setRadioValue(perm.key,'none')">None</button>
+              </c-button-group>
+            </c-button-group>
+          </c-form-check>
+        </c-col>
+      </c-row>
+    </c-container>
+    </c-input-group>
+    <c-input-group *ngIf="userperms.length>0" class="mb-3">
+      <h5>Mikrotik permisssions :</h5>
+      <gui-grid  [autoResizeWidth]="true" [source]="userperms" [columnMenu]="columnMenu" [sorting]="sorting"
+        [autoResizeWidth]=true [paging]="paging" >
+        <gui-grid-column header="Group Name" field="group_name">
+          <ng-template let-value="item.group_name" let-item="item" let-index="index">
+            &nbsp; {{value}} </ng-template>
+        </gui-grid-column>
+        <gui-grid-column header="perm Name" field="perm_name">
+          <ng-template let-value="item.perm_name" let-item="item" let-index="index">
+            {{value}}
+          </ng-template>
+        </gui-grid-column>
+        <gui-grid-column header="Actions" width="120" field="action">
+          <ng-template let-value="item.id" let-item="item" let-index="index">
+            <button cButton color="danger" size="sm" (click)="confirm_delete_perm(item);"><i
+                class="fa-regular fa-trash-can"></i></button>
+          </ng-template>
+        </gui-grid-column>
+      </gui-grid>
+    </c-input-group>
+    <hr />
+    <table >
+      <td style="width: 30%;">
+        <span>Add new Permission</span>
+      </td>
+      <td>
+        <mat-form-field>
+          <mat-select cFormControl [(ngModel)]="devgroup"  placeholder="Device Group" #singleSelect>
+            <mat-option>
+              <ngx-mat-select-search></ngx-mat-select-search>
+            </mat-option>
+            <mat-option *ngFor="let group of allDevGroups" [value]="group">
+              {{group.name}}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      </td>
+      <td>
+        <mat-form-field>
+          <mat-select cFormControl placeholder="Permission" [(ngModel)]="permission" #singleSelect>
+            <mat-option>
+              <ngx-mat-select-search></ngx-mat-select-search>
+            </mat-option>
+            <mat-option *ngFor="let perm of allPerms" [value]="perm">
+              {{perm.name}}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      </td>
+      <td>
+        <button *ngIf="SelectedUser['action']=='edit'" cButton color="primary" (click)="add_user_perm()">+</button>
+        <button *ngIf="SelectedUser['action']=='add'" cButton color="primary" (click)="add_new_user_perm()">+</button>
+        <!-- <button *ngIf="SelectedUser['action']=='add'" cButton color="primary" (click)="loading=!loading">++</button> -->
+      </td>
+    </table>
+
+  </c-modal-body>
+
+  <c-modal-footer>
+    <button *ngIf="SelectedUser['action']=='add'" (click)="submit('add')" cButton color="primary">Add</button>
+    <button *ngIf="SelectedUser['action']=='edit'" (click)="submit('edit')" cButton color="primary">save</button>
+    <button [cModalToggle]="EditTaskModal.id" cButton color="secondary">
+      Close
+    </button>
+  </c-modal-footer>
+</c-modal>
+
+
+  <c-modal #DeleteConfirmModal backdrop="static" [(visible)]="DeleteConfirmModalVisible" id="DeleteConfirmModal">
+    <c-modal-header>
+      <h5 cModalTitle>Confirm delete {{ SelectedUser['name'] }}</h5>
+      <button [cModalToggle]="DeleteConfirmModal.id" cButtonClose></button>
+    </c-modal-header>
+    <c-modal-body>
+      Are you sure that You want to delete following task ?
+      <br />
+      <br />
+      <table style="width: 100%;">
+        <tr>
+          <td><b>User name : </b></td>
+          <td>{{ SelectedUser['username'] }}</td>
+        </tr>
+        <tr>
+          <td><b>Name : </b></td>
+          <td>{{ SelectedUser['first_name'] }}</td>
+        </tr>
+        <tr>
+          <td><b>Last Name : </b></td>
+          <td>{{ SelectedUser['last_name'] }}</td>
+        </tr>
+      </table>
+      <hr>
+      <p class="text-danger">
+        All Related data will be deleted :<br />
+        * User Permision Related to this user<br />
+        * All Logs related to this user<br />
+      </p>
+    </c-modal-body>
+    <c-modal-footer>
+      <button (click)="confirm_delete('',true)" cButton color="danger">
+        Yes,Delete!
+      </button>
+      <button [cModalToggle]="DeleteConfirmModal.id" cButton color="info">
+        Close
+      </button>
+    </c-modal-footer>
+  </c-modal>
+
+  <c-modal #DeletePermConfirmModal backdrop="static" [(visible)]="DeletePermConfirmModalVisible" id="DeletePermConfirmModal">
+    <c-modal-header>
+      <h5 cModalTitle>Confirm delete {{ SelectedUser['name'] }}</h5>
+      <button [cModalToggle]="DeletePermConfirmModal.id" cButtonClose></button>
+    </c-modal-header>
+    <c-modal-body>
+      Are you sure that You want to delete following task ?
+      <br />
+      <br />
+      <table style="width: 100%;">
+        <tr>
+          <td><b>Taks name : </b></td>
+          <td>{{ SelectedUser['name'] }}</td>
+        </tr>
+        <tr>
+          <td><b>Description : </b></td>
+          <td>{{ SelectedUser['description'] }}</td>
+        </tr>
+        <tr>
+          <td><b>Cron exec : </b></td>
+          <td>{{ SelectedUser['desc_cron'] }}</td>
+        </tr>
+      </table>
+    </c-modal-body>
+    <c-modal-footer>
+      <button (click)="confirm_delete('',true)" cButton color="danger">
+        Yes,Delete!
+      </button>
+      <button [cModalToggle]="DeletePermConfirmModal.id" cButton color="info">
+        Close
+      </button>
+    </c-modal-footer>
+  </c-modal>
+
+
+  <c-toaster position="fixed" placement="top-end"></c-toaster>

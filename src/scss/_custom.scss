@@ -1,0 +1,125 @@
+// Here you can add other styles
+
+
+ngx-super-select.styled>div > span{
+    background:var(--cui-input-group-addon-bg, #d8dbe0);
+    height:100%;
+    padding:8px;
+    color:var(--cui-input-group-addon-color, rgba(44, 56, 74, 0.95))!important;
+}
+ngx-super-select.styled>div {
+    padding:0!important;
+    width:100%;
+}
+ngx-super-select.styled{
+    width:100%;
+}
+ngx-super-select.styled.hiden .select-selected-items:before{
+    content:"click for select"
+}
+ngx-super-select.styled.hiden .select-selected-items > *{
+    display:none!important;
+}
+ngx-super-select.styled .selection-counter:before{
+    content:"Selected Count : "
+}
+ngx-super-select.styled .selection-counter{
+    color:#000!important;
+    background:#aaaaaa26!important;
+    margin:0!important;
+}
+
+.cdk-overlay-container {
+    z-index: 10000;
+}
+
+.mdc-text-field--no-label:not(.mdc-text-field--outlined):not(.mdc-text-field--textarea) .mat-mdc-form-field-infix {
+    padding-top: 6px;
+    padding-bottom: 6px;
+}
+.mat-mdc-form-field-infix {
+    min-height: 34px;
+}
+
+.mdc-text-field--filled:not(.mdc-text-field--disabled){
+    background: transparent!important;
+}
+
+
+/* Add application styles & imports to this file! */
+
+pre {
+    display: flex!important;
+    margin-top: 0!important;
+    margin-bottom: 0!important;
+    word-wrap: break-word!important;
+  }
+  
+  code {
+    flex: 1!important;
+    line-height: 1.8em!important;
+    font-size: 14px!important;
+    min-height: 100%!important;
+    padding: 1em 1.2em!important;
+    overflow-x: unset!important;
+    overflow-y: unset!important;
+  }
+  
+  .hljs.hljs-line-numbers {
+    padding: 0 !important;
+  }
+  
+  pre .hljs {
+    border: none!important;
+    transition: border ease 1s!important;
+  }
+  
+  .hljs-ln {
+    tr {
+      &:first-child td {
+        padding-top: 10px !important;
+      }
+  
+      &:last-child td {
+        padding-bottom: 10px !important;
+      }
+    }
+  }
+  .row-highlighted{
+    z-index: 0!important;
+  }
+  .mat-mdc-menu-panel,.mat-mdc-menu-content{
+    background: transparent!important;
+    padding: 0!important;
+  }
+  table,
+  tbody,
+  tr,
+  td {
+    background: inherit!important;
+  }
+  
+  table {
+    border-collapse: separate!important;
+    border-spacing: 0!important;
+    background: inherit!important;
+  }
+  
+  /* for block of numbers */
+  td.hljs-ln-numbers {
+    position: sticky!important;
+    left: 0!important;
+    user-select: none!important;
+    text-align: center!important;
+    color: #cccccc6b!important;
+    border-right: 1px solid #cccccc1c!important;
+    vertical-align: top!important;
+    padding-right: 10px !important;
+    padding-left: 10px !important;
+  }
+  
+  /* for block of code */
+  td.hljs-ln-code {
+    padding-left: 10px !important;
+  }
+  

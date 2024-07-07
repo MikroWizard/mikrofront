@@ -1,0 +1,137 @@
+<c-row>
+  <c-col xs>
+    <c-card class="mb-4">
+      <c-card-header>
+        <c-row>
+          <c-col xs [lg]="10">
+            Permissions
+          </c-col>
+          <c-col xs [lg]="2" style="text-align: right;">
+            <button cButton color="primary" (click)="editAddTask({},'showadd')"><i
+                class="fa-solid fa-plus"></i></button>
+          </c-col>
+        </c-row>
+      </c-card-header>
+      <c-card-body>
+        <gui-grid [rowHeight]="82" [autoResizeWidth]="true" [source]="source" [columnMenu]="columnMenu"
+          [sorting]="sorting" [autoResizeWidth]=true [paging]="paging">
+          <gui-grid-column header="Name" field="name">
+            <ng-template let-value="item.name" let-item="item" let-index="index">
+              &nbsp; {{value}} </ng-template>
+          </gui-grid-column>
+          <gui-grid-column width="auto" header="Perms" field="perms">
+            <ng-template let-value="item.role" let-item="item" let-index="index">
+              <div style="text-wrap: initial;">
+                <ng-container *ngFor="let perm of item['perms'] | keyvalue">
+                  <c-badge *ngIf="perm.value" class="m-1" color="success">{{perm.key}}</c-badge>
+                </ng-container>
+              </div>
+            </ng-template>
+          </gui-grid-column>
+          <gui-grid-column header="Actions" width="120" field="action">
+            <ng-template let-value="item.id" let-item="item" let-index="index">
+              <button cButton color="warning" size="sm" class="mx-1" (click)="editAddTask(item,'edit');"><i
+                  class="fa-regular fa-pen-to-square"></i></button>
+              <button cButton color="danger" size="sm" (click)="confirm_delete(item);"><i
+                  class="fa-regular fa-trash-can"></i></button>
+            </ng-template>
+          </gui-grid-column>
+        </gui-grid>
+      </c-card-body>
+    </c-card>
+  </c-col>
+</c-row>
+<c-modal-header>
+
+
+  <c-modal #EditTaskModal backdrop="static" size="lg" [(visible)]="EditTaskModalVisible" id="EditTaskModal">
+    <c-modal-header>
+      <h5 *ngIf="action=='edit'" cModalTitle>Editing Permission {{SelectedPerm['name']}}</h5>
+      <h5 *ngIf="action=='add'" cModalTitle>Adding new Permission Rule</h5>
+      <button [cModalToggle]="EditTaskModal.id" cButtonClose></button>
+    </c-modal-header>
+    <c-modal-body>
+
+      <div [cFormFloating]="true" class="mb-3">
+        <input cFormControl id="floatingInput" placeholder="permname" [(ngModel)]="permname" />
+        <label cLabel for="floatingInput">Name</label>
+      </div>
+      <c-row>
+        <c-col>
+          <c-form-check *ngFor='let val of ["api","ftp","password","read","romon","sniff","telnet","tikapp","winbox"]'
+            [switch]="true">
+            <input cFormCheckInput [(ngModel)]="perms[val] " type="checkbox" />
+            <label cFormCheckLabel>{{ val}}</label>
+          </c-form-check>
+        </c-col>
+        <c-col>
+          <c-form-check
+            *ngFor='let val of ["dude","local","policy","reboot","rest-api","sensitive","ssh","test","web","write"]'
+            [switch]="true">
+            <input cFormCheckInput [(ngModel)]="perms[val] " type="checkbox" />
+            <label cFormCheckLabel>{{ val}}</label>
+          </c-form-check>
+        </c-col>
+      </c-row>
+      <ng-container *ngIf="SelectedMembers.length>0 && EditTaskModalVisible">
+        <c-badge class="mx-1" *ngFor="let id of splitids(SelectedPermItems)"
+          color="dark">{{get_member_by_id(id).name}}</c-badge>
+      </ng-container>
+      <!-- 
+  <c-input-group class="mb-3">
+    <cron-editor #cronEditorDemo1 [(ngModel)]="SelectedPerm['cron']"  [options]="cronOptions">Cron here...</cron-editor>
+  </c-input-group> 
+  -->
+
+    </c-modal-body>
+    <c-modal-footer>
+      <button *ngIf="action=='add'" (click)="submit('add')" cButton color="primary">Add</button>
+      <button *ngIf="action=='edit'" (click)="submit('edit')" cButton color="primary">save</button>
+      <button [cModalToggle]="EditTaskModal.id" cButton color="secondary">
+        Close
+      </button>
+    </c-modal-footer>
+  </c-modal>
+
+
+  <c-modal #DeleteConfirmModal backdrop="static" [(visible)]="DeleteConfirmModalVisible" id="DeleteConfirmModal">
+    <c-modal-header>
+      <h5 cModalTitle>Confirm delete {{ SelectedPerm['name'] }}</h5>
+      <button [cModalToggle]="DeleteConfirmModal.id" cButtonClose></button>
+    </c-modal-header>
+    <c-modal-body>
+      Are you sure that You want to delete following Permission?
+      <br />
+      <br />
+      <table style="width: 100%;">
+        <tr>
+          <td><b>Permission name : </b>{{ SelectedPerm['name'] }}
+        </tr>
+        <tr>
+          <td>
+            <ng-container *ngFor="let perm of SelectedPerm['perms'] | keyvalue">
+              <c-badge *ngIf="perm.value" class="m-1" color="success">{{perm.key}}</c-badge>
+            </ng-container>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <p><code
+                style="padding: 0!important;"><b>Warning:</b> ALL Given <b>device access</b> related to this permision in Users Section <b>will be deleted</b> for each user</code>
+            </p>
+          </td>
+        </tr>
+      </table>
+    </c-modal-body>
+    <c-modal-footer>
+      <button (click)="confirm_delete('',true)" cButton color="danger">
+        Yes,Delete!
+      </button>
+      <button [cModalToggle]="DeleteConfirmModal.id" cButton color="info">
+        Close
+      </button>
+    </c-modal-footer>
+  </c-modal>
+
+
+  <c-toaster position="fixed" placement="top-end"></c-toaster>

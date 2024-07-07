@@ -1,0 +1,125 @@
+@use '@angular/material' as mat;
+
+:host {
+  .legend {
+    small {
+      font-size: x-small;
+    }
+  }
+}
+// .gui-drawer-content{
+//   background-color: #efefef!important;
+
+// }
+.log-detail{
+padding:30px 10px;
+box-sizing:border-box;
+}
+.log-detail h1{
+font-size:2em;
+font-weight:bold;
+margin:0;
+padding:0;
+}
+.log-detail small{
+position:relative;
+top:-7px;
+padding:0;
+font-weight:bold;
+font-size:1.1em;
+}
+.log-detail table {
+width: 100%;
+border-collapse: collapse!important;
+margin: 5px 0 0 0;
+padding: 0;
+background-color: #ffffff29 !important;
+color: #000;
+}
+.log-detail th {
+text-align: left;
+}
+.log-detail th,
+.log-detail td {
+border: 1px solid #ffffff4a!important;
+padding: 0.5rem!important;
+}
+.gui-close-icon-wrapper .gui-close-icon:after,.gui-close-icon-wrapper .gui-close-icon:before {
+  background-color: #ffffff !important;
+
+}
+.log-detail code{
+  padding:5px!important;
+  display:block;
+  background:#1d1f21;
+  color:#c5c8c6;
+  border-bottom-left-radius:3px;
+  border-bottom-right-radius:3px;
+  width:100%;
+}
+
+.log-detail .code-title{
+  background-color:#393e42!important;;
+  width:100%;
+  padding:2px 15px;
+  display:inline-block;
+  margin-top:10px;  
+  color:#d2d2d2;
+  border-top-left-radius:3px;
+  border-top-right-radius:3px;
+  font-weight:bold;
+}
+
+.gui-row-detail{
+  height:100%;
+}
+
+.gui-dev-info {
+	display: inline-flex;
+	flex-direction: column;
+	align-items: stretch;
+	align-content: center;
+	justify-content: center;
+  white-space: normal;
+  line-height: 17px;
+}
+
+.gui-dev-info-name {
+	font-weight: bold;
+}
+
+.gui-dev-info-ip {
+	color: #525252;
+	font-style: italic;
+	font-size: 13px;
+	overflow: hidden;
+}
+.gui-row-detail > div{
+  height:100%;
+}
+.gui-row-detail .log-detail{
+  height:100%;
+}
+
+.gui-structure{
+  min-height: 550px;
+}
+
+
+.example-form {
+  @include mat.button-density(-5);
+
+  @include mat.form-field-density(-5);
+  @include mat.button-toggle-density(-5);
+  @include mat.datepicker-density(-5);
+  @include mat.all-component-densities(-5);
+  @include mat.icon-button-density(-5);
+  @include mat.icon-density(-5);
+  .mat-mdc-text-field-wrapper:not(.mdc-text-field--outlined) .mat-mdc-floating-label { display: inline; }
+  mat-form-field *{
+    font-size:13px!important;
+  }
+  .mat-mdc-form-field-infix{
+      width:150px;
+  }
+}
