@@ -178,6 +178,11 @@ export class UserManagerComponent implements OnInit {
         }
       });
     } else {
+      console.dir(_self.userperms);      if (_self.userperms.length > 0) {
+        _self.SelectedUser["userperms"] = _self.userperms;
+      } else {
+        _self.SelectedUser["userperms"] = [];
+      }
       _self.SelectedUser["adminperms"] = _self.adminperms;
       this.data_provider.edit_user(_self.SelectedUser).then((res) => {
         _self.initGridTable();

@@ -166,9 +166,11 @@ export class SyslogComponent implements OnInit {
   toggleCollapse(): void {
     this.filters_visible = !this.filters_visible;
   }
+  
   logger(item: any) {
     console.dir(item);
   }
+
   reinitgrid(field: string, $event: any) {
     if (field == "start") this.filters["start_time"] = $event.target.value;
     else if (field == "end") this.filters["end_time"] = $event.target.value;
@@ -177,6 +179,7 @@ export class SyslogComponent implements OnInit {
     else if (field == "ip") this.filters["ip"] = $event;
     this.initGridTable();
   }
+
   initGridTable(): void {
     var _self = this;
     _self.event_section = [];

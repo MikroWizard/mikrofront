@@ -5,19 +5,6 @@ import { loginChecker } from "../../providers/login_checker";
 import { Router } from "@angular/router";
 import { formatInTimeZone } from "date-fns-tz";
 
-interface IUser {
-  name: string;
-  state: string;
-  registered: string;
-  country: string;
-  usage: number;
-  period: string;
-  payment: string;
-  activity: string;
-  avatar: string;
-  status: string;
-  color: string;
-}
 
 @Component({
   templateUrl: "dashboard.component.html",
@@ -195,7 +182,6 @@ export class DashboardComponent implements OnInit {
   initStats() {
     var _self = this;
     this.data_provider.dashboard_stats(true).then((res) => {
-      console.dir(res);
       _self.stats = res;
     });
   }
