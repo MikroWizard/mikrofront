@@ -35,7 +35,7 @@ export class DefaultHeaderComponent extends HeaderComponent {
   ) {
     super();
     var _self = this;
-    var session_info: string = localStorage.getItem('current_user') || "[]]";
+    var session_info: string = localStorage.getItem('current_user') || "[]";
     this.current_user = JSON.parse(session_info);
   }
 

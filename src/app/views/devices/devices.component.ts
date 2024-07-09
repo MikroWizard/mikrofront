@@ -402,9 +402,9 @@ export class DevicesComponent implements OnInit, OnDestroy {
     var _self = this;
     this.data_provider.get_devgroup_list().then((res) => {
       if( "status" in res && res.status == 'failed' )
-        _self.groups=false
+        _self.groups = false
       else
-        _self.groups = res.data;
+        _self.groups = res;
     });
   }
 
