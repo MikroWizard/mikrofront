@@ -22,19 +22,6 @@ import {
 import { ToasterComponent } from "@coreui/angular";
 import { AppToastComponent } from "../toast-simple/toast.component";
 import { TimeZones } from "./timezones-data";
-interface IUser {
-  name: string;
-  state: string;
-  registered: string;
-  country: string;
-  usage: number;
-  period: string;
-  payment: string;
-  activity: string;
-  avatar: string;
-  status: string;
-  color: string;
-}
 
 @Component({
   templateUrl: "settings.component.html",
@@ -44,6 +31,7 @@ interface IUser {
 export class SettingsComponent implements OnInit {
   public uid: number;
   public uname: string;
+  public ispro:boolean=false;
   public filterText: string;
   public filters: any = {};
   public firms: any = {};
@@ -63,6 +51,7 @@ export class SettingsComponent implements OnInit {
     this.data_provider.getSessionInfo().then((res) => {
       _self.uid = res.uid;
       _self.uname = res.name;
+      _self.ispro = res.ISPRO;
       const userId = _self.uid;
 
       if (res.role != "admin") {
@@ -222,6 +211,8 @@ export class SettingsComponent implements OnInit {
       ].filter((x: any) => x.match(/^6\./g));
       _self.firmwaretoinstall = res.firmwaretoinstall;
       _self.firmwaretoinstallv6 = res.firmwaretoinstallv6;
+      _self.updateBehavior = res.updateBehavior;
+
     });
   }
 

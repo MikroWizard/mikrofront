@@ -185,15 +185,13 @@
             setting for any change to prevent/fix the configuration.</c-form-feedback>
         </c-form-check>
 
-        <c-form-check [switch]="true" sizing="xl">
+        <c-form-check *ngIf="ispro" [switch]="true" sizing="xl">
           <input cFormCheckInput [(ngModel)]="sysconfigs['safe_install']['value']" type="checkbox" />
           <label cFormCheckLabel>Safe Update</label>
-          <c-form-feedback style="display: block;color: #979797;margin-top: 0;" [valid]="true">
+          <c-form-feedback style="display: block;color: #979797;margin-top: 0;" [valid]="true"><code style="padding: 0!important;">PRO</code>
             * Download and install reqired firmware before installing the target firmware . for example it will install
             latest 7.12 then upgrade to newer version >7.13</c-form-feedback>
         </c-form-check>
-
-
         <button cButton color="primary" (click)="saveSysSetting()">Save</button>
 
       </c-card-body>
