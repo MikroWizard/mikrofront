@@ -4,4 +4,9 @@
     --scrollbar-track-color: var(--cui-body-color, #fff);
     --scrollbar-hover-size: calc(var(--scrollbar-size) * 1.5);
   }
+  c-sidebar-nav{
+  --cui-sidebar-nav-link-padding-y:.6rem;
+  --cui-sidebar-nav-title-margin-top: 0.1rem;
+
+  }
 }

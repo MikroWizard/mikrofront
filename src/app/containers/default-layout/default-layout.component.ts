@@ -4,7 +4,6 @@ import { loginChecker } from '../../providers/login_checker';
 import { User } from '../../providers/mikrowizard/user';
 import { navItems } from './_nav';
 import { dataProvider } from '../../providers/mikrowizard/data';
-import { version } from 'os';
 
 @Component({
   selector: 'app-dashboard',
@@ -19,6 +18,7 @@ export class DefaultLayoutComponent implements OnInit {
   public uname: string;
   public fname: string;
   public lname: string;
+  public ispro: boolean=false;
   public UserProfileModalVisible:boolean;
   public error:any=false;
   public password:any={
@@ -52,14 +52,13 @@ export class DefaultLayoutComponent implements OnInit {
         }
       }
     });
+
   }
 
   password_changed(variable:string,value:any){
     var _self=this;
     this.password[variable]=value;
-    console.dir(this.password['pass1']);
-    console.dir(this.password['pass2']);
-    if(this.password['pass1']==this.password['pass2']){
+        if(this.password['pass1']==this.password['pass2']){
       _self.passvalid['pass2']=true;
     }
     else{
@@ -109,15 +108,28 @@ export class DefaultLayoutComponent implements OnInit {
   ngOnInit(): void {
     var _self = this;
     this.get_user_info();
+    this.data_provider.getSessionInfo().then((res) => {
+      _self.ispro=res['ISPRO']
+      _self.navItems=_self.navItems.filter((item:any) => {
+        if (item.attributes){
+          if('free' in item.attributes && _self.ispro){
+            //do nothing
+          }
+          else if('pro' in item.attributes && _self.ispro){
+            return item;
+          }
+          else
+            return item;
+      }
+      else{
+          return item;
+      }
+      });
+    });
     _self.data_provider.get_front_version().then((res:any) => {
-			console.log("ressssssssssssssssss");
-      console.dir(res['version']);
-      console.dir(this.version);
       if(res['version']!=this.version){
         console.dir("New version is available. Please refresh the page.");
         window.location.href = window.location.href.replace(/#.*$/, '');
-
-
       }
 		});
   }
