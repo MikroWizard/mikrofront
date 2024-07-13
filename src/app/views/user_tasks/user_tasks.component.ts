@@ -17,19 +17,6 @@ import {
 import { NgxSuperSelectOptions } from "ngx-super-select";
 import { _getFocusedElementPierceShadowDom } from "@angular/cdk/platform";
 
-interface IUser {
-  name: string;
-  state: string;
-  registered: string;
-  country: string;
-  usage: number;
-  period: string;
-  payment: string;
-  activity: string;
-  avatar: string;
-  status: string;
-  color: string;
-}
 
 @Component({
   templateUrl: "user_tasks.component.html",
@@ -37,6 +24,7 @@ interface IUser {
 export class UserTasksComponent implements OnInit {
   public uid: number;
   public uname: string;
+  public ispro: boolean = false;
 
   constructor(
     private data_provider: dataProvider,
@@ -52,6 +40,7 @@ export class UserTasksComponent implements OnInit {
     this.data_provider.getSessionInfo().then((res) => {
       _self.uid = res.uid;
       _self.uname = res.name;
+      _self.ispro = res['ISPRO']
       const userId = _self.uid;
 
       if (res.role != "admin") {
@@ -81,7 +70,12 @@ export class UserTasksComponent implements OnInit {
   public availbleMembers: any = [];
   public NewMemberRows: any = [];
   public SelectedNewMemberRows: any;
-
+  public available_firmwares: any = [];
+  public available_firmwaresv6: any = [];
+  public firmwaretoinstall: string = "none";
+  public firmwaretoinstallv6: string = "none";
+  public updateBehavior: string = "keep";
+  public firms_loaded: boolean = false;
   public sorting = {
     enabled: true,
     multiSorting: true,
@@ -212,6 +206,7 @@ export class UserTasksComponent implements OnInit {
         snippetid: "",
         task_type: "backup",
       };
+      this.SelectedTask['data'] = { 'strategy': 'system', 'version_to_install': '', 'version_to_install_6': '' }
       this.SelectedMembers = [];
       this.SelectedTaskItems = [];
       this.EditTaskModalVisible = true;
@@ -220,6 +215,34 @@ export class UserTasksComponent implements OnInit {
 
     var _self = this;
     this.SelectedTask = { ...item };
+    if (this.SelectedTask['task_type'] == 'firmware' && 'data' in this.SelectedTask && this.SelectedTask['data']) {
+      this.SelectedTask['data'] = JSON.parse(this.SelectedTask['data']);
+      if (this.SelectedTask['data']['strategy'] == 'defined') {
+        this.data_provider.get_firms(0, 10000, false).then((res) => {
+          let index = 1;
+          _self.available_firmwares = [
+            ...new Set(
+              res["firms"].map((x: any) => {
+                return x.version;
+              })
+            ),
+          ];
+          _self.available_firmwaresv6 = [
+            ...new Set(
+              res["firms"].map((x: any) => {
+                return x.version;
+              })
+            ),
+          ].filter((x: any) => x.match(/^6\./g));
+          _self.updateBehavior = res.updateBehavior;
+          _self.firms_loaded = true;
+        });
+      }
+      else{
+        _self.firms_loaded = true;
+      }
+
+    }
     _self.data_provider.get_snippets("", "", "", 0, 1000).then((res) => {
       _self.Snippets = res.map((x: any) => {
         return { id: x.id, name: x.name };
@@ -239,7 +262,41 @@ export class UserTasksComponent implements OnInit {
       this.SelectedTaskItems = [];
     }
   }
-
+  firmware_type_changed(type: any) {
+    this.SelectedTask['data']['strategy'] = type;
+    if (type == 'system') {
+      this.SelectedTask['data']['version_to_install'] = false
+      this.SelectedTask['data']['version_to_install_6'] = false
+    }
+    else if (type == 'defined') {
+      var _self = this;
+      this.data_provider.get_firms(0, 10000, false).then((res) => {
+        let index = 1;
+        _self.available_firmwares = [
+          ...new Set(
+            res["firms"].map((x: any) => {
+              return x.version;
+            })
+          ),
+        ];
+        _self.available_firmwaresv6 = [
+          ...new Set(
+            res["firms"].map((x: any) => {
+              return x.version;
+            })
+          ),
+        ].filter((x: any) => x.match(/^6\./g));
+        _self.updateBehavior = res.updateBehavior;
+        _self.firms_loaded = true;
+      });
+    }
+    else if (type == 'latest') {
+      this.SelectedTask['data']['version_to_install'] = false
+      this.SelectedTask['data']['version_to_install_6'] = false
+      //get firmwares to select
+    }
+    return
+  }
   remove_member(item: any) {
     var _self = this;
     _self.SelectedMembers = _self.SelectedMembers.filter(

@@ -7,7 +7,8 @@
             Tasks
           </c-col>
           <c-col xs [lg]="2" style="text-align: right;">
-            <button cButton color="primary" (click)="editAddTask({},'showadd')"><i class="fa-solid fa-plus"></i></button>
+            <button cButton color="primary" (click)="editAddTask({},'showadd')"><i
+                class="fa-solid fa-plus"></i></button>
           </c-col>
 
         </c-row>
@@ -17,8 +18,10 @@
           [infoPanel]="infoPanel" [autoResizeWidth]=true>
           <gui-grid-column header="Name" field="name">
             <ng-template let-value="item.name" let-item="item" let-index="index">
-              <i *ngIf="item.task_type=='snippet'" class="fa-solid fa-code"></i><i *ngIf="item.task_type=='backup'"
-                class="fa-solid fa-database"></i>&nbsp; {{value}} </ng-template>
+              <i *ngIf="item.task_type=='snippet'" class="fa-solid fa-code"></i>
+              <i *ngIf="item.task_type=='backup'"  class="fa-solid fa-database"></i>
+              <i *ngIf="item.task_type=='firmware'"  class="fa-solid fa-upload"></i>
+              &nbsp; {{value}} </ng-template>
           </gui-grid-column>
           <gui-grid-column header="Description" field="description">
             <ng-template let-value="item.description" let-item="item" let-index="index">
@@ -39,7 +42,7 @@
 
           <gui-grid-column header="Actions" width="120" field="action">
             <ng-template let-value="item.id" let-item="item" let-index="index">
-              <button cButton color="warning" size="sm" (click)="editAddTask(item,'edit');" ><i
+              <button cButton color="warning" size="sm" (click)="editAddTask(item,'edit');"><i
                   class="fa-regular fa-pen-to-square"></i></button>
               <button cButton color="info" size="sm" (click)="confirm_run(item);" class="mx-1"><i
                   class="fa-solid fa-bolt"></i></button>
@@ -55,82 +58,148 @@
 <c-modal-header>
 
 
-<c-modal #EditTaskModal backdrop="static" size="xl" [(visible)]="EditTaskModalVisible" id="EditTaskModal">
-  <c-modal-header>
-    <h5 *ngIf="SelectedTask['action']=='edit'" cModalTitle>Editing device {{SelectedTask['name']}}</h5>
-    <h5 *ngIf="SelectedTask['action']=='add'" cModalTitle>Adding new task</h5>
-    <button [cModalToggle]="EditTaskModal.id" cButtonClose></button>
-  </c-modal-header>
-  <c-modal-body>
-  <div [cFormFloating]="true" class="mb-3">
-    <input cFormControl id="floatingInput" placeholder="SelectedTask['name']" [(ngModel)]="SelectedTask['name']" />
-    <label cLabel for="floatingInput">Name</label>
-  </div>
+  <c-modal #EditTaskModal backdrop="static" size="xl" [(visible)]="EditTaskModalVisible" id="EditTaskModal">
+    <c-modal-header>
+      <h5 *ngIf="SelectedTask['action']=='edit'" cModalTitle>Editing device {{SelectedTask['name']}}</h5>
+      <h5 *ngIf="SelectedTask['action']=='add'" cModalTitle>Adding new task</h5>
+      <button [cModalToggle]="EditTaskModal.id" cButtonClose></button>
+    </c-modal-header>
+    <c-modal-body>
+      <div [cFormFloating]="true" class="mb-3">
+        <input cFormControl id="floatingInput" placeholder="SelectedTask['name']" [(ngModel)]="SelectedTask['name']" />
+        <label cLabel for="floatingInput">Name</label>
+      </div>
 
-  <div [cFormFloating]="true" class="mb-3">
-    <input cFormControl id="floatingInput" placeholder="SelectedTask['description']" [(ngModel)]="SelectedTask['description']" />
-    <label cLabel for="floatingInput">Description</label>
-  </div>
+      <div [cFormFloating]="true" class="mb-3">
+        <input cFormControl id="floatingInput" placeholder="SelectedTask['description']"
+          [(ngModel)]="SelectedTask['description']" />
+        <label cLabel for="floatingInput">Description</label>
+      </div>
 
-  <c-input-group class="mb-3">
-    <label cInputGroupText for="inputGroupSelect01">
-      Options
-    </label>
-    <select cSelect id="inputGroupSelect01" [(ngModel)]="SelectedTask['task_type']">
-      <option>Choose...</option>
-      <option value="backup">Backup</option>
-      <option value="snippet">Snippet</option>
-    </select>
-  </c-input-group>
-  <c-input-group class="mb-3">
+      <c-input-group class="mb-3">
+        <label cInputGroupText for="inputGroupSelect01">
+          Options
+        </label>
+        <select cSelect id="inputGroupSelect01" [(ngModel)]="SelectedTask['task_type']">
+          <option>Choose...</option>
+          <option value="backup">Backup</option>
+          <option value="snippet">Snippet</option>
+          <option value="firmware" *ngIf="ispro">Firmware</option>
+        </select>
+      </c-input-group>
+      <h6 *ngIf="SelectedTask['task_type']=='firmware'" >Update Version Strategy</h6>
+      <c-card  *ngIf="SelectedTask['task_type']=='firmware'">
+        <c-card-header style="padding: 0;">
+          <c-input-group>
+            <c-button-group aria-label="Basic radio toggle button group"
+              role="group">
+              <input class="btn-check" type="radio" value="Radio2" />
+              <label (click)="firmware_type_changed('system')" [active]="SelectedTask['data']['strategy']=='system'"
+                cButton cFormCheckLabel color="dark" variant="ghost">System setting
+                defined</label>
+              <input class="btn-check" type="radio" value="Radio1" />
+              <label (click)="firmware_type_changed('defined')" [active]="SelectedTask['data']['strategy']=='defined'"
+                cButton cFormCheckLabel color="dark" variant="ghost">Custom
+                Version</label>
+              <input class="btn-check" type="radio" value="Radio3" />
+              <label (click)="firmware_type_changed('latest')" [active]="SelectedTask['data']['strategy']=='latest'"
+                cButton cFormCheckLabel color="dark" variant="ghost">Latest
+                availble</label>
+            </c-button-group>
+          </c-input-group>
+        </c-card-header>
+        <c-card-body>
 
-  <ngx-super-select *ngIf="SelectedTask['task_type']=='snippet'"
-    [dataSource]="Snippets"
-    [options]="options"
-    (selectionChanged)="onSelectValueChanged($event)"
-    [selectedItemValues]="[SelectedTask['snippetid']]"
-    (searchChanged)="onSnippetsValueChanged($event)"
-    class="styled"
-    ></ngx-super-select>
-  </c-input-group>
-  
-    <div [cFormFloating]="true" class="mb-3">
-      <input cFormControl id="floatingInput" placeholder="SelectedTask['name']" [(ngModel)]="SelectedTask['cron']" />
-      <label cLabel for="floatingInput">cron</label>
-    </div>
+          <c-input-group
+            *ngIf="firms_loaded && SelectedTask['task_type']=='firmware' && SelectedTask['data']['strategy']=='system'">
+            <c-form-feedback style="display: block;color: #48515a;margin-top: 0;" [valid]="true">
+              The version of firmware will be selected based on global settings of Mikrowizard Update strategy.
+              <br/>
+              Please check settings page for more info and configuration
+            </c-form-feedback>
+          </c-input-group>
+          <c-input-group
+          *ngIf="firms_loaded && SelectedTask['task_type']=='firmware' && SelectedTask['data']['strategy']=='latest'">
 
-  <c-input-group class="mb-3">
-    <label cInputGroupText for="inputGroupSelect01">
-      Member type
-    </label>
-    <select cSelect id="inputGroupSelect01" (change)="form_changed()" [(ngModel)]="SelectedTask['selection_type']">
-      <option value="devices">Devices</option>
-      <option value="groups">Groups</option>
-    </select>
-  </c-input-group>
+          <c-form-feedback style="display: block;color: #48515a;margin-top: 0;" [valid]="true">
+            The version of firmware will be selected based on latest availble version from Mikrotik website!.
+              <br/>
+              <b>V6 Firmware update Behavior</b> and <b>safe install</b> is based on global Mikrowizard setting.(check settings page)
+              <br/>
+              <code style="padding: 0!important;">**with this option MikroWizard will download latest availble firmware from mikrotik.com. Please keep in mind that server needs internet access to mikrotik.com</code></c-form-feedback>
+          </c-input-group>
+          <c-input-group
+            *ngIf="firms_loaded && SelectedTask['task_type']=='firmware' && SelectedTask['data']['strategy']=='defined'">
+            <c-input-group class="mb-3">
+              <label cInputGroupText for="inputGroupSelect01">
+                Firmware version to install
+              </label>
+              <select cSelect [(ngModel)]="SelectedTask['data']['version_to_install']" id="inputGroupSelect01">
+                <option>Choose...</option>
+                <option *ngFor="let f of available_firmwares" [value]="f">{{f}}</option>
 
-  <h5>Members :</h5>
-  <gui-grid [autoResizeWidth]="true"  [source]="SelectedMembers" [columnMenu]="columnMenu" [sorting]="sorting"
-    [infoPanel]="infoPanel" [rowSelection]="rowSelection"  [autoResizeWidth]=true [paging]="paging" >
-    <gui-grid-column header="Name" field="name">
-      <ng-template let-value="item.name" let-item="item" let-index="index">
-        &nbsp; {{value}} </ng-template>
-    </gui-grid-column>
-    <gui-grid-column *ngIf="SelectedTask['selection_type']=='devices'" header="MAC" field="mac">
-      <ng-template let-value="item.mac" let-item="item" let-index="index">
-        {{value}}
-      </ng-template>
-    </gui-grid-column>
-    <gui-grid-column header="Actions" width="120" field="action">
-      <ng-template let-value="item.id" let-item="item" let-index="index">
-        <button cButton color="danger" size="sm" (click)="remove_member(item)"><i
-            class="fa-regular fa-trash-can" ></i></button>
-      </ng-template>
-    </gui-grid-column>
-  </gui-grid>
-  <hr />
-  <button cButton color="primary" (click)="show_new_member_form()" >+ Add new Members</button>
-<!--
+              </select>
+              <c-form-feedback style="display: block;color: #979797;margin-top: 0;" [valid]="true">
+                * The version of firmware to install routers</c-form-feedback>
+            </c-input-group>
+
+            <c-input-group *ngIf="updateBehavior=='keep'" >
+              <label cInputGroupText for="inputGroupSelect01">
+                Firmware version v6 to install
+              </label>
+              <select cSelect [(ngModel)]="SelectedTask['data']['version_to_install_6']" id="inputGroupSelect01">
+                <option>Choose...</option>
+                <option *ngFor="let f of available_firmwaresv6" [value]="f">{{f}}</option>
+              </select>
+              <c-form-feedback style="display: block;color: #979797;margin-top: 0;" [valid]="true">
+                * The version of firmware to install on V6 routers</c-form-feedback>
+            </c-input-group>
+          </c-input-group>
+        </c-card-body>
+      </c-card>
+      <c-input-group class="mb-3">
+        <ngx-super-select *ngIf="SelectedTask['task_type']=='snippet'" [dataSource]="Snippets" [options]="options"
+          (selectionChanged)="onSelectValueChanged($event)" [selectedItemValues]="[SelectedTask['snippetid']]"
+          (searchChanged)="onSnippetsValueChanged($event)" class="styled"></ngx-super-select>
+      </c-input-group>
+
+      <div [cFormFloating]="true" class="mb-3">
+        <input cFormControl id="floatingInput" placeholder="SelectedTask['name']" [(ngModel)]="SelectedTask['cron']" />
+        <label cLabel for="floatingInput">cron</label>
+      </div>
+
+      <c-input-group class="mb-3">
+        <label cInputGroupText for="inputGroupSelect01">
+          Member type
+        </label>
+        <select cSelect id="inputGroupSelect01" (change)="form_changed()" [(ngModel)]="SelectedTask['selection_type']">
+          <option value="devices">Devices</option>
+          <option value="groups">Groups</option>
+        </select>
+      </c-input-group>
+
+      <h5>Members :</h5>
+      <gui-grid [autoResizeWidth]="true" [source]="SelectedMembers" [columnMenu]="columnMenu" [sorting]="sorting"
+        [infoPanel]="infoPanel" [rowSelection]="rowSelection" [autoResizeWidth]=true [paging]="paging">
+        <gui-grid-column header="Name" field="name">
+          <ng-template let-value="item.name" let-item="item" let-index="index">
+            &nbsp; {{value}} </ng-template>
+        </gui-grid-column>
+        <gui-grid-column *ngIf="SelectedTask['selection_type']=='devices'" header="MAC" field="mac">
+          <ng-template let-value="item.mac" let-item="item" let-index="index">
+            {{value}}
+          </ng-template>
+        </gui-grid-column>
+        <gui-grid-column header="Actions" width="120" field="action">
+          <ng-template let-value="item.id" let-item="item" let-index="index">
+            <button cButton color="danger" size="sm" (click)="remove_member(item)"><i
+                class="fa-regular fa-trash-can"></i></button>
+          </ng-template>
+        </gui-grid-column>
+      </gui-grid>
+      <hr />
+      <button cButton color="primary" (click)="show_new_member_form()">+ Add new Members</button>
+      <!--
   <c-input-group class="mb-3">
     <ngx-super-select
     [dataSource]="Members"
@@ -143,126 +212,134 @@
     </ngx-super-select>
   </c-input-group> -->
 
-  <!-- <ng-container  *ngIf="SelectedMembers.length>0 && EditTaskModalVisible">
+      <!-- <ng-container  *ngIf="SelectedMembers.length>0 && EditTaskModalVisible">
     <c-badge class="mx-1" *ngFor="let id of splitids(SelectedTaskItems)" color="dark">{{get_member_by_id(id).name}}</c-badge>
   </ng-container> -->
-  <!-- 
+      <!-- 
   <c-input-group class="mb-3">
     <cron-editor #cronEditorDemo1 [(ngModel)]="SelectedTask['cron']"  [options]="cronOptions">Cron here...</cron-editor>
   </c-input-group> 
   -->
 
-  </c-modal-body>
-  <c-modal-footer>
-    <button *ngIf="SelectedTask['action']=='add'" (click)="submit('add')" cButton color="primary">Add</button>
-    <button *ngIf="SelectedTask['action']=='edit'" (click)="submit('edit')"  cButton color="primary">save</button>
-    <button [cModalToggle]="EditTaskModal.id" cButton color="secondary">
-      Close
-    </button>
-  </c-modal-footer>
-</c-modal>
+    </c-modal-body>
+    <c-modal-footer>
+      <button *ngIf="SelectedTask['action']=='add'" (click)="submit('add')" cButton color="primary">Add</button>
+      <button *ngIf="SelectedTask['action']=='edit'" (click)="submit('edit')" cButton color="primary">save</button>
+      <button [cModalToggle]="EditTaskModal.id" cButton color="secondary">
+        Close
+      </button>
+    </c-modal-footer>
+  </c-modal>
 
 
-<c-modal #NewMemberModal backdrop="static" size="lg" [(visible)]="NewMemberModalVisible" id="NewMemberModal">
-  <c-modal-header>
-    <h5 cModalTitle>Editing Group </h5>
-    <button (click)="NewMemberModalVisible=!NewMemberModalVisible" cButtonClose></button>
-  </c-modal-header>
-  <c-modal-body>
-    <c-input-group class="mb-3">
-      <h5>Group Members :</h5>
-      <gui-grid [autoResizeWidth]="true"  *ngIf="NewMemberModalVisible" [searching]="searching" [source]="availbleMembers" [columnMenu]="columnMenu" [sorting]="sorting"
-        [infoPanel]="infoPanel" [rowSelection]="rowSelection" (selectedRows)="onSelectedRowsNewMembers($event)" [autoResizeWidth]=true [paging]="paging" >
-        <gui-grid-column header="Member Name" field="name">
-          <ng-template let-value="item.name" let-item="item" let-index="index">
-            &nbsp; {{value}} </ng-template>
-        </gui-grid-column>
-        <gui-grid-column *ngIf="SelectedTask['selection_type']=='devices'" header="IP Address" field="ip">
-          <ng-template let-value="item.ip" let-item="item" let-index="index">
-            {{value}}
-          </ng-template>
-        </gui-grid-column>
-        <gui-grid-column *ngIf="SelectedTask['selection_type']=='devices'" header="MAC Address" field="mac">
-          <ng-template let-value="item.mac" let-item="item" let-index="index">
-            {{value}}
-          </ng-template>
-        </gui-grid-column>
-      </gui-grid>
-      <br/>
-    </c-input-group>
-    <hr />
-  </c-modal-body>
+  <c-modal #NewMemberModal backdrop="static" size="lg" [(visible)]="NewMemberModalVisible" id="NewMemberModal">
+    <c-modal-header>
+      <h5 cModalTitle>Editing Group </h5>
+      <button (click)="NewMemberModalVisible=!NewMemberModalVisible" cButtonClose></button>
+    </c-modal-header>
+    <c-modal-body>
+      <c-input-group class="mb-3">
+        <h5>Group Members :</h5>
+        <gui-grid [autoResizeWidth]="true" *ngIf="NewMemberModalVisible" [searching]="searching"
+          [source]="availbleMembers" [columnMenu]="columnMenu" [sorting]="sorting" [infoPanel]="infoPanel"
+          [rowSelection]="rowSelection" (selectedRows)="onSelectedRowsNewMembers($event)" [autoResizeWidth]=true
+          [paging]="paging">
+          <gui-grid-column header="Member Name" field="name">
+            <ng-template let-value="item.name" let-item="item" let-index="index">
+              &nbsp; {{value}} </ng-template>
+          </gui-grid-column>
+          <gui-grid-column *ngIf="SelectedTask['selection_type']=='devices'" header="IP Address" field="ip">
+            <ng-template let-value="item.ip" let-item="item" let-index="index">
+              {{value}}
+            </ng-template>
+          </gui-grid-column>
+          <gui-grid-column *ngIf="SelectedTask['selection_type']=='devices'" header="MAC Address" field="mac">
+            <ng-template let-value="item.mac" let-item="item" let-index="index">
+              {{value}}
+            </ng-template>
+          </gui-grid-column>
+        </gui-grid>
+        <br />
+      </c-input-group>
+      <hr />
+    </c-modal-body>
 
-  <c-modal-footer>
-    <button *ngIf="NewMemberRows.length!= 0" (click)="add_new_members()" cButton color="primary">Add {{ NewMemberRows.length }}</button>
-    <button (click)="NewMemberModalVisible=!NewMemberModalVisible" cButton color="secondary">
-      Close
-    </button>
-  </c-modal-footer>
-</c-modal>
-
-
-<c-modal #DeleteConfirmModal backdrop="static"  [(visible)]="DeleteConfirmModalVisible"
-  id="DeleteConfirmModal">
-  <c-modal-header>
-    <h5 cModalTitle>Confirm delete  {{ SelectedTask['name'] }}</h5>
-    <button [cModalToggle]="DeleteConfirmModal.id" cButtonClose></button>
-  </c-modal-header>
-  <c-modal-body>
-    Are you sure that You want to delete following task ?
-    <br/>
-    <br/>
-    <table style="width: 100%;">
-    <tr>
-    <td><b>Taks name : </b></td><td>{{ SelectedTask['name'] }}</td>
-    </tr>
-    <tr>
-    <td><b>Description : </b></td><td>{{ SelectedTask['description'] }}</td>
-    </tr>  
-    <tr>
-    <td><b>Cron exec : </b></td><td>{{ SelectedTask['desc_cron'] }}</td>
-    </tr>  
-    </table>
-  </c-modal-body>
-  <c-modal-footer>
-    <button (click)="confirm_delete('',true)" cButton color="danger">
-      Yes,Delete!
-    </button>
-    <button [cModalToggle]="DeleteConfirmModal.id" cButton color="info">
-      Close
-    </button>
-  </c-modal-footer>
-</c-modal>
+    <c-modal-footer>
+      <button *ngIf="NewMemberRows.length!= 0" (click)="add_new_members()" cButton color="primary">Add {{
+        NewMemberRows.length }}</button>
+      <button (click)="NewMemberModalVisible=!NewMemberModalVisible" cButton color="secondary">
+        Close
+      </button>
+    </c-modal-footer>
+  </c-modal>
 
 
+  <c-modal #DeleteConfirmModal backdrop="static" [(visible)]="DeleteConfirmModalVisible" id="DeleteConfirmModal">
+    <c-modal-header>
+      <h5 cModalTitle>Confirm delete {{ SelectedTask['name'] }}</h5>
+      <button [cModalToggle]="DeleteConfirmModal.id" cButtonClose></button>
+    </c-modal-header>
+    <c-modal-body>
+      Are you sure that You want to delete following task ?
+      <br />
+      <br />
+      <table style="width: 100%;">
+        <tr>
+          <td><b>Taks name : </b></td>
+          <td>{{ SelectedTask['name'] }}</td>
+        </tr>
+        <tr>
+          <td><b>Description : </b></td>
+          <td>{{ SelectedTask['description'] }}</td>
+        </tr>
+        <tr>
+          <td><b>Cron exec : </b></td>
+          <td>{{ SelectedTask['desc_cron'] }}</td>
+        </tr>
+      </table>
+    </c-modal-body>
+    <c-modal-footer>
+      <button (click)="confirm_delete('',true)" cButton color="danger">
+        Yes,Delete!
+      </button>
+      <button [cModalToggle]="DeleteConfirmModal.id" cButton color="info">
+        Close
+      </button>
+    </c-modal-footer>
+  </c-modal>
 
-<c-modal #runConfirmModal backdrop="static"  [(visible)]="runConfirmModalVisible" id="runConfirmModal">
-  <c-modal-header>
-    <h6 cModalTitle>Confirm RUN  {{ SelectedTask['name'] }}</h6>
-    <button [cModalToggle]="runConfirmModal.id" cButtonClose></button>
-  </c-modal-header>
-  <c-modal-body>
-    Are you sure that You want to run following task ?
-    <br/>
-    <br/>
-    <table style="width: 100%;">
-    <tr>
-    <td><b>Taks name : </b></td><td>{{ SelectedTask['name'] }}</td>
-    </tr>
-    <tr>
-    <td><b>Description : </b></td><td>{{ SelectedTask['description'] }}</td>
-    </tr>  
-    <tr>
-    <td><b>Cron exec : </b></td><td>{{ SelectedTask['desc_cron'] }}</td>
-    </tr>  
-    </table>
-  </c-modal-body>
-  <c-modal-footer>
-    <button (click)="confirm_delete" cButton color="danger">
-      Yes,Run!
-    </button>
-    <button [cModalToggle]="runConfirmModal.id" cButton color="info">
-      Close
-    </button>
-  </c-modal-footer>
-</c-modal>
+
+
+  <c-modal #runConfirmModal backdrop="static" [(visible)]="runConfirmModalVisible" id="runConfirmModal">
+    <c-modal-header>
+      <h6 cModalTitle>Confirm RUN {{ SelectedTask['name'] }}</h6>
+      <button [cModalToggle]="runConfirmModal.id" cButtonClose></button>
+    </c-modal-header>
+    <c-modal-body>
+      Are you sure that You want to run following task ?
+      <br />
+      <br />
+      <table style="width: 100%;">
+        <tr>
+          <td><b>Taks name : </b></td>
+          <td>{{ SelectedTask['name'] }}</td>
+        </tr>
+        <tr>
+          <td><b>Description : </b></td>
+          <td>{{ SelectedTask['description'] }}</td>
+        </tr>
+        <tr>
+          <td><b>Cron exec : </b></td>
+          <td>{{ SelectedTask['desc_cron'] }}</td>
+        </tr>
+      </table>
+    </c-modal-body>
+    <c-modal-footer>
+      <button (click)="confirm_delete" cButton color="danger">
+        Yes,Run!
+      </button>
+      <button [cModalToggle]="runConfirmModal.id" cButton color="info">
+        Close
+      </button>
+    </c-modal-footer>
+  </c-modal>

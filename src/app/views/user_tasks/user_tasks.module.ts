@@ -1,6 +1,6 @@
 import { NgModule } from "@angular/core";
 import { CommonModule } from "@angular/common";
-import { FormsModule } from "@angular/forms";
+import { FormsModule,ReactiveFormsModule } from "@angular/forms";
 
 import {
   ButtonModule,
@@ -8,6 +8,7 @@ import {
   FormModule,
   GridModule,
   ModalModule,
+  ButtonGroupModule,
 } from "@coreui/angular";
 import { UserTasksRoutingModule } from "./user_tasks-routing.module";
 import { UserTasksComponent } from "./user_tasks.component";
@@ -23,8 +24,10 @@ import { NgxSuperSelectModule} from "ngx-super-select";
     GridModule,
     FormModule,
     ButtonModule,
+    ButtonGroupModule,
     GuiGridModule,
     ModalModule,
+    ReactiveFormsModule,
     FormsModule,
     NgxSuperSelectModule,
   ],
