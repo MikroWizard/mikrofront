@@ -1,4 +1,4 @@
-import { Component, OnInit } from "@angular/core";
+import { Component, OnDestroy, OnInit } from "@angular/core";
 import { Router, ActivatedRoute } from "@angular/router";
 import { dataProvider } from "../../providers/mikrowizard/data";
 import { loginChecker } from "../../providers/login_checker";
@@ -27,14 +27,20 @@ interface IUser {
   color: string;
 }
 
+type radiodata = {
+  [key: string]: any;
+};
+
 @Component({
   templateUrl: "device.component.html",
   styleUrls: ["device.component.scss"],
 })
-export class DeviceComponent implements OnInit {
+export class DeviceComponent implements OnInit, OnDestroy {
   public uid: number;
   public uname: string;
   public tz: string;
+  public ispro: boolean = false;
+
   constructor(
     private data_provider: dataProvider,
     private route: ActivatedRoute,
@@ -51,6 +57,7 @@ export class DeviceComponent implements OnInit {
       _self.uid = res.uid;
       _self.uname = res.name;
       _self.tz = res.tz;
+      _self.ispro = res.ISPRO;
       const userId = _self.uid;
 
       if (res.role != "admin") {
@@ -66,17 +73,20 @@ export class DeviceComponent implements OnInit {
   }
   public devdata: any;
   public devsensors: any;
+  public radio_devsensors: radiodata;
   public columns: Array<GuiColumn> = [];
   public loading: boolean = true;
+  public radio_loading: boolean = true;
   public InterfaceChartModalVisible: boolean = false;
   public rows: any = [];
   public Selectedrows: any;
   public devid: number = 0;
   public data_interval: any;
-  public delta: string = "5m";
+  public delta: string = "live";
   public total_type: string = "bps";
   public interface_rate: any = {};
   public options: any;
+  public is_radio: boolean = false;
   public sorting = {
     enabled: true,
     multiSorting: true,
@@ -95,7 +105,12 @@ export class DeviceComponent implements OnInit {
     sort: true,
     columnsManager: true,
   };
-
+  objectlen(object:any){
+    return Object.keys(object).length;
+  }
+  strangth_at_rate_extract(data:string){
+    return data.split(',');
+  }
   public infoPanel: GuiInfoPanel = {
     enabled: true,
     infoDialog: false,
@@ -365,17 +380,23 @@ export class DeviceComponent implements OnInit {
   logger(item: any) {
     console.dir(item);
   }
+  switch_total() {
+    this.total_type = this.total_type == "bps" ? "pps" : "bps";
+    this.updateData();
+  }
   updateData(): void {
     var _self = this;
     this.data_provider.get_dev_info(this.devid).then((res) => {
       _self.devdata = res;
       _self.interfaces = res.interfaces;
+      if ("is_radio" in res) _self.is_radio = res.is_radio;
       _self.data_provider
         .get_dev_sensors(_self.devid, _self.delta, _self.total_type)
         .then((res) => {
           _self.devsensors = res;
           _self.loading = false;
         });
+      if (_self.is_radio) _self.get_radio_data();
     });
   }
   checkitem(item: any) {
@@ -416,6 +437,18 @@ export class DeviceComponent implements OnInit {
       });
   }
 
+  get_radio_data() {
+    if(!this.ispro)
+      return;
+    var _self = this;
+    _self.data_provider
+    .get_dev_radio_sensors(_self.devid, _self.delta)
+    .then((res) => {
+      _self.radio_devsensors = res;
+      _self.radio_loading = false;
+    });
+  }
+
   initDeviceInfo(): void {
     var _self = this;
     clearInterval(this.data_interval);
@@ -423,15 +456,20 @@ export class DeviceComponent implements OnInit {
     this.data_interval = setInterval(() => {
       this.data_provider.get_dev_info(this.devid).then((res) => {
         _self.devdata = res;
-
+        if ("is_radio" in res) _self.is_radio = res.is_radio;
         _self.interfaces = res.interfaces;
         _self.data_provider
           .get_dev_sensors(_self.devid, _self.delta, _self.total_type)
           .then((res) => {
             _self.devsensors = res;
             _self.loading = false;
+            if (_self.is_radio) _self.get_radio_data();
           });
       });
-    }, 1000000);
+    }, 60000);
+  }
+
+  ngOnDestroy() {
+    clearInterval(this.data_interval);
   }
 }

@@ -9,17 +9,24 @@
     <c-card class="mb-1">
       <c-card-header>
         <c-row>
-          <c-col md="3">
-            <h3>{{devdata['name'] }}<small style="font-size: 50%;"> ( {{devdata['ip'] }} )</small></h3>
+          <c-col md="6" sm="12" style="display: flex;flex-direction: row;align-items: center;">
+            <h4 style="height: 100%;line-height: 170%;margin: 0;">{{devdata['name'] }}<small style="font-size: 50%;"> ( {{devdata['ip'] }} )</small></h4>
           </c-col>
-          <c-col md="9" class="justify-content-end" style="text-align: end;">
-            <c-button-group class="mb-2" aria-label="Upate interval" role="group">
-              <button cButton color="primary" (click)="delta='5m';updateData()" [active]="delta=='5m'">5 minute</button>
-              <button cButton color="primary" (click)="delta='1h';updateData()" [active]="delta=='1h'">Hourly</button>
-              <button cButton color="primary" (click)="delta='daily';updateData()"
+          <c-col md="6" sm="12" class="justify-content-end" style="display: flex;flex-direction: row;align-items: center;">
+            <c-button-group size="sm" aria-label="Upate interval" role="group">
+              <button cButton color="primary" size="sm" (click)="delta='5m';updateData()" [active]="delta=='5m'">5 minute</button>
+              <button cButton color="primary" size="sm" (click)="delta='1h';updateData()" [active]="delta=='1h'">Hourly</button>
+              <button cButton color="primary" size="sm" (click)="delta='daily';updateData()"
                 [active]="delta=='daily'">Daily</button>
               <button cButton color="primary" (click)="delta='live';updateData()" [active]="delta=='live'">Live</button>
             </c-button-group>
+            <c-form-check (click)="switch_total()" sizing="xl" class="mx-2" switch>
+              <input cFormCheckInput [checked]="total_type=='bps'" type="checkbox" />
+              <label cFormCheckLabel>
+                <span *ngIf="total_type=='bps'">Total bbs</span>
+                <span *ngIf="total_type!='bps'">Total pps</span>
+              </label>
+            </c-form-check>
           </c-col>
         </c-row>
 
@@ -38,25 +45,14 @@
       <c-card-body>
         <c-row style="flex-direction:row">
           <ng-container *ngFor="let item of devdata | keyvalue; index as i">
-            <!-- <c-col *ngIf="checkitem(item)" class="mb-2" >
-              <c-card color="dark" textColor="white" class="h-100 ">
-                <c-card-header  style="padding: 5px 0 2px 9px;text-transform: capitalize;">{{item.key}}</c-card-header>
-                <c-card-body class="bg-gradient"  style="padding:2px  0  2px 9px;">
-                <p cCardText>{{item.value}}</p>
-                </c-card-body>
-              </c-card> 
-          </c-col> -->
             <c-input-group *ngIf="checkitem(item)" class="mr-0 ml-0 mb-1"
               style="padding-right:unset;width: auto;flex: 1 1 auto;flex-flow:  nowrap;flex: unset;">
               <span
                 style="padding: 0.175rem 0.35rem;background-color:#4f5d73;text-transform: capitalize;color:#fff;font-size:0.7rem"
                 cInputGroupText>{{item.key}}</span>
-              <!-- <input cFormControl disabled style="font-size:0.8rem"   [value]="item.value"/> -->
               <span _ngcontent-ng-c666080582="" cinputgrouptext=""
                 style="padding: 0.175rem 0.35rem;color: rgba(44, 56, 74, 0.95);font-size: 0.7rem;background-color: #d8dbe0;border-color: #b1b7c1;"
                 class="input-group-text">{{ item.value }}</span>
-              <!-- <span style="background-color:#4f5d73;text-transform: capitalize;color:#fff;font-size:0.8rem" cInputGroupText >{{item.key}}</span> -->
-
             </c-input-group>
           </ng-container>
         </c-row>
@@ -71,7 +67,7 @@
       <c-card-body>
         <c-row style="flex-direction:row">
           <gui-grid [source]="interfaces" [columnMenu]="columnMenu" [sorting]="sorting" [infoPanel]="infoPanel"
-            [rowSelection]="rowSelection" [autoResizeWidth]=true>
+            [autoResizeWidth]=true>
             <gui-grid-column header="Name" field="name">
               <ng-template let-value="item.name" let-item="item" let-index="index">
 
@@ -134,7 +130,7 @@
                 {{value}}
               </ng-template>
             </gui-grid-column>
-            <gui-grid-column header="Actions" field="action" width="100" align="center">
+            <gui-grid-column header="Actions" field="action" width="60" align="center">
               <ng-template let-value="item.id" let-item="item" let-index="index">
                 <button cButton color="info" size="sm" (click)="show_interface_rate(item['default-name'])"
                   class="mx-1"><i class="fa-solid fa-chart-line"></i></button>
@@ -147,7 +143,82 @@
   </c-col>
 </c-row>
 
+<c-row *ngIf="is_radio && !radio_loading">
+  <c-col xs md="12" *ngFor="let raddata of radio_devsensors | keyvalue">
+    <c-card class="mb-1">
+      <c-card-header><h6>Radio data</h6></c-card-header>
+      <c-card-body>
+        <h6>{{raddata.key}}</h6>
+        <app-widgets-dropdown [devicedata]=raddata.value></app-widgets-dropdown>
+        <c-row>
+          <c-col md="3">
+            <table small stripedColumns cTable>
+              <tbody>
+            <ng-container *ngFor="let d of raddata.value['data'] | keyvalue ; let i=index">
+              <tr *ngIf="i<objectlen(raddata.value['data'])/4">
+                <th style="width: 30%;text-wrap: nowrap;">{{d.key}}</th>
+                <td scope="row">{{d.value}}</td>
+              </tr>
+            </ng-container>
+              </tbody>
+            </table>
+          </c-col>
+          <c-col md="3">
 
+          <table small stripedColumns cTable>
+            <tbody>
+          <ng-container *ngFor="let d of raddata.value['data'] | keyvalue ; let i=index">
+            <tr *ngIf="i>=objectlen(raddata.value['data'])/4 && i<(objectlen(raddata.value['data'])/4)*2">
+              <th style="width: 30%;text-wrap: nowrap;">{{d.key}}</th>
+              <td scope="row">{{d.value}}</td>
+            </tr>
+          </ng-container>
+            </tbody>
+          </table>
+        </c-col>
+        <c-col md="3">
+          <table small stripedColumns cTable>
+            <tbody>
+          <ng-container *ngFor="let d of raddata.value['data'] | keyvalue ; let i=index">
+            <tr *ngIf="i>=(objectlen(raddata.value['data'])/4)*2 && i<(objectlen(raddata.value['data'])/4)*3">
+              <th style="width: 30%;text-wrap: nowrap;">{{d.key}}</th>
+              <td scope="row">{{d.value}}</td>
+            </tr>
+          </ng-container>
+            </tbody>
+          </table>
+        </c-col>
+        <c-col md="3">
+          <table small stripedColumns cTable>
+            <tbody>
+          <ng-container *ngFor="let d of raddata.value['data'] | keyvalue ; let i=index">
+            <tr *ngIf="i>=(objectlen(raddata.value['data'])/4)*3">
+              <th>{{d.key}}</th>
+              <td scope="row">{{d.value}}</td>
+            </tr>
+          </ng-container>
+            </tbody>
+          </table>
+        </c-col>
+        </c-row>
+        <c-row *ngIf="raddata.value['strength-at-rates']">
+        <c-col>
+          <table small borderless cTable>
+            <tbody>
+                <tr>
+                  <th style="text-wrap: nowrap;vertical-align: middle;padding: 5px;border-radius: 5px;background-color: #3399ff36;">Strength at rates</th>
+                  <td scope="row">
+                    <c-badge color="info" style="font-size: 0.85em;" class="mx-1" *ngFor="let st of strangth_at_rate_extract(raddata.value['strength-at-rates'])">{{st}}</c-badge>
+                  </td>
+                </tr>
+             </tbody>
+          </table>
+        </c-col>
+        </c-row>
+      </c-card-body>
+    </c-card>
+  </c-col>
+</c-row>
 
 <c-modal #staticBackdropModal backdrop="static" size="xl" [visible]="InterfaceChartModalVisible"
   id="InterfaceChartModal">

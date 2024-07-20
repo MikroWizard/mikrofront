@@ -53,23 +53,18 @@ export class WidgetsDropdownComponent implements OnInit, AfterContentInit {
     'danger',
     'warning',
     'info',
-    'light',
     'dark',
     'primary',
     'success',
     'danger',
     'warning',
     'info',
-    'light',
     'dark',
     'primary',
     'success',
     'danger',
     'warning',
     'info',
-    'light',
-    'dark',
-    'light',
     'dark',
     'primary',
     'success',
@@ -177,7 +172,6 @@ export class WidgetsDropdownComponent implements OnInit, AfterContentInit {
       mynumber /= 1024;
       unitIndex++;
     }
-    console.dir(mynumber)
     switch (unit) {
       case 'rx':
         return  mynumber.toFixed(3) + ' ' + units[unitIndex];
@@ -190,9 +184,21 @@ export class WidgetsDropdownComponent implements OnInit, AfterContentInit {
         break;
     }
   }
-
+  check_options(sensor:string){
+    if(sensor.indexOf('total')>-1)
+      return true;
+    else
+      return false;
+  }
   show_number(sensor:string,data:any){
     if(sensor=='rxp/txp-total'){
+      let mynumber=data[sensor]["datasets"][0]["data"][data[sensor]["datasets"][0]["data"].length-1];
+      let mynumber1=data[sensor]["datasets"][1]["data"][data[sensor]["datasets"][1]["data"].length-1];
+      let res1=this.convert_bw_human(mynumber,data[sensor]["datasets"][0]['unit']);
+      let res2=this.convert_bw_human(mynumber1,data[sensor]["datasets"][1]['unit']);
+      return res1 + " / " + res2;
+    }
+   else if(sensor=='rx/tx-total'){
       let mynumber=data[sensor]["datasets"][0]["data"][data[sensor]["datasets"][0]["data"].length-1];
       let mynumber1=data[sensor]["datasets"][1]["data"][data[sensor]["datasets"][1]["data"].length-1];
       let res1=this.convert_bw_human(mynumber,data[sensor]["datasets"][0]['unit']);
@@ -284,7 +290,6 @@ export class WidgetsDropdownComponent implements OnInit, AfterContentInit {
                           res /= 1024;
                           unitIndex++;
                         }
-                        console.dir(res)
                         switch (context.dataset.unit) {
                           case 'rx':
                             return "rx/s :" + res.toFixed(3) + ' ' + units[unitIndex];
@@ -399,7 +404,6 @@ export class ChartSample implements AfterViewInit {
       let { datasets, labels } = { ...this.data };
       // @ts-ignore
       const before = this.chartComponent?.chart?.data.datasets.length;
-      console.log('before', before);
       // console.log('datasets, labels', datasets, labels)
       // @ts-ignore
       // this.data = data()
@@ -416,7 +420,6 @@ export class ChartSample implements AfterViewInit {
       // @ts-ignore
       setTimeout(() => {
         const after = this.chartComponent?.chart?.data.datasets.length;
-        console.log('after', after);
       });
     }, 5000);
   }

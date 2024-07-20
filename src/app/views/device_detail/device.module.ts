@@ -11,6 +11,9 @@ import {
   NavbarModule,
   AlertModule,
   ModalModule,
+  TableModule, 
+  UtilitiesModule,
+  BadgeModule
 } from "@coreui/angular";
 import { ChartjsModule } from "@coreui/angular-chartjs";
 
@@ -36,6 +39,9 @@ import { WidgetsModule } from "../widgets/widgets.module";
     GuiGridModule,
     NavbarModule,
     ModalModule,
+    TableModule, 
+    UtilitiesModule,
+    BadgeModule
   ],
   declarations: [DeviceComponent],
 })
