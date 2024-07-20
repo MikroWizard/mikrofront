@@ -85,7 +85,7 @@ export class AccComponent implements OnInit {
     enabled: true,
     template: (item) => {
       return `
-			<div class='log-detail'>
+			<div class='log-detail' style="width: 355px;">
 				<h1>${item.name}</h1>
 				<small>${item.devip}</small>
 				<table>

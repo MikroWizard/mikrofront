@@ -28,6 +28,7 @@ import { TimeZones } from "./timezones-data";
   styleUrls: ["settings.component.scss"],
   encapsulation: ViewEncapsulation.None,
 })
+
 export class SettingsComponent implements OnInit {
   public uid: number;
   public uname: string;
@@ -65,6 +66,7 @@ export class SettingsComponent implements OnInit {
       return value !== undefined && value !== null && value !== "";
     }
   }
+
   @ViewChildren(ToasterComponent) viewChildren!: QueryList<ToasterComponent>;
 
   public source: Array<any> = [];

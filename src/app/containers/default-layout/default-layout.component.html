@@ -37,9 +37,9 @@
 <!--main-->
 <div class="wrapper d-flex flex-column min-vh-100 bg-light dark:bg-transparent">
   <!--app-header-->
-  <app-default-header (UserModalEvent)="show_user_modal()" class="mb-4 d-print-none header header-sticky" position="sticky" sidebarId="sidebar" />
+  <app-default-header (UserModalEvent)="show_user_modal()" class="mb-2 d-print-none header header-sticky" position="sticky" sidebarId="sidebar" />
   <!--app-body-->
-  <div class="body flex-grow-1 px-3">
+  <div class="main-container body flex-grow-1 px-3" style="display: flex;">
     <c-container breakpoint="fluid" class="h-auto">
       <router-outlet />
     </c-container>

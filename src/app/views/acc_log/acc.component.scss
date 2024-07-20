@@ -44,6 +44,17 @@ border: 1px solid #dfdfdf!important;
 padding: 1rem!important;
 }
 
+.gui-row-detail > div{
+  height:100%;
+}
+.gui-row-detail .log-detail{
+  height:100%;
+}
+
+.gui-structure{
+  min-height: 550px;
+}
+
 .log-detail code{
   padding:5px!important;
   display:block;

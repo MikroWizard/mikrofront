@@ -92,19 +92,6 @@ pre {
     background: transparent!important;
     padding: 0!important;
   }
-  table,
-  tbody,
-  tr,
-  td {
-    background: inherit!important;
-  }
-  
-  table {
-    border-collapse: separate!important;
-    border-spacing: 0!important;
-    background: inherit!important;
-  }
-  
   /* for block of numbers */
   td.hljs-ln-numbers {
     position: sticky!important;
@@ -123,3 +110,7 @@ pre {
     padding-left: 10px !important;
   }
   
+
+  .gui-structure, .gui-structure *{
+    font-size: inherit!important;
+  }

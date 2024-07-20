@@ -113,10 +113,13 @@ export class DefaultLayoutComponent implements OnInit {
       _self.navItems=_self.navItems.filter((item:any) => {
         if (item.attributes){
           if('free' in item.attributes && _self.ispro){
-            //do nothing
+            return ;
           }
           else if('pro' in item.attributes && _self.ispro){
             return item;
+          }
+          else if('pro' in item.attributes && !_self.ispro){
+            return ;
           }
           else
             return item;

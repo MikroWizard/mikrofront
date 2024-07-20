@@ -86,9 +86,9 @@ export class DevLogsComponent implements OnInit {
   public campaignOneend: any;
   rowDetail: GuiRowDetail = {
     enabled: true,
-    template: (item) => {
+    template: (item) => { 
       return `
-			<div class='log-detail' style="color:#fff;background-color:${(() => {
+			<div class='log-detail' style="width: 355px;color:#fff;background-color:${(() => {
         if (item.level == "Critical") return "#e55353";
         else if (item.level == "Warning") return "#f9b115";
         else item.level == "Info";
@@ -223,6 +223,12 @@ export class DevLogsComponent implements OnInit {
           _self.tz,
           "yyyy-MM-dd HH:mm:ss XXX"
         );
+        if (d.fixtime)
+          d.fixtime = formatInTimeZone(
+            d.fixtime.split(".")[0] + ".000Z",
+            _self.tz,
+            "yyyy-MM-dd HH:mm:ss XXX"
+          );
         index += 1;
         return d;
       });

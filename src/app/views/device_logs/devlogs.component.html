@@ -119,9 +119,14 @@
                 Fixed</c-badge>
             </ng-template>
           </gui-grid-column>
-          <gui-grid-column header="eventtime" width='200' field="eventtime">
+          <gui-grid-column header="eventtime" width='220' field="eventtime">
             <ng-template let-value="item.eventtime" let-item="item" let-index="index">
-              {{ value }}
+              <div *ngIf="item.fixtime" class="fixed_time"><span><c-badge *ngIf="item.status==true" color="danger" style="font-size: 0.65em!important;padding: 3px 5px;" size="sm"
+                shape="rounded-pill">Event</c-badge> {{value}}</span><span>
+                <c-badge *ngIf="item.status==true" color="success" style="font-size: 0.65em!important;padding: 3px 5px;" size="sm"
+                  shape="rounded-pill">Fixed</c-badge> {{item.fixtime}}</span>
+              </div>
+              <div *ngIf="!item.fixtime">  {{ value }}</div>
             </ng-template>
           </gui-grid-column>
           <gui-grid-column header="Device" width='200' field="name">

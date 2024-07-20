@@ -81,7 +81,7 @@ export class SyslogComponent implements OnInit {
     enabled: true,
     template: (item) => {
       return `
-			<div class='log-detail' style="color:#fff;background-color:#3399ff">
+			<div class='log-detail' style="width: 355px;color:#fff;background-color:#3399ff">
 			<h2>System Log :</h2>
 			<table>
 				<tr>

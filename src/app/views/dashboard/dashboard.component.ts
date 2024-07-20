@@ -5,10 +5,10 @@ import { loginChecker } from "../../providers/login_checker";
 import { Router } from "@angular/router";
 import { formatInTimeZone } from "date-fns-tz";
 
-
 @Component({
   templateUrl: "dashboard.component.html",
 })
+
 export class DashboardComponent implements OnInit {
   public uid: number;
   public uname: string;

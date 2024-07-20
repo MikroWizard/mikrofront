@@ -120,12 +120,12 @@
         </form>
       </c-col>
     </c-row>
-    <c-chart [data]="chart_data" [options]="options" [height]="200" type="line">
+    <c-chart [data]="chart_data" [options]="options" [height]="250" type="line">
     </c-chart>
   </c-card-body>
 </c-card>
 <c-row>
-  <c-col xl="6" *ngIf="stats" lg="12" class="h-100">
+  <c-col xl="6" *ngIf="stats" lg="12" class="h-100" style="height: 160px!important;">
     <c-widget-stat-b [title]="stats['version']" class="mb-1 h-100" value="Version">
       <div class="my-1">
         <code style="padding: 0!important;">Serial:</code> <small
@@ -146,7 +146,7 @@
     </c-widget-stat-b>
   </c-col>
 
-  <c-col xl="6" lg="12" class="h-100">
+  <c-col xl="6" lg="12" class="h-100" style="height: 160px!important;">
     <c-card class="mb-1 p-1 h-100" *ngIf="stats">
       <c-carousel [dark]="true" [animate]="false" [wrap]="false" [interval]="1000000">
         <c-carousel-indicators></c-carousel-indicators>
