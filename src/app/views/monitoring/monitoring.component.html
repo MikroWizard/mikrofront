@@ -1,0 +1,204 @@
+<c-row style="height: calc(100vh - 10rem);" (click)="disableContextMenu()" >
+  <c-col xs="3" style="height:100%;">
+    <c-card style="height:100%">
+      <c-card-header>
+        <c-row><c-col md="10">Devices</c-col>
+          <c-col style="text-align: right;" md="2">
+            <i class="fa-regular fa-circle-question" style="cursor: pointer;" [cTooltip]="iconstooltip"></i>
+          </c-col></c-row>
+      </c-card-header>
+      <c-card-body *ngIf="devices" style="padding: 4px;">
+        <ng-scrollbar pointerEventsMethod="scrollbar">
+          <ul cListGroup oncontextmenu="return false;" flush>
+            <li cListGroupItem (click)="filter_device(0)" style="cursor: pointer;padding: 5px 8px;"
+              class="d-flex justify-content-between align-items-center">
+              <div><i style="color:rgb(9, 44, 9)" class="fa-solid fa-hard-drive"></i>
+                | All Devices
+              </div>
+              <div class="d-flex"
+                style="min-width: 135px;border-left: 1px solid #ccc;height: 100%;/* text-align: right; */display: flex;flex-direction: row-reverse;">
+                <c-badge *ngIf="CCount" color="danger" style="margin: 0 0 0 1px;" size="sm"
+                  shape="rounded-pill">{{CCount}}
+                  Critical</c-badge>
+                <c-badge *ngIf="ECount" color="danger" size="sm"
+                  style="margin: 0 0 0 1px;background-color: #f58c8c !important;" shape="rounded-pill">{{ECount}}
+                  Error</c-badge>
+                <c-badge *ngIf="WCount" color="warning" size="sm" style="margin: 0 0 0 1px;"
+                  shape="rounded-pill">{{WCount}}
+                  Warning</c-badge>
+              </div>
+            </li>
+            <li *ngFor="let x of devices" cListGroupItem style="cursor: pointer;padding: 5px 8px;"
+              (click)="filter_device(x)" (contextmenu)="onrightClick($event,x,true)" class="d-flex justify-content-between align-items-center"
+              [ngStyle]="{'background-color':(selected_devid==x.devid)? 'rgb(239 239 239)' : false}">
+              <div>
+                <i *ngIf="x.data" style="color:red;--fa-animation-duration: 2s;" class="fa-solid  fa-beat"
+                  [class.fa-hard-drive]="x.router_type=='router'" [class.fa-satellite-dish]="x.router_type=='bridge'"
+                  [class.fa-tower-cell]="x.router_type=='ap-bridge' || x.router_type=='wds-slave'"
+                  [class.fa-house-signal]="x.router_type=='station'"
+                  [class.fa-tower-broadcast]="x.router_type=='special'"></i>
+                <i *ngIf="!x.data" style="color:green" class="fa-solid " [class.fa-hard-drive]="x.router_type=='router'"
+                  [class.fa-satellite-dish]="x.router_type=='bridge'"
+                  [class.fa-tower-cell]="x.router_type=='ap-bridge' || x.router_type=='wds-slave'"
+                  [class.fa-house-signal]="x.router_type=='station'"
+                  [class.fa-tower-broadcast]="x.router_type=='special'"></i>
+                | {{x.name}}
+              </div>
+              <div class="d-flex"
+                style="min-width: 135px;border-left: 1px solid #ccc;height: 100%;display: flex;flex-direction: row-reverse;">
+                <c-badge *ngIf="x.CCount" color="danger" style="margin: 0 0 0 1px;" size="sm"
+                  shape="rounded-pill">{{x.CCount}}
+                  Critical</c-badge>
+                <c-badge *ngIf="x.ECount" color="danger" size="sm" style="margin: 0 0 0 1px;background-color:orangered"
+                  shape="rounded-pill">{{x.ECount}} Error</c-badge>
+                <c-badge *ngIf="x.WCount" color="warning" size="sm" style="margin: 0 0 0 1px;"
+                  shape="rounded-pill">{{x.WCount}}
+                  Warning</c-badge>
+              </div>
+            </li>
+          </ul>
+        </ng-scrollbar>
+      </c-card-body>
+    </c-card>
+  </c-col>
+  <c-col style="padding-left: 0;" xs="9" (click)="disableContextMenu()">
+    <c-card style="height:60%">
+      <c-card-header><c-row><c-col md="10">Alerts past 24 hours</c-col><c-col style="text-align: right;" md="2">
+            <c-badge color="info" style="cursor: pointer;font-size: 0.85em;" (click)="reload_data()"><i
+                class="fa-solid fa-arrows-rotate"></i>reload</c-badge>
+            <c-badge color="primary" style="font-size: 0.85em;" class="mx-1"> <i
+                class="fa-solid fa-clock-rotate-left mx-1"></i>{{display}}</c-badge></c-col></c-row></c-card-header>
+      <c-card-body style="padding: 4px;">
+        <ng-scrollbar #scrollable="ngScrollbar">
+
+          <table class="alarms24" small bordered responsive hover style="margin-bottom:0;white-space: nowrap;" cTable>
+            <thead>
+              <tr style="position: sticky;top: -1px;background: #fff;">
+                <th scope="col">#</th>
+                <th scope="col">Level</th>
+                <th scope="col">Name</th>
+                <th scope="col">IP</th>
+                <th scope="col">fixed/event time</th>
+                <th scope="col">event</th>
+                <th scope="col">type</th>
+                <th scope="col">source</th>
+                <th scope="col">comment</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- {
+            "id": 2,
+            "mac": "6C:3B:6B:86:66:5B",
+          } -->
+              <tr *ngFor="let item of eventsall" style="vertical-align: middle" [cTableColor]="set_table_color(item)">
+                <th [style.background-color]="((item.level=='Critical'  && item.status==false)? '#f58c8c' : false)">
+                  {{item.index}}</th>
+                <th [style.background-color]="((item.level=='Critical' && item.status==false) ? '#f58c8c' : false)">
+                  {{item.level}}
+                </th>
+                <th [style.background-color]="((item.level=='Critical'  && item.status==false)? '#f58c8c' : false)">
+                  {{item.name}}</th>
+                <th [style.background-color]="((item.level=='Critical'  && item.status==false)? '#f58c8c' : false)">
+                  {{item.devip}}</th>
+                <th [class.fixed_time]="item.fixtime"
+                  [style.background-color]="((item.level=='Critical'  && item.status==false)? '#f58c8c' : false)">
+                  <div *ngIf="item.fixtime" class="fixed_time"><span><c-badge *ngIf="item.status==true" color="danger" style="margin: 0;" size="sm"
+                    shape="rounded-pill">Event</c-badge> {{item.time}}</span><span>
+                    <c-badge *ngIf="item.status==true" color="success" style="margin: 0;" size="sm"
+                      shape="rounded-pill">Fixed</c-badge> {{item.fixtime}}</span>
+                  </div>
+                  <span *ngIf="!item.fixtime">{{item.time}}</span>
+                </th>
+                <th [style.background-color]="((item.level=='Critical'  && item.status==false)? '#f58c8c' : false)">
+                  {{item.detail}}</th>
+                <th [style.background-color]="((item.level=='Critical'  && item.status==false)? '#f58c8c' : false)">
+                  {{item.eventtype}}</th>
+                <th [style.background-color]="((item.level=='Critical'  && item.status==false)? '#f58c8c' : false)">
+                  {{item.src}}</th>
+                <th [style.background-color]="((item.level=='Critical'  && item.status==false)? '#f58c8c' : false)">
+                  {{item.comment}}</th>
+              </tr>
+            </tbody>
+          </table>
+        </ng-scrollbar>
+      </c-card-body>
+    </c-card>
+    <c-card style="height:40%">
+      <c-card-header>All Active Alerts</c-card-header>
+      <c-card-body style="padding: 4px;">
+        <ng-scrollbar #scrollable2="ngScrollbar">
+          <table small bordered responsive hover style="margin-bottom:0" cTable oncontextmenu="return false;">
+            <thead>
+              <tr style="position: sticky;top: -1px;background: #fff;">
+                <th scope="col">#</th>
+                <th scope="col">Level</th>
+                <th scope="col">Name</th>
+                <th scope="col">IP</th>
+                <th scope="col">time</th>
+                <th scope="col">event</th>
+                <th scope="col">type</th>
+                <th scope="col">source</th>
+                <th scope="col">comment</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of eventUnfixedsall" (contextmenu)="onrightClick($event,item)"
+                [cTableColor]="set_table_color(item)">
+                <th [style.background-color]="((item.level=='Critical'  && item.status==false)? '#f58c8c' : false)">
+                  {{item.index}}</th>
+                <th [style.background-color]="((item.level=='Critical'  && item.status==false)? '#f58c8c' : false)">
+                  {{item.level}}</th>
+                <th [style.background-color]="((item.level=='Critical'  && item.status==false)? '#f58c8c' : false)">
+                  {{item.name}}</th>
+                <th [style.background-color]="((item.level=='Critical'  && item.status==false)? '#f58c8c' : false)">
+                  {{item.devip}}</th>
+                <th [style.background-color]="((item.level=='Critical'  && item.status==false)? '#f58c8c' : false)">
+                  {{item.time}}</th>
+                <th [style.background-color]="((item.level=='Critical'  && item.status==false)? '#f58c8c' : false)">
+                  {{item.detail}}</th>
+                <th [style.background-color]="((item.level=='Critical'  && item.status==false)? '#f58c8c' : false)">
+                  {{item.eventtype}}</th>
+                <th [style.background-color]="((item.level=='Critical'  && item.status==false)? '#f58c8c' : false)">
+                  {{item.src}}</th>
+                <th [style.background-color]="((item.level=='Critical'  && item.status==false)? '#f58c8c' : false)">
+                  {{item.comment}}</th>
+              </tr>
+            </tbody>
+          </table>
+        </ng-scrollbar>
+      </c-card-body>
+    </c-card>
+  </c-col>
+</c-row>
+<div *ngIf="contextmenu">
+  <div class="contextmenu" [ngStyle]="{'left.px': contextmenuX, 'top.px': contextmenuY}">
+    <c-card style="padding: 1px;">
+      <small
+        [style.background-color]="((contexItem.level=='Critical')? '#e55353' : ((contexItem.level=='Error') ? '#f58c8c' : '#f9b115'))"
+        style="text-align: center;font-weight: bold;padding: 5px 3px;color: #fff;">{{contexItem.level}} :
+        {{contexItem.name}} ({{contexItem.devip}})</small>
+      <button cButton (click)="fix_event()" size="sm" shape="rounded-0" color="light" style="padding: 0px 10px;">Mark as
+        Fixed</button>
+    </c-card>
+  </div>
+</div>
+
+<div *ngIf="contextmainmenu">
+  <div class="contextmenu" [ngStyle]="{'left.px': contextmenuX, 'top.px': contextmenuY}">
+    <c-card style="padding: 1px;">
+      <small style="text-align: center;font-weight: bold;color: #fff;background-color: #ccc;font-size: 100%;">Device Menu</small>
+      <button cButton (click)="go_device()" size="sm" shape="rounded-0" color="light" style="padding: 0px 10px;font-size: 0.7rem;">Device detail</button>
+      <button cButton (click)="go_logs()" size="sm" shape="rounded-0" color="light" style="padding: 0px 10px;font-size: 0.7rem;">Device detail</button>
+    </c-card>
+  </div>
+</div>
+
+<ng-template #iconstooltip>
+  <div style="text-align:left">
+    <i style="color:#fff" class="fa-solid fa-hard-drive"></i> : routers<br>
+    <i style="color:#fff" class="fa-solid fa-satellite-dish"></i> : Bridge<br>
+    <i style="color:#fff" class="fa-solid fa-tower-cell"></i> : AP Bridge<br>
+    <i style="color:#fff" class="fa-solid fa-house-signal"></i> : Station<br>
+    <i style="color:#fff" class="fa-solid fa-tower-broadcast"></i> : special Wireless
+  </div>
+</ng-template>

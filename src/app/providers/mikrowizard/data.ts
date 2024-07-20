@@ -77,7 +77,30 @@ export class dataProvider {
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/dashboard/stats", data);
     }
+    monitoring_devices_events(){
+  
+        return this.MikroWizardRPC.sendJsonRequest("/api/monitoring/devs/get", {});
+    }
 
+    monitoring_events_fix(event_id:number){
+        var data={
+            'event_id':event_id
+        }
+        return this.MikroWizardRPC.sendJsonRequest("/api/monitoring/events/fix", data);
+    }
+  
+    monitoring_all_events(devid:number){
+        var data={
+            'devid':devid
+        }
+        return this.MikroWizardRPC.sendJsonRequest("/api/monitoring/events/get", data);
+    }
+    monitoring_unfixed_events(devid:number){
+        var data={
+            'devid':devid
+        }
+        return this.MikroWizardRPC.sendJsonRequest("/api/monitoring/eventunfixed/get", data);
+    }
     dashboard_traffic(delta:string){
         var data={
             'delta':delta
@@ -137,7 +160,13 @@ export class dataProvider {
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/dev/sensors", data);
     }
-
+    get_dev_radio_sensors(id: number, delta:string="5m"){
+        var data={
+            'devid':id,
+            'delta':delta
+        }
+        return this.MikroWizardRPC.sendJsonRequest("/api/dev/radio/sensors", data);
+    }
     get_dev_ifstat(id: number,delta:string="5m",iface:string="ether1",type:string="bps") {
         var data={
             'devid':id,

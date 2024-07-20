@@ -8,6 +8,12 @@ export const navItems: INavData[] = [
   
   },
   {
+    name: 'Monitoring Wall',
+    url: '/monitoring',
+    icon:'fa-solid fa-tv',
+    attributes: { 'pro':true }
+  },
+  {
     title: true,
     name: 'Device Managment'
   },
@@ -153,6 +159,6 @@ export const navItems: INavData[] = [
     name: 'Buy Pro',
     url: 'https://mikrowizard.com/pricing/',
     icon:'fa-solid fa-money-check-dollar',
-    attributes: { target: '_blank' }
+    attributes: { 'free':true,target: '_blank' }
   }
 ];

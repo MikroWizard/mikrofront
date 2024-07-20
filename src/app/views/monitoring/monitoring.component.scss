@@ -1,0 +1,41 @@
+:host {
+  .legend {
+    small {
+      font-size: x-small;
+    }
+  }
+
+
+
+}
+.mdc-line-ripple.mdc-line-ripple--deactivating.ng-star-inserted {
+  display: none!important;
+}
+
+::ng-deep .main-container{
+  padding:0!important;
+  margin-top:-10px;
+}
+
+::ng-deep .header{
+  margin-bottom: 0.9rem!important;
+}
+
+.contextmenu{
+  position: absolute;
+}
+
+.fixed_time{
+  display:flex;
+  flex-direction: column-reverse;
+  padding: 1px 0px;
+}
+
+.alarms24 tbody th{
+      font-weight:normal!important;
+
+}
+.fixed_time span{
+  font-weight:normal;
+  line-height:110%
+}
