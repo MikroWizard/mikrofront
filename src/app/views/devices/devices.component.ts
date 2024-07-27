@@ -436,8 +436,6 @@ export class DevicesComponent implements OnInit, OnDestroy {
     var data = {
       group_id: this.selected_group,
       search: false,
-      page: this.paging.page,
-      size: this.paging.pageSize,
     };
     clearTimeout(this.list_update_timer);
     _self.list_update_timer = setTimeout(function () {

@@ -152,11 +152,11 @@
         <app-widgets-dropdown [devicedata]=raddata.value></app-widgets-dropdown>
         <c-row>
           <c-col md="3">
-            <table small stripedColumns cTable>
+            <table style="word-break:  break-word" small stripedColumns cTable>
               <tbody>
             <ng-container *ngFor="let d of raddata.value['data'] | keyvalue ; let i=index">
               <tr *ngIf="i<objectlen(raddata.value['data'])/4">
-                <th style="width: 30%;text-wrap: nowrap;">{{d.key}}</th>
+                <th style="width: 20%;text-wrap: nowrap;">{{d.key}}</th>
                 <td scope="row">{{d.value}}</td>
               </tr>
             </ng-container>
@@ -165,11 +165,11 @@
           </c-col>
           <c-col md="3">
 
-          <table small stripedColumns cTable>
+          <table style="word-break:  break-word" small stripedColumns cTable>
             <tbody>
           <ng-container *ngFor="let d of raddata.value['data'] | keyvalue ; let i=index">
             <tr *ngIf="i>=objectlen(raddata.value['data'])/4 && i<(objectlen(raddata.value['data'])/4)*2">
-              <th style="width: 30%;text-wrap: nowrap;">{{d.key}}</th>
+              <th style="width: 20%;text-wrap: nowrap;">{{d.key}}</th>
               <td scope="row">{{d.value}}</td>
             </tr>
           </ng-container>
@@ -177,11 +177,11 @@
           </table>
         </c-col>
         <c-col md="3">
-          <table small stripedColumns cTable>
+          <table style="word-break:  break-word" small stripedColumns cTable>
             <tbody>
           <ng-container *ngFor="let d of raddata.value['data'] | keyvalue ; let i=index">
             <tr *ngIf="i>=(objectlen(raddata.value['data'])/4)*2 && i<(objectlen(raddata.value['data'])/4)*3">
-              <th style="width: 30%;text-wrap: nowrap;">{{d.key}}</th>
+              <th style="width: 20%;text-wrap: nowrap;">{{d.key}}</th>
               <td scope="row">{{d.value}}</td>
             </tr>
           </ng-container>
@@ -203,7 +203,7 @@
         </c-row>
         <c-row *ngIf="raddata.value['strength-at-rates']">
         <c-col>
-          <table small borderless cTable>
+          <table style="word-break:  break-word" small borderless cTable>
             <tbody>
                 <tr>
                   <th style="text-wrap: nowrap;vertical-align: middle;padding: 5px;border-radius: 5px;background-color: #3399ff36;">Strength at rates</th>
