@@ -32,15 +32,18 @@
           </gui-grid-column>
           <gui-grid-column header="Created" field="created">
             <ng-template let-value="item.created" let-item="item" let-index="index">
-
               <div>{{value}}</div>
             </ng-template>
           </gui-grid-column>
-          <gui-grid-column header="Actions" field="action">
+          <gui-grid-column header="Actions" field="action" align="center">
             <ng-template let-value="item.id" let-item="item" let-index="index">
-              <button cButton color="warning" size="sm" (click)="Edit_Snippet(item,'edit')" class="mx-1"><i
+              <button cButton color="primary" size="sm" (click)="Edit_Snippet(item,'edit')" class=""><i
                   class="fa-regular fa-pen-to-square mx-1"></i>Edit</button>
-              <button cButton color="danger" size="sm" (click)="confirm_delete(item,false)" class="mx-1"><i
+              <button cButton color="warning" size="sm" (click)="Run_Snippet(item,'exec')" class="mx-1"><i
+                    class="fa-solid fa-bolt mx-1"></i>Execute</button>
+              <button cButton color="info" size="sm" (click)="show_exec(item)" class="mx-1"><i
+                      class="fa-solid fa-bolt mx-1"></i>Data</button>
+              <button cButton color="danger" size="sm" (click)="confirm_delete(item,false)" class=""><i
                   class="fa-regular fa-trash-can mx-1"></i>Delete</button>
             </ng-template>
           </gui-grid-column>
@@ -52,6 +55,147 @@
 
 
 
+
+<c-modal #ExecSnipetModal backdrop="static" size="xl" [(visible)]="ExecSnipetModalVisible" id="ExecSnipetModal">
+  <c-modal-header>
+    <h5 cModalTitle>Exec Snipet</h5>
+    <button [cModalToggle]="ExecSnipetModal.id" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body>
+    <div [cFormFloating]="true" class="mb-3">
+      <input cFormControl id="floatingInput" placeholder="current_snippet['name']" [(ngModel)]="current_snippet['name']" disabled="true"/>
+      <label cLabel for="floatingInput">Snipet Name</label>
+    </div>
+
+    <div [cFormFloating]="true" class="mb-3">
+      <input cFormControl id="floatingInput" placeholder="current_snippet['description']"
+        [(ngModel)]="current_snippet['description']" />
+      <label cLabel for="floatingInput">Description</label>
+    </div>
+
+    <c-input-group class="mb-3">
+      <label cInputGroupText for="inputGroupSelect01">
+        Member type
+      </label>
+      <select cSelect id="inputGroupSelect01" (change)="form_changed()" [(ngModel)]="current_snippet['selection_type']">
+        <option value="devices">Devices</option>
+        <option value="groups">Groups</option>
+      </select>
+    </c-input-group>
+
+    <h5>Members :</h5>
+    <gui-grid [autoResizeWidth]="true" [source]="SelectedMembers" [columnMenu]="columnMenu" [sorting]="sorting"
+      [infoPanel]="infoPanel" [rowSelection]="rowSelection" [autoResizeWidth]=true [paging]="paging">
+      <gui-grid-column header="Name" field="name">
+        <ng-template let-value="item.name" let-item="item" let-index="index">
+          &nbsp; {{value}} </ng-template>
+      </gui-grid-column>
+      <gui-grid-column *ngIf="current_snippet['selection_type']=='devices'" header="MAC" field="mac">
+        <ng-template let-value="item.mac" let-item="item" let-index="index">
+          {{value}}
+        </ng-template>
+      </gui-grid-column>
+      <gui-grid-column header="Actions" width="120" field="action">
+        <ng-template let-value="item.id" let-item="item" let-index="index">
+          <button cButton color="danger" size="sm" (click)="remove_member(item)"><i
+              class="fa-regular fa-trash-can"></i></button>
+        </ng-template>
+      </gui-grid-column>
+    </gui-grid>
+    <hr />
+    <button cButton color="primary" (click)="show_new_member_form()">+ Add new Members</button>
+
+  </c-modal-body>
+  <c-modal-footer>
+    <button  (click)="submit('exec')" cButton color="primary">Execute</button>
+    <button [cModalToggle]="ExecSnipetModal.id" cButton color="secondary">
+      Close
+    </button>
+  </c-modal-footer>
+</c-modal>
+
+
+<c-modal #NewMemberModal backdrop="static" size="lg" [(visible)]="NewMemberModalVisible" id="NewMemberModal">
+  <c-modal-header>
+    <h5 cModalTitle>Editing Group </h5>
+    <button (click)="NewMemberModalVisible=!NewMemberModalVisible" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body>
+    <c-input-group class="mb-3">
+      <h5>Group Members :</h5>
+      <gui-grid [autoResizeWidth]="true" *ngIf="NewMemberModalVisible" [searching]="searching"
+        [source]="availbleMembers" [columnMenu]="columnMenu" [sorting]="sorting" [infoPanel]="infoPanel"
+        [rowSelection]="rowSelection" (selectedRows)="onSelectedRowsNewMembers($event)" [autoResizeWidth]=true
+        [paging]="paging">
+        <gui-grid-column header="Member Name" field="name">
+          <ng-template let-value="item.name" let-item="item" let-index="index">
+            &nbsp; {{value}} </ng-template>
+        </gui-grid-column>
+        <gui-grid-column *ngIf="current_snippet['selection_type']=='devices'" header="IP Address" field="ip">
+          <ng-template let-value="item.ip" let-item="item" let-index="index">
+            {{value}}
+          </ng-template>
+        </gui-grid-column>
+        <gui-grid-column *ngIf="current_snippet['selection_type']=='devices'" header="MAC Address" field="mac">
+          <ng-template let-value="item.mac" let-item="item" let-index="index">
+            {{value}}
+          </ng-template>
+        </gui-grid-column>
+      </gui-grid>
+      <br />
+    </c-input-group>
+    <hr />
+  </c-modal-body>
+
+  <c-modal-footer>
+    <button *ngIf="NewMemberRows.length!= 0" (click)="add_new_members()" cButton color="primary">Add {{
+      NewMemberRows.length }}</button>
+    <button (click)="NewMemberModalVisible=!NewMemberModalVisible" cButton color="secondary">
+      Close
+    </button>
+  </c-modal-footer>
+</c-modal>
+
+
+<c-modal #ExecutedDataModal backdrop="static" size="lg" [(visible)]="ExecutedDataModalVisible" id="ExecutedDataModal">
+  <c-modal-header>
+    <h5 cModalTitle>Editing Group </h5>
+    <button (click)="ExecutedDataModalVisible=!ExecutedDataModalVisible" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body>
+    <c-input-group class="mb-3">
+      <h5>Group Members :</h5>
+      <gui-grid [autoResizeWidth]="true" *ngIf="ExecutedDataModalVisible" [searching]="searching"
+        [source]="ExecutedData" [columnMenu]="columnMenu" [sorting]="sorting" [infoPanel]="infoPanel"
+       [autoResizeWidth]=true
+        [paging]="paging">
+        <gui-grid-column header="Start time" field="start">
+          <ng-template let-value="item['started']" let-item="item" let-index="index">
+            &nbsp; {{value}} </ng-template>
+        </gui-grid-column>
+        <gui-grid-column   header="End time" field="end">
+          <ng-template let-value="item['ended']" let-item="item" let-index="index">
+            {{value}}
+          </ng-template>
+        </gui-grid-column>
+        <gui-grid-column header="info" field="mac" align="center">
+          <ng-template let-value="item['result']" let-item="item" let-index="index">
+            <button (click)="exportToCsv(value)"  color="primary" cButton>download</button>
+          </ng-template>
+        </gui-grid-column>
+      </gui-grid>
+      <br />
+    </c-input-group>
+    <hr />
+  </c-modal-body>
+
+  <c-modal-footer>
+    <button (click)="ExecutedDataModalVisible=!ExecutedDataModalVisible" cButton color="secondary">
+      Close
+    </button>
+  </c-modal-footer>
+</c-modal>
+
 <c-modal #EditModal backdrop="static" [(visible)]="EditModalVisible" id="runEditModal">
   <c-modal-header>
     <h6 *ngIf="ModalAction=='add'" cModalTitle>Add New Snippet</h6>
@@ -59,7 +203,6 @@
     <button [cModalToggle]="EditModal.id" cButtonClose></button>
   </c-modal-header>
   <c-modal-body>
-
     <c-input-group class="mb-3">
       <div [cFormFloating]="true" class="mb-3">
         <input cFormControl id="floatingInput" placeholder="Snippet Name" [(ngModel)]="current_snippet['name']" />
@@ -77,6 +220,7 @@
         <textarea   [style.height.px]="50 + (23 * lineNum)"
         cFormControl (ngModelChange)="calcline($event)" id="floatingInput" placeholder="Snippet code" [(ngModel)]="current_snippet['content']" ></textarea>
         <label cLabel for="floatingInput">Code</label>
+        <div class="col-sm-12 c-d-block c-text-truncate">Note : In case of multiple IP addresses for the MikroWizard server, use<code style="padding: 0!important;">[mikrowizard]</code> instead of the MikroWizard server IP.</div>
       </div>
     </c-input-group>
     <br />
@@ -86,8 +230,6 @@
     <button cButton [cModalToggle]="EditModal.id" color="info">Close</button>
   </c-modal-footer>
 </c-modal>
-
-
 
 <c-modal #DeleteConfirmModal backdrop="static"  [(visible)]="DeleteConfirmModalVisible"
   id="DeleteConfirmModal">
@@ -121,9 +263,6 @@
     </button>
   </c-modal-footer>
 </c-modal>
-
-
-
 
 <c-toaster position="fixed" placement="top-end"></c-toaster>
 

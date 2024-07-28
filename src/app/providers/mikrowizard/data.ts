@@ -249,13 +249,23 @@ export class dataProvider {
         return this.MikroWizardRPC.sendJsonRequest("/api/snippet/save", {...data});
     }
 
+    Exec_snipet(data:any,members:any) {
+        data['members']=members;
+        return this.MikroWizardRPC.sendJsonRequest("/api/snippet/exec", data);
+    }
+
     delete_snippet(id:number){
         var data={
             'id':id
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/snippet/delete", data);
     }
-
+    get_executed_snipet(id:number){
+        var data={
+            'id':id
+        }
+        return this.MikroWizardRPC.sendJsonRequest("/api/snippet/executed", data);
+    }
     get_user_task_list() {
         return this.MikroWizardRPC.sendJsonRequest("/api/user_tasks/list", {});
     }
@@ -266,6 +276,7 @@ export class dataProvider {
         return this.MikroWizardRPC.sendJsonRequest("/api/user_tasks/create", data);
     }
     
+
     Delete_task(taskid:Number) {
         var data={
             'taskid':taskid,
