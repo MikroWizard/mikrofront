@@ -44,9 +44,9 @@
             <ng-template let-value="item.id" let-item="item" let-index="index">
               <button cButton color="warning" size="sm" (click)="editAddTask(item,'edit');"><i
                   class="fa-regular fa-pen-to-square"></i></button>
-              <button cButton color="info" size="sm" (click)="confirm_run(item);" class="mx-1"><i
-                  class="fa-solid fa-bolt"></i></button>
-              <button cButton color="danger" size="sm" (click)="confirm_delete(item);"><i
+              <!-- <button cButton color="info" size="sm" (click)="confirm_run(item);" class="mx-1"><i
+                  class="fa-solid fa-bolt"></i></button> -->
+              <button class=" mx-1" cButton color="danger" size="sm" (click)="confirm_delete(item);"><i
                   class="fa-regular fa-trash-can"></i></button>
             </ng-template>
           </gui-grid-column>

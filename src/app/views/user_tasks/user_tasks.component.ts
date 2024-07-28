@@ -262,6 +262,9 @@ export class UserTasksComponent implements OnInit {
       this.SelectedTaskItems = [];
     }
   }
+
+
+  
   firmware_type_changed(type: any) {
     this.SelectedTask['data']['strategy'] = type;
     if (type == 'system') {
