@@ -341,9 +341,18 @@ export class SnippetsComponent implements OnInit, OnDestroy {
     });
   }
 
+  sanitizeString(desc:string) {
+    var itemDesc:string='';
+    if (desc) {
+        itemDesc = desc.toString().replace(/"/g, '\"');
+        itemDesc = itemDesc.replace(/'/g, '\'');
+    } else {
+        itemDesc = '';
+    }
+    return itemDesc;
+  }
 
   exportToCsv(jsonResponse:any) {
-	console.dir(jsonResponse);
     const data = jsonResponse;
     const columns = this.getColumns(data);
     const csvData = this.convertToCsv(data, columns);
@@ -363,12 +372,13 @@ export class SnippetsComponent implements OnInit, OnDestroy {
   }
 
   convertToCsv(data: any[], columns: string[]): string {
+    var _self=this;
     let csv = '';
     csv += columns.join(',') + '\n';
     data.forEach(row => {
       const values : any = [];
       columns.forEach((col:any) => {
-        values.push(row[col]);
+        values.push('"'+_self.sanitizeString(row[col])+'"');
       });
       csv += values.join(',') + '\n';
     });
