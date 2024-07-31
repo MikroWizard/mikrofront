@@ -10,10 +10,19 @@ import {
   CollapseModule,
   BadgeModule,
   ModalModule,
+  FormModule,
+  ToastModule,
 } from "@coreui/angular";
 import { BackupsRoutingModule } from "./backups-routing.module";
 import { BackupsComponent } from "./backups.component";
 import { GuiGridModule } from "@generic-ui/ngx-grid";
+import { MatDatepickerModule } from "@angular/material/datepicker";
+import { MatInputModule } from "@angular/material/input";
+import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatSelectModule } from "@angular/material/select";
+import { FormsModule } from "@angular/forms";
+import { UnifiedDiffComponent,SideBySideDiffComponent } from 'ngx-diff';
+import { ClipboardModule } from "@angular/cdk/clipboard";
 
 @NgModule({
   imports: [
@@ -21,6 +30,8 @@ import { GuiGridModule } from "@generic-ui/ngx-grid";
     CardModule,
     CommonModule,
     GridModule,
+    FormModule,
+    FormsModule,
     ButtonModule,
     ButtonModule,
     GuiGridModule,
@@ -30,6 +41,14 @@ import { GuiGridModule } from "@generic-ui/ngx-grid";
     HighlightAuto,
     HighlightLineNumbers,
     ModalModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatDatepickerModule,
+    MatSelectModule,
+    UnifiedDiffComponent,
+    SideBySideDiffComponent,
+    ToastModule,
+    ClipboardModule
   ],
   declarations: [BackupsComponent],
 })

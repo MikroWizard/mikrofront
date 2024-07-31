@@ -189,8 +189,6 @@ export class MikroWizardProvider {
 		return Promise.resolve();
 	}
 
-
-
 	public getUserContext(context: any) {
 		localStorage.setItem("user_context", JSON.stringify(context));
 

@@ -396,22 +396,21 @@ export class dataProvider {
         return this.MikroWizardRPC.sendJsonRequest("/api/firmware/get_firms", data);
     }
 
-    get_backups(devid:Number=0,page:Number,size:Number,search:any) {
-        var data = {
-            'devid':devid,
-            'page':page,
-            'size':size,
-            'search':search
-        }
+    get_backups(data:any) {
         return this.MikroWizardRPC.sendJsonRequest("/api/backup/list", data);
     }
    
-
     get_backup(id:number){
         var data = {
             'id':id
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/backup/get", data);
+    }
+    restore_backup(id:number){
+        var data = {
+            'backupid':id
+        }
+        return this.MikroWizardRPC.sendJsonRequest("/api/backup/restore", data);
     }
 
     get_downloadable_firms() {

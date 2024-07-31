@@ -12,7 +12,6 @@ import { AuthRoutingModule } from './auth-routing.module';
 import { AuthComponent } from './auth.component';
 import { GuiGridModule } from '@generic-ui/ngx-grid';
 
-import { faCoffee } from '@fortawesome/free-solid-svg-icons';
 import { FormsModule } from '@angular/forms'; 
 
 import {MatDatepickerModule} from '@angular/material/datepicker';

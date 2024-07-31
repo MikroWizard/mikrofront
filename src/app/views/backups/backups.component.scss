@@ -1,0 +1,4 @@
+@import 'ngx-diff/styles/default-theme';
+::ng-deep .modal-xl {
+    --cui-modal-width: 90vw!important;
+}

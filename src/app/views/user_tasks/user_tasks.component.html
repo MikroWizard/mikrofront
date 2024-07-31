@@ -57,7 +57,6 @@
 </c-row>
 <c-modal-header>
 
-
   <c-modal #EditTaskModal backdrop="static" size="xl" [(visible)]="EditTaskModalVisible" id="EditTaskModal">
     <c-modal-header>
       <h5 *ngIf="SelectedTask['action']=='edit'" cModalTitle>Editing device {{SelectedTask['name']}}</h5>
@@ -88,7 +87,7 @@
         </select>
       </c-input-group>
       <h6 *ngIf="SelectedTask['task_type']=='firmware'" >Update Version Strategy</h6>
-      <c-card  *ngIf="SelectedTask['task_type']=='firmware'">
+      <c-card *ngIf="SelectedTask['task_type']=='firmware'">
         <c-card-header style="padding: 0;">
           <c-input-group>
             <c-button-group aria-label="Basic radio toggle button group"

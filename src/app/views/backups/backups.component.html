@@ -1,13 +1,62 @@
 <c-row>
   <c-col xs>
     <c-card class="mb-4">
-      <c-card-header>Backups</c-card-header>
+      <c-card-header>
+        <c-row>
+          <c-col xs [lg]="8">
+            Backups <c-badge color="warning" *ngIf="devid!=0">Filtered Result For Device ID {{devid}}</c-badge>
+          </c-col>
+          <c-col xs [lg]="3">
+            <c-row>
+              <c-col>
+                <ng-container *ngIf="compareitems.length>0">
+                  <div>
+                    <c-badge color="dark" style="font-size: 0.7rem;"
+                      *ngFor="let item of compareitems;index as i">{{item.id}}:{{item.devname}} {{item.createdC}} <span
+                        style="cursor: pointer;" (click)="delete_compare(i)">X</span></c-badge>
+                  </div>
+                </ng-container>
+              </c-col>
+              <c-col style="padding: 0;">
+                <button *ngIf="compareitems.length>1" (click)="start_compare()" cButton class="me-1"
+                  color="primary">Compare</button>
+              </c-col>
+            </c-row>
+          </c-col>
+          <c-col styyle="border-left: 1px solid #ccc;" xs [lg]="1">
+            <button (click)="toggleCollapse()" cButton class="me-1" color="primary"><i
+                class="fa-solid fa-filter mr-1"></i>Filter</button>
+          </c-col>
+        </c-row>
+      </c-card-header>
       <c-card-body>
-        <c-badge color="warning" *ngIf="devid!=0">Filtered Result For Device ID {{devid}}</c-badge>
-
-        <gui-grid [source]="source" [searching]="searching" [paging]="paging" [columnMenu]="columnMenu"
-          [sorting]="sorting" [infoPanel]="infoPanel" [columnMenu]="columnMenu" [sorting]="sorting"
-          [infoPanel]="infoPanel" [autoResizeWidth]=true>
+        <c-row>
+          <div [visible]="filters_visible" cCollapse>
+            <c-col xs [lg]="12" class="example-form">
+              <mat-form-field>
+                <mat-label>Start date</mat-label>
+                <input matInput [matDatepicker]="picker1" (dateChange)="reinitgrid('start',$event)"
+                  [(ngModel)]="filters['start_time']" />
+                <mat-datepicker-toggle matIconSuffix [for]="picker1"></mat-datepicker-toggle>
+                <mat-datepicker #picker1></mat-datepicker>
+              </mat-form-field>
+              <mat-form-field>
+                <mat-label>End date</mat-label>
+                <input matInput [matDatepicker]="picker2" (dateChange)="reinitgrid('end',$event)"
+                  [(ngModel)]="filters['end_time']" />
+                <mat-datepicker-toggle matIconSuffix [for]="picker2"></mat-datepicker-toggle>
+                <mat-datepicker #picker2></mat-datepicker>
+              </mat-form-field>
+              <mat-form-field *ngIf="ispro">
+                <mat-label>Config search</mat-label>
+                <input (ngModelChange)="reinitgrid('search',$event)" [(ngModel)]="filters['search']" matInput>
+              </mat-form-field>
+            </c-col>
+          </div>
+        </c-row>
+        <gui-grid [source]="source" [paging]="paging" [columnMenu]="columnMenu" [sorting]="sorting"
+          [infoPanel]="infoPanel" [columnMenu]="columnMenu" [sorting]="sorting" [infoPanel]="infoPanel"
+          [autoResizeWidth]=true>
           <gui-grid-column header="#No" type="NUMBER" field="index" width=25 align="CENTER">
             <ng-template let-value="item.index" let-item="item" let-index="index">
               {{value}}
@@ -40,8 +89,10 @@
           </gui-grid-column>
           <gui-grid-column header="Action" field="id">
             <ng-template let-value="item.id" let-item="item" let-index="index">
-              <button cButton color="info" size="sm" (click)="ShowBackup(item.id)" class="mx-1"><i
+              <button cButton color="info" size="sm" (click)="ShowBackup(item)" class="mx-1"><i
                   style="margin: 1px 5px;color:#ffffff;" class="fa-solid fa-eye"></i>Show backup</button>
+              <button *ngIf="ispro" color="info" size="sm" (click)="add_for_compare(item)" class="mx-1"><i
+                  style="margin: 1px 5px;color:#ffffff;" class="fa-solid fa-eye"></i>Compare</button>
             </ng-template>
           </gui-grid-column>
         </gui-grid>
@@ -50,19 +101,94 @@
   </c-col>
 </c-row>
 
-<c-modal #BakcupModal backdrop="static" [(visible)]="BakcupModalVisible" id="BakcupModal" size="xl">
+<c-modal #BakcupModal backdrop="static" [(visible)]="BakcupModalVisible" id="BakcupModal" [fullscreen]="true">
   <c-modal-header>
     <h6 cModalTitle>Please Confirm Action </h6>
     <button [cModalToggle]="BakcupModal.id" cButtonClose></button>
   </c-modal-header>
   <c-modal-body>
-    <pre>
+    <pre style="height: 100%;">
     <code *ngIf="!loading" language="properties" style="height:70vh" [highlight]="codeForHighlightAuto" 
     lineNumbers></code></pre>
   </c-modal-body>
+  <c-modal-footer style="justify-content: space-between;">
+
+    <button [cdkCopyToClipboard]="codeForHighlightAuto" [style.background-color]="copy_msg ? 'green' : null" (click)="copy_this()" cButton color="secondary">
+      <i class="fa-regular fa-copy"></i> To clipboard
+    </button>
+    <div>
+      <button (click)="restore_backup(false)" class=" mx-3" cButton color="danger">
+        Restore this
+      </button>
+      <button [cModalToggle]="BakcupModal.id" cButton color="info">
+        Close
+      </button>
+    </div>
+  </c-modal-footer>
+</c-modal>
+
+<c-modal #CompareModal backdrop="static" [(visible)]="CompareModalVisible" [fullscreen]="true" id="CompareModal">
+  <c-modal-header>
+    <h6 cModalTitle>Comparing Configs </h6>
+    <c-form-check (click)="switch_compare_type()" sizing="xl" class="mx-5" switch>
+      <h6>
+        <input cFormCheckInput [checked]="compare_type=='unified'"
+          style="width: 2.5rem;margin-left: -2.8em;cursor: pointer;" type="checkbox" />
+
+        <label cFormCheckLabel style="padding-top: calc((1.8em - 1rem) / 2);">
+          <span *ngIf="compare_type=='sided'">Sided compare</span>
+          <span *ngIf="compare_type=='unified'">Unified compare</span>
+        </label>
+      </h6>
+    </c-form-check>
+    <button [cModalToggle]="CompareModal.id" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body *ngIf="comparecontents.length>1">
+    <h5>
+      Comparing <c-badge color="dark" style="font-size: 0.8rem;">{{compareitems[0].id}}:{{compareitems[0].devname}}
+        {{compareitems[0].createdC}} </c-badge> With
+      <c-badge color="dark" style="font-size: 0.8rem;">{{compareitems[1].id}}:{{compareitems[1].devname}}
+        {{compareitems[1].createdC}} </c-badge>
+    </h5>
+    <ngx-unified-diff *ngIf="compare_type=='unified'" class="ngx-diff-light-theme" [before]="comparecontents[0]"
+      [after]="comparecontents[1]" />
+    <ngx-side-by-side-diff *ngIf="compare_type=='sided'" class="ngx-diff-light-theme" [before]="comparecontents[0]"
+      [after]="comparecontents[1]" />
+  </c-modal-body>
   <c-modal-footer>
-    <button [cModalToggle]="BakcupModal.id" cButton color="info">
+    <button [cModalToggle]="CompareModal.id" cButton color="info">
       Close
     </button>
   </c-modal-footer>
 </c-modal>
+
+<c-modal #ConfirmModal backdrop="static" [(visible)]="ConfirmModalVisible" id="runConfirmModal">
+  <c-modal-header>
+    <h6 cModalTitle>Please Confirm Action </h6>
+    <button [cModalToggle]="ConfirmModal.id" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body>
+    <span>restore backup ?</span>
+    <ng-container>
+      Are you sure that You want to <code style="padding: 0!important;">Restore this configuration</code> on
+      device?<br />
+      <hr>
+      <p class="text-danger">
+        All Current device configuration will be reset:<br /><br />
+        * All state data/history on router will be reset<br />
+        * All other local users on router will be deleted<br />
+        * After restore the password of the local user will be same as configured in MikroWizard<br />
+      </p>
+    </ng-container>
+  </c-modal-body>
+  <c-modal-footer>
+    <button *ngIf="ispro" (click)="restore_backup(true)" cButton color="info">
+      Restore this
+    </button>
+    <button cButton [cModalToggle]="ConfirmModal.id" color="info">
+      Cancel
+    </button>
+  </c-modal-footer>
+</c-modal>
+
+<c-toaster position="fixed" placement="top-end"></c-toaster>

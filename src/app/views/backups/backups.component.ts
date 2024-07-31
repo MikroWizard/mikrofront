@@ -1,4 +1,4 @@
-import { Component, OnInit } from "@angular/core";
+import { Component, OnInit, QueryList, ViewChildren } from "@angular/core";
 import { dataProvider } from "../../providers/mikrowizard/data";
 import { Router, ActivatedRoute } from "@angular/router";
 import { loginChecker } from "../../providers/login_checker";
@@ -14,23 +14,12 @@ import {
 	GuiRowSelectionType,
 } from "@generic-ui/ngx-grid";
 import { formatInTimeZone } from "date-fns-tz";
-
-interface IUser {
-	name: string;
-	state: string;
-	registered: string;
-	country: string;
-	usage: number;
-	period: string;
-	payment: string;
-	activity: string;
-	avatar: string;
-	status: string;
-	color: string;
-}
+import { ToasterComponent } from "@coreui/angular";
+import { AppToastComponent } from "../toast-simple/toast.component";
 
 @Component({
 	templateUrl: "backups.component.html",
+	styleUrls: ["backups.component.scss"],
 })
 export class BackupsComponent implements OnInit {
 	public uid: number;
@@ -39,7 +28,13 @@ export class BackupsComponent implements OnInit {
 	public filterText: string;
 	public filters: any = {};
 	public codeForHighlightAuto: string = "";
-
+	public ispro: boolean = false;
+	public ConfirmModalVisible: boolean = false;
+	public CompareModalVisible: boolean = false;
+	public compareitems:any=[];
+	public comparecontents:any=[];
+	public compare_type="unified";
+	public copy_msg:boolean=false;
 	constructor(
 		private data_provider: dataProvider,
 		private router: Router,
@@ -56,6 +51,8 @@ export class BackupsComponent implements OnInit {
 			_self.uid = res.uid;
 			_self.uname = res.name;
 			_self.tz = res.tz;
+			_self.ispro = res['ISPRO']
+
 			const userId = _self.uid;
 
 			if (res.role != "admin") {
@@ -69,6 +66,7 @@ export class BackupsComponent implements OnInit {
 			return value !== undefined && value !== null && value !== "";
 		}
 	}
+	@ViewChildren(ToasterComponent) viewChildren!: QueryList<ToasterComponent>;
 
 	public source: Array<any> = [];
 	public columns: Array<GuiColumn> = [];
@@ -77,7 +75,8 @@ export class BackupsComponent implements OnInit {
 	public Selectedrows: any;
 	public BakcupModalVisible: boolean = false;
 	public devid: number = 0;
-
+	public filters_visible: boolean = false;
+	public currentBackup:any=false;
 	public sorting = {
 		enabled: true,
 		multiSorting: true,
@@ -94,6 +93,14 @@ export class BackupsComponent implements OnInit {
 		display: GuiPagingDisplay.ADVANCED,
 	};
 
+	toasterForm = {
+		autohide: true,
+		delay: 3000,
+		position: "fixed",
+		fade: true,
+		closeButton: true,
+	};
+	
 	public columnMenu: GuiColumnMenu = {
 		enabled: true,
 		sort: true,
@@ -115,25 +122,124 @@ export class BackupsComponent implements OnInit {
 
 	ngOnInit(): void {
 		this.devid = Number(this.route.snapshot.paramMap.get("devid"));
+		if (this.devid > 0) {
+			this.filters["devid"] = this.devid;
+		  }
 		this.initGridTable();
 	}
 
 	logger(item: any) {
 		console.dir(item);
 	}
+	switch_compare_type(){
+		if(this.compare_type=='unified')
+			this.compare_type='sided'
+		else
+			this.compare_type='unified'
+	}
+	copy_this() {
+		//show text copy to clipboard for 3 seconds
+		this.copy_msg = true;
+		setTimeout(() => {
+		  this.copy_msg = false;
+		}, 1000);
+	  }
+	
+	show_toast(title: string, body: string, color: string) {
+		const { ...props } = { ...this.toasterForm, color, title, body };
+		const componentRef = this.viewChildren.first.addToast(
+		  AppToastComponent,
+		  props,
+		  {}
+		);
+		componentRef.instance["closeButton"] = props.closeButton;
+	}
 
-	ShowBackup(id: number) {
-		this.BakcupModalVisible = true;
+	ShowBackup(backup: any) {
+		var _self=this;
 		this.loading = true;
-		this.data_provider.get_backup(id).then((res) => {
-			this.codeForHighlightAuto = res.content;
-			this.loading = false;
+		this.currentBackup = backup;
+		this.data_provider.get_backup(backup.id).then((res) => {
+			if('content' in res){
+				_self.codeForHighlightAuto = res.content;
+				_self.loading = false;
+				_self.BakcupModalVisible = true;
+			}
+			else{
+				this.show_toast('Error', 'Error loading backup file', 'danger')
+			}
 		});
 	}
 
+	toggleCollapse(): void {
+		this.filters_visible = !this.filters_visible;
+	}
+	restore_backup(apply:boolean=false){
+		var _slef=this;
+		if (!apply){
+			this.ConfirmModalVisible = true;
+			return;
+		}
+		if (!this.currentBackup)
+			return;
+		if(apply){
+			_slef.ConfirmModalVisible = false;
+			_slef.BakcupModalVisible = true;
+			this.show_toast('Success', 'Backup restored successfully', 'success')
+			this.show_toast('Info', 'Wait for the router to reboot and apply config', 'info')
+			this.data_provider.restore_backup(this.currentBackup.id).then((res) => {
+				if ('status' in res){
+					if(res['status']=='success'){
+						this.show_toast('Success', 'Backup restored successfully', 'success')
+						this.show_toast('Info', 'Wait for the router to reboot and apply config', 'info')
+					}
+					else
+						this.show_toast('Error', 'Error restoring backup', 'danger')
+				}
+			});
+		}
+	}
+	start_compare(){
+		var _self=this;
+		this.comparecontents=[]
+		this.compareitems.forEach((element:any) => {
+			_self.data_provider.get_backup(element.id).then((res) => {
+				if('content' in res){
+					_self.comparecontents.push(res.content);
+				}
+				if(_self.comparecontents.length==_self.compareitems.length)
+					_self.CompareModalVisible=true;
+			});
+		});
+	}
+
+	add_for_compare(item:any){
+		//Only two items for compare
+		if(this.compareitems.length<2)
+			this.compareitems.filter((i:any)=>{
+				return i.id!=item.id;
+			}).length==this.compareitems.length && this.compareitems.push(item);
+		else{
+			//remove first element and add new item
+			this.compareitems.shift();
+			this.compareitems.push(item);
+		}
+	}
+	delete_compare(i:number){
+		//delete item index i from compareitems
+		this.compareitems.splice(i,1);
+
+	}
+	reinitgrid(field: string, $event: any) {
+		if (field == "start") this.filters["start_time"] = $event.target.value;
+		else if (field == "end") this.filters["end_time"] = $event.target.value;
+		else if (field == "search") this.filters["search"] = $event;
+		this.initGridTable();
+	}
+	
 	initGridTable(): void {
 		var _self=this;
-		this.data_provider.get_backups(this.devid, 0, 0, false).then((res) => {
+		this.data_provider.get_backups(this.filters).then((res) => {
 			let index = 1;
 			this.source = res.map((d: any) => {
 				d.index = index;
@@ -142,11 +248,9 @@ export class BackupsComponent implements OnInit {
 					_self.tz,
 					"yyyy-MM-dd HH:mm:ss XXX"
 				);
-				// d.created = [d.created.split("T")[0],d.created.split("T")[1].split(".")[0]].join(" ")
 				index += 1;
 				return d;
 			});
-			console.dir(this.source);
 			this.loading = false;
 		});
 	}
