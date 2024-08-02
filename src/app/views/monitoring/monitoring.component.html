@@ -2,20 +2,24 @@
   <c-col xs="3" style="height:100%;">
     <c-card style="height:100%">
       <c-card-header>
-        <c-row><c-col md="10">Devices</c-col>
-          <c-col style="text-align: right;" md="2">
+        <c-row><c-col xl="3"  lg="12"  style="padding: 0;">Devices</c-col>
+          <c-col xl="7" lg="12" style="padding: 0;">
+            <input type="text" [(ngModel)]="devicesearch" (ngModelChange)="filter_device(false)" placeholder="search" style="width: 100%;background: transparent;border: 1px solid #cdcdcd;">
+          </c-col>
+          <c-col style="text-align: right;" xl="2" lg="12">
             <i class="fa-regular fa-circle-question" style="cursor: pointer;" [cTooltip]="iconstooltip"></i>
           </c-col></c-row>
       </c-card-header>
       <c-card-body *ngIf="devices" style="padding: 4px;">
         <ng-scrollbar pointerEventsMethod="scrollbar">
+          <div infiniteScroll [scrollWindow]="false" scrollViewport [infiniteScrollDistance]="scrollDownDistance" [infiniteScrollThrottle]="throttle" style="width: 100%;" (scrolled)="onDown($event)"  >
           <ul cListGroup oncontextmenu="return false;" flush>
             <li cListGroupItem (click)="filter_device(0)" style="cursor: pointer;padding: 5px 8px;"
               class="d-flex justify-content-between align-items-center">
               <div><i style="color:rgb(9, 44, 9)" class="fa-solid fa-hard-drive"></i>
                 | All Devices
               </div>
-              <div class="d-flex"
+              <div class="d-flex alerts-badges"
                 style="min-width: 135px;border-left: 1px solid #ccc;height: 100%;/* text-align: right; */display: flex;flex-direction: row-reverse;">
                 <c-badge *ngIf="CCount" color="danger" style="margin: 0 0 0 1px;" size="sm"
                   shape="rounded-pill">{{CCount}}
@@ -44,7 +48,7 @@
                   [class.fa-tower-broadcast]="x.router_type=='special'"></i>
                 | {{x.name}}
               </div>
-              <div class="d-flex"
+              <div class="d-flex alerts-badges"
                 style="min-width: 135px;border-left: 1px solid #ccc;height: 100%;display: flex;flex-direction: row-reverse;">
                 <c-badge *ngIf="x.CCount" color="danger" style="margin: 0 0 0 1px;" size="sm"
                   shape="rounded-pill">{{x.CCount}}
@@ -57,6 +61,7 @@
               </div>
             </li>
           </ul>
+          </div>
         </ng-scrollbar>
       </c-card-body>
     </c-card>
@@ -70,8 +75,8 @@
                 class="fa-solid fa-clock-rotate-left mx-1"></i>{{display}}</c-badge></c-col></c-row></c-card-header>
       <c-card-body style="padding: 4px;">
         <ng-scrollbar #scrollable="ngScrollbar">
-
-          <table class="alarms24" small bordered responsive hover style="margin-bottom:0;white-space: nowrap;" cTable>
+          <div  infiniteScroll [scrollWindow]="false" scrollViewport  [infiniteScrollUpDistance]="scrollUpDistance" [infiniteScrollThrottle]="throttle" style="width: 100%;" (scrolledUp)="onUp($event)"  >
+          <table  class="alarms24" small bordered responsive hover style="margin-bottom:0;white-space: nowrap;display: table;" cTable>
             <thead>
               <tr style="position: sticky;top: -1px;background: #fff;">
                 <th scope="col">#</th>
@@ -85,7 +90,7 @@
                 <th scope="col">comment</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody *ngIf="eventsall" >
               <!-- {
             "id": 2,
             "mac": "6C:3B:6B:86:66:5B",
@@ -120,12 +125,13 @@
               </tr>
             </tbody>
           </table>
+          </div>
         </ng-scrollbar>
       </c-card-body>
     </c-card>
     <c-card style="height:40%">
       <c-card-header>All Active Alerts</c-card-header>
-      <c-card-body style="padding: 4px;">
+      <c-card-body *ngIf="eventUnfixedsall" style="padding: 4px;">
         <ng-scrollbar #scrollable2="ngScrollbar">
           <table small bordered responsive hover style="margin-bottom:0" cTable oncontextmenu="return false;">
             <thead>

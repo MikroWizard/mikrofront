@@ -39,3 +39,15 @@
   font-weight:normal;
   line-height:110%
 }
+@media only screen and (max-width: 1600px) {
+  .alerts-badges{
+      flex-direction:column!important;
+      align-items: flex-start;
+      max-width:50px;
+      align-items: left;
+  }
+  
+  ul li div:first-of-type{
+   min-width:50%;
+  }
+  }

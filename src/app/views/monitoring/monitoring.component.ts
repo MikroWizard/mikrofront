@@ -17,8 +17,9 @@ export class MonitoringComponent implements OnInit,OnDestroy {
   public tz: string;
   public copy_msg: any = false;
   public devices: any = false;
-  public eventsall: any = {};
-  public eventUnfixedsall: any = {};
+  public devicesearch:string='';
+  public eventsall: any = false;
+  public eventUnfixedsall: any = false;
   public list_update_timer : any;
   public timer_interval : any;
   public ECount: number = 0;
@@ -27,11 +28,19 @@ export class MonitoringComponent implements OnInit,OnDestroy {
   public display: any;
   public selected_devid : number =0;
   public contexItem:any=false;
+  public throttle:number = 10;
+  public scrollUpDistance:number = 2;
+  
+  public devicespage:number=1;
+  public scrollDownDistance:number = 2;
+
+  public allallertpage:number=1;
+  public allowinfinite:boolean=false;
   contextmenu : any= false;
   contextmainmenu: any= false;
   contextmenuX : any= 0;
   contextmenuY : any= 0;
-
+  AutoScrollTimer:any=false;
   constructor(
     private data_provider: dataProvider,
     private router: Router,
@@ -72,6 +81,7 @@ export class MonitoringComponent implements OnInit,OnDestroy {
     this.initAllalerts();
     this.initUnfixedalerts();
     this.update_tables();
+    this.auto_scroll();
   }
   set_table_color(item:any,bypass=true){
     if('status' in item && item.status==true && bypass) {
@@ -120,7 +130,8 @@ export class MonitoringComponent implements OnInit,OnDestroy {
     _self.ECount = 0;
     _self.WCount = 0;
     _self.CCount = 0;
-    this.data_provider.monitoring_devices_events().then((res) => {
+    this.devicespage=1;
+    this.data_provider.monitoring_devices_events(this.devicespage,this.devicesearch).then((res) => {
       _self.devices = res.map((d: any) => {
         d.ECount = 0;
         d.WCount = 0;
@@ -145,7 +156,8 @@ export class MonitoringComponent implements OnInit,OnDestroy {
 
   initAllalerts(){
     var _self = this;
-    this.data_provider.monitoring_all_events(_self.selected_devid).then((res) => {
+    this.allowinfinite=false;
+    this.data_provider.monitoring_all_events(_self.selected_devid,_self.allallertpage).then((res) => {
       var index=1;
       _self.eventsall = res.map((d: any) => {
         d.time = formatInTimeZone(
@@ -162,14 +174,20 @@ export class MonitoringComponent implements OnInit,OnDestroy {
         d.index = index++;
         return d
       });
-      console.dir(res)
-      setTimeout(function() {
-        _self.scrollable.scrollTo({ bottom: 0, duration: 500 });
-      }, 100);
+      _self.auto_scroll();
     });
+    setTimeout(function() {
+      _self.allowinfinite=true;
+      console.dir("allowing infinite")
+    }, 1500);
   }
 
-
+  auto_scroll(){
+    var _self=this;
+    this.AutoScrollTimer=setTimeout(function() {
+      _self.scrollable.scrollTo({ bottom: 0, duration: 500 });
+    }, 1000);
+  }
 
   initUnfixedalerts(){
     var _self = this;
@@ -222,8 +240,11 @@ export class MonitoringComponent implements OnInit,OnDestroy {
     this.reload_data();
   }
   reload_data(){
+    
     clearTimeout(this.list_update_timer);
     clearTimeout(this.timer_interval);
+    console.dir("reloading data");
+    this.allallertpage=1;
     this.initEvents();
     this.initAllalerts();
     this.initUnfixedalerts();
@@ -244,16 +265,73 @@ export class MonitoringComponent implements OnInit,OnDestroy {
     clearTimeout(this.timer_interval);
     this.timer(1)
     this.list_update_timer = setTimeout(() => {
+      _self.allallertpage=1;
       _self.initEvents();
       _self.initAllalerts();
       _self.initUnfixedalerts();
       _self.update_tables();
     }, 60000);
-       
+
   }
+
+  onUp(ev:any) {
+    if(!this.allowinfinite){
+      console.dir("scroll up not allowed");
+    }
+    else{
+    var _self = this;
+    this.allallertpage++;
+    this.data_provider.monitoring_all_events(_self.selected_devid,_self.allallertpage).then((res) => {
+      var index=1;
+      let eventsall = res.map((d: any) => {
+        d.time = formatInTimeZone(
+          d.eventtime.split(".")[0] + ".000Z",
+          _self.tz,
+          "yyyy-MM-dd HH:mm:ss"
+        );
+        if(d.fixtime)
+          d.fixtime = formatInTimeZone(
+            d.fixtime.split(".")[0] + ".000Z",
+            _self.tz,
+            "yyyy-MM-dd HH:mm:ss"
+          );
+        d.index = index++;
+        return d
+      });
+      _self.eventsall.unshift(...eventsall);
+      // re calculate index
+      var index=1;
+      _self.eventsall = _self.eventsall.map((d: any) => {
+        d.index = index++;
+        return d
+      });
+    });
+  }
+
+  }
+
+
+  onDown(ev:any) {
+    var _self = this;
+    console.dir("scroll down");
+    this.devicespage++;
+    this.data_provider.monitoring_devices_events(this.devicespage).then((res) => {
+      let devices = res;
+      console.dir(_self.devices);
+      console.dir(devices);
+      _self.devices=_self.devices.concat(devices);
+      console.dir(_self.devices);
+    });
+  }
+
+
+
 
   ngOnDestroy(){
     clearTimeout(this.list_update_timer);
     clearTimeout(this.timer_interval);
+    this.eventsall=false;
+    this.eventUnfixedsall=false;
+    this.scrollable.update();
   }
 }

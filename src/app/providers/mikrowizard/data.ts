@@ -77,9 +77,13 @@ export class dataProvider {
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/dashboard/stats", data);
     }
-    monitoring_devices_events(){
+    monitoring_devices_events(page:number,textfilter:string=''){
+        var data={
+            'page':page,
+            'textfilter':textfilter
+        }
   
-        return this.MikroWizardRPC.sendJsonRequest("/api/monitoring/devs/get", {});
+        return this.MikroWizardRPC.sendJsonRequest("/api/monitoring/devs/get", data);
     }
 
     monitoring_events_fix(event_id:number){
@@ -89,9 +93,10 @@ export class dataProvider {
         return this.MikroWizardRPC.sendJsonRequest("/api/monitoring/events/fix", data);
     }
   
-    monitoring_all_events(devid:number){
+    monitoring_all_events(devid:number,page:number){
         var data={
-            'devid':devid
+            'devid':devid,
+            'page':page
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/monitoring/events/get", data);
     }

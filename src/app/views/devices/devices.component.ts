@@ -416,8 +416,6 @@ export class DevicesComponent implements OnInit, OnDestroy {
     var data = {
       group_id: this.selected_group,
       search: false,
-      page: this.paging.page,
-      size: this.paging.pageSize,
     };
 
     _self.data_provider.get_dev_list(data).then((res) => {
@@ -451,7 +449,7 @@ export class DevicesComponent implements OnInit, OnDestroy {
       // 		_self.loading = false;
       // });
       //we don't want to reload table if user is selected devices from list
-      if (_self.Selectedrows.length < 1) _self.initGridTable();
+      if (_self.Selectedrows && _self.Selectedrows.length < 1) _self.initGridTable();
     }, 10000);
   }
 
