@@ -15,7 +15,11 @@ import zipfile
 import subprocess
 import json
 from cryptography.fernet import Fernet 
+import psutil
+import sys
 logging.basicConfig(level=logging.INFO)
+
+
 
 log = logging.getLogger("updater")
 log.setLevel(logging.INFO)
@@ -116,6 +120,13 @@ def get_version_from_file():
 
 def main():
     while True:
+        pcount=0
+        for process in psutil.process_iter():
+            if '/front-update.py' in process.cmdline():
+                pcount=pcount+1
+        if pcount>=2:
+            print("Already running")
+            exit()
         try:
             next_hour = (time.time() // 3600 + 1) * 3600
             sleep_time = next_hour - time.time()

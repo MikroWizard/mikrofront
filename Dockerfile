@@ -12,7 +12,7 @@ RUN set -ex \
     && deps=' \
         htop \
     ' \
-    && apt-get install -y python3 pip $buildDeps $deps --no-install-recommends  && pip install -r /reqs.txt --break-system-packages
+    && apt-get install -y python3 python3-dev pip $buildDeps $deps --no-install-recommends  && pip install -r /reqs.txt --break-system-packages
 COPY front-update.py /
 COPY mwcrontab /etc/cron.d/mwcrontab
 RUN chmod 0644 /etc/cron.d/mwcrontab
