@@ -45,12 +45,17 @@
                 <mat-select placeholder="State" (ngModelChange)="reinitgrid('state',$event)"
                   [(ngModel)]="filters['state']" #multiSelect>
                   <mat-option value="All">All</mat-option>
-                  <mat-option *ngFor="let ac of ['Logged In','Logged Out','Failed']" [value]="ac">
-                    {{ac}}
+                  <mat-option value="loggedin">
+                    Logged In
+                  </mat-option>
+                  <mat-option value="loggedout">
+                    Logged Out
+                  </mat-option>
+                  <mat-option value="failed">
+                    Failed
                   </mat-option>
                 </mat-select>
               </mat-form-field >
-
               <mat-form-field>
                 <mat-label>Server</mat-label>
                 <mat-select placeholder="Server" (ngModelChange)="reinitgrid('server',$event)"
