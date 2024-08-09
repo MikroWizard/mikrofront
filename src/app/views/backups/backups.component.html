@@ -117,7 +117,7 @@
       <i class="fa-regular fa-copy"></i> To clipboard
     </button>
     <div>
-      <button (click)="restore_backup(false)" class=" mx-3" cButton color="danger">
+      <button *ngIf="ispro" (click)="restore_backup(false)" class=" mx-3" cButton color="danger">
         Restore this
       </button>
       <button [cModalToggle]="BakcupModal.id" cButton color="info">
