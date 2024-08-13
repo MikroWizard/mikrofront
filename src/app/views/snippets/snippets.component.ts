@@ -56,7 +56,7 @@ export class SnippetsComponent implements OnInit, OnDestroy {
       // console.dir("res",res)
       _self.uid = res.uid;
       _self.uname = res.name;
-	  _self.tz = res.tz;
+	    _self.tz = res.tz;
       // console.dir("role",res.role);
       const userId = _self.uid;
 
@@ -205,17 +205,6 @@ export class SnippetsComponent implements OnInit, OnDestroy {
 			index += 1;
 			return d;
 		  });
-
-
-
-
-
-
-
-
-
-
-
 	  _self.DeleteConfirmModalVisible = false;
 	});
   }
@@ -298,7 +287,7 @@ export class SnippetsComponent implements OnInit, OnDestroy {
     this.current_snippet = item;
     this.current_snippet["task_type"] = "snipet_exec";
     this.current_snippet["selection_type"] = "devices";
-	this.form_changed();
+	  this.form_changed();
     this.ExecSnipetModalVisible = true;
     this.ModalAction = "exec";
   }

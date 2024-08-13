@@ -85,7 +85,7 @@ export class dataProvider {
   
         return this.MikroWizardRPC.sendJsonRequest("/api/monitoring/devs/get", data);
     }
-
+    
     monitoring_events_fix(event_id:number){
         var data={
             'event_id':event_id
@@ -206,7 +206,7 @@ export class dataProvider {
             'devid':devid
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/devlogs/details/list", data);
-    }    
+    }
 
     scan_devs(type:string,info:any){
         var data: any={
@@ -216,6 +216,10 @@ export class dataProvider {
             data = Object.assign(data, info);
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/scanner/scan", data);
+    }
+
+    scan_results(){
+        return this.MikroWizardRPC.sendJsonRequest("/api/scanner/results", {});
     }
 
 	get_groups(searchstr:string=""){

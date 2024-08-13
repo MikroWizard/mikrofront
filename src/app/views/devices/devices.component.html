@@ -166,6 +166,7 @@
 </c-row>
 
 
+
 <c-modal #ScannerModal [visible]="scanwizard_modal" (visibleChange)="handleScanwizard_modal($event)" backdrop="static"
   id="ScannerModal">
   <c-modal-header>
@@ -255,11 +256,58 @@
     </div>
   </c-modal-body>
   <c-modal-footer>
-    <small *ngIf="scan_type=='ip'" style="margin: 0 auto;">Empty username and password means system default
+    <h6 style="margin: 0 auto;" *ngIf="scanwizard_step==1" ><button cButton color="primary" (click)="show_exec()" style="margin: 0 auto;"  variant="outline">Device scan logs</button></h6>
+    <small *ngIf="scan_type=='ip'" >Empty username and password means system default
       configuration</small>
   </c-modal-footer>
 </c-modal>
 
+
+<c-modal #ExecutedDataModal backdrop="static" size="xl" [(visible)]="ExecutedDataModalVisible" id="ExecutedDataModal">
+  <c-modal-header>
+    <h5 cModalTitle>Editing Group </h5>
+    <button (click)="ExecutedDataModalVisible=!ExecutedDataModalVisible" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body>
+    <c-input-group class="mb-3">
+      <h5>Group Members :</h5>
+      <gui-grid [autoResizeWidth]="true" *ngIf="ExecutedDataModalVisible" [searching]="searching"
+        [source]="ExecutedData" [columnMenu]="columnMenu" [sorting]="sorting" [infoPanel]="infoPanel"
+       [autoResizeWidth]=true
+        [paging]="paging">
+        <gui-grid-column header="Start time" field="start">
+          <ng-template let-value="item['started']" let-item="item" let-index="index">
+            &nbsp; {{value}} </ng-template>
+        </gui-grid-column>
+        <gui-grid-column header="Start ip" field="start_ip">
+          <ng-template let-value="item['start_ip']" let-item="item" let-index="index">
+            &nbsp; {{value}} </ng-template>
+        </gui-grid-column>
+        <gui-grid-column header="End ip" field="start_ip">
+          <ng-template let-value="item['start_ip']" let-item="item" let-index="index">
+            &nbsp; {{value}} </ng-template>
+        </gui-grid-column>
+        <gui-grid-column   header="End time" field="end">
+          <ng-template let-value="item['ended']" let-item="item" let-index="index">
+            {{value}}
+          </ng-template>
+        </gui-grid-column>
+        <gui-grid-column header="Logs" field="mac" align="center">
+          <ng-template let-value="item['result']" let-item="item" let-index="index">
+            <button (click)="exportToCsv(value)"  color="primary" cButton>download</button>
+          </ng-template>
+        </gui-grid-column>
+      </gui-grid>
+      <br/>
+    </c-input-group>
+    <hr />
+  </c-modal-body>
+  <c-modal-footer>
+    <button (click)="ExecutedDataModalVisible=!ExecutedDataModalVisible" cButton color="secondary">
+      Close
+    </button>
+  </c-modal-footer>
+</c-modal>
 
 <c-modal #ConfirmModal backdrop="static" [(visible)]="ConfirmModalVisible" id="runConfirmModal">
   <c-modal-header>

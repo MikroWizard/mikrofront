@@ -26,20 +26,9 @@ import {
 } from "@generic-ui/ngx-grid";
 import { ToasterComponent } from "@coreui/angular";
 import { AppToastComponent } from "../toast-simple/toast.component";
+import { formatInTimeZone } from "date-fns-tz";
 
-interface IUser {
-  name: string;
-  state: string;
-  registered: string;
-  country: string;
-  usage: number;
-  period: string;
-  payment: string;
-  activity: string;
-  avatar: string;
-  status: string;
-  color: string;
-}
+
 
 @Component({
   templateUrl: "devices.component.html",
@@ -47,6 +36,7 @@ interface IUser {
 export class DevicesComponent implements OnInit, OnDestroy {
   public uid: number;
   public uname: string;
+  public tz: string;
 
   constructor(
     private data_provider: dataProvider,
@@ -63,6 +53,7 @@ export class DevicesComponent implements OnInit, OnDestroy {
     this.data_provider.getSessionInfo().then((res) => {
       _self.uid = res.uid;
       _self.uname = res.name;
+      _self.tz = res.tz;
       const userId = _self.uid;
 
       if (res.role != "admin") {
@@ -99,6 +90,9 @@ export class DevicesComponent implements OnInit, OnDestroy {
   public selected_devices: any = {};
   public selected_device: any = {};
   public show_pass: boolean = false;
+  public ExecutedDataModalVisible: boolean = false;
+  public ExecutedData: any = [];
+  
   toasterForm = {
     autohide: true,
     delay: 3000,
@@ -192,6 +186,7 @@ export class DevicesComponent implements OnInit, OnDestroy {
         break;
     }
   }
+
   edit_device_form(dev: any) {
     var _self = this;
     this.selected_device = dev;
@@ -210,6 +205,7 @@ export class DevicesComponent implements OnInit, OnDestroy {
       }
     });
   }
+  
   save_device() {
     var _self = this;
     this.data_provider
@@ -452,6 +448,108 @@ export class DevicesComponent implements OnInit, OnDestroy {
       if (_self.Selectedrows && _self.Selectedrows.length < 1) _self.initGridTable();
     }, 10000);
   }
+  
+  sanitizeString(desc:string) {
+    var itemDesc:string='';
+    if (desc) {
+        itemDesc = desc.toString().replace(/"/g, '\"');
+        itemDesc = itemDesc.replace(/'/g, '\'');
+    } else {
+        itemDesc = '';
+    }
+    return itemDesc;
+  }
+
+  exportToCsv(jsonResponse:any) {
+    const data = jsonResponse;
+    const columns = this.getColumns(data);
+    const csvData = this.convertToCsv(data, columns);
+    this.downloadFile(csvData, 'data.csv', 'text/csv');
+  }
+
+  getColumns(data: any[]): string[] {
+    const columns : any  = [];
+    data.forEach(row => {
+      Object.keys(row).forEach((col) => {
+        if (!columns.includes(col)) {
+          columns.push(col);
+        }
+      });
+    });
+    return columns;
+  }
+
+  convertToCsv(data: any[], columns: string[]): string {
+    var _self=this;
+    let csv = '';
+    csv += columns.join(',') + '\n';
+    data.forEach(row => {
+      const values : any = [];
+      columns.forEach((col:any) => {
+        values.push('"'+_self.sanitizeString(row[col])+'"');
+      });
+      csv += values.join(',') + '\n';
+    });
+    return csv;
+  }
+
+  downloadFile(data: string, filename: string, type: string) {
+    const blob = new Blob([data], { type: type });
+	const nav = (window.navigator as any);
+
+    if (nav.msSaveOrOpenBlob) {
+		nav.msSaveBlob(blob, filename);
+    } else {
+      const link = document.createElement('a');
+      link.setAttribute('href', URL.createObjectURL(blob));
+      link.setAttribute('download', filename);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  }
+
+
+
+  show_exec(){
+    var _self=this;
+    this.ExecutedDataModalVisible = true;
+    this.data_provider
+    .scan_results()
+    .then((res) => {
+      console.dir(res);
+      let index = 1;
+      _self.ExecutedData= res.data.map((d: any) => {
+        d.index = index;
+        d.ended = formatInTimeZone(
+          d.created.split(".")[0] + ".000Z",
+          _self.tz,
+          "yyyy-MM-dd HH:mm:ss XXX"
+        );
+        d.info=JSON.parse(d.info);
+        d.started = formatInTimeZone(
+          d.info.created.split(".")[0] + ".000Z",
+          _self.tz,
+          "yyyy-MM-dd HH:mm:ss XXX"
+        );
+        d.start_ip=d.info.start_ip;
+        d.end_ip=d.info.end_ip;
+        d.result=JSON.parse(d.result);
+        index += 1;
+        return d;
+        });
+    });
+    }
+
+
+
+
+
+
+
+
+
 
   ngOnDestroy(): void {
     clearTimeout(this.scan_timer);
