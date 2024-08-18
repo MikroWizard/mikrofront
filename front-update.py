@@ -142,7 +142,7 @@ def main():
                 "front":True,
                 "version": version
             }
-            url="http://mikrowizard.com/wp-json/mikrowizard/v1/get_update"
+            url="https://mikrowizard.com/wp-json/mikrowizard/v1/get_update"
             # send post request to server mikrowizard.com with params in json
             response = requests.post(url, json=params)
             # get response from server
@@ -171,7 +171,7 @@ def main():
                 extract_zip_reload("/usr/share/nginx/"+res['filename'],"/usr/share/nginx/")
                 time.sleep(sleep_time)
                 continue
-            download_url="http://mikrowizard.com/wp-json/mikrowizard/v1/download_update"
+            download_url="https://mikrowizard.com/wp-json/mikrowizard/v1/download_update"
             # send post request to server mikrowizard.com with params in json
             r = requests.post(download_url,json=params,stream=True)
             if "invalid" in r.text or r.text=='false':
