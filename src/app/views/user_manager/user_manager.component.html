@@ -36,10 +36,14 @@
           </gui-grid-column>
           <gui-grid-column header="Actions" width="120" field="action">
             <ng-template let-value="item.id" let-item="item" let-index="index">
-              <button cButton color="warning" size="sm" (click)="editAddUser(item,'edit');" class="mx-1"><i
+              <button cButton color="warning" size="sm" (click)="editAddUser(item,'edit');" ><i
                   class="fa-regular fa-pen-to-square"></i></button>
-              <button cButton color="danger" size="sm" (click)="confirm_delete(item);"><i
+              <button cButton color="danger" size="sm" class="mx-1" (click)="confirm_delete(item);"><i
                   class="fa-regular fa-trash-can"></i></button>
+
+              <button *ngIf="ispro" cButton color="secondary" size="sm" (click)="showrest(item);">
+                <i class="fa-solid fa-fingerprint"></i>
+              </button>
             </ng-template>
           </gui-grid-column>
         </gui-grid>
@@ -79,17 +83,6 @@
       <input type="password" cFormControl id="floatingInput" placeholder="Password" [(ngModel)]="SelectedUser['password']" />
       <label cLabel for="floatingInput">Password</label>
     </div>
-
-    <!-- <c-input-group class="mb-3">
-      <label cInputGroupText for="inputGroupSelect01">
-        Options
-      </label>
-      <select cSelect id="inputGroupSelect01" [(ngModel)]="SelectedUser['role']" (change)="get_user_perms(SelectedUser['id'])">
-        <option>Choose...</option>
-        <option value="admin">admin</option>
-        <option value="user">Customer</option>
-      </select>
-    </c-input-group> -->
     <c-input-group>
     <h5>MikroWizard permisssions :</h5>
     <c-container>
@@ -165,22 +158,106 @@
         </mat-form-field>
       </td>
       <td>
-        <button *ngIf="SelectedUser['action']=='edit'" cButton color="primary" (click)="add_user_perm()">+</button>
-        <button *ngIf="SelectedUser['action']=='add'" cButton color="primary" (click)="add_new_user_perm()">+</button>
+        <button *ngIf="SelectedUser['action']=='edit'" cButton color="primary" (click)="add_user_perm()">Add+</button>
+        <button *ngIf="SelectedUser['action']=='add'" cButton color="primary" (click)="add_new_user_perm()">Add+</button>
         <!-- <button *ngIf="SelectedUser['action']=='add'" cButton color="primary" (click)="loading=!loading">++</button> -->
       </td>
     </table>
-
   </c-modal-body>
+  <c-modal-footer  style="justify-content: space-between;">
+    <div>
+      <button *ngIf="SelectedUser['role']!='disabled'" (click)="SelectedUser['role']='disabled'" cButton color="danger">Deactive</button>
+      <button *ngIf="SelectedUser['role']=='disabled'" (click)="SelectedUser['role']='admin'" cButton color="success">Activate</button>
+    </div>
+    <div>
+      <button *ngIf="SelectedUser['action']=='add'" (click)="submit('add')" cButton color="primary">Add</button>
+      <button *ngIf="SelectedUser['action']=='edit'" (click)="submit('edit')" cButton color="primary">save</button>
+      <button [cModalToggle]="EditTaskModal.id" cButton color="secondary">
+        Close
+      </button>
+    </div>
+  </c-modal-footer>
+</c-modal>
 
+<c-modal #RestrictionsTaskModal *ngIf="ispro && userresttrictions" backdrop="static" size="lg" [(visible)]="RestrictionsTaskModalVisible" id="RestrictionsTaskModal">
+  <c-modal-header>
+    <h5 cModalTitle>Security Restrictions of {{SelectedUser['username']}}</h5>
+  </c-modal-header>
+  <c-modal-body>
+    <table width="100%">
+      <tr>
+        <td><h6>TOTP status :</h6></td>
+        <td>
+          <c-form-check sizing="xl" switch>
+            <input cFormCheckInput [(ngModel)]="userresttrictions['totp']" [checked]="userresttrictions['totp']" type="checkbox" />
+            <label *ngIf="userresttrictions['totp']" cFormCheckLabel> TOTP is active</label>
+            <label *ngIf="!userresttrictions['totp']" cFormCheckLabel> TOTP is deactive</label>
+          </c-form-check>
+        </td>
+      </tr>
+      <tr>
+        <td><h6>Use OTP for device login:</h6></td>
+        <td>
+          <c-button-group aria-label="Basic  example" role="group">
+            <button cButton color="info"  variant="outline" size="sm" [active]="userresttrictions['device-totp']=='system'"
+              (click)="userresttrictions['device-totp']='system'">System Defined</button>
+            <button cButton color="danger"  variant="outline" size="sm" [active]="userresttrictions['device-totp']=='yes'"
+              (click)="userresttrictions['device-totp']='yes'">TOTP</button>
+            <button cButton color="success"  variant="outline" size="sm" [active]="userresttrictions['device-totp']=='no'"
+              (click)="userresttrictions['device-totp']='no'">Password</button>
+          </c-button-group>
+ 
+        </td>
+      </tr>
+      <tr>
+        <td><h6>Restrict IP access:</h6></td>
+        <td>
+          <c-form-check sizing="xl" switch>
+            <input cFormCheckInput [(ngModel)]="userresttrictions['ip']" [checked]="userresttrictions['ip']" type="checkbox" />
+            <label *ngIf="userresttrictions['ip']" cFormCheckLabel> Restricted</label>
+            <label *ngIf="!userresttrictions['ip']" cFormCheckLabel> Not Restricted</label>
+          </c-form-check>
+        </td>
+      </tr>
+    </table>
+    <c-input-group *ngIf="userresttrictions['ip'] && userresttrictions['allowed_ips'].length>0" class="mb-3">
+      <h5>Allowed ips :</h5>
+      <gui-grid  [autoResizeWidth]="true" [source]="userresttrictions['allowed_ips']" [columnMenu]="columnMenu" [sorting]="sorting"
+        [autoResizeWidth]=true [paging]="paging" >
+        <gui-grid-column header="IP Address" >
+          <ng-template let-value="item" let-item="item" let-index="index">
+            &nbsp; {{item}} </ng-template>
+        </gui-grid-column>
+        <gui-grid-column header="Action" width="80" align="center">
+          <ng-template let-value="item" let-item="item" let-index="index">
+            <button cButton color="danger" (click)="delete_ip(item)"><i class="fa-regular fa-trash-can"></i></button>
+          </ng-template>
+        </gui-grid-column>
+      </gui-grid>
+    </c-input-group>
+    <hr />
+    <table *ngIf="userresttrictions['ip']" class="mb-3">
+      <td style="width: 30%;">
+        <span>Add new IP</span>
+      </td>
+      <td>
+        <div >
+          <input cFormControl id="floatingInput" placeholder="IP address/cidr" [(ngModel)]="ipaddress" />
+        </div>
+      </td>
+      <td style="vertical-align: top;">
+        <button cButton color="primary" (click)="add_ip()">Add+</button>
+      </td>
+    </table>
+  </c-modal-body>
   <c-modal-footer>
-    <button *ngIf="SelectedUser['action']=='add'" (click)="submit('add')" cButton color="primary">Add</button>
-    <button *ngIf="SelectedUser['action']=='edit'" (click)="submit('edit')" cButton color="primary">save</button>
-    <button [cModalToggle]="EditTaskModal.id" cButton color="secondary">
+    <button (click)="save_sec()" cButton color="primary">Save</button>
+    <button [cModalToggle]="RestrictionsTaskModal.id" cButton color="secondary">
       Close
     </button>
   </c-modal-footer>
 </c-modal>
+
 
 
   <c-modal #DeleteConfirmModal backdrop="static" [(visible)]="DeleteConfirmModalVisible" id="DeleteConfirmModal">

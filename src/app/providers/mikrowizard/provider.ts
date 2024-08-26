@@ -110,7 +110,6 @@ export class MikroWizardProvider {
 	}
   public sendRequestauth(url: string, params: Object){ 
     let body = this.buildRequest(url, params);
-	console.dir(body);
 	return this.http.post(this.MikroWizard_server + url, body, {observe: "response",headers: this.headers,withCredentials:true});
   }
   public sendRequest(url: string, params: Object): Promise<any> {
@@ -164,7 +163,7 @@ export class MikroWizardProvider {
 			username : login,
 			password : password,
 			// token: token,
-			ga: ga
+			otp: ga
 		};
 		let $this = this;
 		return this.sendRequest("/api/login", params);
@@ -172,9 +171,6 @@ export class MikroWizardProvider {
 
 	public isLoggedIn() {
 		return this.getSessionInfo().then(function(result: any) {
-			// console.dir("result");
-			console.dir(result);
-			// return true;
 			if ( "uid" in result === false ) return false;
 			else return true;
 		});

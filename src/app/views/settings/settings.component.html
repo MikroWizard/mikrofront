@@ -192,6 +192,13 @@
             * Download and install reqired firmware before installing the target firmware . for example it will install
             latest 7.12 then upgrade to newer version >7.13 or install Required packages before update</c-form-feedback>
         </c-form-check>
+
+        <c-form-check *ngIf="ispro" [switch]="true" sizing="xl">
+          <input cFormCheckInput [(ngModel)]="sysconfigs['otp_force']['value']" type="checkbox" />
+          <label cFormCheckLabel>Force device otp</label>
+          <c-form-feedback style="display: block;color: #979797;margin-top: 0;" [valid]="true"><code style="padding: 0!important;">PRO</code>
+            * Force login to devices using otp for all users.(you can make exceptions for each user)</c-form-feedback>
+        </c-form-check>
         <button cButton color="primary" (click)="saveSysSetting()">Save</button>
 
       </c-card-body>

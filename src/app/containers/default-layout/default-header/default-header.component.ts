@@ -50,8 +50,8 @@ export class DefaultHeaderComponent extends HeaderComponent {
     this.lname = this.current_user.lastname;
   }
 
-  callParent(): void {
-    this.UserModalEvent.next('test');
+  callParent(action:string): void {
+    this.UserModalEvent.next(action);
   }
 
   logout() {

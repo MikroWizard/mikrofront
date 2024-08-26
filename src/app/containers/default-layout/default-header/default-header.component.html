@@ -77,9 +77,15 @@
         <h6 cDropdownHeader class="bg-light fw-semibold py-2">User Menu</h6>
       </li>
       <li>
-        <button (click)="callParent()" cDropdownItem>
+        <button (click)="callParent('password')" cDropdownItem>
           <svg cIcon class="me-2" name="cilUser"></svg>
           Change password
+        </button>
+      </li>
+      <li>
+        <button (click)="callParent('otp')" cDropdownItem>
+          <svg cIcon class="me-2" name="cilUser"></svg>
+          setup otp
         </button>
       </li>
       <li>

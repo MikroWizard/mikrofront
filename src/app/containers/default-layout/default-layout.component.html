@@ -1,43 +1,28 @@
 <!--sidebar-->
-<c-sidebar
-  #sidebar="cSidebar"
-  class="d-print-none sidebar sidebar-fixed"
-  id="sidebar"
-  visible
->
-  <c-sidebar-brand
-    [brandFull]="{
+<c-sidebar #sidebar="cSidebar" class="d-print-none sidebar sidebar-fixed" id="sidebar" visible>
+  <c-sidebar-brand [brandFull]="{
       src: 'assets/img/brand/logo-MIkroWizard-big-white.svg',
       width: 200,
       height: 46,
       alt: 'MikroWizard Logo'
-    }"
-    [brandNarrow]="{
+    }" [brandNarrow]="{
       src: 'assets/img/brand/logo-MIkroWizard-small-color.svg',
       width: 46,
       height: 46,
       alt: 'MikroWizard Logo'
-    }"
-    routerLink="./"
-  />
+    }" routerLink="./" />
 
   <ng-scrollbar pointerEventsMethod="scrollbar">
-    <c-sidebar-nav 
-      [navItems]="navItems"
-      dropdownMode="close"
-    />
+    <c-sidebar-nav [navItems]="navItems" dropdownMode="close" />
   </ng-scrollbar>
-  <c-sidebar-toggler
-    *ngIf="!sidebar.narrow"
-    toggle="unfoldable"
-    cSidebarToggle="sidebar"
-  />
+  <c-sidebar-toggler *ngIf="!sidebar.narrow" toggle="unfoldable" cSidebarToggle="sidebar" />
 </c-sidebar>
 
 <!--main-->
 <div class="wrapper d-flex flex-column min-vh-100 bg-light dark:bg-transparent">
   <!--app-header-->
-  <app-default-header (UserModalEvent)="show_user_modal()" class="mb-2 d-print-none header header-sticky" position="sticky" sidebarId="sidebar" />
+  <app-default-header (UserModalEvent)="show_user_modal($event)" class="mb-2 d-print-none header header-sticky"
+    position="sticky" sidebarId="sidebar" />
   <!--app-body-->
   <div class="main-container body flex-grow-1 px-3" style="display: flex;">
     <c-container breakpoint="fluid" class="h-auto">
@@ -50,30 +35,73 @@
 
 <c-modal #UserProfileModal backdrop="static" size="lg" [(visible)]="UserProfileModalVisible" id="UserProfileModal">
   <c-modal-header>
-    <h5 cModalTitle>Change Password Form of<code><b>{{ uname }}({{ fname }} {{lname}})</b></code></h5>
+    <h5 *ngIf="action=='password'" cModalTitle>Change Password Form
+      of<code><b>{{ uname }}({{ fname }} {{lname}})</b></code></h5>
+    <h5 *ngIf="action=='otp'" cModalTitle>totp setup<code><b>{{ uname }}({{ fname }} {{lname}})</b></code></h5>
+
     <button [cModalToggle]="UserProfileModal.id" cButtonClose></button>
   </c-modal-header>
-  <c-modal-body>
+  <c-modal-body *ngIf="action=='password'">
 
     <div [cFormFloating]="true" class="mb-3">
-      <input type="password" cFormControl id="floatingInput" [(ngModel)]="password['cupass']" placeholder="Current Password" />
+      <input type="password" cFormControl id="floatingInput" [(ngModel)]="password['cupass']"
+        placeholder="Current Password" />
       <label cLabel for="floatingInput">Current Password</label>
     </div>
-    
+
     <div [cFormFloating]="true" class="mb-3">
-      <input type="password" cFormControl (ngModelChange)="password_changed('pass1',$event)" [(ngModel)]="password['pass1']" id="floatingInput" placeholder="New Password" />
+      <input type="password" cFormControl (ngModelChange)="password_changed('pass1',$event)"
+        [(ngModel)]="password['pass1']" id="floatingInput" placeholder="New Password" />
       <label cLabel for="floatingInput">New Password</label>
     </div>
 
     <div [cFormFloating]="true" class="mb-3">
-      <input type="password" cFormControl (ngModelChange)="password_changed('pass2',$event)" [(ngModel)]="password['pass2']"  [valid]="passvalid['pass2']"  id="floatingInput" placeholder="New Password confirm" />
+      <input type="password" cFormControl (ngModelChange)="password_changed('pass2',$event)"
+        [(ngModel)]="password['pass2']" [valid]="passvalid['pass2']" id="floatingInput"
+        placeholder="New Password confirm" />
       <label cLabel for="floatingInput">New Password confirm</label>
     </div>
     <code *ngIf="error"><i class="fa-solid fa-triangle-exclamation"></i><small>  {{error}}</small></code>
   </c-modal-body>
+  <c-modal-body *ngIf="action=='otp'">
+    <div class="step-container" >
+
+      <div *ngIf="currentStep === 1" class="step" style="display: flex;flex-direction: column;flex-wrap: nowrap;justify-content: center;align-items: center;">
+        <h3 class="text-center">Step 1: Enable TOTP</h3>
+        <p>Please click the button below to enable Two-Factor Authentication.</p>
+        <button *ngIf="qrCode!=false" (click)="otpwizard(1)" class="btn btn-primary">Enable TOTP</button>
+        <button *ngIf="qrCode==false" (click)="otpwizard(1)" class="btn btn-primary">Disable TOTP</button>
+      </div>
+
+      <!-- Step 2: Scan QR Code -->
+      <div *ngIf="currentStep === 2" class="step text-center">
+        <h3>Step 2: Scan QR Code</h3>
+        <p>Open your Google Authenticator app and scan the QR code below:</p>
+        <div>
+          <img *ngIf="qrCode" [src]="qrCode" alt="QR Code" style="max-width: 100%; height: auto;">
+        </div>
+        <button (click)="otpwizard(2)" class="btn btn-primary mt-3">Next</button>
+      </div>
+
+      <!-- Step 3: Verify TOTP -->
+      <div *ngIf="currentStep === 3" class="step">
+        <h3 *ngIf="qrCode!=false"  class="text-center">Step 3: Verify TOTP</h3>
+        <h3 *ngIf="qrCode==false"  class="text-center">Step 3: Verify TOTP To Disable TOTP</h3>
+
+        <p>Please enter the code generated by your authenticator app:</p>
+        <input type="text" [(ngModel)]="totpCode" placeholder="Enter TOTP Code" class="form-control" required>
+      </div>
+    </div>
+
+    <div *ngIf="errorMessage!=false" class="alert alert-danger mt-3" role="alert">
+      {{ errorMessage }}
+    </div>
+
+  </c-modal-body>
   <c-modal-footer>
-    <button (click)="submit()" cButton color="primary">submit</button>
-   <button [cModalToggle]="UserProfileModal.id" cButton color="secondary">
+    <button *ngIf="action=='password'" (click)="submit()" cButton color="primary">submit</button>
+    <button *ngIf="currentStep==3"  (click)="otpwizard(3)" cButton color="success" >Submit</button>
+    <button [cModalToggle]="UserProfileModal.id" cButton color="secondary">
       Close
     </button>
   </c-modal-footer>

@@ -30,6 +30,11 @@ const routes: Routes = [
           import('./views/monitoring/monitoring.module').then((m) => m.MonitoringModule)
       },
       {
+        path: 'vault',
+        loadChildren: () =>
+          import('./views/vault/vault.module').then((m) => m.VaultModule)
+      },
+      {
         path: 'devices',
         loadChildren: () =>
           import('./views/devices/devices.module').then((m) => m.DevicesModule)

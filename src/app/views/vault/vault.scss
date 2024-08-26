@@ -1,0 +1,29 @@
+
+.nav-underline {
+    border-bottom: 2px solid var(--cui-nav-underline-border-color, #c4c9d0)
+}
+
+.nav-underline .nav-item {
+    margin-bottom: -2px;
+    cursor: pointer;
+}
+
+.nav-underline .nav-link {
+    color: var(--cui-nav-underline-link-color, #768192);
+    border-style: none none solid!important;
+    border-width:2px;
+    position:relative;
+    bottom:-1px;
+    cursor: pointer;
+
+}
+
+.nav-underline .nav-link:hover,.nav-underline .nav-link:focus {
+    border-color: var(--cui-nav-underline-link-active-border-color, #321fdb)
+}
+
+.nav-underline .nav-link.active,.nav-underline .show>.nav-link {
+    color: var(--cui-nav-underline-link-active-color, #321fdb);
+    background: transparent;
+    border-color: var(--cui-nav-underline-link-active-border-color, #321fdb)
+}

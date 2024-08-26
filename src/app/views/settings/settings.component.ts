@@ -237,6 +237,9 @@ export class SettingsComponent implements OnInit {
       _self.sysconfigs["safe_install"]["value"] = /true/i.test(
         _self.sysconfigs["safe_install"]["value"]
       );
+      _self.sysconfigs["otp_force"]["value"] = /true/i.test(
+        _self.sysconfigs["otp_force"]["value"]
+      );
       _self.SysConfigloading = false;
     });
   }

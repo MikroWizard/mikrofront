@@ -18,7 +18,7 @@ export class LoginComponent {
   public submitted = false;
   public forgot_page: boolean = false;
   public forgot_btn_disable: boolean = false;
-
+  public show_otp: boolean = false;
 
 	constructor(
 		private router: Router,
@@ -43,24 +43,25 @@ export class LoginComponent {
 		var _self = this;
 		let uname = _self.loginForm.get('username')!.value;
 		let passwd = _self.loginForm.get('password')!.value;
-		let ga_code = '';
-		console.dir(uname);
-		_self.data_provider.login(uname, passwd, '').then(res => {
-			if ('uid' in res && res['uid']){
+		let ga_code = _self.loginForm.get('ga_code')!.value;
+		_self.data_provider.login(uname, passwd, ga_code).then(res => {
+			if('uid' in res && res['uid']){
 				_self.error_msg = "";
 				_self.login_checker.setStatus(true);
 				_self.router.navigate(['/'], {replaceUrl: true});
 			}
+			else if('status' in res) {
+				_self.error_msg = res['err'];
+			}
+			else if('otp' in res && res['otp']){
+				this.show_otp=true;
+			}
 			else {
-				if ('reason' in res) {
-				}
-				else
-					_self.error_msg = res.error;
+				_self.error_msg = 'Error: Problem in backend';
 			}
 		}).catch(err => {
-			_self.error_msg = "Wrong username or password!";
+			_self.error_msg = "Connection with backend broken!";
 		});
-		// });
 	}
 
 }

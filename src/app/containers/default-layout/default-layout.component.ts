@@ -4,6 +4,8 @@ import { loginChecker } from '../../providers/login_checker';
 import { User } from '../../providers/mikrowizard/user';
 import { navItems } from './_nav';
 import { dataProvider } from '../../providers/mikrowizard/data';
+import { arch } from 'os';
+import { DomSanitizer } from '@angular/platform-browser';
 
 @Component({
   selector: 'app-dashboard',
@@ -19,8 +21,13 @@ export class DefaultLayoutComponent implements OnInit {
   public fname: string;
   public lname: string;
   public ispro: boolean=false;
+  public action: string="password";
   public UserProfileModalVisible:boolean;
   public error:any=false;
+  public currentStep:number=1;
+  public qrCode:any=false;
+  public totpCode:string='';
+  public errorMessage:any=false;
   public password:any={
     'cupass':'',
     'pass1':'',
@@ -38,6 +45,7 @@ export class DefaultLayoutComponent implements OnInit {
     private router: Router,
     private login_checker: loginChecker,
 		private data_provider: dataProvider,
+    private _sanitizer: DomSanitizer
 
   ) {
     var _self = this;
@@ -52,7 +60,39 @@ export class DefaultLayoutComponent implements OnInit {
         }
       }
     });
+  }
 
+  otpwizard(step:number){
+    var _self=this;
+    if(step==1){
+      if(this.qrCode)
+        this.currentStep=2;
+      else
+        this.currentStep=3;
+    }
+    if(step==2){
+      this.currentStep=3;
+    }
+    if(step==3){
+      if(this.qrCode!=false)
+        this.data_provider.mytotp('enable',this.totpCode).then(res => {
+          if(res['status']=='success'){
+            _self.UserProfileModalVisible = false;
+          }
+          else{
+            this.errorMessage=res['err'];
+          }
+        });
+      else
+        this.data_provider.mytotp('disable',this.totpCode).then(res => {
+          if(res['status']=='success'){
+            _self.UserProfileModalVisible = false;
+          }
+          else{
+            this.errorMessage=res['err'];
+          }
+        });
+    }
   }
 
   password_changed(variable:string,value:any){
@@ -66,8 +106,29 @@ export class DefaultLayoutComponent implements OnInit {
     }
   }
   
-  show_user_modal(){
-    this.UserProfileModalVisible = true;
+  show_user_modal(action:string){
+    this.currentStep=1;
+    this.errorMessage=false;
+    this.totpCode='';
+    this.qrCode=false;
+    this.action=action;
+    if(action=='otp')
+      this.data_provider.mytotp('enable').then(res => {
+        if(res['status']=='success'){
+          this.currentStep=1;
+          this.qrCode=this._sanitizer.bypassSecurityTrustResourceUrl('data:image/jpg;base64,'+ res.otp);
+          this.UserProfileModalVisible = true;
+        }
+        else{
+          this.qrCode=false;
+          this.currentStep=1;
+          this.UserProfileModalVisible = true;
+
+          this.errorMessage=res['err'];
+        }
+      });
+    else
+      this.UserProfileModalVisible = true;
   }
 
   submit(){

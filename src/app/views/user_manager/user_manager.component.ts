@@ -16,26 +16,15 @@ import { NgxSuperSelectOptions } from "ngx-super-select";
 import { AppToastComponent } from "../toast-simple/toast.component";
 import { ToasterComponent } from "@coreui/angular";
 
-interface IUser {
-  name: string;
-  state: string;
-  registered: string;
-  country: string;
-  usage: number;
-  period: string;
-  payment: string;
-  activity: string;
-  avatar: string;
-  status: string;
-  color: string;
-}
-
 @Component({
   templateUrl: "user_manager.component.html",
+  styleUrls: ["user_manager.scss"],
 })
 export class UserManagerComponent implements OnInit {
   public uid: number;
   public uname: string;
+  public ispro:boolean=false;
+
   gridComponent: GuiGridComponent;
   toasterForm = {
     autohide: true,
@@ -59,6 +48,7 @@ export class UserManagerComponent implements OnInit {
     this.data_provider.getSessionInfo().then((res) => {
       _self.uid = res.uid;
       _self.uname = res.name;
+      _self.ispro = res.ISPRO;
       const userId = _self.uid;
 
       if (res.role != "admin") {
@@ -81,6 +71,7 @@ export class UserManagerComponent implements OnInit {
   public SelectedUserItems: string = "";
   public EditTaskModalVisible: boolean = false;
   public DeleteConfirmModalVisible: boolean = false;
+  public RestrictionsTaskModalVisible: boolean = false;
   public Members: any = "";
 
   public devgroup: any = {};
@@ -89,6 +80,8 @@ export class UserManagerComponent implements OnInit {
   public allPerms: any = [];
   public DeletePermConfirmModalVisible: boolean = false;
   public userperms: any = {};
+  public userresttrictions: any = false;
+  public ipaddress:string="";
   public adminperms: { [index: string]: string };
   public defadminperms: { [index: string]: string } = {
     device: "none",
@@ -155,7 +148,16 @@ export class UserManagerComponent implements OnInit {
     );
     componentRef.instance["closeButton"] = props.closeButton;
   }
-
+  totp(item:any){
+    this.SelectedUser = item;
+    this.data_provider.totp('enable',this.SelectedUser.id).then((res) => {
+      if(res.status == "success"){
+        this.show_toast("Success", "Totp generated successfully", "success");
+      }else{
+        this.show_toast("Error", res.err, "danger");
+      }
+    });
+  }
   submit(action: string) {
     var _self = this;
     if (action == "add") {
@@ -178,7 +180,7 @@ export class UserManagerComponent implements OnInit {
         }
       });
     } else {
-      console.dir(_self.userperms);      if (_self.userperms.length > 0) {
+      if (_self.userperms.length > 0) {
         _self.SelectedUser["userperms"] = _self.userperms;
       } else {
         _self.SelectedUser["userperms"] = [];
@@ -228,6 +230,56 @@ export class UserManagerComponent implements OnInit {
     _self.EditTaskModalVisible = true;
   }
 
+  checkIpAddress(ip:string) {
+    const ipv4Pattern = /^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.|\/|)){4}\b(0?[1-9]|1[0-9]|2[0-9]|3[0-2])\b$/;
+    return ipv4Pattern.test(ip)
+  }
+
+  showrest(item: any) {
+    var _self=this;
+    this.SelectedUser = { ...item };
+
+    this.data_provider.get_user_restrictions(this.SelectedUser["id"]).then((res) => {
+      _self.userresttrictions = res;
+      console.log(_self.userresttrictions);
+      _self.RestrictionsTaskModalVisible = true;
+    });
+  }
+  delete_ip(item:string){
+    
+    this.userresttrictions['allowed_ips']=this.userresttrictions['allowed_ips'].filter((x:any)=>x!=item);
+  }
+
+  add_ip(){
+    //check if ip address is valid cidr and not added before
+    let ip=this.ipaddress.trim();
+    if(ip=="")return;
+    if(this.userresttrictions['allowed_ips'].includes(ip)){
+      this.show_toast("Error", "IP already added", "danger");
+      return;
+    }
+    //check if ip is valid cidr ip
+    if(this.checkIpAddress(ip)){
+      this.userresttrictions['allowed_ips'].push(ip);
+      this.userresttrictions['allowed_ips']=this.userresttrictions['allowed_ips'].filter((x:any)=>x!="");
+      this.ipaddress="";
+    }
+    else{
+      this.show_toast("Error", "Invalid IP address", "danger");
+    }
+  }
+  
+  save_sec(){
+    this.data_provider.save_user_restrictions(this.SelectedUser.id,this.userresttrictions).then((res) => {
+      if('status' in res && res['status']=='success')
+          this.RestrictionsTaskModalVisible = false;
+      else if('status' in res && res['status']=='failed')
+          this.show_toast("Error", res.err, "danger");
+      else
+          this.show_toast("Error", "Somthing went wrong", "danger");
+    });
+  }
+  
   add_user_perm() {
     var _self = this;
     this.data_provider
@@ -281,6 +333,7 @@ export class UserManagerComponent implements OnInit {
       this.get_user_perms(this.SelectedUser["id"]);
     });
   }
+  
   logger(item: any) {
     console.dir(item);
   }

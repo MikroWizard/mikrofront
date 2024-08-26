@@ -37,6 +37,8 @@ export class DevicesComponent implements OnInit, OnDestroy {
   public uid: number;
   public uname: string;
   public tz: string;
+  public ispro:boolean=false;
+
 
   constructor(
     private data_provider: dataProvider,
@@ -54,6 +56,7 @@ export class DevicesComponent implements OnInit, OnDestroy {
       _self.uid = res.uid;
       _self.uname = res.name;
       _self.tz = res.tz;
+      _self.ispro = res.ISPRO;
       const userId = _self.uid;
 
       if (res.role != "admin") {
@@ -495,7 +498,7 @@ export class DevicesComponent implements OnInit, OnDestroy {
 
   downloadFile(data: string, filename: string, type: string) {
     const blob = new Blob([data], { type: type });
-	const nav = (window.navigator as any);
+    const nav = (window.navigator as any);
 
     if (nav.msSaveOrOpenBlob) {
 		nav.msSaveBlob(blob, filename);
@@ -509,9 +512,19 @@ export class DevicesComponent implements OnInit, OnDestroy {
       document.body.removeChild(link);
     }
   }
-
-
-
+  get_device_pass(){
+    var _self=this;
+    _self.selected_device['editform']['password']="Loading ...";
+    if (_self.ispro && !this.show_pass){
+      _self.data_provider.get_device_pass(this.selected_device['id']).then((res) => {
+        _self.selected_device['editform']['password']=res['password'];
+        this.show_pass=!this.show_pass;
+      });
+    }
+    else{
+      this.show_pass=!this.show_pass;
+    }
+  }
   show_exec(){
     var _self=this;
     this.ExecutedDataModalVisible = true;

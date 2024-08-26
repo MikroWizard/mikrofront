@@ -43,7 +43,6 @@ export class dataProvider {
                     res.perms,
                     res.tz,
                 );
-                // console.dir(JSON.stringify(usr))
                 localStorage.setItem('current_user', JSON.stringify(usr));
             }
             return res;
@@ -181,6 +180,35 @@ export class dataProvider {
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/dev/ifstat", data);
     }
+    totp(action:string,userid:string){
+        var data={
+            'userid':userid,
+            'action':action
+        }
+        return this.MikroWizardRPC.sendJsonRequest("/api/user/totp", data);
+    }
+    
+    get_user_restrictions(uid:string){
+        var data={
+            'uid':uid
+        }
+        return this.MikroWizardRPC.sendJsonRequest("/api/user/restrictions", data);
+    }
+    save_user_restrictions(uid:string,restrictions:any){
+        var data={
+            'uid':uid,
+            'restrictions':restrictions
+        }
+        return this.MikroWizardRPC.sendJsonRequest("/api/user/save_restrictions", data);
+    }
+
+    mytotp(action:string,otp:any=false){
+        var data={
+            'action':action,
+            'otp':otp
+        }
+        return this.MikroWizardRPC.sendJsonRequest("/api/user/mytotp", data);
+    }
 
     get_auth_logs(filters:any) {
         var data=filters;
@@ -269,22 +297,22 @@ export class dataProvider {
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/snippet/delete", data);
     }
+
     get_executed_snipet(id:number){
         var data={
             'id':id
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/snippet/executed", data);
     }
+
     get_user_task_list() {
         return this.MikroWizardRPC.sendJsonRequest("/api/user_tasks/list", {});
     }
-
 
     Add_task(data:any,members:any) {
         data['members']=members;
         return this.MikroWizardRPC.sendJsonRequest("/api/user_tasks/create", data);
     }
-    
 
     Delete_task(taskid:Number) {
         var data={
@@ -297,14 +325,13 @@ export class dataProvider {
         data['members']=members;
         return this.MikroWizardRPC.sendJsonRequest("/api/user_tasks/edit", data);
     }
-    
+
     get_task_members(taskid:Number) {
         var data={
             'taskid':taskid,
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/taskmember/details", data);
     }
-
 
     get_users(page:Number,size:Number,search:string) {
         var data={
@@ -350,6 +377,37 @@ export class dataProvider {
         return this.MikroWizardRPC.sendJsonRequest("/api/perms/delete", data);
     }
 
+    get_vault_setting(){
+        return this.MikroWizardRPC.sendJsonRequest("/api/pssvault/get", {});
+    }
+
+    vault_task(data:any){
+
+        return this.MikroWizardRPC.sendJsonRequest("/api/pssvault/task", data);
+    }
+    vault_history(){
+        return this.MikroWizardRPC.sendJsonRequest("/api/pssvault/history", {});
+    }
+    exec_vault(){
+        return this.MikroWizardRPC.sendJsonRequest("/api/pssvault/execute", {});
+    }
+    reveal_password(devid:number,username:string){
+        var data={
+            'devid':devid,
+            'username':username
+        }
+        return this.MikroWizardRPC.sendJsonRequest("/api/pssvault/reveal", data);
+    }
+
+    get_passwords(data:any){
+        return this.MikroWizardRPC.sendJsonRequest("/api/pssvault/get_passwords", data);
+    }
+    get_device_pass(devid:number){
+        var data={
+            'devid':devid
+        }
+        return this.MikroWizardRPC.sendJsonRequest("/api/pssvault/get_device_pass", data);
+    }
     user_perms(uid:string) {
         
         var data = {

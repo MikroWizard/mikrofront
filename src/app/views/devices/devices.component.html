@@ -362,7 +362,11 @@
       <span cInputGroupText>Password</span>
       <input aria-label="start" [type]="show_pass ? 'text' : 'password'"
         [(ngModel)]="selected_device['editform']['password']" cFormControl placeholder=" username" />
-      <button cButton (click)="show_pass=!show_pass" color="secondary" variant="outline">
+      <button cButton *ngIf="!ispro" (click)="show_pass=!show_pass" color="secondary" variant="outline">
+        <i *ngIf="show_pass" class="fa-solid fa-eye"></i>
+        <i *ngIf="!show_pass" class="fa-solid fa-eye-slash"></i>
+      </button>
+      <button cButton *ngIf="ispro" (click)="get_device_pass()" color="secondary" variant="outline">
         <i *ngIf="show_pass" class="fa-solid fa-eye"></i>
         <i *ngIf="!show_pass" class="fa-solid fa-eye-slash"></i>
       </button>

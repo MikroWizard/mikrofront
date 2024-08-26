@@ -32,6 +32,17 @@
                     required #password
                   />
                 </c-input-group>
+                <c-input-group class="mb-1" *ngIf="show_otp">
+                  <span cInputGroupText>
+                    <i class="fa-regular fa-clock"></i>
+                  </span>
+                  <input
+                    cFormControl
+                    placeholder="2FA TOTP key"
+                    formControlName="ga_code" 
+                    required #ga_code
+                  />
+                </c-input-group>
                 <code *ngIf="error_msg"><i class="fa-solid fa-triangle-exclamation"></i><small>  {{error_msg}}</small></code>
                 <c-row>
                   <c-col mb-3 xs="6">

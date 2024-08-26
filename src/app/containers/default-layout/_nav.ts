@@ -64,6 +64,12 @@ export const navItems: INavData[] = [
     url: '/snippets',
     icon: 'fa-solid fa-code'
   },
+  {
+    name: 'Password Vault',
+    url: '/vault',
+    icon:'fa-solid fa-vault',
+    attributes: { 'pro':true }
+  },
   // {
   //   name: 'Tools',
   //   url: '/login',

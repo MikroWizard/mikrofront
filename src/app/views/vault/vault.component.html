@@ -1,0 +1,360 @@
+<c-row>
+  <c-col xs style="padding-right: 0;">
+    <div class="nav nav-underline" style="background: #fff;">
+      <div calss="nav-item">
+        <a [active]="true" class="nav-link" [cTabContent]="tabContent" (click)="activetab=0" [tabPaneIdx]="0">Settings</a>
+      </div>
+      <div calss="nav-item">
+        <a [cTabContent]="tabContent" (click)="get_passwords();activetab=1" class="nav-link" [routerLink] [tabPaneIdx]="1">Passwords</a>
+      </div>
+    </div>
+  </c-col>
+  <c-col style="padding-left: 0;">
+    <div class="nav nav-underline" style="background: #fff;padding: 3px;flex-direction: row-reverse;">
+      <button *ngIf="activetab==0" cButton size="sm" shape="rounded-0" class="mx-2" (click)="runConfirmModalVisible=!runConfirmModalVisible" color="danger">Execute Now</button>
+      <button *ngIf="activetab==1" cButton size="sm" shape="rounded-0" class="mx-2" (click)="toggleCollapse()" color="info">filters</button>
+    </div>
+  </c-col>
+</c-row>
+<c-tab-content style="padding: 0!important;" #tabContent="cTabContent">
+  <c-tab-pane>
+    <c-row>
+      <c-col xs>
+        <c-card class="mb-4" style="border-radius: 0;" *ngIf="settings">
+          <c-card-body>
+            <c-row>
+              <c-col md="6">
+                <c-input-group class="mb-3">
+                  <label cInputGroupText for="inputGroupSelect01">
+                    Status
+                  </label>
+                  <select cSelect id="inputGroupSelect01" [(ngModel)]="settings['enable']">
+                    <option>Choose...</option>
+                    <option value="enable">Enable</option>
+                    <option value="disable">Disable</option>
+                  </select>
+                </c-input-group>
+              </c-col>
+              <c-col md="6">
+                <c-input-group class="mb-3">
+                  <label cInputGroupText for="inputGroupSelect01">
+                    Strategy
+                  </label>
+                  <select cSelect id="inputGroupSelect01" [(ngModel)]="settings['strategy']">
+                    <option>Choose...</option>
+                    <option value="all">All local</option>
+                    <option value="mikrowizard">Defined in MikroWizard</option>
+                  </select>
+                </c-input-group>
+              </c-col>
+              <c-col md="6">
+                <c-input-group class="mb-3">
+                  <label cInputGroupText for="inputGroupSelect01">
+                    Interval
+                  </label>
+                  <select cSelect id="inputGroupSelect01" [(ngModel)]="settings['interval']">
+                    <option>Choose...</option>
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                    <option value="yearly">Yearly</option>
+                    <option value="manual">Manual</option>
+                    <option value="custom">Custom</option>
+                  </select>
+                </c-input-group>
+                <c-input-group *ngIf="settings['interval']=='custom'" class="mb-3">
+                  <label cInputGroupText for="inputGroupSelect01">
+                    Custom Cron
+                  </label>
+                  <input cFormControl id="floatingInput" style="border-radius: 0;" placeholder="Cron" [(ngModel)]="settings['cron']" />
+                </c-input-group>
+              </c-col>
+              <c-col md="6">
+                <c-input-group class="mb-3">
+                  <label cInputGroupText for="inputGroupSelect01">
+                    Password
+                  </label>
+                  <select cSelect id="inputGroupSelect01" [(ngModel)]="settings['password_type']">
+                    <option>Choose...</option>
+                    <option value="random">Random</option>
+                    <option value="defined">Pre-defined</option>
+                  </select>
+                </c-input-group>
+              </c-col>
+              <c-col md="12"  *ngIf="settings['strategy']=='all'">
+                <hr width="70%" style="margin: 10px auto;border-color: #304193;border-width: 2px;" />
+                <c-row class="gui-header" style="background: #f9fafb;padding: 10px 0px;margin: 0 auto;height: unset;border: 1px solid #e8e8e8;border-bottom: unset;">
+                  <c-col md="2" style="display: flex;align-items: center;">
+                    <h6>User Exceptions</h6>
+                  </c-col>
+                  <c-col style="display: flex;flex-direction: row-reverse;" md="10">
+                    <table>
+                      <td>
+                        <div>
+                          <input cFormControl style="border-radius: 0;" id="floatingInput" placeholder="Username Exception"
+                            [(ngModel)]="new_exception" />
+                        </div>
+                      </td>
+                      <td style="vertical-align: top;">
+                        <button cButton color="dark" shape="rounded-0" (click)="add_exception()">Add Username</button>
+                      </td>
+                    </table>
+                  </c-col>
+                </c-row>
+                <c-input-group class="mb-3">
+                  <gui-grid [autoResizeWidth]="true" [source]="settings['exceptions']" [columnMenu]="columnMenu" [paging]="paging"
+                    [sorting]="sorting" [autoResizeWidth]=true>
+                    <gui-grid-column header="UserName" field="name">
+                      <ng-template let-value="item" let-item="item" let-index="index">
+                        &nbsp; {{value}} </ng-template>
+                    </gui-grid-column>
+                    <gui-grid-column header="Actions" width="70" field="action">
+                      <ng-template let-value="item.id" let-item="item" let-index="index">
+                        <button (click)="remove_exception(item)" class=" mx-1" cButton color="danger" size="sm"><i
+                            class="fa-regular fa-trash-can"></i></button>
+                      </ng-template>
+                    </gui-grid-column>
+                  </gui-grid>
+                </c-input-group>
+              </c-col>
+              <c-col md="12" *ngIf="settings['password_type']=='defined'">
+                <hr width="70%" style="margin: 10px auto;border-color: #304193;border-width: 2px;"/>
+                <c-row class="gui-header" style="background: #f9fafb;padding: 10px 0px;margin: 0 auto;height: unset;border: 1px solid #e8e8e8;border-bottom: unset;">
+                  <c-col md="2" style="display: flex;align-items: center;">
+                    <h6>Password list</h6>
+                  </c-col>
+                  <c-col style="display: flex;flex-direction: row-reverse;" md="10">
+                    <table>
+                      <td>
+                        <div>
+                          <input cFormControl id="floatingInput" style="border-radius: 0;" placeholder="Password" [(ngModel)]="new_password" />
+                        </div>
+                      </td>
+                      <td style="vertical-align: top;">
+                        <button cButton color="dark" shape="rounded-0" (click)="add_password()">Add Password</button>
+                      </td>
+                    </table>
+                  </c-col>
+                </c-row>
+                <gui-grid [autoResizeWidth]="true" [source]="settings['passwords']" [columnMenu]="columnMenu" [sorting]="sorting"
+                  [paging]="paging" [autoResizeWidth]=true>
+                  <gui-grid-column header="Password" field="name">
+                    <ng-template let-value="item" let-item="item" let-index="index">
+                      &nbsp; {{value}} </ng-template>
+                  </gui-grid-column>
+                  <gui-grid-column header="Actions" width="70" field="action">
+                    <ng-template let-value="item.id" let-item="item" let-index="index">
+                      <button class=" mx-1" cButton color="danger" size="sm"><i
+                          class="fa-regular fa-trash-can"></i></button>
+                    </ng-template>
+                  </gui-grid-column>
+                </gui-grid>
+              </c-col>
+            </c-row>
+          </c-card-body>
+          <c-card-footer style="display: flex;flex-direction: row-reverse;">
+            <button cButton color="info"  shape="rounded-0" (click)="save_settings()" style="color: #fff;">Save Settings</button>
+          </c-card-footer>
+        </c-card>
+      </c-col>
+    </c-row>
+    <c-row>
+      <c-col xs>
+        <c-card class="mb-4" style="border-radius: 0;" *ngIf="settings">
+          <c-card-body>
+            <h6>Efected Groups</h6>
+            <gui-grid [autoResizeWidth]="true" [source]="Members" [columnMenu]="columnMenu" [sorting]="sorting"
+            [paging]="paging" [autoResizeWidth]=true>
+            <gui-grid-column header="Name" field="name">
+              <ng-template let-value="item.name" let-item="item" let-index="index">
+                &nbsp; {{value}} </ng-template>
+            </gui-grid-column>
+            <gui-grid-column header="Actions" width="70" field="action">
+              <ng-template let-value="item.id" let-item="item" let-index="index">
+                <button (click)="delete_group(item.id)"  class=" mx-1" cButton color="danger" size="sm"><i
+                    class="fa-regular fa-trash-can"></i></button>
+              </ng-template>
+            </gui-grid-column>
+          </gui-grid>
+          </c-card-body>
+          <c-card-footer  style="display: flex;flex-direction: row-reverse;">
+            <button cButton color="info"  shape="rounded-0" (click)="save_settings()" style="color: #fff;">Save Settings</button>
+            <button cButton color="primary" class="mx-1" (click)="show_new_member_form()">+ Add new Members</button>
+          </c-card-footer>
+        </c-card>
+      </c-col>
+    </c-row>
+    <c-row>
+      <c-col xs>
+        <c-card class="mb-4" style="border-radius: 0;" *ngIf="settings">
+          <c-card-body *ngIf="vault_history">
+            <h6>Reports</h6>
+            <gui-grid [autoResizeWidth]="true" [source]="vault_history" [columnMenu]="columnMenu" [sorting]="sorting"
+            [paging]="paging" [autoResizeWidth]=true>
+            <gui-grid-column header="Start Time" field="name">
+              <ng-template let-value="item.started" let-item="item" let-index="index">
+                &nbsp; {{value}} </ng-template>
+            </gui-grid-column>
+            <gui-grid-column header="End Time" field="name">
+              <ng-template let-value="item.ended" let-item="item" let-index="index">
+                &nbsp; {{value}} </ng-template>
+            </gui-grid-column>
+            <gui-grid-column header="Logs" field="mac" align="center">
+              <ng-template let-value="item['result']" let-item="item" let-index="index">
+                <button (click)="exportToCsv(value)"  color="primary" cButton>download</button>
+              </ng-template>
+            </gui-grid-column>
+          </gui-grid>
+          </c-card-body>
+        </c-card>
+      </c-col>
+    </c-row>
+  </c-tab-pane>
+  <c-tab-pane>
+    <c-row>
+      <div [visible]="filters_visible" cCollapse>
+        <c-col xs [lg]="12" class="example-form" style="background: #fff;padding: 0 10px;">
+          <mat-form-field *ngIf="ispro">
+            <mat-label>Username</mat-label>
+            <input (ngModelChange)="reinitgrid('username',$event)" [(ngModel)]="filters['username']" matInput>
+          </mat-form-field>
+          <mat-form-field *ngIf="ispro">
+            <mat-label>Device IP</mat-label>
+            <input (ngModelChange)="reinitgrid('dev_ip',$event)" [(ngModel)]="filters['dev_ip']" matInput>
+          </mat-form-field>
+          <mat-form-field *ngIf="ispro">
+            <mat-label>Device Name</mat-label>
+            <input (ngModelChange)="reinitgrid('dev_name',$event)" [(ngModel)]="filters['dev_name']" matInput>
+          </mat-form-field>
+        </c-col>
+      </div>
+    </c-row>
+    <c-row>
+      <c-col xs>
+        <c-card class="mb-4">
+          <c-card-body *ngIf="passwords">
+            <gui-grid [autoResizeWidth]="true" [source]="passwords" [columnMenu]="columnMenu" [sorting]="sorting"
+              [infoPanel]="infoPanel" [autoResizeWidth]=true>
+              <gui-grid-column header="Device Name" field="name">
+                <ng-template let-value="item.name" let-item="item" let-index="index">
+                  &nbsp; {{value}} </ng-template>
+              </gui-grid-column>
+              <gui-grid-column header="Device IP" field="devip">
+                <ng-template let-value="item.devip" let-item="item" let-index="index">
+                  {{value}}
+                </ng-template>
+              </gui-grid-column>
+              <gui-grid-column header="UserName" field="username">
+                <ng-template let-value="item.username" let-item="item" let-index="index">
+                  {{value}}
+                </ng-template>
+              </gui-grid-column>
+              <gui-grid-column header="Last Changed" field="desc_cron">
+                <ng-template let-value="item.changed" let-item="item" let-index="index">
+                  {{value}}
+                </ng-template>
+              </gui-grid-column>
+              <gui-grid-column header="Actions" width="120" field="action">
+                <ng-template let-value="item.id" let-item="item" let-index="index">
+                  <button cButton *ngIf="ispro" (click)="reveal_password(item.devid,item.username)" color="info" variant="outline">
+                    <i  class="fa-solid fa-eye"></i>
+                  </button>
+                </ng-template>
+              </gui-grid-column>
+            </gui-grid>
+          </c-card-body>
+        </c-card>
+      </c-col>
+    </c-row>
+  </c-tab-pane>
+</c-tab-content>
+
+<c-modal #PasswordModal backdrop="static" [(visible)]="PasswordModalVisible" id="PasswordModal">
+  <c-modal-header>
+    <h6 cModalTitle>Password</h6>
+    <button [cModalToggle]="PasswordModal.id" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body>
+    <p>
+      <c-input-group class="mb-3">
+        <label cInputGroupText for="inputGroupSelect01">
+          Password
+        </label>
+        <input [value]="password" cFormControl disabled="true"/>
+      </c-input-group>
+    </p>
+    <code>
+      Your attempt to reveal password is logged in system!
+    </code>
+  </c-modal-body>
+  <c-modal-footer>
+    <button [cModalToggle]="PasswordModal.id" cButton color="info">
+      Close
+    </button>
+  </c-modal-footer>
+</c-modal>
+
+
+
+<c-modal #runConfirmModal backdrop="static" [(visible)]="runConfirmModalVisible" id="runConfirmModal">
+  <c-modal-header>
+    <h6 cModalTitle>Confirm RUN {{ SelectedTask['name'] }}</h6>
+    <button [cModalToggle]="runConfirmModal.id" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body>
+    Are you sure that You want to run Vault Password Job ?
+    <br />
+  </c-modal-body>
+  <c-modal-footer>
+    <button cButton color="danger" (click)="exec_vault()">
+      Yes,Run!
+    </button>
+    <button [cModalToggle]="runConfirmModal.id" cButton color="info">
+      Close
+    </button>
+  </c-modal-footer>
+</c-modal>
+
+
+<c-modal #NewMemberModal backdrop="static" size="lg" [(visible)]="NewMemberModalVisible" id="NewMemberModal">
+  <c-modal-header>
+    <h5 cModalTitle>Editing Group </h5>
+    <button (click)="NewMemberModalVisible=!NewMemberModalVisible" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body>
+    <c-input-group class="mb-3">
+      <h5>Group Members :</h5>
+      <gui-grid [autoResizeWidth]="true" *ngIf="NewMemberModalVisible" [searching]="searching"
+        [source]="availbleMembers" [columnMenu]="columnMenu" [sorting]="sorting" [infoPanel]="infoPanel"
+        [rowSelection]="rowSelection" (selectedRows)="onSelectedRowsNewMembers($event)" [autoResizeWidth]=true
+        [paging]="paging">
+        <gui-grid-column header="Member Name" field="name">
+          <ng-template let-value="item.name" let-item="item" let-index="index">
+            &nbsp; {{value}} </ng-template>
+        </gui-grid-column>
+        <gui-grid-column *ngIf="SelectedTask['selection_type']=='devices'" header="IP Address" field="ip">
+          <ng-template let-value="item.ip" let-item="item" let-index="index">
+            {{value}}
+          </ng-template>
+        </gui-grid-column>
+        <gui-grid-column *ngIf="SelectedTask['selection_type']=='devices'" header="MAC Address" field="mac">
+          <ng-template let-value="item.mac" let-item="item" let-index="index">
+            {{value}}
+          </ng-template>
+        </gui-grid-column>
+      </gui-grid>
+      <br />
+    </c-input-group>
+    <hr />
+  </c-modal-body>
+
+  <c-modal-footer>
+    <button *ngIf="NewMemberRows.length!= 0" (click)="add_new_members()" cButton color="primary">Add {{
+      NewMemberRows.length }}</button>
+    <button (click)="NewMemberModalVisible=!NewMemberModalVisible" cButton color="secondary">
+      Close
+    </button>
+  </c-modal-footer>
+</c-modal>
+
+<c-toaster position="fixed" placement="top-end"></c-toaster>
