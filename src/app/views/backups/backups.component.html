@@ -89,9 +89,10 @@
           </gui-grid-column>
           <gui-grid-column header="Action" field="id">
             <ng-template let-value="item.id" let-item="item" let-index="index">
-              <button cButton color="info" size="sm" (click)="ShowBackup(item)" class="mx-1"><i
-                  style="margin: 1px 5px;color:#ffffff;" class="fa-solid fa-eye"></i>Show backup</button>
-              <button *ngIf="ispro" color="info" size="sm" (click)="add_for_compare(item)" class="mx-1"><i
+              <button cButton [disabled]="backuploading" color="info" size="sm" (click)="ShowBackup(item)" class="mx-1">
+                <i *ngIf="backuploading" style="margin: 1px 5px;color:#ffffff;" class="fa-solid fa-spinner fa-spin"></i>
+                <i *ngIf="!backuploading" style="margin: 1px 5px;color:#ffffff;" class="fa-solid fa-eye"></i>Show backup</button>
+              <button *ngIf="ispro" cButton color="info" size="sm" (click)="add_for_compare(item)" class="mx-1"><i
                   style="margin: 1px 5px;color:#ffffff;" class="fa-solid fa-eye"></i>Compare</button>
             </ng-template>
           </gui-grid-column>
@@ -107,12 +108,13 @@
     <button [cModalToggle]="BakcupModal.id" cButtonClose></button>
   </c-modal-header>
   <c-modal-body>
-    <pre style="height: 100%;">
-    <code *ngIf="!loading" language="properties" style="height:70vh" [highlight]="codeForHighlightAuto" 
-    lineNumbers></code></pre>
+    <!-- <pre style="height: 100%;">
+    <code *ngIf="!loading" language="yaml" style="height:70vh" [highlight]="codeForHighlightAuto" 
+    lineNumbers></code></pre> -->
+    <div highlight-js [lang]="hlang" [options]="{}"  >{{codeForHighlightAuto}}</div>
+
   </c-modal-body>
   <c-modal-footer style="justify-content: space-between;">
-
     <button [cdkCopyToClipboard]="codeForHighlightAuto" [style.background-color]="copy_msg ? 'green' : null" (click)="copy_this()" cButton color="secondary">
       <i class="fa-regular fa-copy"></i> To clipboard
     </button>

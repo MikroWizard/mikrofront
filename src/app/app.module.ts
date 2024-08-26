@@ -20,7 +20,6 @@ import { MikroWizardProvider } from './providers/mikrowizard/provider';
 import { dataProvider } from './providers/mikrowizard/data';
 import { loginChecker } from './providers/login_checker';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
-import { provideHighlightOptions, Highlight, HighlightAuto } from 'ngx-highlightjs';
 
 import {
   AvatarModule,
@@ -98,10 +97,6 @@ export function loginStatusProviderFactory(provider: loginChecker) {
     loginChecker,
     IconSetService,
     provideDateFnsAdapter(),
-    provideHighlightOptions({
-      fullLibraryLoader: () => import('highlight.js'),
-      lineNumbersLoader: () => import('ngx-highlightjs/line-numbers')
-    }),
     {
       provide: APP_INITIALIZER,
       useFactory: loginStatusProviderFactory,

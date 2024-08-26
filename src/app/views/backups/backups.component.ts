@@ -35,6 +35,7 @@ export class BackupsComponent implements OnInit {
 	public comparecontents:any=[];
 	public compare_type="unified";
 	public copy_msg:boolean=false;
+	
 	constructor(
 		private data_provider: dataProvider,
 		private router: Router,
@@ -71,12 +72,14 @@ export class BackupsComponent implements OnInit {
 	public source: Array<any> = [];
 	public columns: Array<GuiColumn> = [];
 	public loading: boolean = true;
+	public backuploading : boolean=false;
 	public rows: any = [];
 	public Selectedrows: any;
 	public BakcupModalVisible: boolean = false;
 	public devid: number = 0;
 	public filters_visible: boolean = false;
 	public currentBackup:any=false;
+	public hlang:string='';
 	public sorting = {
 		enabled: true,
 		multiSorting: true,
@@ -157,20 +160,27 @@ export class BackupsComponent implements OnInit {
 
 	ShowBackup(backup: any) {
 		var _self=this;
-		this.loading = true;
+		this.backuploading = true;
 		this.currentBackup = backup;
+		_self.codeForHighlightAuto='';
+		_self.BakcupModalVisible = true;
 		this.data_provider.get_backup(backup.id).then((res) => {
 			if('content' in res){
-				_self.codeForHighlightAuto = res.content;
-				_self.loading = false;
+				console.dir(res.content.length);
+				if(res.content.length>115000)
+					_self.hlang='xml';
+				else{
+					_self.hlang='routeros'
+				}
 				_self.BakcupModalVisible = true;
+				_self.codeForHighlightAuto = res.content;
+				_self.backuploading = false;
 			}
 			else{
 				this.show_toast('Error', 'Error loading backup file', 'danger')
 			}
 		});
 	}
-
 	toggleCollapse(): void {
 		this.filters_visible = !this.filters_visible;
 	}
@@ -205,6 +215,11 @@ export class BackupsComponent implements OnInit {
 		this.compareitems.forEach((element:any) => {
 			_self.data_provider.get_backup(element.id).then((res) => {
 				if('content' in res){
+					if(res.content.length>300000){
+						this.comparecontents=[];
+						this.show_toast('Error', 'The file is too big for comparing, Try accessing and comparing locally', 'danger')
+						return;
+					}
 					_self.comparecontents.push(res.content);
 				}
 				if(_self.comparecontents.length==_self.compareitems.length)

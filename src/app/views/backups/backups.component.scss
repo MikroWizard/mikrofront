@@ -2,3 +2,6 @@
 ::ng-deep .modal-xl {
     --cui-modal-width: 90vw!important;
 }
+::ng-deep pre {
+    display: block!important;
+}

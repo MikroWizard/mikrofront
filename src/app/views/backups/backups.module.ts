@@ -2,7 +2,7 @@ import { NgModule } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { Highlight, HighlightAuto } from "ngx-highlightjs";
 import { HighlightLineNumbers } from "ngx-highlightjs/line-numbers";
-
+import { HighlightJsModule } from 'ngx-highlight-js';
 import {
   ButtonModule,
   CardModule,
@@ -13,6 +13,7 @@ import {
   FormModule,
   ToastModule,
 } from "@coreui/angular";
+
 import { BackupsRoutingModule } from "./backups-routing.module";
 import { BackupsComponent } from "./backups.component";
 import { GuiGridModule } from "@generic-ui/ngx-grid";
@@ -48,6 +49,7 @@ import { ClipboardModule } from "@angular/cdk/clipboard";
     UnifiedDiffComponent,
     SideBySideDiffComponent,
     ToastModule,
+    HighlightJsModule,
     ClipboardModule
   ],
   declarations: [BackupsComponent],

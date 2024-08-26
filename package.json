@@ -54,6 +54,7 @@
     "ngx-cron-editor": "^0.8.1",
     "ngx-date-fns": "^11.0.0",
     "ngx-diff": "^9.0.0",
+    "ngx-highlight-js": "^18.0.0",
     "ngx-highlightjs": "^12.0.0",
     "ngx-infinite-scroll": "^18.0.0",
     "ngx-mat-select-search": "^7.0.6",
