@@ -5,16 +5,6 @@ $hover-bg-color: #f8f9fa;
 $signin-bg-color: #635DFF;
 $signin-hover-color: #4a46d1;
 
-.btn-social {
-  color: $primary-color;
-  background-color: $secondary-color;
-  border: 1px solid $border-color;
-
-  &:hover {
-    background-color: $hover-bg-color;
-  }
-}
-
 .signup-link {
   color: $primary-color;
   text-decoration: none;
@@ -34,5 +24,15 @@ $signin-hover-color: #4a46d1;
 
   &:hover {
     background-color: $signin-hover-color;
+  }
+} 
+
+.btn-social {
+  color: $primary-color;
+  background-color: $secondary-color;
+  border: 1px solid $border-color;
+
+  &:hover {
+    background-color: $hover-bg-color;
   }
 }

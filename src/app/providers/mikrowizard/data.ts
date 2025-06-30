@@ -1,5 +1,5 @@
-
 import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 // import { MikroWizardrpcProvider } from '../MikroWizardrpc/MikroWizardrpc';
 import { MikroWizardProvider } from './provider';
 
@@ -10,13 +10,15 @@ import { User } from './user';
 export class dataProvider {
     
     // public serverUrl: string = "/api";
-    public serverUrl: string = "";
+    public serverUrl: string = "http://192.168.1.26:3000";
     private db: string = "NothingImportant";
+    private apiUrl: string = "/api";
 
     constructor(
         // private http: HTTP,
         // public MikroWizardRPC: MikroWizardrpcProvider,
         public MikroWizardRPC: MikroWizardProvider,
+        private http: HttpClient
     ) {
         this.MikroWizardRPC.init({
             MikroWizard_server: this.serverUrl
@@ -627,5 +629,37 @@ export class dataProvider {
 
     getFullUrl(url: any) {
         return this.serverUrl + url;
+    }
+
+    signup(username: string, organization: string, email: string, password: string) {
+        var data = {
+            'username': username,
+            'organization': organization,
+            'email': email,
+            'password': password
+        }
+        return this.MikroWizardRPC.sendJsonRequest("/api/signup", data);
+    }
+
+    async loginWithOffice365(tokenClaims: any): Promise<any> {
+        try {
+            const data = {
+                tokenClaims: tokenClaims
+            };
+            return this.MikroWizardRPC.sendJsonRequest("/api/auth/office365", data);
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    async loginWithApple(appleResponse: any): Promise<any> {
+        try {
+            const data = {
+                appleResponse: appleResponse
+            };
+            return this.MikroWizardRPC.sendJsonRequest("/api/auth/apple", data);
+        } catch (error) {
+            throw error;
+        }
     }
 }

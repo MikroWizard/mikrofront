@@ -1,0 +1,115 @@
+<div class="bg-light min-vh-100 d-flex flex-row align-items-center">
+    <c-container>
+        <c-row class="justify-content-center">
+            <c-col md="8">
+                <c-card-group>
+                    <c-card [ngStyle]="{'width.%': 44}" class="text-white py-5" style="background-color: #001C41;">
+                        <c-card-body class="text-center d-flex align-items-center justify-content-center">
+                            <img style="width: 250px;" src="assets/Pause GIF Image.gif">
+                        </c-card-body>
+                    </c-card>
+                    <c-card class="p-4">
+                        <c-card-body>
+                            <form cForm [formGroup]="signupForm">
+                                <h1 class="heading-text">Create your account</h1>
+                                <p class="text-medium-emphasis">Already have an account? <a routerLink="/login"
+                                        class="signup-link">Sign in</a></p>
+
+                                <c-input-group class="mb-3">
+                                    <span cInputGroupText>
+                                        <svg cIcon name="cilUser"></svg>
+                                    </span>
+                                    <input cFormControl placeholder="Name field" formControlName="username" required />
+                                </c-input-group>
+                                <div *ngIf="submitted && signupForm.get('username')?.errors" class="text-danger mb-3">
+                                    <small>Username is required</small>
+                                </div>
+
+                                <c-input-group class="mb-3">
+                                    <span cInputGroupText>
+                                        <svg cIcon name="cilBuilding"></svg>
+                                    </span>
+                                    <input cFormControl placeholder="Organization field" formControlName="organization"
+                                        required />
+                                </c-input-group>
+                                <div *ngIf="submitted && signupForm.get('organization')?.errors"
+                                    class="text-danger mb-3">
+                                    <small>Organization field is required</small>
+                                </div>
+
+                                <c-input-group class="mb-3">
+                                    <span cInputGroupText>
+                                        <svg cIcon name="cilEnvelopeClosed"></svg>
+                                    </span>
+                                    <input cFormControl placeholder="Username/email address field"
+                                        formControlName="email" required />
+                                </c-input-group>
+                                <div *ngIf="submitted && signupForm.get('email')?.errors" class="text-danger mb-3">
+                                    <small *ngIf="signupForm.get('email')?.errors?.['required']">Email is
+                                        required</small>
+                                    <small *ngIf="signupForm.get('email')?.errors?.['email']">Please enter a valid
+                                        email</small>
+                                </div>
+
+                                <c-input-group class="mb-3">
+                                    <span cInputGroupText>
+                                        <svg cIcon name="cilLockLocked"></svg>
+                                    </span>
+                                    <input cFormControl placeholder="Password field" type="password"
+                                        formControlName="password" required />
+                                </c-input-group>
+                                <div *ngIf="submitted && signupForm.get('password')?.errors" class="text-danger mb-3">
+                                    <small *ngIf="signupForm.get('password')?.errors?.['required']">Password is
+                                        required</small>
+                                    <small *ngIf="signupForm.get('password')?.errors?.['minlength']">Password must be at
+                                        least 6 characters</small>
+                                </div>
+
+                                <c-input-group class="mb-3">
+                                    <span cInputGroupText>
+                                        <svg cIcon name="cilLockLocked"></svg>
+                                    </span>
+                                    <input cFormControl placeholder="Confirm Password field" type="password"
+                                        formControlName="confirmPassword" required />
+                                </c-input-group>
+                                <div *ngIf="submitted && signupForm.get('confirmPassword')?.errors"
+                                    class="text-danger mb-3">
+                                    <small>Please confirm your password</small>
+                                </div>
+
+                                <code
+                                    *ngIf="error_msg"><i class="fa-solid fa-triangle-exclamation"></i><small>  {{error_msg}}</small></code>
+                                <code *ngIf="success_msg"
+                                    class="text-success"><i class="fa-solid fa-check"></i><small>  {{success_msg}}</small></code>
+
+                                <c-col mb-3 xs="6" class="w-100 mt-3">
+                                    <button type="submit" cButton (click)="onClickSubmit()"
+                                        class="px-4 w-100 btn-signin">
+                                        Sign Up
+                                    </button>
+                                </c-col>
+                                <c-col mb-3 xs="6" class="w-100 mt-3">
+                                    <p class="text-center">or continue with</p>
+                                </c-col>
+                                <c-col mb-3 xs="6" class="w-100">
+                                    <button
+                                        class="px-4 w-100 btn btn-social d-flex gap-2 justify-content-center align-items-center">
+                                        <i class="fa-brands fa-microsoft"></i>
+                                        <span>Login with Office 365</span>
+                                    </button>
+                                </c-col>
+                                <c-col mb-3 xs="6" class="w-100 mt-3">
+                                    <button
+                                        class="px-4 w-100 btn btn-social d-flex gap-2 justify-content-center align-items-center">
+                                        <i class="fa-brands fa-apple text-dark"></i>
+                                        <span>Login with Apple</span>
+                                    </button>
+                                </c-col>
+                            </form>
+                        </c-card-body>
+                    </c-card>
+                </c-card-group>
+            </c-col>
+        </c-row>
+    </c-container>
+</div>

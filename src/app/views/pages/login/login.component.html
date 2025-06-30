@@ -1,62 +1,74 @@
 <div class="bg-light min-vh-100 d-flex flex-row align-items-center">
-  <c-container>
-    <c-row class="justify-content-center">
-      <c-col md="8">
-        <c-card-group>
-          <c-card [ngStyle]="{'width.%': 44}" class="text-white  py-5" style="background-color: #303c54;">
-            <c-card-body class="text-center">
-              <img style="width: 200px;" src="assets/img/brand/mikrowizard-full.jpg">
-            </c-card-body>
-          </c-card>
-          <c-card class="p-4">
-            <c-card-body>
-              <form cForm  [formGroup]="loginForm" >
-                <h1>Login</h1>
-                <p class="text-medium-emphasis">Sign In to your account</p>
-                <c-input-group class="mb-3">
-                  <span cInputGroupText>
-                    <svg cIcon name="cilUser"></svg>
-                  </span>
-                  <input autoComplete="username" cFormControl placeholder="Username" formControlName="username" required #username/>
-                </c-input-group>
-                <c-input-group class="mb-1">
-                  <span cInputGroupText>
-                    <svg cIcon name="cilLockLocked"></svg>
-                  </span>
-                  <input
-                    autoComplete="current-password"
-                    cFormControl
-                    placeholder="Password"
-                    type="password"
-                    formControlName="password" 
-                    required #password
-                  />
-                </c-input-group>
-                <c-input-group class="mb-1" *ngIf="show_otp">
-                  <span cInputGroupText>
-                    <i class="fa-regular fa-clock"></i>
-                  </span>
-                  <input
-                    cFormControl
-                    placeholder="2FA TOTP key"
-                    formControlName="ga_code" 
-                    required #ga_code
-                  />
-                </c-input-group>
-                <code *ngIf="error_msg"><i class="fa-solid fa-triangle-exclamation"></i><small>  {{error_msg}}</small></code>
-                <c-row>
-                  <c-col mb-3 xs="6">
-                    <button type="submit" cButton (click)="onClickSubmit()" class="px-4" color="primary">
-                      Login
-                    </button>
-                  </c-col>
-                </c-row>
-              </form>
-            </c-card-body>
-          </c-card>
+    <c-container>
+        <c-row class="justify-content-center">
+            <c-col md="8">
+                <c-card-group>
+                    <c-card [ngStyle]="{'width.%': 44}" class="text-white  py-5" style="background-color: #001C41;">
+                        <c-card-body class="text-center d-flex align-items-center justify-content-center">
+                            <img style="width: 250px;" src="assets/Pause GIF Image.gif">
+                        </c-card-body>
+                    </c-card>
+                    <c-card class="p-4">
+                        <c-card-body>
+                            <form cForm [formGroup]="loginForm">
+                                <h1 class="heading-text">Sign in</h1>
+                                <p class="text-medium-emphasis">Don't have an account? <a routerLink="/signup"
+                                        class="signup-link">Sign up</a></p>
+                                <c-input-group class="mb-3">
+                                    <span cInputGroupText>
+                                        <svg cIcon name="cilUser"></svg>
+                                    </span>
+                                    <input autoComplete="username" cFormControl placeholder="Email/username field"
+                                        formControlName="username" required #username />
+                                </c-input-group>
+                                <c-input-group class="mb-1">
+                                    <span cInputGroupText>
+                                        <svg cIcon name="cilLockLocked"></svg>
+                                    </span>
+                                    <input autoComplete="current-password" cFormControl placeholder="Password field"
+                                        type="password" formControlName="password" required #password />
+                                </c-input-group>
+                                <c-input-group class="mb-1" *ngIf="show_otp">
+                                    <span cInputGroupText>
+                                        <i class="fa-regular fa-clock"></i>
+                                    </span>
+                                    <input cFormControl placeholder="2FA TOTP key" formControlName="ga_code" required
+                                        #ga_code />
+                                </c-input-group>
+                                <code
+                                    *ngIf="error_msg"><i class="fa-solid fa-triangle-exclamation"></i><small>  {{error_msg}}</small></code>
+                                <c-row>
+                                    <c-col mb-3 xs="6" class="w-100 mt-3">
+                                        <button type="submit" cButton (click)="onClickSubmit()" class="px-4 w-100 btn-signin">
+                                            Sign In
+                                        </button>
+                                    </c-col>
+                                    <c-col mb-3 xs="6" class="w-100 mt-3">
+                                        <p class="text-center">or continue with</p>
+                                    </c-col>
+                                    <c-col mb-3 xs="6" class="w-100">
+                                        <button
+                                            (click)="loginWithOffice365()"
+                                            class="px-4 w-100 btn btn-social d-flex gap-2 justify-content-center align-items-center">
+                                            <i class="fa-brands fa-microsoft"></i>
+                                            <span>Login with Office 365</span>
+                                        </button>
+                                    </c-col>
+                                    <c-col mb-3 xs="6" class="w-100 mt-3">
+                                        <button
+                                            (click)="loginWithApple()"
+                                            class="px-4 w-100 btn btn-social d-flex gap-2 justify-content-center align-items-center">
+                                            <i class="fa-brands fa-apple text-dark"></i>
+                                            <span>Login with Apple</span>
+                                        </button>
+                                    </c-col>
+                                </c-row>
+                            </form>
+                        </c-card-body>
+                    </c-card>
 
-        </c-card-group>
-      </c-col>
-    </c-row>
-  </c-container>
+                </c-card-group>
+            </c-col>
+        </c-row>
+    </c-container>
 </div>

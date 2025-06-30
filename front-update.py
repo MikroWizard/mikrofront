@@ -23,7 +23,7 @@ logging.basicConfig(level=logging.INFO)
 
 log = logging.getLogger("updater")
 log.setLevel(logging.INFO)
-API_URL="http://host.docker.internal:8181"
+API_URL="http://192.168.1.26:8181"
 Config_File="/conf/server-conf.json"
 Version_File="/usr/share/nginx/html/version.json"
 # Example usage

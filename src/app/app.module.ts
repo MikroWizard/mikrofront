@@ -1,8 +1,12 @@
-import { NgModule ,APP_INITIALIZER} from '@angular/core';
+import { NgModule, APP_INITIALIZER } from '@angular/core';
 import { HashLocationStrategy, LocationStrategy, PathLocationStrategy } from '@angular/common';
 import { BrowserModule, Title } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { ReactiveFormsModule,FormsModule } from '@angular/forms';
+import { ReactiveFormsModule, FormsModule } from '@angular/forms';
+import { MsalModule, MsalService, MSAL_INSTANCE, MsalGuard, MsalInterceptor, MsalGuardConfiguration, MsalInterceptorConfiguration } from '@azure/msal-angular';
+import { IPublicClientApplication, PublicClientApplication, InteractionType } from '@azure/msal-browser';
+import { msalConfig } from './auth/msal-config';
+import { HTTP_INTERCEPTORS } from '@angular/common/http';
 
 import { NgScrollbarModule } from 'ngx-scrollbar';
 import { HttpClientModule } from '@angular/common/http';
@@ -54,12 +58,36 @@ const APP_CONTAINERS = [
 export function loginStatusProviderFactory(provider: loginChecker) {
   return () => provider.load();
 }
+
+export function MSALInstanceFactory(): IPublicClientApplication {
+  const msalInstance = new PublicClientApplication(msalConfig);
+  msalInstance.initialize().catch(error => {
+    console.error('MSAL initialization failed:', error);
+  });
+  return msalInstance;
+}
+
+const guardConfig: MsalGuardConfiguration = {
+  interactionType: InteractionType.Popup,
+  authRequest: {
+    scopes: ['User.Read', 'profile', 'email', 'openid']
+  }
+};
+
+const interceptorConfig: MsalInterceptorConfiguration = {
+  interactionType: InteractionType.Popup,
+  protectedResourceMap: new Map([
+    ['https://graph.microsoft.com/v1.0/me', ['User.Read']]
+  ])
+};
+
 @NgModule({
   declarations: [AppComponent, ...APP_CONTAINERS],
   imports: [
     BrowserModule,
     BrowserAnimationsModule,
     AppRoutingModule,
+    MsalModule.forRoot(MSALInstanceFactory(), guardConfig, interceptorConfig),
     AvatarModule,
     BreadcrumbModule,
     FooterModule,
@@ -94,6 +122,17 @@ export function loginStatusProviderFactory(provider: loginChecker) {
       provide: LocationStrategy,
       useClass: HashLocationStrategy
     },
+    {
+      provide: MSAL_INSTANCE,
+      useFactory: MSALInstanceFactory
+    },
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: MsalInterceptor,
+      multi: true
+    },
+    MsalService,
+    MsalGuard,
     MikroWizardProvider,
     dataProvider,
     loginChecker,

@@ -124,7 +124,7 @@ export class MikroWizardProvider {
 		let headers = {
 			"Content-Type": "application/json",
 		};
-    return this.http.post(url, params,
+    return this.http.post(this.MikroWizard_server + url, params,
        {headers:this.headers,withCredentials:true}
       ).toPromise()
 			.then(this.handleRequestErrors)
@@ -145,7 +145,7 @@ export class MikroWizardProvider {
 		let headers = {
 			"Content-Type": "application/x-www-form-urlencoded",
 		};
-	    return this.http.get( url, 
+	    return this.http.get( this.MikroWizard_server + url, 
 			{ responseType: 'json' }
 	    ).toPromise()
 	}

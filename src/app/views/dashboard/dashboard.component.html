@@ -1,224 +1,260 @@
-<c-row *ngIf="stats">
-  <c-col xs>
-    <c-card *ngIf="stats" class="mb-1">
-      <c-card-header>Past 24 Hour Statics</c-card-header>
-      <c-card-body>
-        <c-row>
-          <c-col md="12" xl="12" xs="12">
-            <c-row>
-              <c-col class="mb-sm-1 mb-0">
-                <c-widget-stat-f [title]="'Failed Logins'" class="mb-1" color="danger" padding
-                  value="{{stats['FailedLogins']}}">
-                  <ng-template cTemplateId="widgetIconTemplate">
-                    <i style="font-size: 2em;" class="fa-solid fa-person-circle-exclamation"></i>
-                  </ng-template>
-                </c-widget-stat-f>
-              </c-col>
-              <c-col class="mb-sm-1 mb-0">
-                <c-widget-stat-f [title]="'Success Logins'" class="mb-1" color="success" padding
-                  value="{{stats['SuccessfulLogins']}}">
-                  <ng-template cTemplateId="widgetIconTemplate">
-                    <i style="font-size: 2em;" class="fa-solid fa-arrow-right-to-bracket"></i>
-                  </ng-template>
-                </c-widget-stat-f>
-              </c-col>
-              <c-col class="mb-sm-1 mb-0">
-                <c-widget-stat-f [title]="'Critical Events'" class="mb-1" color="danger" padding
-                  value="{{stats['Critical']}}">
-                  <ng-template cTemplateId="widgetIconTemplate">
-                    <i style="font-size: 2em;" class="fa-solid fa-skull-crossbones"></i>
-                  </ng-template>
-                </c-widget-stat-f>
-              </c-col>
-              <c-col class="mb-sm-1 mb-0">
-                <c-widget-stat-f [title]="'Warning Events'" class="mb-1" color="warning" padding
-                  value="{{stats['Warning']}}">
-                  <ng-template cTemplateId="widgetIconTemplate">
-                    <i style="font-size: 2em;" class="fa-solid fa-triangle-exclamation"></i>
-                  </ng-template>
-                </c-widget-stat-f>
-              </c-col>
-              <c-col class="mb-sm-1 mb-0">
-                <c-widget-stat-f [title]="'Info Events'" class="mb-1" color="info" padding value="{{stats['Info']}}">
-                  <ng-template cTemplateId="widgetIconTemplate">
-                    <i style="font-size: 2em;" class="fa-solid fa-circle-info"></i>
-                  </ng-template>
-                </c-widget-stat-f>
-              </c-col>
-            </c-row>
-          </c-col>
-        </c-row>
-      </c-card-body>
-      <c-card-footer class="pb-0">
-        <c-col xs>
-          <c-row>
+<!-- Dashboard Header with Customization Controls -->
+<div class="dashboard-header mb-3">
+  <div class="d-flex justify-content-between align-items-center">
+    <h2>Dashboard</h2>
+    <div class="dashboard-controls">
+      <div class="dropdown">
+        <button class="btn btn-primary dropdown-toggle" type="button" id="dashboardActions" data-bs-toggle="dropdown" aria-expanded="false">
+          <i class="fa-solid fa-plus"></i> Customize Dashboard
+        </button>
+        <ul class="dropdown-menu" aria-labelledby="dashboardActions">
+          <li><a class="dropdown-item" href="#" (click)="showWizardModal()"><i class="fa-solid fa-magic"></i> ADD WIZARD</a></li>
+          <li><a class="dropdown-item" href="#" (click)="showViewModal()"><i class="fa-solid fa-eye"></i> ADD VIEW</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item text-danger" href="#" (click)="toggleRemoveMode()"><i class="fa-solid fa-trash"></i> REMOVE</a></li>
+        </ul>
+      </div>
+      <button *ngIf="isRemoveMode" class="btn btn-secondary ms-2" (click)="toggleRemoveMode()">
+        <i class="fa-solid fa-times"></i> Cancel Remove
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Dashboard Grid Container -->
+<div class="dashboard-grid" [class.remove-mode]="isRemoveMode">
+  
+  <!-- Default Stats Widget -->
+  <div class="dashboard-widget" *ngIf="widgets['stats'].enabled" [style.grid-column]="widgets['stats'].position.col" [style.grid-row]="widgets['stats'].position.row">
+    <div class="widget-container">
+      <button *ngIf="isRemoveMode" class="btn btn-danger btn-sm widget-remove-btn" (click)="removeWidget('stats')">
+        <i class="fa-solid fa-times"></i>
+      </button>
+      <c-card class="h-100">
+        <c-card-header class="d-flex justify-content-between align-items-center">
+          <span>Past 24 Hour Statistics</span>
+          <i class="fa-solid fa-grip-vertical widget-drag-handle"></i>
+        </c-card-header>
+        <c-card-body>
+          <c-row *ngIf="stats">
             <c-col md="12" xl="12" xs="12">
               <c-row>
-                <c-col class="mb-0 pb-0">
-                  <div class="border-start border-start-4 border-start-info pt-1 px-3 mb-1">
-                    <div class="text-medium-emphasis small">Total users</div>
-                    <div class="fs-6 fw-semibold">{{stats['Users']}}</div>
-                  </div>
+                <c-col class="mb-sm-1 mb-0">
+                  <c-widget-stat-f [title]="'Failed Logins'" class="mb-1" color="danger" padding
+                    value="{{stats['FailedLogins']}}">
+                    <ng-template cTemplateId="widgetIconTemplate">
+                      <i style="font-size: 2em;" class="fa-solid fa-person-circle-exclamation"></i>
+                    </ng-template>
+                  </c-widget-stat-f>
                 </c-col>
-                <c-col class="mb-0 pb-0">
-                  <div class="border-start border-start-4 border-start-warning pt-1 px-3 mb-1">
-                    <div class="text-medium-emphasis small">Total Devices</div>
-                    <div class="fs-6 fw-semibold">{{stats['Devices']}}</div>
-                  </div>
+                <c-col class="mb-sm-1 mb-0">
+                  <c-widget-stat-f [title]="'Success Logins'" class="mb-1" color="success" padding
+                    value="{{stats['SuccessfulLogins']}}">
+                    <ng-template cTemplateId="widgetIconTemplate">
+                      <i style="font-size: 2em;" class="fa-solid fa-arrow-right-to-bracket"></i>
+                    </ng-template>
+                  </c-widget-stat-f>
                 </c-col>
-                <c-col class="mb-0 pb-0">
-                  <div class="border-start border-start-4 border-start-success pt-1 px-3 mb-1">
-                    <div class="text-medium-emphasis small">Total Events</div>
-                    <div class="fs-6 fw-semibold">{{stats['Events']}}</div>
-                  </div>
+                <c-col class="mb-sm-1 mb-0">
+                  <c-widget-stat-f [title]="'Critical Events'" class="mb-1" color="danger" padding
+                    value="{{stats['Critical']}}">
+                    <ng-template cTemplateId="widgetIconTemplate">
+                      <i style="font-size: 2em;" class="fa-solid fa-skull-crossbones"></i>
+                    </ng-template>
+                  </c-widget-stat-f>
                 </c-col>
-                <c-col class="mb-0 pb-0">
-                  <div class="border-start border-start-4 border-start-success pt-1 px-3 mb-1">
-                    <div class="text-medium-emphasis small">Total Auth Logs</div>
-                    <div class="fs-6 fw-semibold">{{stats['Auth']}}</div>
-                  </div>
+                <c-col class="mb-sm-1 mb-0">
+                  <c-widget-stat-f [title]="'Warning Events'" class="mb-1" color="warning" padding
+                    value="{{stats['Warning']}}">
+                    <ng-template cTemplateId="widgetIconTemplate">
+                      <i style="font-size: 2em;" class="fa-solid fa-triangle-exclamation"></i>
+                    </ng-template>
+                  </c-widget-stat-f>
                 </c-col>
-                <c-col class="mb-0 pb-0">
-                  <div class="border-start border-start-4 border-start-success pt-1 px-3 mb-1">
-                    <div class="text-medium-emphasis small">Total Acc Logs</div>
-                    <div class="fs-6 fw-semibold">{{stats['Acc']}}</div>
-                  </div>
+                <c-col class="mb-sm-1 mb-0">
+                  <c-widget-stat-f [title]="'Info Events'" class="mb-1" color="info" padding value="{{stats['Info']}}">
+                    <ng-template cTemplateId="widgetIconTemplate">
+                      <i style="font-size: 2em;" class="fa-solid fa-circle-info"></i>
+                    </ng-template>
+                  </c-widget-stat-f>
                 </c-col>
               </c-row>
             </c-col>
           </c-row>
-        </c-col>
-      </c-card-footer>
-    </c-card>
-  </c-col>
-</c-row>
+        </c-card-body>
+      </c-card>
+    </div>
+  </div>
 
-<c-card class="mb-1">
-  <c-card-body>
-    <c-row>
-      <c-col sm="5">
-        <h4 class="card-title mb-0" id="traffic">Total Devices Traffic</h4>
-      </c-col>
-      <c-col class="d-none d-md-block" sm="7">
-        <form [formGroup]="trafficRadioGroup">
-          <c-button-group class="float-end me-3" role="group">
-            <input class="btn-check" formControlName="trafficRadio" type="radio" value="5m" />
-            <label (click)="setTrafficPeriod('5m')" cButton cFormCheckLabel color="secondary" variant="outline">5
-              Minues</label>
+  <!-- Traffic Chart Widget -->
+  <div class="dashboard-widget" *ngIf="widgets['traffic'].enabled" [style.grid-column]="widgets['traffic'].position.col" [style.grid-row]="widgets['traffic'].position.row">
+    <div class="widget-container">
+      <button *ngIf="isRemoveMode" class="btn btn-danger btn-sm widget-remove-btn" (click)="removeWidget('traffic')">
+        <i class="fa-solid fa-times"></i>
+      </button>
+      <c-card class="h-100">
+        <c-card-header class="d-flex justify-content-between align-items-center">
+          <h4 class="card-title mb-0">Total Devices Traffic</h4>
+          <i class="fa-solid fa-grip-vertical widget-drag-handle"></i>
+        </c-card-header>
+        <c-card-body>
+          <form [formGroup]="trafficRadioGroup" class="mb-3">
+            <c-button-group class="float-end me-3" role="group">
+              <input class="btn-check" formControlName="trafficRadio" type="radio" value="5m" />
+              <label (click)="setTrafficPeriod('5m')" cButton cFormCheckLabel color="secondary" variant="outline">5 Minutes</label>
+              <input class="btn-check" formControlName="trafficRadio" type="radio" value="1h" />
+              <label (click)="setTrafficPeriod('1h')" cButton cFormCheckLabel color="secondary" variant="outline">Hourly</label>
+              <input class="btn-check" formControlName="trafficRadio" type="radio" value="daily" />
+              <label (click)="setTrafficPeriod('daily')" cButton cFormCheckLabel color="secondary" variant="outline">Daily</label>
+              <input class="btn-check" formControlName="trafficRadio" type="radio" value="live" />
+              <label (click)="setTrafficPeriod('live')" cButton cFormCheckLabel color="secondary" variant="outline">Live</label>
+            </c-button-group>
+          </form>
+          <c-chart [data]="chart_data" [options]="options" [height]="250" type="line"></c-chart>
+        </c-card-body>
+      </c-card>
+    </div>
+  </div>
 
-            <input class="btn-check" formControlName="trafficRadio" type="radio" value="1h" />
-            <label (click)="setTrafficPeriod('1h')" cButton cFormCheckLabel color="secondary"
-              variant="outline">Hourly</label>
-
-            <input class="btn-check" formControlName="trafficRadio" type="radio" value="daily" />
-            <label (click)="setTrafficPeriod('daily')" cButton cFormCheckLabel color="secondary"
-              variant="outline">Daily</label>
-            <input class="btn-check" formControlName="trafficRadio" type="radio" value="live" />
-            <label (click)="setTrafficPeriod('live')" cButton cFormCheckLabel color="secondary"
-              variant="outline">Live</label>
-          </c-button-group>
-        </form>
-      </c-col>
-    </c-row>
-    <c-chart [data]="chart_data" [options]="options" [height]="250" type="line">
-    </c-chart>
-  </c-card-body>
-</c-card>
-<c-row>
-  <c-col xl="6" *ngIf="stats" lg="12" class="h-100" style="min-height: 160px!important;display: grid">
-    <c-card class="mb-1 p-1 h-100" style="padding-left: 5px!important;">
-      <div class="my-1">
-        <h4 style="display: inline-block;">Version and Serial information</h4>
-
-      </div>
-      <div *ngIf="!stats['license']" class="my-1">
-        <div style="display: inline-block;margin-right: 5px;">
-          <code style="padding: 0!important;">Serial:</code> <small
-            style="background-color: #ccc;padding: 5px;border-radius: 5px;cursor: pointer;" (click)="copy_this()"
-            [cdkCopyToClipboard]="stats['serial']">{{ stats['serial'] }}</small>
-          <span *ngIf="copy_msg" style="color: #fff!important;" class="badge text-bg-success"><i
-              class="fa-solid fa-check"></i>Copy</span>
-        </div>
-        <c-badge *ngIf="stats['username']" color="danger">Not Registred</c-badge>
-        <c-badge *ngIf="!stats['username']" color="danger">License Validation failed</c-badge>
-      </div>
-      <div *ngIf="stats['license']=='connection_error'" class="my-1">
-        <div style="display: inline-block;margin-right: 5px;">
-          <code style="padding: 0!important;">Serial:</code> <small
-            style="background-color: #ccc;padding: 5px;border-radius: 5px;cursor: pointer;" (click)="copy_this()"
-            [cdkCopyToClipboard]="stats['serial']">{{ stats['serial'] }}</small>
-          <span *ngIf="copy_msg" style="color: #fff!important;" class="badge text-bg-success mx-1"><i
-              class="fa-solid fa-check"></i>Copy</span>
-        </div>
-        <c-badge class="mx-1" color="danger">Unable connect to server/Check server internet connection</c-badge>
-      </div>
-      <div *ngIf="stats['license']!='connection_error' && stats['license']" class="my-1">
-        <div style="display: inline-block;margin-right: 5px;">
-          <code style="padding: 0!important;">Serial:</code> <small
-            style="background-color: #ccc;padding: 5px;border-radius: 5px;cursor: pointer;" (click)="copy_this()"
-            [cdkCopyToClipboard]="stats['serial']">{{ stats['serial'] }}</small>
-          <span *ngIf="copy_msg" style="color: #fff!important;" class="badge text-bg-success mx-1"><i
-              class="fa-solid fa-check"></i>Copy</span>
-        </div>
-        <c-badge color="success">Registred</c-badge>
-        <c-badge class="mx-1" color="info">License Type : {{stats['license']}}</c-badge>
-        <c-badge *ngIf="stats['update_mode']!='auto'" color="info">Manual update</c-badge>
-        <c-badge *ngIf="stats['update_mode']=='auto'" color="info">Auto update</c-badge>
-      </div>
-      <div *ngIf="stats['license']!='connection_error'" class="my-1">
-        <span style="font-size: 0.9rem; display: inline-block;margin-right: 5px"><c-badge
-            [color]="stats['update_available'] ? 'success' : 'secondary'"
-            style="margin: 0!important;padding: 8px;height: 27px;">Your Mikroman version : {{stats['version']}}
-          </c-badge>
-          <i class="fa-solid fa-spinner fa-spin" *ngIf="stats['update_inprogress']"></i>
-          <button cButton color="warning"
-            *ngIf="stats['update_mode']!='auto' && stats['update_available'] && !stats['update_inprogress']" size="sm"
-            (click)="showConfirmModal('update_mikroman')"
-            style="font-size: 0.75em;position: relative;left: -4px;top: 1px;border-top-left-radius: 0;border-bottom-left-radius: 0;height: 27px;"><i
-              class="fa-regular fa-hand-pointer fa-beat-fade"></i> Update availble </button>
-        </span>
-        <span style="font-size: 0.9rem; display: inline-block;"><c-badge
-            [color]="stats['front_update_available'] ? 'success' : 'secondary'" style="padding: 8px;height: 27px;"
-            color="secondary">Your Mikrofront version : {{front_version}}
-          </c-badge>
-          <i class="fa-solid fa-spinner fa-spin" *ngIf="stats['front_update_inprogress']"></i>
-          <button cButton color="warning"
-            *ngIf="stats['update_mode']!='auto' && stats['front_update_available'] && !stats['front_update_inprogress']"
-            size="sm" (click)="showConfirmModal('update_mikrofront')"
-            style="font-size: 0.75em;position: relative;left: -4px;top: 1px;border-top-left-radius: 0;border-bottom-left-radius: 0;height: 27px;"><i
-              class="fa-regular fa-hand-pointer fa-beat-fade"></i> Update availble </button>
-        </span>
-      </div>
-      <p  *ngIf="!stats['license'] && !stats['username']" style="color: rgb(0, 119, 255);"><strong>License User name is not set in settings <a style="color: rgb(0, 119, 255);" target="_blank" href="https://mikrowizard.com/docs/register-serial-number/" >read more!</a></strong></p>
-      <p  *ngIf="!stats['license'] &&  stats['username']" style="color: rgb(0, 119, 255);"><strong>Serial number not submited<a style="color: rgb(0, 119, 255);" target="_blank" href="https://mikrowizard.com/docs/register-serial-number/" >read more!</a></strong> </p>
-
-      <!-- <div *ngIf="stats['update_mode']!='auto'" class="my-1">
-        <button cButton color="warning" *ngIf="stats['update_available']" size="sm" style="font-size: 1em;"><i class="fa-regular fa-hand-pointer fa-beat-fade"></i> Update <strong>Mikroman</strong> and reload server</button>
-        <button cButton color="warning" *ngIf="stats['front_update_available']" size="sm" style="font-size: 1em;margin-left: 5px;"><i class="fa-regular fa-hand-pointer fa-beat-fade"></i> Update <strong>MikroFront</strong> and reload Page</button>
-      </div> -->
-    </c-card>
-  </c-col>
-  <c-col xl="6" lg="12" class="h-100" style="min-height: 160px!important;display: grid;">
-    <c-card class="h-100" *ngIf="stats" style="padding: 0!important;margin: 0!important;">
-      <c-carousel [dark]="true" [animate]="false" [wrap]="false" [interval]="1000000">
-        <c-carousel-indicators></c-carousel-indicators>
-        <c-carousel-inner>
-          <c-carousel-item style="display: flex;" *ngFor="let slide of stats['blog']; index as i;">
-            <img [src]="slide.media_content" alt="{{slide.title}}" class="d-block" loading="lazy" style=" float: left;"
-              height="150px" />
-            <div style="padding: 20px;">
-              <h5>{{slide.title}}</h5>
-              <p style="max-width: 90%;" [innerHTML]="slide.summery"></p>
+  <!-- Custom Wizard Widgets -->
+  <div class="dashboard-widget" *ngFor="let widget of customWidgets; let i = index" 
+       [style.grid-column]="widget.position.col" [style.grid-row]="widget.position.row">
+    <div class="widget-container">
+      <button *ngIf="isRemoveMode" class="btn btn-danger btn-sm widget-remove-btn" (click)="removeCustomWidget(i)">
+        <i class="fa-solid fa-times"></i>
+      </button>
+      <c-card class="h-100">
+        <c-card-header class="d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">{{widget.title}}</h5>
+          <i class="fa-solid fa-grip-vertical widget-drag-handle"></i>
+        </c-card-header>
+        <c-card-body>
+          <!-- CPU Widget -->
+          <div *ngIf="widget.type === 'cpu'">
+            <div class="text-center">
+              <canvas id="cpu-chart-{{i}}" width="200" height="200"></canvas>
+              <h3 class="mt-2">{{widget.data?.usage || 0}}%</h3>
+              <p class="text-muted">CPU Usage</p>
             </div>
-          </c-carousel-item>
-        </c-carousel-inner>
-        <c-carousel-control [routerLink] caption="Previous" direction="prev"></c-carousel-control>
-        <c-carousel-control [routerLink] caption="Next" direction="next"></c-carousel-control>
-      </c-carousel>
-    </c-card>
-  </c-col>
-</c-row>
+          </div>
+          
+          <!-- Memory Widget -->
+          <div *ngIf="widget.type === 'memory'">
+            <div class="progress mb-2" style="height: 20px;">
+              <div class="progress-bar" role="progressbar" [style.width.%]="widget.data?.usage || 0">
+                {{widget.data?.usage || 0}}%
+              </div>
+            </div>
+            <p class="text-muted">Memory Usage: {{widget.data?.used || 0}}GB / {{widget.data?.total || 0}}GB</p>
+          </div>
+          
+          <!-- Disk Widget -->
+          <div *ngIf="widget.type === 'disk'">
+            <div class="progress mb-2" style="height: 20px;">
+              <div class="progress-bar bg-warning" role="progressbar" [style.width.%]="widget.data?.usage || 0">
+                {{widget.data?.usage || 0}}%
+              </div>
+            </div>
+            <p class="text-muted">Disk Usage: {{widget.data?.used || 0}}GB / {{widget.data?.total || 0}}GB</p>
+          </div>
+          
+          <!-- Network Widget -->
+          <div *ngIf="widget.type === 'network'">
+            <div class="row">
+              <div class="col-6 text-center">
+                <h4 class="text-success">{{widget.data?.download || 0}}</h4>
+                <small class="text-muted">Download</small>
+              </div>
+              <div class="col-6 text-center">
+                <h4 class="text-primary">{{widget.data?.upload || 0}}</h4>
+                <small class="text-muted">Upload</small>
+              </div>
+            </div>
+          </div>
+        </c-card-body>
+      </c-card>
+    </div>
+  </div>
 
+  <!-- Custom View Widgets -->
+  <div class="dashboard-widget" *ngFor="let view of customViews; let i = index" 
+       [style.grid-column]="view.position.col" [style.grid-row]="view.position.row">
+    <div class="widget-container">
+      <button *ngIf="isRemoveMode" class="btn btn-danger btn-sm widget-remove-btn" (click)="removeCustomView(i)">
+        <i class="fa-solid fa-times"></i>
+      </button>
+      <c-card class="h-100">
+        <c-card-header class="d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">{{view.name}}</h5>
+          <i class="fa-solid fa-grip-vertical widget-drag-handle"></i>
+        </c-card-header>
+        <c-card-body>
+          <p class="text-muted">Custom view content will be loaded here...</p>
+          <div class="text-center">
+            <i class="fa-solid fa-eye fa-3x text-secondary"></i>
+          </div>
+        </c-card-body>
+      </c-card>
+    </div>
+  </div>
+
+</div>
+
+<!-- Add Wizard Modal -->
+<c-modal #AddWizardModal backdrop="static" size="lg" [(visible)]="wizardModalVisible" id="AddWizardModal">
+  <c-modal-header>
+    <h5 cModalTitle>ADD WIZARD</h5>
+    <button [cModalToggle]="AddWizardModal.id" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body>
+    <form [formGroup]="wizardForm">
+      <div class="mb-3">
+        <label for="wizardType" class="form-label">Select Wizard Type</label>
+        <select class="form-select" formControlName="wizardType" id="wizardType">
+          <option value="">Choose wizard type...</option>
+          <option value="cpu">CPU Monitor</option>
+          <option value="memory">Memory Monitor</option>
+          <option value="disk">Disk Monitor</option>
+          <option value="network">Network Monitor</option>
+        </select>
+      </div>
+      <div class="mb-3">
+        <label for="wizardTitle" class="form-label">Widget Title</label>
+        <input type="text" class="form-control" formControlName="wizardTitle" id="wizardTitle" placeholder="Enter widget title">
+      </div>
+    </form>
+  </c-modal-body>
+  <c-modal-footer>
+    <button cButton (click)="commitWizard()" color="primary" [disabled]="!wizardForm.valid">Commit</button>
+    <button [cModalToggle]="AddWizardModal.id" cButton color="secondary">Cancel</button>
+  </c-modal-footer>
+</c-modal>
+
+<!-- Add View Modal -->
+<c-modal #AddViewModal backdrop="static" size="lg" [(visible)]="viewModalVisible" id="AddViewModal">
+  <c-modal-header>
+    <h5 cModalTitle>ADD VIEW</h5>
+    <button [cModalToggle]="AddViewModal.id" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body>
+    <form [formGroup]="viewForm">
+      <div class="mb-3">
+        <label for="viewName" class="form-label">View Name</label>
+        <input type="text" class="form-control" formControlName="viewName" id="viewName" placeholder="Enter view name">
+      </div>
+      <div class="mb-3">
+        <label for="viewDescription" class="form-label">Description (Optional)</label>
+        <textarea class="form-control" formControlName="viewDescription" id="viewDescription" rows="3" placeholder="Enter view description"></textarea>
+      </div>
+    </form>
+  </c-modal-body>
+  <c-modal-footer>
+    <button cButton (click)="commitView()" color="primary" [disabled]="!viewForm.valid">Commit</button>
+    <button [cModalToggle]="AddViewModal.id" cButton color="secondary">Cancel</button>
+  </c-modal-footer>
+</c-modal>
+
+<!-- Existing Update Confirmation Modal -->
 <c-modal #ConfirmModal backdrop="static" size="lg" [(visible)]="ConfirmModalVisible" id="ConfirmModal">
   <c-modal-header>
     <h5 cModalTitle *ngIf="action=='update_mikroman'">Please Confirm Mikroman Update</h5>
@@ -246,9 +282,7 @@
     </div>
   </c-modal-body>
   <c-modal-footer>
-    <button cButton (click)="ConfirmAction()" color="primary"> submit</button>
-    <button [cModalToggle]="ConfirmModal.id" cButton color="secondary">
-      Close
-    </button>
+    <button cButton (click)="ConfirmAction()" color="primary">Submit</button>
+    <button [cModalToggle]="ConfirmModal.id" cButton color="secondary">Close</button>
   </c-modal-footer>
 </c-modal>

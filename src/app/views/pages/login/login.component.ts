@@ -1,15 +1,25 @@
-import { Component } from '@angular/core'; 
+import { Component, OnInit } from '@angular/core'; 
 import { Router } from '@angular/router';
 import { dataProvider } from '../../../providers/mikrowizard/data'; 
 import { loginChecker } from '../../../providers/login_checker';
 import { Validators, FormControl, FormGroup} from '@angular/forms';
+import { MsalService } from '@azure/msal-angular';
+import { loginRequest } from '../../../auth/msal-config';
+import { appleConfig } from '../../../auth/apple-config';
+import appleSignin from 'apple-signin-auth';
+
+declare global {
+    interface Window {
+        AppleID: any;
+    }
+}
 
 @Component({
   selector: 'app-login',
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss']
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
   public loginForm: FormGroup;
   public forgotForm: FormGroup;
   public error_msg: string = "";
@@ -24,9 +34,20 @@ export class LoginComponent {
 		private router: Router,
 		private data_provider: dataProvider,
 		private login_checker: loginChecker,
+		private msalService: MsalService
 	) {
 		this.createForm();
 	};
+
+	ngOnInit() {
+		// Check if user is already logged in with MSAL
+		if (this.msalService.instance.getActiveAccount()) {
+			this.handleMsalLogin();
+		}
+
+		// Initialize Apple Sign In
+		this.initializeAppleSignIn();
+	}
 
 	createForm() {
 		this.loginForm = new FormGroup({
@@ -64,4 +85,86 @@ export class LoginComponent {
 		});
 	}
 
+  loginWithOffice365() {
+    this.msalService.loginPopup(loginRequest)
+      .subscribe({
+        next: (result) => {
+          this.handleMsalLogin();
+        },
+        error: (error) => {
+          this.error_msg = "Error during Office 365 login: " + error.message;
+          console.error('MSAL login error:', error);
+        }
+      });
+  }
+
+  private handleMsalLogin() {
+    const account = this.msalService.instance.getActiveAccount();
+    if (account) {
+      this.data_provider.loginWithOffice365(account.idTokenClaims)
+        .then(res => {
+          if ('uid' in res && res['uid']) {
+            this.error_msg = "";
+            this.login_checker.setStatus(true);
+            this.router.navigate(['/'], { replaceUrl: true });
+          } else {
+            this.error_msg = 'Error: Problem with Office 365 login';
+          }
+        })
+        .catch(err => {
+          this.error_msg = "Connection with backend broken!";
+          console.error('Backend error:', err);
+        });
+    }
+  }
+
+  private initializeAppleSignIn() {
+    // Load Apple Sign In script
+    const script = document.createElement('script');
+    script.src = 'https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js';
+    script.onload = () => {
+      window.AppleID.auth.init({
+        clientId: appleConfig.clientId,
+        scope: appleConfig.scope,
+        redirectURI: appleConfig.redirectURI,
+        state: appleConfig.state,
+        usePopup: appleConfig.usePopup
+      });
+    };
+    document.body.appendChild(script);
+    console.log(appleConfig);
+  }
+
+   
+ 
+
+  loginWithApple() {
+    window.AppleID.auth.signIn()
+      .then((response: any) => {
+        // Handle successful sign in
+        this.handleAppleLogin(response);
+      })
+      .catch((error: any) => {
+        this.error_msg = "Error during Apple login: " + error.message;
+        console.error('Apple login error:', error);
+      });
+  }
+
+  private handleAppleLogin(response: any) {
+    console.log(JSON.stringify(response));
+    this.data_provider.loginWithApple(response)
+      .then(res => {
+        if ('uid' in res && res['uid']) {
+          this.error_msg = "";
+          this.login_checker.setStatus(true);
+          this.router.navigate(['/'], { replaceUrl: true });
+        } else {
+          this.error_msg = 'Error: Problem with Apple login';
+        }
+      })
+      .catch(err => {
+        this.error_msg = "Connection with backend broken!";
+        console.error('Backend error:', err);
+      });
+  }
 }
