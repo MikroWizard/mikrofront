@@ -7,6 +7,7 @@ import { MsalService } from '@azure/msal-angular';
 import { loginRequest } from '../../../auth/msal-config';
 import { appleConfig } from '../../../auth/apple-config';
 import appleSignin from 'apple-signin-auth';
+import { MikroWizardUtils } from '../../../../components/utils/common-functions';
 
 declare global {
     interface Window {
@@ -35,6 +36,7 @@ export class LoginComponent implements OnInit {
 		private data_provider: dataProvider,
 		private login_checker: loginChecker,
 		private msalService: MsalService
+
 	) {
 		this.createForm();
 	};
@@ -42,7 +44,7 @@ export class LoginComponent implements OnInit {
 	ngOnInit() {
 		// Check if user is already logged in with MSAL
 		if (this.msalService.instance.getActiveAccount()) {
-			this.handleMsalLogin();
+			// this.handleMsalLogin();
 		}
 
 		// Initialize Apple Sign In
@@ -89,7 +91,8 @@ export class LoginComponent implements OnInit {
     this.msalService.loginPopup(loginRequest)
       .subscribe({
         next: (result) => {
-          this.handleMsalLogin();
+          console.log(result)
+          this.handleMsalLogin(result?.account);
         },
         error: (error) => {
           this.error_msg = "Error during Office 365 login: " + error.message;
@@ -98,10 +101,16 @@ export class LoginComponent implements OnInit {
       });
   }
 
-  private handleMsalLogin() {
-    const account = this.msalService.instance.getActiveAccount();
-    if (account) {
-      this.data_provider.loginWithOffice365(account.idTokenClaims)
+  private handleMsalLogin(request: any) {
+    if (request) {
+      let data = {
+        email:request?.username,
+        username:request?.username,
+        first_name:request?.name?.split(" ")[0],
+        last_name:request?.name?.split(" ")[1]
+      }
+      console.log(">>>>>>>>>>>>>>> data from token >>>>>>", data)
+      this.data_provider.singSignonLoginForUser(data)
         .then(res => {
           if ('uid' in res && res['uid']) {
             this.error_msg = "";
@@ -152,7 +161,7 @@ export class LoginComponent implements OnInit {
 
   private handleAppleLogin(response: any) {
     console.log(JSON.stringify(response));
-    this.data_provider.loginWithApple(response)
+    this.data_provider.singSignonLoginForUser(response)
       .then(res => {
         if ('uid' in res && res['uid']) {
           this.error_msg = "";

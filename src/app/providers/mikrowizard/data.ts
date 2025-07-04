@@ -10,7 +10,7 @@ import { User } from './user';
 export class dataProvider {
     
     // public serverUrl: string = "/api";
-    public serverUrl: string = "http://192.168.1.26:3000";
+    public serverUrl: string = "http://localhost:3000";
     private db: string = "NothingImportant";
     private apiUrl: string = "/api";
 
@@ -652,12 +652,9 @@ export class dataProvider {
         }
     }
 
-    async loginWithApple(appleResponse: any): Promise<any> {
+    async singSignonLoginForUser(data: any): Promise<any> {
         try {
-            const data = {
-                appleResponse: appleResponse
-            };
-            return this.MikroWizardRPC.sendJsonRequest("/api/auth/apple", data);
+            return this.MikroWizardRPC.sendJsonRequest("/api/single-signon/user/create", data);
         } catch (error) {
             throw error;
         }

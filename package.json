@@ -11,7 +11,7 @@
   },
   "scripts": {
     "ng": "ng",
-    "start": "ng serve --host 0.0.0.0 --port 4200 --disable-host-check",
+    "start": "ng serve --proxy-config proxy.conf.json",
     "startnp": "ng serve --proxy-config=./proxy.conf.ts --host 0.0.0.0",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
@@ -52,6 +52,7 @@
     "diff-match-patch-ts": "^0.6.0",
     "font-awesome": "^4.7.0",
     "install": "^0.13.0",
+    "jwt-decode": "^4.0.0",
     "lodash-es": "^4.17.21",
     "mat-progress-buttons": "^9.3.1",
     "ngx-cron-editor": "^0.8.1",
