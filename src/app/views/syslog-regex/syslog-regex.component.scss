@@ -1,0 +1,114 @@
+.alert-config-box {
+    transition: all 0.3s ease;
+    border-color: #e2e8f0 !important;
+}
+
+code {
+    background-color: #f8f9fa;
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    color: #d63384;
+    font-size: 0.875em;
+}
+
+/* Regex Builder Styles */
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.test-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.step-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+/* Highlighter Textarea Overlay Trick */
+.position-relative {
+    position: relative;
+}
+
+textarea.form-control {
+    position: relative;
+    z-index: 2;
+    background: transparent !important;
+    color: transparent !important; /* Hide real text to only show highlights behind it, but keep caret visible */
+    caret-color: #000;
+}
+
+.backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1;
+    padding: 0.375rem 0.75rem; /* Match textarea padding */
+    font-size: 0.8rem; /* Match small text if needed */
+    line-height: 1.5;
+    color: #495057;
+    background-color: #fff;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    border: 1px solid transparent; 
+    pointer-events: none;
+    border-radius: 0.375rem;
+    overflow-y: auto;
+}
+
+.segment-row {
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid #edf2f7 !important;
+    
+    &:hover {
+        background-color: #ffffff !important;
+        border-color: #90cdf4 !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        transform: translateY(-2px);
+    }
+    
+    .btn-link {
+        opacity: 0.3;
+        transition: opacity 0.2s;
+    }
+    
+    &:hover .btn-link {
+        opacity: 1;
+    }
+}
+
+.test-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    box-shadow: 0 0 5px rgba(0,0,0,0.1);
+}
+
+.step-card {
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+    }
+}
+
+.table-dark {
+    --cui-table-bg: transparent;
+    --cui-table-color: #fff;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.4s ease-out forwards;
+}

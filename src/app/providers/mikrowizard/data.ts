@@ -8,7 +8,7 @@ import { User } from './user';
 
 @Injectable()
 export class dataProvider {
-    
+
     // public serverUrl: string = "/api";
     public serverUrl: string = "";
     private db: string = "NothingImportant";
@@ -60,60 +60,60 @@ export class dataProvider {
     ////
     //// MikroWizard API 
     ////
-    get_front_version(){
+    get_front_version() {
         return this.MikroWizardRPC.sendHttpGetRequest("/api/frontver/");
     }
-    change_password(oldpass:string,newpass:string){
-        var data={
-            'oldpass':oldpass,
-            'newpass':newpass
+    change_password(oldpass: string, newpass: string) {
+        var data = {
+            'oldpass': oldpass,
+            'newpass': newpass
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/user/change_password", data);
     }
-    dashboard_stats(versioncheck:boolean,front_version:string){
-        var data={
-            'versioncheck':versioncheck,
-            'front_version':front_version
+    dashboard_stats(versioncheck: boolean, front_version: string) {
+        var data = {
+            'versioncheck': versioncheck,
+            'front_version': front_version
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/dashboard/stats", data);
     }
-    monitoring_devices_events(page:number,textfilter:string=''){
-        var data={
-            'page':page,
-            'textfilter':textfilter
+    monitoring_devices_events(page: number, textfilter: string = '') {
+        var data = {
+            'page': page,
+            'textfilter': textfilter
         }
-  
+
         return this.MikroWizardRPC.sendJsonRequest("/api/monitoring/devs/get", data);
     }
-    
-    monitoring_events_fix(event_id:number){
-        var data={
-            'event_id':event_id
+
+    monitoring_events_fix(event_id: number) {
+        var data = {
+            'event_id': event_id
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/monitoring/events/fix", data);
     }
-  
-    monitoring_all_events(devid:number,page:number){
-        var data={
-            'devid':devid,
-            'page':page
+
+    monitoring_all_events(devid: number, page: number) {
+        var data = {
+            'devid': devid,
+            'page': page
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/monitoring/events/get", data);
     }
-    monitoring_unfixed_events(devid:number){
-        var data={
-            'devid':devid
+    monitoring_unfixed_events(devid: number) {
+        var data = {
+            'devid': devid
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/monitoring/eventunfixed/get", data);
     }
-    dashboard_traffic(delta:string){
-        var data={
-            'delta':delta
+    dashboard_traffic(delta: string) {
+        var data = {
+            'delta': delta
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/dashboard/traffic", data);
     }
 
-    get_dev_list(data:any) {
+    get_dev_list(data: any) {
         return this.MikroWizardRPC.sendJsonRequest("/api/dev/list", data);
     }
 
@@ -121,442 +121,502 @@ export class dataProvider {
         return this.MikroWizardRPC.sendJsonRequest("/api/devgroup/list", {});
     }
 
-    get_devgroup_members(gid:number) {
-        var data={
-            'gid':gid
+    get_devgroup_members(gid: number) {
+        var data = {
+            'gid': gid
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/devgroup/members", data);
     }
-    delete_group(id:number){
-        var data={
-            'gid':id
+    delete_group(id: number) {
+        var data = {
+            'gid': id
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/devgroup/delete", data);
     }
 
-    delete_devices(devids:any){ 
+    delete_devices(devids: any) {
         var data = {
-            'devids':devids
+            'devids': devids
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/dev/delete", data);
     }
 
     get_dev_info(id: number) {
-        var data={
-            'devid':id
+        var data = {
+            'devid': id
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/dev/info", data);
     }
 
     get_editform(id: number) {
-        var data={
-            'devid':id
+        var data = {
+            'devid': id
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/dev/get_editform", data);
     }
-    save_editform(data:any){
+    save_editform(data: any) {
         return this.MikroWizardRPC.sendJsonRequest("/api/dev/save_editform", data);
     }
-    get_dev_sensors(id: number,delta:string="5m",total_type:string="bps") {
-        var data={
-            'devid':id,
-            'delta':delta,
-            'total':total_type
+    get_dev_sensors(id: number, delta: string = "5m", total_type: string = "bps") {
+        var data = {
+            'devid': id,
+            'delta': delta,
+            'total': total_type
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/dev/sensors", data);
     }
-    get_dev_radio_sensors(id: number, delta:string="5m"){
-        var data={
-            'devid':id,
-            'delta':delta
+    get_dev_radio_sensors(id: number, delta: string = "5m") {
+        var data = {
+            'devid': id,
+            'delta': delta
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/dev/radio/sensors", data);
     }
-    get_dev_dhcp_info(id: number){
-        var data={
-            'devid':id,
+    get_dev_dhcp_info(id: number) {
+        var data = {
+            'devid': id,
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/dev/dhcp-server/get", data);
     }
-    get_dev_ifstat(id: number,delta:string="5m",iface:string="ether1",type:string="bps") {
-        var data={
-            'devid':id,
-            'delta':delta,
-            'type':type,
-            'interface':iface
+    get_dev_ifstat(id: number, delta: string = "5m", iface: string = "ether1", type: string = "bps") {
+        var data = {
+            'devid': id,
+            'delta': delta,
+            'type': type,
+            'interface': iface
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/dev/ifstat", data);
     }
-    totp(action:string,userid:string){
-        var data={
-            'userid':userid,
-            'action':action
+    totp(action: string, userid: string) {
+        var data = {
+            'userid': userid,
+            'action': action
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/user/totp", data);
     }
-    
-    get_user_restrictions(uid:string){
-        var data={
-            'uid':uid
+
+    get_user_restrictions(uid: string) {
+        var data = {
+            'uid': uid
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/user/restrictions", data);
     }
-    save_user_restrictions(uid:string,restrictions:any){
-        var data={
-            'uid':uid,
-            'restrictions':restrictions
+    save_user_restrictions(uid: string, restrictions: any) {
+        var data = {
+            'uid': uid,
+            'restrictions': restrictions
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/user/save_restrictions", data);
     }
 
-    mytotp(action:string,otp:any=false){
-        var data={
-            'action':action,
-            'otp':otp
+    mytotp(action: string, otp: any = false) {
+        var data = {
+            'action': action,
+            'otp': otp
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/user/mytotp", data);
     }
 
-    get_auth_logs(filters:any) {
-        var data=filters;
+    get_auth_logs(filters: any) {
+        var data = filters;
         return this.MikroWizardRPC.sendJsonRequest("/api/auth/list", data);
     }
 
-    get_account_logs(filters:any) {
-        var data=filters;
+    get_account_logs(filters: any) {
+        var data = filters;
         return this.MikroWizardRPC.sendJsonRequest("/api/account/list", data);
     }
 
-    get_dev_logs(filters:any) {
-        var data=filters;
+    get_dev_logs(filters: any) {
+        var data = filters;
         return this.MikroWizardRPC.sendJsonRequest("/api/devlogs/list", data);
     }
 
-    get_syslog(filters:any) {
-        var data=filters;
+    get_syslog(filters: any) {
+        var data = filters;
         return this.MikroWizardRPC.sendJsonRequest("/api/syslog/list", data);
     }
-    get_details_grouped(devid:number=0){
-        var data={
-            'devid':devid
+    get_details_grouped(devid: number = 0) {
+        var data = {
+            'devid': devid
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/devlogs/details/list", data);
     }
 
-    scan_devs(type:string,info:any){
-        var data: any={
-            'type':type
+    scan_devs(type: string, info: any) {
+        var data: any = {
+            'type': type
         }
-        if(type=="ip"){
+        if (type == "ip") {
             data = Object.assign(data, info);
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/scanner/scan", data);
     }
 
-    scan_results(){
+    scan_results() {
         return this.MikroWizardRPC.sendJsonRequest("/api/scanner/results", {});
     }
 
-	get_groups(searchstr:string=""){
-        var data={
-            'searchstr':searchstr
+    get_groups(searchstr: string = "") {
+        var data = {
+            'searchstr': searchstr
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/search/groups", data);
-	}
+    }
 
-	get_devices(searchstr:string=""){
-        var data={
-            'searchstr':searchstr
+    get_devices(searchstr: string = "") {
+        var data = {
+            'searchstr': searchstr
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/search/devices", data);
-	}
+    }
 
-    update_save_group(group:any){
-        var data={
+    update_save_group(group: any) {
+        var data = {
             ...group
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/devgroup/update_save_group", data);
     }
 
-    get_snippets(name:string,desc:string,content:string,page:number=0,size:number=1000,limit:any=false){
-        var data={
-            'name':name,
-            'description':desc,
-            'content':content, 
-            'page':page,
-            'size':size,
-            'limit':limit
+    get_snippets(name: string, desc: string, content: string, page: number = 0, size: number = 1000, limit: any = false) {
+        var data = {
+            'name': name,
+            'description': desc,
+            'content': content,
+            'page': page,
+            'size': size,
+            'limit': limit
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/snippet/list", data);
     }
 
-    save_snippet(data:any){
-        return this.MikroWizardRPC.sendJsonRequest("/api/snippet/save", {...data});
+    save_snippet(data: any) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/snippet/save", { ...data });
     }
 
-    Exec_snipet(data:any,members:any) {
-        data['members']=members;
+    Exec_snipet(data: any, members: any) {
+        data['members'] = members;
         return this.MikroWizardRPC.sendJsonRequest("/api/snippet/exec", data);
     }
 
-    delete_snippet(id:number){
-        var data={
-            'id':id
+    delete_snippet(id: number) {
+        var data = {
+            'id': id
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/snippet/delete", data);
     }
 
-    get_executed_snipet(id:number){
-        var data={
-            'id':id
+    get_executed_snipet(id: number) {
+        var data = {
+            'id': id
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/snippet/executed", data);
+    }
+
+    get_sequences() {
+        return this.MikroWizardRPC.sendJsonRequest("/api/snippet/sequence/list", {});
+    }
+
+    save_sequence(data: any) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/snippet/sequence/save", { ...data });
+    }
+
+    delete_sequence(id: number) {
+        var data = {
+            'id': id
+        }
+        return this.MikroWizardRPC.sendJsonRequest("/api/snippet/sequence/delete", data);
+    }
+
+    get_sequence_history(id: number) {
+        var data = {
+            'id': id
+        }
+        return this.MikroWizardRPC.sendJsonRequest("/api/snippet/sequence/history", data);
+    }
+
+    exec_sequence(data: any) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/snippet/sequence/exec", data);
+    }
+
+    get_syslog_regexes() {
+        return this.MikroWizardRPC.sendJsonRequest("/api/snippet/syslogregex/list", {});
+    }
+
+    save_syslog_regex(data: any) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/snippet/syslogregex/save", { ...data });
+    }
+
+    delete_syslog_regex(id: number) {
+        var data = {
+            'id': id
+        }
+        return this.MikroWizardRPC.sendJsonRequest("/api/snippet/syslogregex/delete", data);
+    }
+
+    get_syslogregex_samples() {
+        return this.MikroWizardRPC.sendJsonRequest("/api/snippet/syslogregex/samples", {});
+    }
+
+    get_alerts() {
+        return this.MikroWizardRPC.sendJsonRequest("/api/snippet/alert/list", {});
+    }
+
+    save_alert(data: any) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/snippet/alert/save", { ...data });
+    }
+
+    delete_alert(id: number) {
+        var data = {
+            'id': id
+        }
+        return this.MikroWizardRPC.sendJsonRequest("/api/snippet/alert/delete", data);
     }
 
     get_user_task_list() {
         return this.MikroWizardRPC.sendJsonRequest("/api/user_tasks/list", {});
     }
 
-    Add_task(data:any,members:any) {
-        data['members']=members;
+    Add_task(data: any, members: any) {
+        data['members'] = members;
         return this.MikroWizardRPC.sendJsonRequest("/api/user_tasks/create", data);
     }
 
-    Delete_task(taskid:Number) {
-        var data={
-            'taskid':taskid,
+    Delete_task(taskid: Number) {
+        var data = {
+            'taskid': taskid,
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/user_tasks/delete", data);
     }
 
-    Edit_task(data:any,members:any) {
-        data['members']=members;
+    Edit_task(data: any, members: any) {
+        data['members'] = members;
         return this.MikroWizardRPC.sendJsonRequest("/api/user_tasks/edit", data);
     }
 
-    get_task_members(taskid:Number) {
-        var data={
-            'taskid':taskid,
+    get_task_members(taskid: Number) {
+        var data = {
+            'taskid': taskid,
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/taskmember/details", data);
     }
 
-    get_users(page:Number,size:Number,search:string) {
-        var data={
-            'page':page,
-            'size':size,
-            'search':search
+    get_users(page: Number, size: Number, search: string) {
+        var data = {
+            'page': page,
+            'size': size,
+            'search': search
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/users/list", data);
     }
 
-    get_perms(page:Number,size:Number,search:string) {
-        var data={
-            'page':page,
-            'size':size,
-            'search':search
+    get_perms(page: Number, size: Number, search: string) {
+        var data = {
+            'page': page,
+            'size': size,
+            'search': search
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/perms/list", data);
     }
-    
-    create_perm(name:string,perms:any) {
-        var data={
-            'name':name,
-            'perms':perms
+
+    create_perm(name: string, perms: any) {
+        var data = {
+            'name': name,
+            'perms': perms
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/perms/create", data);
     }
 
-    edit_perm(id:Number,name:string,perms:any) {
-        
+    edit_perm(id: Number, name: string, perms: any) {
+
         var data = {
-            'id':id,
-            'name':name,
-            'perms':perms
+            'id': id,
+            'name': name,
+            'perms': perms
         }
 
         return this.MikroWizardRPC.sendJsonRequest("/api/perms/edit", data);
     }
-    
-    delete_perm(id:number){
-        var data={
-            'id':id
+
+    delete_perm(id: number) {
+        var data = {
+            'id': id
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/perms/delete", data);
     }
 
-    get_vault_setting(){
+    get_vault_setting() {
         return this.MikroWizardRPC.sendJsonRequest("/api/pssvault/get", {});
     }
 
-    vault_task(data:any){
+    vault_task(data: any) {
 
         return this.MikroWizardRPC.sendJsonRequest("/api/pssvault/task", data);
     }
-    vault_history(){
+    vault_history() {
         return this.MikroWizardRPC.sendJsonRequest("/api/pssvault/history", {});
     }
-    exec_vault(){
+    exec_vault() {
         return this.MikroWizardRPC.sendJsonRequest("/api/pssvault/execute", {});
     }
-    reveal_password(devid:number,username:string){
-        var data={
-            'devid':devid,
-            'username':username
+    reveal_password(devid: number, username: string) {
+        var data = {
+            'devid': devid,
+            'username': username
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/pssvault/reveal", data);
     }
 
-    get_passwords(data:any){
+    get_passwords(data: any) {
         return this.MikroWizardRPC.sendJsonRequest("/api/pssvault/get_passwords", data);
     }
-    get_device_pass(devid:number){
-        var data={
-            'devid':devid
+    get_device_pass(devid: number) {
+        var data = {
+            'devid': devid
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/pssvault/get_device_pass", data);
     }
-    user_perms(uid:string) {
-        
+    user_perms(uid: string) {
+
         var data = {
-            'uid':uid,
+            'uid': uid,
         }
 
         return this.MikroWizardRPC.sendJsonRequest("/api/userperms/list", data);
     }
 
-    Add_user_perm(uid:Number,permid:Number,devgroupid:Number){
+    Add_user_perm(uid: Number, permid: Number, devgroupid: Number) {
 
         var data = {
-            'uid':uid,
-            'pid':permid,
-            'gid':devgroupid
+            'uid': uid,
+            'pid': permid,
+            'gid': devgroupid
         }
 
         return this.MikroWizardRPC.sendJsonRequest("/api/userperms/create", data);
     }
-    Delete_user_perm(id:number){
-        var data={
-            'id':id
+    Delete_user_perm(id: number) {
+        var data = {
+            'id': id
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/userperms/delete", data);
     }
-    edit_user(data:any) {
+    edit_user(data: any) {
 
-             return this.MikroWizardRPC.sendJsonRequest("/api/user/edit", data);
+        return this.MikroWizardRPC.sendJsonRequest("/api/user/edit", data);
     }
 
-    create_user(data:any) {
+    create_user(data: any) {
         return this.MikroWizardRPC.sendJsonRequest("/api/user/create", data);
     }
-    delete_user(id:number){
-        var data={
-            'uid':id
+    delete_user(id: number) {
+        var data = {
+            'uid': id
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/user/delete", data);
     }
-    check_firmware(devids:any) {
+    check_firmware(devids: any) {
         var data = {
-            'devids':devids
+            'devids': devids
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/firmware/check_firmware_update", data);
     }
 
-    get_firms(page:Number,size:Number,search:any) {
+    get_firms(page: Number, size: Number, search: any) {
         var data = {
-            'page':page,
-            'size':size,
-            'search':search
+            'page': page,
+            'size': size,
+            'search': search
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/firmware/get_firms", data);
     }
 
-    delete_firm(id:number){
-        var data={
-            'id':id
+    delete_firm(id: number) {
+        var data = {
+            'id': id
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/firmware/delete_from_repository", data);
     }
-    
-    get_backups(data:any) {
+
+    get_backups(data: any) {
         return this.MikroWizardRPC.sendJsonRequest("/api/backup/list", data);
     }
-   
-    get_backup(id:number){
+
+    get_backup(id: number) {
         var data = {
-            'id':id
+            'id': id
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/backup/get", data);
     }
-    restore_backup(id:number){
+    restore_backup(id: number) {
         var data = {
-            'backupid':id
+            'backupid': id
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/backup/restore", data);
     }
 
     get_downloadable_firms() {
-       
+
         return this.MikroWizardRPC.sendJsonRequest("/api/firmware/get_downloadable_firms", {});
     }
 
-    download_firmware_to_repository(version:string){
+    download_firmware_to_repository(version: string) {
         var data = {
-            'version':version
+            'version': version
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/firmware/download_firmware_to_repository", data);
     }
 
-    save_firmware_setting(updatebehavior:string,firmwaretoinstall:string,firmwaretoinstallv6:string){
+    save_firmware_setting(updatebehavior: string, firmwaretoinstall: string, firmwaretoinstallv6: string) {
         var data = {
-            'updatebehavior':updatebehavior,
-            'firmwaretoinstall':firmwaretoinstall,
-            'firmwaretoinstallv6':firmwaretoinstallv6
+            'updatebehavior': updatebehavior,
+            'firmwaretoinstall': firmwaretoinstall,
+            'firmwaretoinstallv6': firmwaretoinstallv6
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/firmware/update_firmware_settings", data);
     }
 
-    update_firmware(devids:string){
+    update_firmware(devids: string) {
         var data = {
-            'devids':devids
+            'devids': devids
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/firmware/update_firmware", data);
     }
 
-    upgrade_firmware(devids:string){
+    upgrade_firmware(devids: string) {
         var data = {
-            'devids':devids
+            'devids': devids
         }
-        return this.MikroWizardRPC.sendJsonRequest("/api/firmware/upgrade_firmware", data);   
+        return this.MikroWizardRPC.sendJsonRequest("/api/firmware/upgrade_firmware", data);
     }
 
-    reboot_devices(devids:string){
+    reboot_devices(devids: string) {
         var data = {
-            'devids':devids
+            'devids': devids
         }
-        return this.MikroWizardRPC.sendJsonRequest("/api/firmware/reboot_devices", data);   
+        return this.MikroWizardRPC.sendJsonRequest("/api/firmware/reboot_devices", data);
     }
 
-    get_settings(){
+    get_settings() {
         return this.MikroWizardRPC.sendJsonRequest("/api/sysconfig/get_all", {});
     }
 
-    save_sys_setting(data:any){
+    save_sys_setting(data: any) {
         return this.MikroWizardRPC.sendJsonRequest("/api/sysconfig/save_all", data);
     }
- 
-    get_running_tasks(){
+
+    get_running_tasks() {
         return this.MikroWizardRPC.sendJsonRequest("/api/tasks/list", {});
     }
-    stop_task(signal:number){
-        var data={
-            'signal':signal
+    stop_task(signal: number) {
+        var data = {
+            'signal': signal
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/tasks/stop", data);
     }
-    apply_update(action:string){
-        var data={
-            'action':action
+    apply_update(action: string) {
+        var data = {
+            'action': action
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/sysconfig/apply_update", data);
     }
@@ -566,62 +626,62 @@ export class dataProvider {
         return this.MikroWizardRPC.sendJsonRequest("/api/cloner/list", {});
     }
 
-    Add_cloner(data:any,members:any) {
-        data['members']=members;
+    Add_cloner(data: any, members: any) {
+        data['members'] = members;
         return this.MikroWizardRPC.sendJsonRequest("/api/cloner/create", data);
     }
 
-    Delete_cloner(clonerid:number) {
-        var data={
-            'clonerid':clonerid,
+    Delete_cloner(clonerid: number) {
+        var data = {
+            'clonerid': clonerid,
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/cloner/delete", data);
     }
 
-    Edit_cloner(data:any,members:any) {
-        data['members']=members;
+    Edit_cloner(data: any, members: any) {
+        data['members'] = members;
         return this.MikroWizardRPC.sendJsonRequest("/api/cloner/edit", data);
     }
 
-    get_cloner_members(clonerid:number) {
-        var data={
-            'clonerid':clonerid,
+    get_cloner_members(clonerid: number) {
+        var data = {
+            'clonerid': clonerid,
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/cloner/memberdetails", data);
     }
-    killSession(devid:number,item:any){
-        var data={
-            'devid':devid,
-            'item':item
+    killSession(devid: number, item: any) {
+        var data = {
+            'devid': devid,
+            'item': item
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/dev/kill_session", data);
     }
-    getDhcpHistory(item:any){
-        var data={
-            'item':item
+    getDhcpHistory(item: any) {
+        var data = {
+            'item': item
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/dhcp-history/get", data);
     }
 
-    getNetworkMap(){
+    getNetworkMap() {
         return this.MikroWizardRPC.sendJsonRequest("/api/networkmap/get", {});
     }
 
-    bulk_add_devices(devices: any[]){
+    bulk_add_devices(devices: any[]) {
         var data = {
             'devices': devices
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/dev/bulk_add", data);
     }
 
-    bulk_add_status(taskId: string){
+    bulk_add_status(taskId: string) {
         var data = {
             'taskId': taskId
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/dev/bulk_add_status", data);
     }
 
-    group_firmware_action(groupId: number, action: string){
+    group_firmware_action(groupId: number, action: string) {
         var data = {
             'groupId': groupId,
             'action': action
@@ -637,7 +697,7 @@ export class dataProvider {
         this.MikroWizardRPC.clearCookeis();
         this.MikroWizardRPC.setNewSession(context, session);
     }
- 
+
     checkSessionExpired(error: any) {
         console.log(error);
         if ('title' in error && error.title == "session_expired")

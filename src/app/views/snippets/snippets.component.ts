@@ -38,6 +38,7 @@ export class SnippetsComponent implements OnInit, OnDestroy {
   public uid: number;
   public uname: string;
   public tz: string;
+  public ispro: boolean = false;
 
   constructor(
     private data_provider: dataProvider,
@@ -56,7 +57,8 @@ export class SnippetsComponent implements OnInit, OnDestroy {
       // console.dir("res",res)
       _self.uid = res.uid;
       _self.uname = res.name;
-	    _self.tz = res.tz;
+      _self.tz = res.tz;
+      _self.ispro = res.ispro;
       // console.dir("role",res.role);
       const userId = _self.uid;
 
@@ -182,31 +184,31 @@ export class SnippetsComponent implements OnInit, OnDestroy {
       this.ModalAction = "edit";
     }
   }
-  show_exec(item:any){
-	var _self=this;
-	this.SelectedSnippet = item;
-	this.ExecutedDataModalVisible = true;
-	this.data_provider
-	.get_executed_snipet(_self.SelectedSnippet["id"])
-	.then((res) => {
-		let index = 1;
-		_self.ExecutedData= res.map((d: any) => {
-			d.index = index;
-			d.ended = formatInTimeZone(
-			  d.created.split(".")[0] + ".000Z",
-			  _self.tz,
-			  "yyyy-MM-dd HH:mm:ss XXX"
-			);
-			d.started = formatInTimeZone(
-				d.info.created.split(".")[0] + ".000Z",
-				_self.tz,
-				"yyyy-MM-dd HH:mm:ss XXX"
-			  );
-			index += 1;
-			return d;
-		  });
-	  _self.DeleteConfirmModalVisible = false;
-	});
+  show_exec(item: any) {
+    var _self = this;
+    this.SelectedSnippet = item;
+    this.ExecutedDataModalVisible = true;
+    this.data_provider
+      .get_executed_snipet(_self.SelectedSnippet["id"])
+      .then((res) => {
+        let index = 1;
+        _self.ExecutedData = res.map((d: any) => {
+          d.index = index;
+          d.ended = formatInTimeZone(
+            d.created.split(".")[0] + ".000Z",
+            _self.tz,
+            "yyyy-MM-dd HH:mm:ss XXX"
+          );
+          d.started = formatInTimeZone(
+            d.info.created.split(".")[0] + ".000Z",
+            _self.tz,
+            "yyyy-MM-dd HH:mm:ss XXX"
+          );
+          index += 1;
+          return d;
+        });
+        _self.DeleteConfirmModalVisible = false;
+      });
   }
 
   form_changed() {
@@ -258,7 +260,7 @@ export class SnippetsComponent implements OnInit, OnDestroy {
     this.NewMemberRows = rows;
     this.SelectedNewMemberRows = rows.map((m: GuiSelectedRow) => m.source);
   }
-  
+
   add_new_members() {
     var _self = this;
     _self.SelectedMembers = [
@@ -274,12 +276,12 @@ export class SnippetsComponent implements OnInit, OnDestroy {
 
   submit(action: string) {
     var _self = this;
-	this.data_provider
-	.Exec_snipet(_self.current_snippet, _self.SelectedTaskItems)
-	.then((res) => {
-		_self.initGridTable();
-	});
-    
+    this.data_provider
+      .Exec_snipet(_self.current_snippet, _self.SelectedTaskItems)
+      .then((res) => {
+        _self.initGridTable();
+      });
+
     this.ExecSnipetModalVisible = false;
   }
 
@@ -287,7 +289,7 @@ export class SnippetsComponent implements OnInit, OnDestroy {
     this.current_snippet = item;
     this.current_snippet["task_type"] = "snipet_exec";
     this.current_snippet["selection_type"] = "devices";
-	  this.form_changed();
+    this.form_changed();
     this.ExecSnipetModalVisible = true;
     this.ModalAction = "exec";
   }
@@ -318,7 +320,7 @@ export class SnippetsComponent implements OnInit, OnDestroy {
 
   initGridTable(): void {
     var _self = this;
-    _self.data_provider.get_snippets("", "", "", 0, 1000,false).then((res) => {
+    _self.data_provider.get_snippets("", "", "", 0, 1000, false).then((res) => {
       _self.source = res.map((x: any) => {
         x.created = [
           x.created.split("T")[0],
@@ -330,18 +332,18 @@ export class SnippetsComponent implements OnInit, OnDestroy {
     });
   }
 
-  sanitizeString(desc:string) {
-    var itemDesc:string='';
+  sanitizeString(desc: string) {
+    var itemDesc: string = '';
     if (desc) {
-        itemDesc = desc.toString().replace(/"/g, '\"');
-        itemDesc = itemDesc.replace(/'/g, '\'');
+      itemDesc = desc.toString().replace(/"/g, '\"');
+      itemDesc = itemDesc.replace(/'/g, '\'');
     } else {
-        itemDesc = '';
+      itemDesc = '';
     }
     return itemDesc;
   }
 
-  exportToCsv(jsonResponse:any) {
+  exportToCsv(jsonResponse: any) {
     const data = jsonResponse;
     const columns = this.getColumns(data);
     const csvData = this.convertToCsv(data, columns);
@@ -349,7 +351,7 @@ export class SnippetsComponent implements OnInit, OnDestroy {
   }
 
   getColumns(data: any[]): string[] {
-    const columns : any  = [];
+    const columns: any = [];
     data.forEach(row => {
       Object.keys(row).forEach((col) => {
         if (!columns.includes(col)) {
@@ -361,13 +363,13 @@ export class SnippetsComponent implements OnInit, OnDestroy {
   }
 
   convertToCsv(data: any[], columns: string[]): string {
-    var _self=this;
+    var _self = this;
     let csv = '';
     csv += columns.join(',') + '\n';
     data.forEach(row => {
-      const values : any = [];
-      columns.forEach((col:any) => {
-        values.push('"'+_self.sanitizeString(row[col])+'"');
+      const values: any = [];
+      columns.forEach((col: any) => {
+        values.push('"' + _self.sanitizeString(row[col]) + '"');
       });
       csv += values.join(',') + '\n';
     });
@@ -376,10 +378,10 @@ export class SnippetsComponent implements OnInit, OnDestroy {
 
   downloadFile(data: string, filename: string, type: string) {
     const blob = new Blob([data], { type: type });
-	const nav = (window.navigator as any);
+    const nav = (window.navigator as any);
 
     if (nav.msSaveOrOpenBlob) {
-		nav.msSaveBlob(blob, filename);
+      nav.msSaveBlob(blob, filename);
     } else {
       const link = document.createElement('a');
       link.setAttribute('href', URL.createObjectURL(blob));
@@ -405,5 +407,5 @@ export class SnippetsComponent implements OnInit, OnDestroy {
 
 
 
-  ngOnDestroy(): void {}
+  ngOnDestroy(): void { }
 }

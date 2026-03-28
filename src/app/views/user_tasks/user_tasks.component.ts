@@ -77,6 +77,7 @@ export class UserTasksComponent implements OnInit {
   public DeleteConfirmModalVisible: boolean = false;
   public Members: any = "";
   public Snippets: any;
+  public Sequences: any = [];
   public SelectedMembers: any = [];
   public NewMemberModalVisible: boolean = false;
   public availbleMembers: any = [];
@@ -96,7 +97,7 @@ export class UserTasksComponent implements OnInit {
     { label: 'Every 10 minutes', value: '*/10 * * * *', description: 'Regular monitoring checks' },
     { label: 'Every 15 minutes', value: '*/15 * * * *', description: 'Moderate monitoring frequency' },
     { label: 'Every 30 minutes', value: '*/30 * * * *', description: 'Low frequency monitoring' },
-    
+
     // Hourly Operations
     { label: 'Every hour', value: '0 * * * *', description: 'Hourly network checks' },
     { label: 'Every 2 hours', value: '0 */2 * * *', description: 'Bi-hourly operations' },
@@ -104,7 +105,7 @@ export class UserTasksComponent implements OnInit {
     { label: 'Every 6 hours', value: '0 */6 * * *', description: 'Four times daily' },
     { label: 'Every 8 hours', value: '0 */8 * * *', description: 'Three times daily' },
     { label: 'Every 12 hours', value: '0 */12 * * *', description: 'Twice daily operations' },
-    
+
     // Daily Maintenance
     { label: 'Daily at midnight', value: '0 0 * * *', description: 'Daily maintenance at 00:00' },
     { label: 'Daily at 1 AM', value: '0 1 * * *', description: 'Daily backup at 01:00' },
@@ -113,20 +114,20 @@ export class UserTasksComponent implements OnInit {
     { label: 'Daily at 6 AM', value: '0 6 * * *', description: 'Pre-business hours check' },
     { label: 'Daily at 6 PM', value: '0 18 * * *', description: 'End of business day backup' },
     { label: 'Daily at 10 PM', value: '0 22 * * *', description: 'Evening maintenance at 22:00' },
-    
+
     // Business Hours
     { label: 'Workdays at 8 AM', value: '0 8 * * 1-5', description: 'Start of business day - Mon to Fri' },
     { label: 'Workdays at 9 AM', value: '0 9 * * 1-5', description: 'Business hours start check' },
     { label: 'Workdays at 12 PM', value: '0 12 * * 1-5', description: 'Midday check - Mon to Fri' },
     { label: 'Workdays at 5 PM', value: '0 17 * * 1-5', description: 'End of business day - Mon to Fri' },
     { label: 'Workdays at 6 PM', value: '0 18 * * 1-5', description: 'After hours backup - Mon to Fri' },
-    
+
     // Weekly Operations
     { label: 'Weekly (Sunday midnight)', value: '0 0 * * 0', description: 'Weekly maintenance - Sunday 00:00' },
     { label: 'Weekly (Monday midnight)', value: '0 0 * * 1', description: 'Weekly start - Monday 00:00' },
     { label: 'Weekly (Friday 6 PM)', value: '0 18 * * 5', description: 'End of week backup - Friday 18:00' },
     { label: 'Weekly (Saturday 2 AM)', value: '0 2 * * 6', description: 'Weekend maintenance - Saturday 02:00' },
-    
+
     // Monthly Operations
     { label: 'Monthly (1st at midnight)', value: '0 0 1 * *', description: 'Monthly maintenance - 1st of month' },
     { label: 'Monthly (1st at 2 AM)', value: '0 2 1 * *', description: 'Monthly backup - 1st at 02:00' },
@@ -152,6 +153,16 @@ export class UserTasksComponent implements OnInit {
     displayExpr: "name",
     valueExpr: "id",
     placeholder: "Snippet",
+    searchEnabled: true,
+    enableDarkMode: false,
+  };
+
+  seqOptions: Partial<NgxSuperSelectOptions> = {
+    selectionMode: "single",
+    actionsEnabled: false,
+    displayExpr: "name",
+    valueExpr: "id",
+    placeholder: "Sequence",
     searchEnabled: true,
     enableDarkMode: false,
   };
@@ -299,15 +310,17 @@ export class UserTasksComponent implements OnInit {
 
     var _self = this;
     this.SelectedTask = { ...item };
-    
+
     // Initialize cron search and preset tracking
     this.cronSearch = '';
     const currentCron = this.SelectedTask['cron'];
     this.selectedCronPreset = this.predefinedCrons.find(cron => cron.value === currentCron) || null;
-    
-    if (this.SelectedTask['task_type'] == 'firmware' && 'data' in this.SelectedTask && this.SelectedTask['data']) {
-      this.SelectedTask['data'] = JSON.parse(this.SelectedTask['data']);
-      if (this.SelectedTask['data']['strategy'] == 'defined') {
+
+    if ((this.SelectedTask['task_type'] == 'firmware' || this.SelectedTask['task_type'] == 'sequence') && 'data' in this.SelectedTask && this.SelectedTask['data']) {
+      if (typeof this.SelectedTask['data'] === 'string') {
+        this.SelectedTask['data'] = JSON.parse(this.SelectedTask['data']);
+      }
+      if (this.SelectedTask['task_type'] == 'firmware' && this.SelectedTask['data']['strategy'] == 'defined') {
         this.data_provider.get_firms(0, 10000, false).then((res) => {
           let index = 1;
           _self.available_firmwares = [
@@ -328,16 +341,23 @@ export class UserTasksComponent implements OnInit {
           _self.firms_loaded = true;
         });
       }
-      else{
+      else {
         _self.firms_loaded = true;
       }
 
     }
-    _self.data_provider.get_snippets("", "", "", 0, 1000,false).then((res) => {
+    _self.data_provider.get_snippets("", "", "", 0, 1000, false).then((res) => {
       _self.Snippets = res.map((x: any) => {
         return { id: x.id, name: x.name };
       });
     });
+    if (_self.ispro) {
+      _self.data_provider.get_sequences().then((res: any) => {
+        _self.Sequences = res.map((x: any) => {
+          return { id: x.id, name: x.name };
+        });
+      });
+    }
     if (action != "select_change") {
       this.SelectedTask["action"] = "edit";
       this.data_provider.get_task_members(_self.SelectedTask.id).then((res) => {
@@ -354,7 +374,7 @@ export class UserTasksComponent implements OnInit {
   }
 
 
-  
+
   firmware_type_changed(type: any) {
     this.SelectedTask['data']['strategy'] = type;
     if (type == 'system') {
@@ -405,7 +425,7 @@ export class UserTasksComponent implements OnInit {
   onSnippetsValueChanged(v: any) {
     var _self = this;
     if (v == "" || v.length < 3) return;
-    _self.data_provider.get_snippets(v, "", "", 0, 1000,false).then((res) => {
+    _self.data_provider.get_snippets(v, "", "", 0, 1000, false).then((res) => {
       _self.Snippets = res.map((x: any) => {
         return { id: String(x.id), name: x.name };
       });
@@ -470,10 +490,10 @@ export class UserTasksComponent implements OnInit {
     const searchTerm = event.target.value.toLowerCase();
     this.cronSearch = searchTerm;
     this.selectedCronPreset = null;
-    
+
     if (searchTerm.length > 0) {
-      this.filteredCrons = this.predefinedCrons.filter(cron => 
-        cron.label.toLowerCase().includes(searchTerm) || 
+      this.filteredCrons = this.predefinedCrons.filter(cron =>
+        cron.label.toLowerCase().includes(searchTerm) ||
         cron.description.toLowerCase().includes(searchTerm) ||
         cron.value.includes(searchTerm)
       );
@@ -491,7 +511,7 @@ export class UserTasksComponent implements OnInit {
   onCronInputFocus(): void {
     this.filteredCrons = this.predefinedCrons;
     this.showCronDropdown = true;
-    
+
     // If current cron matches a preset, highlight it
     const currentCron = this.SelectedTask['cron'];
     this.selectedCronPreset = this.predefinedCrons.find(cron => cron.value === currentCron) || null;
@@ -500,7 +520,7 @@ export class UserTasksComponent implements OnInit {
   onCronInputChange(event: any): void {
     this.SelectedTask['cron'] = event.target.value;
     this.selectedCronPreset = null;
-    
+
     // Check if the entered value matches any preset
     const enteredValue = event.target.value;
     const matchingPreset = this.predefinedCrons.find(cron => cron.value === enteredValue);
@@ -513,7 +533,7 @@ export class UserTasksComponent implements OnInit {
     if (this.selectedCronPreset) {
       return this.selectedCronPreset.description;
     }
-    
+
     const currentCron = this.SelectedTask['cron'];
     const matchingPreset = this.predefinedCrons.find(cron => cron.value === currentCron);
     return matchingPreset ? matchingPreset.description : 'Custom cron expression';
@@ -522,6 +542,8 @@ export class UserTasksComponent implements OnInit {
   onTaskTypeChange(): void {
     if (this.SelectedTask['task_type'] === 'snippet') {
       this.loadSnippets();
+    } else if (this.SelectedTask['task_type'] === 'sequence') {
+      this.loadSequences();
     }
   }
 
@@ -532,5 +554,23 @@ export class UserTasksComponent implements OnInit {
         return { id: x.id, name: x.name };
       });
     });
+  }
+
+  loadSequences(): void {
+    var _self = this;
+    _self.data_provider.get_sequences().then((res: any) => {
+      _self.Sequences = res.map((x: any) => {
+        return { id: x.id, name: x.name };
+      });
+    });
+  }
+
+  onSequenceSelected($event: any) {
+    if (!this.SelectedTask['data']) this.SelectedTask['data'] = {};
+    this.SelectedTask['data']['sequence_id'] = $event;
+  }
+
+  onSequencesSearchChanged(v: any) {
+    // Sequences are fully loaded on open, client side filtering can be used or ignored for now
   }
 }

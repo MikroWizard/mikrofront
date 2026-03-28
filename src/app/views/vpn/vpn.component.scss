@@ -1,0 +1,53 @@
+/* Scss styling for vpn component */
+::ng-deep pre {
+    display: block !important;
+    min-height: 60vh;
+}
+
+.shadow-sm {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075) !important;
+}
+
+.border-0 {
+    border: 0 !important;
+}
+
+.bg-success {
+    background: linear-gradient(135deg, #2eb85c 0%, #1d823e 100%) !important;
+}
+
+.bg-danger {
+    background: linear-gradient(135deg, #e55353 0%, #ba2828 100%) !important;
+}
+
+.bg-primary {
+    background: linear-gradient(135deg, #321fdb 0%, #1f1498 100%) !important;
+}
+
+.bg-info {
+    background: linear-gradient(135deg, #39f 0%, #0076e6 100%) !important;
+}
+
+.opacity-75 {
+    opacity: 0.75;
+}
+
+.text-white {
+    color: #fff !important;
+}
+
+.h-100 {
+    height: 100% !important;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

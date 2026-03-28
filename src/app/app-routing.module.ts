@@ -70,6 +70,11 @@ const routes: Routes = [
           import('./views/syslog/syslog.module').then((m) => m.SyslogModule)
       },
       {
+        path: 'syslog-regex',
+        loadChildren: () =>
+          import('./views/syslog-regex/syslog-regex.module').then((m) => m.SyslogRegexModule)
+      },
+      {
         path: 'backups',
         loadChildren: () =>
           import('./views/backups/backups.module').then((m) => m.BackupsModule)
@@ -100,6 +105,11 @@ const routes: Routes = [
           import('./views/snippets/snippets.module').then((m) => m.SnippetsModule)
       },
       {
+        path: 'sequences',
+        loadChildren: () =>
+          import('./views/sequences/sequences.module').then((m) => m.SequencesModule)
+      },
+      {
         path: 'user_manager',
         loadChildren: () =>
           import('./views/user_manager/user_manager.module').then((m) => m.UserManagerModule)
@@ -108,6 +118,11 @@ const routes: Routes = [
         path: 'permissions',
         loadChildren: () =>
           import('./views/permissions/permissions.module').then((m) => m.PermissionsModule)
+      },
+      {
+        path: 'vpn',
+        loadChildren: () =>
+          import('./views/vpn/vpn.module').then((m) => m.VpnModule)
       },
       {
         path: 'pages',
@@ -137,7 +152,7 @@ const routes: Routes = [
       title: 'Login Page'
     }
   },
-  {path: '**', redirectTo: 'dashboard'}
+  { path: '**', redirectTo: 'dashboard' }
 ];
 
 @NgModule({

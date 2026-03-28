@@ -19,8 +19,9 @@
           <gui-grid-column header="Name" field="name">
             <ng-template let-value="item.name" let-item="item" let-index="index">
               <i *ngIf="item.task_type=='snippet'" class="fa-solid fa-code"></i>
-              <i *ngIf="item.task_type=='backup'"  class="fa-solid fa-database"></i>
-              <i *ngIf="item.task_type=='firmware'"  class="fa-solid fa-upload"></i>
+              <i *ngIf="item.task_type=='backup'" class="fa-solid fa-database"></i>
+              <i *ngIf="item.task_type=='firmware'" class="fa-solid fa-upload"></i>
+              <i *ngIf="item.task_type=='sequence'" class="fa-solid fa-code-branch"></i>
               &nbsp; {{value}} </ng-template>
           </gui-grid-column>
           <gui-grid-column header="Description" field="description">
@@ -56,257 +57,278 @@
   </c-col>
 </c-row>
 
-  <c-modal #EditTaskModal backdrop="static" size="xl" [(visible)]="EditTaskModalVisible" id="EditTaskModal">
-    <c-modal-header class="bg-light">
-      <h5 *ngIf="SelectedTask['action']=='edit'" cModalTitle>
-        <i class="fa-solid fa-edit me-2"></i>Edit Task: {{SelectedTask['name']}}
-      </h5>
-      <h5 *ngIf="SelectedTask['action']=='add'" cModalTitle>
-        <i class="fa-solid fa-plus me-2"></i>Create New Task
-      </h5>
-      <button [cModalToggle]="EditTaskModal.id" cButtonClose></button>
-    </c-modal-header>
-    <c-modal-body class="p-4">
-      <!-- Basic Information Section -->
-      <div class="task-form-section mb-4">
-        <div class="section-header mb-3">
-          <h6 class="section-title mb-1"><i class="fa-solid fa-info-circle me-2"></i>Basic Information</h6>
-          <small class="text-muted">Define the task name, description and type</small>
-        </div>
-        <c-row class="g-3">
-          <c-col xs="12" md="6">
-            <input cFormControl placeholder="Task Name (required)" [(ngModel)]="SelectedTask['name']" 
-              class="form-input" title="Unique name for this task" />
-          </c-col>
-          <c-col xs="12" md="6">
-            <select cSelect [(ngModel)]="SelectedTask['task_type']" (change)="onTaskTypeChange()" class="form-select" title="Select task type">
-              <option value="">Choose Task Type...</option>
-              <option value="backup">📁 Backup Configuration</option>
-              <option value="snippet">📝 Execute Script/Snippet</option>
-              <option value="firmware" *ngIf="ispro">🔄 Firmware Update</option>
-            </select>
-          </c-col>
-          <c-col xs="12">
-            <textarea cFormControl placeholder="Task Description (optional)" [(ngModel)]="SelectedTask['description']" 
-              class="form-input" rows="2" title="Brief description of what this task does"></textarea>
-          </c-col>
-        </c-row>
+<c-modal #EditTaskModal backdrop="static" size="xl" [(visible)]="EditTaskModalVisible" id="EditTaskModal">
+  <c-modal-header class="bg-light">
+    <h5 *ngIf="SelectedTask['action']=='edit'" cModalTitle>
+      <i class="fa-solid fa-edit me-2"></i>Edit Task: {{SelectedTask['name']}}
+    </h5>
+    <h5 *ngIf="SelectedTask['action']=='add'" cModalTitle>
+      <i class="fa-solid fa-plus me-2"></i>Create New Task
+    </h5>
+    <button [cModalToggle]="EditTaskModal.id" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body class="p-4">
+    <!-- Basic Information Section -->
+    <div class="task-form-section mb-4">
+      <div class="section-header mb-3">
+        <h6 class="section-title mb-1"><i class="fa-solid fa-info-circle me-2"></i>Basic Information</h6>
+        <small class="text-muted">Define the task name, description and type</small>
       </div>
-      <!-- Task Configuration Section -->
-      <div class="task-config-section mb-4" *ngIf="SelectedTask['task_type']">
-        <div class="section-header mb-3">
-          <h6 class="section-title mb-1"><i class="fa-solid fa-cog me-2"></i>Task Configuration</h6>
-          <small class="text-muted">Configure task-specific settings and parameters</small>
-        </div>
-        
-        <!-- Backup Configuration -->
-        <div *ngIf="SelectedTask['task_type']=='backup'" class="backup-config mb-3">
-          <c-card class="mb-3">
-            <c-card-header class="bg-success text-white">
-              <h6 class="mb-0"><i class="fa-solid fa-database me-2"></i>Backup Configuration</h6>
-            </c-card-header>
-            <c-card-body>
-              <div class="alert alert-info">
-                <i class="fa-solid fa-info-circle me-2"></i>
-                This task will create configuration backups of selected devices. Backups are stored securely and can be restored later.
-              </div>
-            </c-card-body>
-          </c-card>
-        </div>
-        
-        <!-- Firmware Configuration -->
-        <c-card *ngIf="SelectedTask['task_type']=='firmware'" class="mb-3">
-          <c-card-header class="bg-warning text-dark">
-            <h6 class="mb-0"><i class="fa-solid fa-microchip me-2"></i>Firmware Update Strategy</h6>
+      <c-row class="g-3">
+        <c-col xs="12" md="6">
+          <input cFormControl placeholder="Task Name (required)" [(ngModel)]="SelectedTask['name']" class="form-input"
+            title="Unique name for this task" />
+        </c-col>
+        <c-col xs="12" md="6">
+          <select cSelect [(ngModel)]="SelectedTask['task_type']" (change)="onTaskTypeChange()" class="form-select"
+            title="Select task type">
+            <option value="">Choose Task Type...</option>
+            <option value="backup">📁 Backup Configuration</option>
+            <option value="snippet">📝 Execute Script/Snippet</option>
+            <option value="firmware" *ngIf="ispro">🔄 Firmware Update</option>
+            <option value="sequence" *ngIf="ispro">⛓️ Alert Sequence</option>
+          </select>
+        </c-col>
+        <c-col xs="12">
+          <textarea cFormControl placeholder="Task Description (optional)" [(ngModel)]="SelectedTask['description']"
+            class="form-input" rows="2" title="Brief description of what this task does"></textarea>
+        </c-col>
+      </c-row>
+    </div>
+    <!-- Task Configuration Section -->
+    <div class="task-config-section mb-4" *ngIf="SelectedTask['task_type']">
+      <div class="section-header mb-3">
+        <h6 class="section-title mb-1"><i class="fa-solid fa-cog me-2"></i>Task Configuration</h6>
+        <small class="text-muted">Configure task-specific settings and parameters</small>
+      </div>
+
+      <!-- Backup Configuration -->
+      <div *ngIf="SelectedTask['task_type']=='backup'" class="backup-config mb-3">
+        <c-card class="mb-3">
+          <c-card-header class="bg-success text-white">
+            <h6 class="mb-0"><i class="fa-solid fa-database me-2"></i>Backup Configuration</h6>
           </c-card-header>
           <c-card-body>
-            <div class="strategy-buttons mb-3">
-              <c-button-group role="group" class="w-100">
-                <button cButton [active]="SelectedTask['data']['strategy']=='system'" 
-                  (click)="firmware_type_changed('system')" color="info" variant="outline" class="flex-fill">
-                  <i class="fa-solid fa-cogs me-1"></i>System Default
-                </button>
-                <button cButton [active]="SelectedTask['data']['strategy']=='defined'" 
-                  (click)="firmware_type_changed('defined')" color="warning" variant="outline" class="flex-fill">
-                  <i class="fa-solid fa-list me-1"></i>Custom Version
-                </button>
-                <button cButton [active]="SelectedTask['data']['strategy']=='latest'" 
-                  (click)="firmware_type_changed('latest')" color="success" variant="outline" class="flex-fill">
-                  <i class="fa-solid fa-download me-1"></i>Latest Available
-                </button>
-              </c-button-group>
-            </div>
-            
-            <div *ngIf=" SelectedTask['data']['strategy']=='system'" class="alert alert-info">
+            <div class="alert alert-info">
               <i class="fa-solid fa-info-circle me-2"></i>
-              Uses global MikroWizard update strategy settings. Check Settings page for configuration.
-            </div>
-            
-            <div *ngIf="firms_loaded && SelectedTask['data']['strategy']=='latest'" class="alert alert-success">
-              <i class="fa-solid fa-cloud-download-alt me-2"></i>
-              Downloads latest firmware from mikrotik.com. Server needs internet access.
-            </div>
-            
-            <div *ngIf="firms_loaded && SelectedTask['data']['strategy']=='defined'">
-              <c-row class="g-3">
-                <c-col xs="12" md="6">
-                  <label class="form-label">RouterOS v7+ Version</label>
-                  <select cSelect [(ngModel)]="SelectedTask['data']['version_to_install']" class="form-select">
-                    <option value="">Choose version...</option>
-                    <option *ngFor="let f of available_firmwares" [value]="f">{{f}}</option>
-                  </select>
-                </c-col>
-                <c-col xs="12" md="6" *ngIf="updateBehavior=='keep'">
-                  <label class="form-label">RouterOS v6 Version</label>
-                  <select cSelect [(ngModel)]="SelectedTask['data']['version_to_install_6']" class="form-select">
-                    <option value="">Choose version...</option>
-                    <option *ngFor="let f of available_firmwaresv6" [value]="f">{{f}}</option>
-                  </select>
-                </c-col>
-              </c-row>
+              This task will create configuration backups of selected devices. Backups are stored securely and can be
+              restored later.
             </div>
           </c-card-body>
         </c-card>
-        
-        <!-- Snippet Configuration -->
-        <div *ngIf="SelectedTask['task_type']=='snippet'" class="snippet-config mb-3">
-          <c-card class="mb-3">
-            <c-card-header class="bg-primary text-white">
-              <h6 class="mb-0"><i class="fa-solid fa-code me-2"></i>Script/Snippet Configuration</h6>
-            </c-card-header>
-            <c-card-body>
-              <label class="form-label">Select Script/Snippet to Execute</label>
-              <ngx-super-select [dataSource]="Snippets" [options]="options"
-                (selectionChanged)="onSelectValueChanged($event)" [selectedItemValues]="[SelectedTask['snippetid']]"
-                (searchChanged)="onSnippetsValueChanged($event)" class="styled"></ngx-super-select>
-              <small class="text-muted mt-2 d-block">
-                <i class="fa-solid fa-info-circle me-1"></i>
-                The selected script will be executed on all target devices when this task runs.
-              </small>
-            </c-card-body>
-          </c-card>
-        </div>
       </div>
-      
-      <!-- Schedule Configuration -->
-      <div class="schedule-section mb-4">
-        <div class="section-header mb-3">
-          <h6 class="section-title mb-1"><i class="fa-solid fa-clock me-2"></i>Schedule Configuration</h6>
-          <small class="text-muted">Set when this task should run automatically</small>
-        </div>
-        <div class="cron-input-wrapper">
-          <label class="form-label">Execution Schedule (Cron Expression)</label>
-          <div class="search-select-wrapper">
-            <div class="input-group">
-              <input cFormControl 
-                [(ngModel)]="SelectedTask['cron']" 
-                (input)="onCronInputChange($event)"
-                (focus)="onCronInputFocus()"
-                (blur)="hideCronDropdown()"
-                placeholder="Enter cron expression or search presets..."
-                class="search-input"
-                autocomplete="off" />
-              <button class="btn btn-outline-secondary" type="button" (click)="onCronInputFocus()" title="Show presets">
-                <i class="fa-solid fa-clock"></i>
-              </button>
-            </div>
-            <div *ngIf="showCronDropdown && filteredCrons.length > 0" class="search-dropdown cron-dropdown">
-              <div *ngFor="let cron of filteredCrons" 
-                class="search-option cron-option" 
-                [class.selected]="selectedCronPreset?.value === cron.value"
-                (mousedown)="selectCron(cron)">
-                <div class="cron-label">{{cron.label}}</div>
-                <div class="cron-value">{{cron.value}}</div>
-                <div class="cron-description">{{cron.description}}</div>
-              </div>
-            </div>
-            <div *ngIf="showCronDropdown && filteredCrons.length === 0 && cronSearch" class="search-no-results">
-              No matching cron presets found
-            </div>
-          </div>
-          <small class="text-muted mt-1 d-block">
-            <i class="fa-solid fa-info-circle me-1"></i>{{getCronDescription()}}
-          </small>
-          <div class="mt-2">
-            <small class="text-muted">
-              <strong>Quick Examples:</strong> 
-              <code class="me-2">* * * * *</code> = every minute | 
-              <code class="me-2">0 2 * * *</code> = daily at 2 AM | 
-              <code class="me-2">0 */6 * * *</code> = every 6 hours
-            </small>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Target Selection -->
-      <div class="target-section mb-4">
-        <div class="section-header mb-3">
-          <h6 class="section-title mb-1"><i class="fa-solid fa-bullseye me-2"></i>Target Selection</h6>
-          <small class="text-muted">Choose which devices or groups this task will affect</small>
-        </div>
-        <div class="target-type-selector mb-3">
-          <c-button-group role="group" class="w-100">
-            <button cButton [active]="SelectedTask['selection_type']=='devices'" 
-              (click)="SelectedTask['selection_type']='devices'; form_changed()" 
-              color="primary" variant="outline" class="flex-fill">
-              <i class="fa-solid fa-server me-1"></i>Individual Devices
-            </button>
-            <button cButton [active]="SelectedTask['selection_type']=='groups'" 
-              (click)="SelectedTask['selection_type']='groups'; form_changed()" 
-              color="info" variant="outline" class="flex-fill">
-              <i class="fa-solid fa-layer-group me-1"></i>Device Groups
-            </button>
-          </c-button-group>
-        </div>
 
-        <!-- Selected Targets -->
-        <c-card>
-          <c-card-header class="d-flex justify-content-between align-items-center">
-            <h6 class="mb-0">
-              <i class="fa-solid fa-list me-2"></i>Selected {{SelectedTask['selection_type'] === 'devices' ? 'Devices' : 'Groups'}}
-            </h6>
-            <div>
-              <c-badge color="info" class="me-2">{{SelectedMembers.length}} selected</c-badge>
-              <button cButton color="success" size="sm" (click)="show_new_member_form()">
-                <i class="fa-solid fa-plus me-1"></i>Add {{SelectedTask['selection_type'] === 'devices' ? 'Devices' : 'Groups'}}
+      <!-- Firmware Configuration -->
+      <c-card *ngIf="SelectedTask['task_type']=='firmware'" class="mb-3">
+        <c-card-header class="bg-warning text-dark">
+          <h6 class="mb-0"><i class="fa-solid fa-microchip me-2"></i>Firmware Update Strategy</h6>
+        </c-card-header>
+        <c-card-body>
+          <div class="strategy-buttons mb-3">
+            <c-button-group role="group" class="w-100">
+              <button cButton [active]="SelectedTask['data']['strategy']=='system'"
+                (click)="firmware_type_changed('system')" color="info" variant="outline" class="flex-fill">
+                <i class="fa-solid fa-cogs me-1"></i>System Default
               </button>
-            </div>
+              <button cButton [active]="SelectedTask['data']['strategy']=='defined'"
+                (click)="firmware_type_changed('defined')" color="warning" variant="outline" class="flex-fill">
+                <i class="fa-solid fa-list me-1"></i>Custom Version
+              </button>
+              <button cButton [active]="SelectedTask['data']['strategy']=='latest'"
+                (click)="firmware_type_changed('latest')" color="success" variant="outline" class="flex-fill">
+                <i class="fa-solid fa-download me-1"></i>Latest Available
+              </button>
+            </c-button-group>
+          </div>
+
+          <div *ngIf=" SelectedTask['data']['strategy']=='system'" class="alert alert-info">
+            <i class="fa-solid fa-info-circle me-2"></i>
+            Uses global MikroWizard update strategy settings. Check Settings page for configuration.
+          </div>
+
+          <div *ngIf="firms_loaded && SelectedTask['data']['strategy']=='latest'" class="alert alert-success">
+            <i class="fa-solid fa-cloud-download-alt me-2"></i>
+            Downloads latest firmware from mikrotik.com. Server needs internet access.
+          </div>
+
+          <div *ngIf="firms_loaded && SelectedTask['data']['strategy']=='defined'">
+            <c-row class="g-3">
+              <c-col xs="12" md="6">
+                <label class="form-label">RouterOS v7+ Version</label>
+                <select cSelect [(ngModel)]="SelectedTask['data']['version_to_install']" class="form-select">
+                  <option value="">Choose version...</option>
+                  <option *ngFor="let f of available_firmwares" [value]="f">{{f}}</option>
+                </select>
+              </c-col>
+              <c-col xs="12" md="6" *ngIf="updateBehavior=='keep'">
+                <label class="form-label">RouterOS v6 Version</label>
+                <select cSelect [(ngModel)]="SelectedTask['data']['version_to_install_6']" class="form-select">
+                  <option value="">Choose version...</option>
+                  <option *ngFor="let f of available_firmwaresv6" [value]="f">{{f}}</option>
+                </select>
+              </c-col>
+            </c-row>
+          </div>
+        </c-card-body>
+      </c-card>
+
+      <!-- Snippet Configuration -->
+      <div *ngIf="SelectedTask['task_type']=='snippet'" class="snippet-config mb-3">
+        <c-card class="mb-3">
+          <c-card-header class="bg-primary text-white">
+            <h6 class="mb-0"><i class="fa-solid fa-code me-2"></i>Script/Snippet Configuration</h6>
           </c-card-header>
-          <c-card-body class="p-0">
-            <div *ngIf="SelectedMembers.length === 0" class="text-center p-4 text-muted">
-              <i class="fa-solid fa-{{SelectedTask['selection_type'] === 'devices' ? 'server' : 'layer-group'}} fa-3x mb-3 opacity-50"></i>
-              <h6>No {{SelectedTask['selection_type']}} selected</h6>
-              <p class="mb-0">Click "Add {{SelectedTask['selection_type'] === 'devices' ? 'Devices' : 'Groups'}}" to select targets for this task</p>
-            </div>
-            <div *ngIf="SelectedMembers.length > 0">
-              <gui-grid [autoResizeWidth]="true" [source]="SelectedMembers" [columnMenu]="columnMenu" [sorting]="sorting"
-                [infoPanel]="infoPanel" [autoResizeWidth]=true [paging]="paging">
-                <gui-grid-column header="Name" field="name">
-                  <ng-template let-value="item.name" let-item="item" let-index="index">
-                    <div class="d-flex align-items-center">
-                      <i class="fa-solid fa-{{SelectedTask['selection_type'] === 'devices' ? 'server' : 'layer-group'}} me-2 text-primary"></i>
-                      <strong>{{value}}</strong>
-                    </div>
-                  </ng-template>
-                </gui-grid-column>
-                <gui-grid-column *ngIf="SelectedTask['selection_type']=='devices'" header="MAC Address" field="mac">
-                  <ng-template let-value="item.mac" let-item="item" let-index="index">
-                    <small class="text-muted">{{value}}</small>
-                  </ng-template>
-                </gui-grid-column>
-                <gui-grid-column header="Actions" width="100" field="action" align="CENTER">
-                  <ng-template let-value="item.id" let-item="item" let-index="index">
-                    <button cButton color="danger" size="sm" variant="outline" (click)="remove_member(item)" title="Remove from task">
-                      <i class="fa-solid fa-times"></i>
-                    </button>
-                  </ng-template>
-                </gui-grid-column>
-              </gui-grid>
-            </div>
+          <c-card-body>
+            <label class="form-label">Select Script/Snippet to Execute</label>
+            <ngx-super-select [dataSource]="Snippets" [options]="options"
+              (selectionChanged)="onSelectValueChanged($event)" [selectedItemValues]="[SelectedTask['snippetid']]"
+              (searchChanged)="onSnippetsValueChanged($event)" class="styled"></ngx-super-select>
+            <small class="text-muted mt-2 d-block">
+              <i class="fa-solid fa-info-circle me-1"></i>
+              The selected script will be executed on all target devices when this task runs.
+            </small>
           </c-card-body>
         </c-card>
       </div>
-      <!--
+
+      <!-- Sequence Configuration -->
+      <div *ngIf="SelectedTask['task_type']=='sequence'" class="sequence-config mb-3">
+        <c-card class="mb-3">
+          <c-card-header class="bg-primary text-white">
+            <h6 class="mb-0"><i class="fa-solid fa-code-branch me-2"></i>Sequence Configuration</h6>
+          </c-card-header>
+          <c-card-body>
+            <label class="form-label">Select Alert Sequence</label>
+            <ngx-super-select [dataSource]="Sequences" [options]="seqOptions"
+              (selectionChanged)="onSequenceSelected($event)" [selectedItemValues]="[SelectedTask['data']?.sequence_id]"
+              (searchChanged)="onSequencesSearchChanged($event)" class="styled"></ngx-super-select>
+            <small class="text-muted mt-2 d-block">
+              <i class="fa-solid fa-info-circle me-1"></i>
+              The selected alert sequence will be executed on all target devices when this task runs.
+            </small>
+          </c-card-body>
+        </c-card>
+      </div>
+    </div>
+
+    <!-- Schedule Configuration -->
+    <div class="schedule-section mb-4">
+      <div class="section-header mb-3">
+        <h6 class="section-title mb-1"><i class="fa-solid fa-clock me-2"></i>Schedule Configuration</h6>
+        <small class="text-muted">Set when this task should run automatically</small>
+      </div>
+      <div class="cron-input-wrapper">
+        <label class="form-label">Execution Schedule (Cron Expression)</label>
+        <div class="search-select-wrapper">
+          <div class="input-group">
+            <input cFormControl [(ngModel)]="SelectedTask['cron']" (input)="onCronInputChange($event)"
+              (focus)="onCronInputFocus()" (blur)="hideCronDropdown()"
+              placeholder="Enter cron expression or search presets..." class="search-input" autocomplete="off" />
+            <button class="btn btn-outline-secondary" type="button" (click)="onCronInputFocus()" title="Show presets">
+              <i class="fa-solid fa-clock"></i>
+            </button>
+          </div>
+          <div *ngIf="showCronDropdown && filteredCrons.length > 0" class="search-dropdown cron-dropdown">
+            <div *ngFor="let cron of filteredCrons" class="search-option cron-option"
+              [class.selected]="selectedCronPreset?.value === cron.value" (mousedown)="selectCron(cron)">
+              <div class="cron-label">{{cron.label}}</div>
+              <div class="cron-value">{{cron.value}}</div>
+              <div class="cron-description">{{cron.description}}</div>
+            </div>
+          </div>
+          <div *ngIf="showCronDropdown && filteredCrons.length === 0 && cronSearch" class="search-no-results">
+            No matching cron presets found
+          </div>
+        </div>
+        <small class="text-muted mt-1 d-block">
+          <i class="fa-solid fa-info-circle me-1"></i>{{getCronDescription()}}
+        </small>
+        <div class="mt-2">
+          <small class="text-muted">
+            <strong>Quick Examples:</strong>
+            <code class="me-2">* * * * *</code> = every minute |
+            <code class="me-2">0 2 * * *</code> = daily at 2 AM |
+            <code class="me-2">0 */6 * * *</code> = every 6 hours
+          </small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Target Selection -->
+    <div class="target-section mb-4">
+      <div class="section-header mb-3">
+        <h6 class="section-title mb-1"><i class="fa-solid fa-bullseye me-2"></i>Target Selection</h6>
+        <small class="text-muted">Choose which devices or groups this task will affect</small>
+      </div>
+      <div class="target-type-selector mb-3">
+        <c-button-group role="group" class="w-100">
+          <button cButton [active]="SelectedTask['selection_type']=='devices'"
+            (click)="SelectedTask['selection_type']='devices'; form_changed()" color="primary" variant="outline"
+            class="flex-fill">
+            <i class="fa-solid fa-server me-1"></i>Individual Devices
+          </button>
+          <button cButton [active]="SelectedTask['selection_type']=='groups'"
+            (click)="SelectedTask['selection_type']='groups'; form_changed()" color="info" variant="outline"
+            class="flex-fill">
+            <i class="fa-solid fa-layer-group me-1"></i>Device Groups
+          </button>
+        </c-button-group>
+      </div>
+
+      <!-- Selected Targets -->
+      <c-card>
+        <c-card-header class="d-flex justify-content-between align-items-center">
+          <h6 class="mb-0">
+            <i class="fa-solid fa-list me-2"></i>Selected {{SelectedTask['selection_type'] === 'devices' ? 'Devices' :
+            'Groups'}}
+          </h6>
+          <div>
+            <c-badge color="info" class="me-2">{{SelectedMembers.length}} selected</c-badge>
+            <button cButton color="success" size="sm" (click)="show_new_member_form()">
+              <i class="fa-solid fa-plus me-1"></i>Add {{SelectedTask['selection_type'] === 'devices' ? 'Devices' :
+              'Groups'}}
+            </button>
+          </div>
+        </c-card-header>
+        <c-card-body class="p-0">
+          <div *ngIf="SelectedMembers.length === 0" class="text-center p-4 text-muted">
+            <i
+              class="fa-solid fa-{{SelectedTask['selection_type'] === 'devices' ? 'server' : 'layer-group'}} fa-3x mb-3 opacity-50"></i>
+            <h6>No {{SelectedTask['selection_type']}} selected</h6>
+            <p class="mb-0">Click "Add {{SelectedTask['selection_type'] === 'devices' ? 'Devices' : 'Groups'}}" to
+              select targets for this task</p>
+          </div>
+          <div *ngIf="SelectedMembers.length > 0">
+            <gui-grid [autoResizeWidth]="true" [source]="SelectedMembers" [columnMenu]="columnMenu" [sorting]="sorting"
+              [infoPanel]="infoPanel" [autoResizeWidth]=true [paging]="paging">
+              <gui-grid-column header="Name" field="name">
+                <ng-template let-value="item.name" let-item="item" let-index="index">
+                  <div class="d-flex align-items-center">
+                    <i
+                      class="fa-solid fa-{{SelectedTask['selection_type'] === 'devices' ? 'server' : 'layer-group'}} me-2 text-primary"></i>
+                    <strong>{{value}}</strong>
+                  </div>
+                </ng-template>
+              </gui-grid-column>
+              <gui-grid-column *ngIf="SelectedTask['selection_type']=='devices'" header="MAC Address" field="mac">
+                <ng-template let-value="item.mac" let-item="item" let-index="index">
+                  <small class="text-muted">{{value}}</small>
+                </ng-template>
+              </gui-grid-column>
+              <gui-grid-column header="Actions" width="100" field="action" align="CENTER">
+                <ng-template let-value="item.id" let-item="item" let-index="index">
+                  <button cButton color="danger" size="sm" variant="outline" (click)="remove_member(item)"
+                    title="Remove from task">
+                    <i class="fa-solid fa-times"></i>
+                  </button>
+                </ng-template>
+              </gui-grid-column>
+            </gui-grid>
+          </div>
+        </c-card-body>
+      </c-card>
+    </div>
+    <!--
   <c-input-group class="mb-3">
     <ngx-super-select
     [dataSource]="Members"
@@ -319,178 +341,183 @@
     </ngx-super-select>
   </c-input-group> -->
 
-      <!-- <ng-container  *ngIf="SelectedMembers.length>0 && EditTaskModalVisible">
+    <!-- <ng-container  *ngIf="SelectedMembers.length>0 && EditTaskModalVisible">
     <c-badge class="mx-1" *ngFor="let id of splitids(SelectedTaskItems)" color="dark">{{get_member_by_id(id).name}}</c-badge>
   </ng-container> -->
-      <!-- 
+    <!-- 
   <c-input-group class="mb-3">
     <cron-editor #cronEditorDemo1 [(ngModel)]="SelectedTask['cron']"  [options]="cronOptions">Cron here...</cron-editor>
   </c-input-group> 
   -->
 
-    </c-modal-body>
-    <c-modal-footer class="bg-light d-flex justify-content-between">
-      <div>
-        <small class="text-muted">All fields marked with * are required</small>
-      </div>
-      <div>
-        <button *ngIf="SelectedTask['action']=='add'" (click)="submit('add')" cButton color="primary">
-          <i class="fa-solid fa-plus me-1"></i>Create Task
-        </button>
-        <button *ngIf="SelectedTask['action']=='edit'" (click)="submit('edit')" cButton color="primary">
-          <i class="fa-solid fa-save me-1"></i>Save Changes
-        </button>
-        <button [cModalToggle]="EditTaskModal.id" cButton color="secondary" class="ms-2">
-          <i class="fa-solid fa-times me-1"></i>Cancel
-        </button>
-      </div>
-    </c-modal-footer>
-  </c-modal>
-
-
-  <c-modal #NewMemberModal backdrop="static" size="xl" [(visible)]="NewMemberModalVisible" id="NewMemberModal">
-    <c-modal-header class="bg-success text-white">
-      <h5 cModalTitle>
-        <i class="fa-solid fa-plus-circle me-2"></i>Add {{SelectedTask['selection_type'] === 'devices' ? 'Devices' : 'Groups'}} to Task
-      </h5>
-      <button (click)="NewMemberModalVisible=!NewMemberModalVisible" cButtonClose></button>
-    </c-modal-header>
-    <c-modal-body class="p-4">
-      <!-- Selection Summary -->
-      <div class="mb-3" style="min-height: 58px;">
-        <c-alert *ngIf="NewMemberRows.length > 0" color="info" class="d-flex align-items-center mb-0">
-          <i class="fa-solid fa-info-circle me-2"></i>
-          <span><strong>{{NewMemberRows.length}}</strong> {{SelectedTask['selection_type']}}(s) selected for addition to this task</span>
-        </c-alert>
-      </div>
-
-      <!-- Available Items -->
-      <c-card>
-        <c-card-header>
-          <h6 class="mb-0">
-            <i class="fa-solid fa-{{SelectedTask['selection_type'] === 'devices' ? 'server' : 'layer-group'}} me-2"></i>
-            Available {{SelectedTask['selection_type'] === 'devices' ? 'Devices' : 'Groups'}} ({{availbleMembers.length}} total)
-          </h6>
-        </c-card-header>
-        <c-card-body class="p-0">
-          <div *ngIf="availbleMembers.length === 0" class="text-center p-4 text-muted">
-            <i class="fa-solid fa-check-circle fa-3x mb-3 text-success opacity-50"></i>
-            <h6>All {{SelectedTask['selection_type']}} are already assigned</h6>
-            <p class="mb-0">No available {{SelectedTask['selection_type']}} to add to this task</p>
-          </div>
-          <div *ngIf="availbleMembers.length > 0">
-            <gui-grid [autoResizeWidth]="true" *ngIf="NewMemberModalVisible" [searching]="searching"
-              [source]="availbleMembers" [columnMenu]="columnMenu" [sorting]="sorting" [infoPanel]="infoPanel"
-              [rowSelection]="rowSelection" (selectedRows)="onSelectedRowsNewMembers($event)" [autoResizeWidth]=true
-              [paging]="paging">
-              <gui-grid-column header="Name" field="name">
-                <ng-template let-value="item.name" let-item="item" let-index="index">
-                  <div class="d-flex align-items-center">
-                    <i class="fa-solid fa-{{SelectedTask['selection_type'] === 'devices' ? 'server' : 'layer-group'}} me-2 text-primary"></i>
-                    <strong>{{value}}</strong>
-                  </div>
-                </ng-template>
-              </gui-grid-column>
-              <gui-grid-column *ngIf="SelectedTask['selection_type']=='devices'" header="IP Address" field="ip">
-                <ng-template let-value="item.ip" let-item="item" let-index="index">
-                  <c-badge color="secondary">{{value}}</c-badge>
-                </ng-template>
-              </gui-grid-column>
-              <gui-grid-column *ngIf="SelectedTask['selection_type']=='devices'" header="MAC Address" field="mac">
-                <ng-template let-value="item.mac" let-item="item" let-index="index">
-                  <small class="text-muted">{{value}}</small>
-                </ng-template>
-              </gui-grid-column>
-            </gui-grid>
-          </div>
-        </c-card-body>
-      </c-card>
-    </c-modal-body>
-
-    <c-modal-footer class="bg-light d-flex justify-content-between">
-      <div>
-        <small class="text-muted">Select {{SelectedTask['selection_type']}} from the list above to add them to this task</small>
-      </div>
-      <div>
-        <button *ngIf="NewMemberRows.length > 0" (click)="add_new_members()" cButton color="success">
-          <i class="fa-solid fa-plus me-1"></i>Add {{NewMemberRows.length}} {{SelectedTask['selection_type']}}(s)
-        </button>
-        <button (click)="NewMemberModalVisible=!NewMemberModalVisible" cButton color="secondary" class="ms-2">
-          <i class="fa-solid fa-times me-1"></i>Cancel
-        </button>
-      </div>
-    </c-modal-footer>
-  </c-modal>
-
-
-  <c-modal #DeleteConfirmModal backdrop="static" [(visible)]="DeleteConfirmModalVisible" id="DeleteConfirmModal">
-    <c-modal-header>
-      <h5 cModalTitle>Confirm delete {{ SelectedTask['name'] }}</h5>
-      <button [cModalToggle]="DeleteConfirmModal.id" cButtonClose></button>
-    </c-modal-header>
-    <c-modal-body>
-      Are you sure that You want to delete following task ?
-      <br />
-      <br />
-      <table style="width: 100%;">
-        <tr>
-          <td><b>Taks name : </b></td>
-          <td>{{ SelectedTask['name'] }}</td>
-        </tr>
-        <tr>
-          <td><b>Description : </b></td>
-          <td>{{ SelectedTask['description'] }}</td>
-        </tr>
-        <tr>
-          <td><b>Cron exec : </b></td>
-          <td>{{ SelectedTask['desc_cron'] }}</td>
-        </tr>
-      </table>
-    </c-modal-body>
-    <c-modal-footer>
-      <button (click)="confirm_delete('',true)" cButton color="danger">
-        Yes,Delete!
+  </c-modal-body>
+  <c-modal-footer class="bg-light d-flex justify-content-between">
+    <div>
+      <small class="text-muted">All fields marked with * are required</small>
+    </div>
+    <div>
+      <button *ngIf="SelectedTask['action']=='add'" (click)="submit('add')" cButton color="primary">
+        <i class="fa-solid fa-plus me-1"></i>Create Task
       </button>
-      <button [cModalToggle]="DeleteConfirmModal.id" cButton color="info">
-        Close
+      <button *ngIf="SelectedTask['action']=='edit'" (click)="submit('edit')" cButton color="primary">
+        <i class="fa-solid fa-save me-1"></i>Save Changes
       </button>
-    </c-modal-footer>
-  </c-modal>
+      <button [cModalToggle]="EditTaskModal.id" cButton color="secondary" class="ms-2">
+        <i class="fa-solid fa-times me-1"></i>Cancel
+      </button>
+    </div>
+  </c-modal-footer>
+</c-modal>
+
+
+<c-modal #NewMemberModal backdrop="static" size="xl" [(visible)]="NewMemberModalVisible" id="NewMemberModal">
+  <c-modal-header class="bg-success text-white">
+    <h5 cModalTitle>
+      <i class="fa-solid fa-plus-circle me-2"></i>Add {{SelectedTask['selection_type'] === 'devices' ? 'Devices' :
+      'Groups'}} to Task
+    </h5>
+    <button (click)="NewMemberModalVisible=!NewMemberModalVisible" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body class="p-4">
+    <!-- Selection Summary -->
+    <div class="mb-3" style="min-height: 58px;">
+      <c-alert *ngIf="NewMemberRows.length > 0" color="info" class="d-flex align-items-center mb-0">
+        <i class="fa-solid fa-info-circle me-2"></i>
+        <span><strong>{{NewMemberRows.length}}</strong> {{SelectedTask['selection_type']}}(s) selected for addition to
+          this task</span>
+      </c-alert>
+    </div>
+
+    <!-- Available Items -->
+    <c-card>
+      <c-card-header>
+        <h6 class="mb-0">
+          <i class="fa-solid fa-{{SelectedTask['selection_type'] === 'devices' ? 'server' : 'layer-group'}} me-2"></i>
+          Available {{SelectedTask['selection_type'] === 'devices' ? 'Devices' : 'Groups'}} ({{availbleMembers.length}}
+          total)
+        </h6>
+      </c-card-header>
+      <c-card-body class="p-0">
+        <div *ngIf="availbleMembers.length === 0" class="text-center p-4 text-muted">
+          <i class="fa-solid fa-check-circle fa-3x mb-3 text-success opacity-50"></i>
+          <h6>All {{SelectedTask['selection_type']}} are already assigned</h6>
+          <p class="mb-0">No available {{SelectedTask['selection_type']}} to add to this task</p>
+        </div>
+        <div *ngIf="availbleMembers.length > 0">
+          <gui-grid [autoResizeWidth]="true" *ngIf="NewMemberModalVisible" [searching]="searching"
+            [source]="availbleMembers" [columnMenu]="columnMenu" [sorting]="sorting" [infoPanel]="infoPanel"
+            [rowSelection]="rowSelection" (selectedRows)="onSelectedRowsNewMembers($event)" [autoResizeWidth]=true
+            [paging]="paging">
+            <gui-grid-column header="Name" field="name">
+              <ng-template let-value="item.name" let-item="item" let-index="index">
+                <div class="d-flex align-items-center">
+                  <i
+                    class="fa-solid fa-{{SelectedTask['selection_type'] === 'devices' ? 'server' : 'layer-group'}} me-2 text-primary"></i>
+                  <strong>{{value}}</strong>
+                </div>
+              </ng-template>
+            </gui-grid-column>
+            <gui-grid-column *ngIf="SelectedTask['selection_type']=='devices'" header="IP Address" field="ip">
+              <ng-template let-value="item.ip" let-item="item" let-index="index">
+                <c-badge color="secondary">{{value}}</c-badge>
+              </ng-template>
+            </gui-grid-column>
+            <gui-grid-column *ngIf="SelectedTask['selection_type']=='devices'" header="MAC Address" field="mac">
+              <ng-template let-value="item.mac" let-item="item" let-index="index">
+                <small class="text-muted">{{value}}</small>
+              </ng-template>
+            </gui-grid-column>
+          </gui-grid>
+        </div>
+      </c-card-body>
+    </c-card>
+  </c-modal-body>
+
+  <c-modal-footer class="bg-light d-flex justify-content-between">
+    <div>
+      <small class="text-muted">Select {{SelectedTask['selection_type']}} from the list above to add them to this
+        task</small>
+    </div>
+    <div>
+      <button *ngIf="NewMemberRows.length > 0" (click)="add_new_members()" cButton color="success">
+        <i class="fa-solid fa-plus me-1"></i>Add {{NewMemberRows.length}} {{SelectedTask['selection_type']}}(s)
+      </button>
+      <button (click)="NewMemberModalVisible=!NewMemberModalVisible" cButton color="secondary" class="ms-2">
+        <i class="fa-solid fa-times me-1"></i>Cancel
+      </button>
+    </div>
+  </c-modal-footer>
+</c-modal>
+
+
+<c-modal #DeleteConfirmModal backdrop="static" [(visible)]="DeleteConfirmModalVisible" id="DeleteConfirmModal">
+  <c-modal-header>
+    <h5 cModalTitle>Confirm delete {{ SelectedTask['name'] }}</h5>
+    <button [cModalToggle]="DeleteConfirmModal.id" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body>
+    Are you sure that You want to delete following task ?
+    <br />
+    <br />
+    <table style="width: 100%;">
+      <tr>
+        <td><b>Taks name : </b></td>
+        <td>{{ SelectedTask['name'] }}</td>
+      </tr>
+      <tr>
+        <td><b>Description : </b></td>
+        <td>{{ SelectedTask['description'] }}</td>
+      </tr>
+      <tr>
+        <td><b>Cron exec : </b></td>
+        <td>{{ SelectedTask['desc_cron'] }}</td>
+      </tr>
+    </table>
+  </c-modal-body>
+  <c-modal-footer>
+    <button (click)="confirm_delete('',true)" cButton color="danger">
+      Yes,Delete!
+    </button>
+    <button [cModalToggle]="DeleteConfirmModal.id" cButton color="info">
+      Close
+    </button>
+  </c-modal-footer>
+</c-modal>
 
 
 
-  <c-modal #runConfirmModal backdrop="static" [(visible)]="runConfirmModalVisible" id="runConfirmModal">
-    <c-modal-header>
-      <h6 cModalTitle>Confirm RUN {{ SelectedTask['name'] }}</h6>
-      <button [cModalToggle]="runConfirmModal.id" cButtonClose></button>
-    </c-modal-header>
-    <c-modal-body>
-      Are you sure that You want to run following task ?
-      <br />
-      <br />
-      <table style="width: 100%;">
-        <tr>
-          <td><b>Taks name : </b></td>
-          <td>{{ SelectedTask['name'] }}</td>
-        </tr>
-        <tr>
-          <td><b>Description : </b></td>
-          <td>{{ SelectedTask['description'] }}</td>
-        </tr>
-        <tr>
-          <td><b>Cron exec : </b></td>
-          <td>{{ SelectedTask['desc_cron'] }}</td>
-        </tr>
-      </table>
-    </c-modal-body>
-    <c-modal-footer>
-      <button (click)="confirm_delete" cButton color="danger">
-        Yes,Run!
-      </button>
-      <button [cModalToggle]="runConfirmModal.id" cButton color="info">
-        Close
-      </button>
-    </c-modal-footer>
-  </c-modal>
- 
+<c-modal #runConfirmModal backdrop="static" [(visible)]="runConfirmModalVisible" id="runConfirmModal">
+  <c-modal-header>
+    <h6 cModalTitle>Confirm RUN {{ SelectedTask['name'] }}</h6>
+    <button [cModalToggle]="runConfirmModal.id" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body>
+    Are you sure that You want to run following task ?
+    <br />
+    <br />
+    <table style="width: 100%;">
+      <tr>
+        <td><b>Taks name : </b></td>
+        <td>{{ SelectedTask['name'] }}</td>
+      </tr>
+      <tr>
+        <td><b>Description : </b></td>
+        <td>{{ SelectedTask['description'] }}</td>
+      </tr>
+      <tr>
+        <td><b>Cron exec : </b></td>
+        <td>{{ SelectedTask['desc_cron'] }}</td>
+      </tr>
+    </table>
+  </c-modal-body>
+  <c-modal-footer>
+    <button (click)="confirm_delete" cButton color="danger">
+      Yes,Run!
+    </button>
+    <button [cModalToggle]="runConfirmModal.id" cButton color="info">
+      Close
+    </button>
+  </c-modal-footer>
+</c-modal>
+
 <c-toaster position="fixed" placement="top-end"></c-toaster>

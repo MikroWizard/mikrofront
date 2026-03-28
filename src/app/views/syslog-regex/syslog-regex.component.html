@@ -1,0 +1,537 @@
+<c-row>
+    <c-col xs>
+        <c-card class="mb-4">
+            <c-card-header>
+                <c-row>
+                    <c-col xs [lg]="3">
+                        Syslog Custom Regex
+                    </c-col>
+                    <c-col xs [lg]="9">
+                        <h6 style="text-align: right;">
+                            <button cButton color="dark" class="mx-1" size="sm" (click)="Edit_Regex('','add')"
+                                style="color: #fff;"><i class="fa-solid fa-plus"></i> Add New Regex</button>
+                            <button cButton color="warning" class="mx-1" size="sm" (click)="openManageAlerts()"
+                                style="color: #000;"><i class="fa-solid fa-bell"></i> Manage Alerts</button>
+                        </h6>
+                    </c-col>
+                </c-row>
+            </c-card-header>
+            <c-card-body>
+                <gui-grid [source]="source" [searching]="searching" [paging]="paging" [columnMenu]="columnMenu"
+                    [sorting]="sorting" [infoPanel]="infoPanel" [rowSelection]="rowSelection" [autoResizeWidth]=true>
+                    <gui-grid-column header="Name" field="name">
+                        <ng-template let-value="item.name" let-item="item" let-index="index">
+                            {{value}}
+                        </ng-template>
+                    </gui-grid-column>
+                    <gui-grid-column header="Regex Pattern" field="regex_pattern">
+                        <ng-template let-value="item.regex_pattern" let-item="item" let-index="index">
+                            <code class="px-1 py-1">{{value}}</code>
+                        </ng-template>
+                    </gui-grid-column>
+                    <gui-grid-column header="Alert / Severity" field="alert_id">
+                        <ng-template let-value="item.alert_id" let-item="item" let-index="index">
+                            <div class="d-flex flex-row gap-1">
+                                <span class="fw-bold">{{ getAlertName(value) }}</span>
+                                <c-badge size="sm" [color]="getAlertLevel(value).toLowerCase() =='critical' ? 'danger' :
+                                     getAlertLevel(value).toLowerCase() =='warning' ? 'warning' :
+                                      getAlertLevel(value).toLowerCase() =='info' ? 'info' :
+                                       getAlertLevel(value).toLowerCase() =='error' ? 'danger' : 'secondary'">{{
+                                    getAlertLevel(value)}}</c-badge>
+                            </div>
+                        </ng-template>
+                    </gui-grid-column>
+                    <gui-grid-column header="Alert Enabled/Type" field="alert_enabled" align="center" width="150">
+                        <ng-template let-value="item.alert_enabled" let-item="item" let-index="index">
+                            <i *ngIf="value" class="fa-solid fa-check mx-1" style="color: green;"></i>
+                            <i *ngIf="!value" class="fa-solid fa-x mx-1" style="color: red;"></i>
+                            <span *ngIf="item.alert_enabled && item.global_alert"><i
+                                    class="fa-solid fa-earth-americas text-primary"
+                                    title="Global Alert"></i>Global</span>
+                            <span *ngIf="item.alert_enabled && !item.global_alert"><i
+                                    class="fa-solid fa-server text-secondary" title="Device Specific"></i>String
+                                Match</span>
+                        </ng-template>
+                    </gui-grid-column>
+
+                    <gui-grid-column header="Match String" field="match_string">
+                        <ng-template let-value="item.match_string" let-item="item" let-index="index">
+                            {{value}}
+                        </ng-template>
+                    </gui-grid-column>
+                    <gui-grid-column header="Created" field="created">
+                        <ng-template let-value="item.created" let-item="item" let-index="index">
+                            <div>{{value}}</div>
+                        </ng-template>
+                    </gui-grid-column>
+                    <gui-grid-column header="Actions" field="action" align="center" width="200">
+                        <ng-template let-value="item.id" let-item="item" let-index="index">
+                            <button cButton color="primary" size="sm" (click)="Edit_Regex(item,'edit')" class="mx-1"><i
+                                    class="fa-regular fa-pen-to-square mx-1"></i>Edit</button>
+                            <button cButton color="danger" size="sm" (click)="confirm_delete(item,false)"
+                                class="mx-1"><i class="fa-regular fa-trash-can mx-1"></i>Delete</button>
+                        </ng-template>
+                    </gui-grid-column>
+                </gui-grid>
+            </c-card-body>
+        </c-card>
+    </c-col>
+</c-row>
+
+<c-modal #EditRegexModal backdrop="static" size="xl" [fullscreen]="true" [(visible)]="EditRegexModalVisible"
+    id="EditRegexModal">
+    <c-modal-header class="bg-light">
+        <h5 *ngIf="ModalAction=='edit'" cModalTitle>
+            <i class="fa-solid fa-edit me-2"></i>Edit Regex: {{current_regex['name']}}
+        </h5>
+        <h5 *ngIf="ModalAction=='add'" cModalTitle>
+            <i class="fa-solid fa-plus me-2"></i>Add New Regex
+        </h5>
+        <button (click)="EditRegexModalVisible=false" cButtonClose></button>
+    </c-modal-header>
+    <c-modal-body class="p-4 bg-light">
+        <c-card class="mb-4 shadow-sm border-0">
+            <c-card-header class="bg-white border-bottom-0 pt-3 pb-0">
+                <h6 class="mb-1"><i class="fa-solid fa-code text-primary me-2"></i>Configuration Details</h6>
+            </c-card-header>
+            <c-card-body>
+                <div class="row g-4">
+
+                    <!-- LEFT COLUMN: Info & Configuration -->
+                    <div class="col-lg-5">
+                        <!-- SECTION 1: Basic Info & Log Input -->
+                        <div class="mb-4">
+                            <h6 class="border-bottom pb-2 mb-3 text-primary"><i
+                                    class="fa-solid fa-info-circle me-2"></i>1. General Information</h6>
+
+                            <div [cFormFloating]="true" class="mb-4">
+                                <input cFormControl placeholder="e.g. Failed VPN Auth" [(ngModel)]="current_regex.name"
+                                    id="regexName" class="border-secondary" />
+                                <label cLabel for="regexName">Regex Name</label>
+                            </div>
+
+                            <label class="form-label fw-bold small text-muted mb-1">Live Syslog Sample</label>
+                            <p class="small text-muted mb-2">Provide a real log message to build and test your regex
+                                against.</p>
+                            <div class="row g-2 mb-2">
+                                <div class="col-md-5">
+                                    <select class="form-select border-secondary shadow-sm bg-light"
+                                        [(ngModel)]="selectedSampleIndex" (ngModelChange)="onSampleSelected()">
+                                        <option [ngValue]="null" disabled *ngIf="syslogSamples.length > 0">-- Pick from
+                                            recent logs --</option>
+                                        <option [ngValue]="null" disabled *ngIf="syslogSamples.length === 0">No recent
+                                            samples</option>
+                                        <option *ngFor="let sample of syslogSamples; let i = index" [ngValue]="i"
+                                            [title]="sample">
+                                            {{ (sample.length > 50) ? (sample | slice:0:50) + '...' : sample }}
+                                        </option>
+                                    </select>
+                                </div>
+                                <div class="col-md-7 position-relative">
+                                    <textarea class="form-control border-secondary shadow-sm" rows="2"
+                                        [(ngModel)]="sampleLog"
+                                        (ngModelChange)="evaluateRegexAgainstSample(); updateBuilder()"
+                                        placeholder="Paste mock log here..."></textarea>
+                                    <div class="backdrop" [innerHTML]="getHighlightedSampleBoxHtml()"
+                                        style="padding: 0.375rem 0.75rem; font-size: 0.875rem;"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SECTION 2: Goal / Alert Configuration -->
+                        <div class="mb-4">
+                            <h6 class="border-bottom pb-2 mb-3 text-primary"><i class="fa-solid fa-bullseye me-2"></i>2.
+                                Event Handling & Alerts</h6>
+                            <p class="small text-muted mb-3">What happens when this regex matches a log? The event will
+                                inherit the title and severity from the chosen Alert.</p>
+
+                            <div class="card bg-light border-secondary shadow-sm">
+                                <div class="card-body py-3">
+                                    <c-form-check class="mb-3">
+                                        <input cFormCheckInput type="checkbox" id="alertEnabled"
+                                            [(ngModel)]="current_regex.alert_enabled"
+                                            (ngModelChange)="evaluateRegexAgainstSample()" />
+                                        <label cFormCheckLabel for="alertEnabled" class="fw-bold">Attach to Alert
+                                            Definition</label>
+                                    </c-form-check>
+
+                                    <div *ngIf="current_regex.alert_enabled" class="border-top pt-3 mt-2">
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <label class="form-label text-muted small fw-bold mb-1">Alert
+                                                    Definition</label>
+                                                <div class="d-flex">
+                                                    <select class="form-select border-secondary"
+                                                        [(ngModel)]="current_regex.alert_id"
+                                                        (ngModelChange)="evaluateRegexAgainstSample()">
+                                                        <option [ngValue]="null" disabled>Select Alert...</option>
+                                                        <option *ngFor="let a of Alerts" [value]="a.id">{{a.name}}
+                                                            ({{a.level}})</option>
+                                                    </select>
+                                                    <button cButton color="warning" variant="outline" class="ms-2"
+                                                        (click)="openManageAlerts()" title="Manage Alerts"><i
+                                                            class="fa-solid fa-cog"></i></button>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-md-6">
+                                                <label class="form-label text-muted small fw-bold mb-1">Storage
+                                                    Condition</label>
+                                                <select class="form-select border-secondary"
+                                                    [(ngModel)]="current_regex.alert_mode">
+                                                    <option value="global">Always Store (Global)</option>
+                                                    <option value="conditional">Only if String Matches (Conditional)
+                                                    </option>
+                                                </select>
+                                                <div *ngIf="current_regex.alert_mode === 'conditional'" class="mt-2">
+                                                    <input cFormControl placeholder="e.g. error"
+                                                        [(ngModel)]="current_regex.match_string"
+                                                        class="border-secondary" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-1 border-top pt-3" *ngIf="!current_regex.alert_enabled">
+                                        <small class="text-danger d-block"><i
+                                                class="fa-solid fa-triangle-exclamation me-1"></i>Regex matching will
+                                            occur, but no alert,soring in db or action will be
+                                            applied.</small>
+                                    </div>
+
+                                    <!-- Fallbacks -->
+                                    <div class="row g-3 mt-2 border-top pt-3" *ngIf="current_regex.alert_enabled">
+                                        <div class="col-md-6">
+                                            <label class="form-label text-muted small fw-bold mb-1">Default Event
+                                                Type</label>
+                                            <select class="form-select form-select-sm border-secondary"
+                                                [(ngModel)]="current_regex.eventtype"
+                                                (ngModelChange)="evaluateRegexAgainstSample()">
+                                                <option value="">-- Auto --</option>
+                                                <option value="state">state</option>
+                                                <option value="connection">connection</option>
+                                                <option value="config">config</option>
+                                                <option value="firmware">firmware</option>
+                                                <option value="health">health</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label text-muted small fw-bold mb-1">Default
+                                                Status</label>
+                                            <select class="form-select form-select-sm border-secondary"
+                                                [(ngModel)]="current_regex.status"
+                                                (ngModelChange)="evaluateRegexAgainstSample()">
+                                                <option [ngValue]="0">0 - Open (not fixed)</option>
+                                                <option [ngValue]="1">1 - Fixed (resolved)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div> <!-- END LEFT COLUMN -->
+
+                    <!-- RIGHT COLUMN: Builder & Preview -->
+                    <div class="col-lg-7 border-start ps-4">
+
+                        <!-- SECTION 3: Regex Builder -->
+                        <div class="mb-4">
+                            <h6 class="border-bottom pb-2 mb-3 text-primary"><i class="fa-solid fa-code me-2"></i>3.
+                                Pattern Extraction</h6>
+
+                            <ul class="nav nav-tabs nav-justified mb-3">
+                                <li class="nav-item">
+                                    <a class="nav-link cursor-pointer text-dark fw-bold"
+                                        [class.active]="inputMode === 'builder'" (click)="setMode('builder')">
+                                        <i class="fa-solid fa-wand-magic-sparkles me-2 text-primary"></i>Visual Builder
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link cursor-pointer text-dark fw-bold"
+                                        [class.active]="inputMode === 'raw'" (click)="setMode('raw')">
+                                        <i class="fa-solid fa-terminal me-2 text-danger"></i>Raw Regex
+                                    </a>
+                                </li>
+                                <li class="nav-item ms-auto" *ngIf="sampleLog">
+                                    <button cButton color="info" variant="outline" size="sm"
+                                        class="fw-bold mt-1 animate-fade-in" (click)="openAIHelp()"
+                                        title="Ask AI for help with regex">
+                                        <i class="fa-solid fa-robot me-1"></i> AI Help
+                                    </button>
+                                </li>
+                            </ul>
+
+                            <!-- RAW MODE -->
+                            <div *ngIf="inputMode === 'raw'" class="p-3 border border-top-0 rounded-bottom bg-light">
+                                <div [cFormFloating]="true" class="mb-1">
+                                    <input cFormControl placeholder="e.g. vpn_error: (.*)"
+                                        [(ngModel)]="current_regex.regex_pattern" (ngModelChange)="onRawRegexChange()"
+                                        id="regexPattern" class="border-secondary font-monospace"
+                                        [class.is-invalid]="rawRegexError" />
+                                    <label cLabel for="regexPattern">Python Regex Pattern</label>
+                                </div>
+                                <small *ngIf="rawRegexError" class="text-danger d-block mb-2"><i
+                                        class="fa-solid fa-triangle-exclamation me-1"></i>{{rawRegexError}}</small>
+                                <small class="text-muted"><i
+                                        class="fa-solid fa-circle-info me-1 mt-1 text-primary"></i>Only the
+                                    <code class="px-1 py-1">(?P&lt;comment&gt;...)</code> group will modify the stored
+                                    event
+                                    message.</small>
+                            </div>
+
+                            <!-- BUILDER MODE -->
+                            <div *ngIf="inputMode === 'builder'"
+                                class="p-3 border border-top-0 rounded-bottom bg-light">
+
+                                <div class="d-flex justify-content-between mb-3">
+                                    <span class="small fw-bold text-muted mt-1">Add segments to match the log
+                                        structurally:</span>
+                                    <div class="btn-group btn-group-sm shadow-sm">
+                                        <button class="btn btn-outline-primary" (click)="addSegment('static')"><i
+                                                class="fa-solid fa-plus me-1"></i>Static Text</button>
+                                        <button class="btn btn-outline-success" (click)="addSegment('dynamic')"><i
+                                                class="fa-solid fa-plus me-1"></i>Dynamic Data</button>
+                                    </div>
+                                </div>
+
+                                <div class="segments-container border border-secondary p-2 rounded bg-white">
+                                    <div *ngFor="let seg of segments; let i = index"
+                                        class="segment-row d-flex align-items-start gap-2 mb-2 p-2 rounded bg-light border position-relative">
+
+                                        <!-- Ordering handles -->
+                                        <div class="d-flex flex-column justify-content-center align-items-center me-1"
+                                            style="width: 20px;">
+                                            <button class="btn btn-sm btn-link p-0 text-muted"
+                                                (click)="moveSegmentUp(i)" [disabled]="i === 0"><i
+                                                    class="fa-solid fa-caret-up"></i></button>
+                                            <span class="badge bg-secondary rounded-circle"
+                                                style="font-size: 0.6rem;">{{i+1}}</span>
+                                            <button class="btn btn-sm btn-link p-0 text-muted"
+                                                (click)="moveSegmentDown(i)" [disabled]="i === segments.length - 1"><i
+                                                    class="fa-solid fa-caret-down"></i></button>
+                                        </div>
+
+                                        <div class="flex-grow-1">
+                                            <!-- Static Segment -->
+                                            <div *ngIf="seg.type === 'static'" class="row g-2 align-items-center">
+                                                <div class="col-md-3">
+                                                    <span class="badge bg-secondary text-white"><i
+                                                            class="fa-solid fa-font me-1"></i>Static Match</span>
+                                                </div>
+                                                <div class="col-md-9">
+                                                    <input type="text"
+                                                        class="form-control form-control-sm border-secondary fw-bold"
+                                                        [(ngModel)]="seg.value" (ngModelChange)="updateBuilder()"
+                                                        placeholder="Exact text to match...">
+                                                </div>
+                                            </div>
+
+                                            <!-- Dynamic Segment -->
+                                            <div *ngIf="seg.type === 'dynamic'" class="row g-2 align-items-center">
+                                                <div class="col-md-3">
+                                                    <span class="badge bg-success text-white"><i
+                                                            class="fa-solid fa-wand-magic-sparkles me-1"></i>Extract
+                                                        Data</span>
+                                                    <select class="form-select form-select-sm fw-semibold mt-1"
+                                                        [(ngModel)]="seg.captureType" (ngModelChange)="updateBuilder()">
+                                                        <option value="everything">Everything (.*)</option>
+                                                        <option value="word">Word (\S+)</option>
+                                                        <option value="ip">IP Addr</option>
+                                                        <option value="number">Number</option>
+                                                        <option value="custom">Custom...</option>
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-9">
+                                                    <span class="badge bg-primary text-white"><i
+                                                            class="fa-solid fa-map-marker-alt me-1"></i>Map to
+                                                        Field</span>
+                                                    <input *ngIf="seg.captureType === 'custom'" type="text"
+                                                        class="form-control form-control-sm mb-1 border-secondary font-monospace"
+                                                        [(ngModel)]="seg.value" (ngModelChange)="updateBuilder()"
+                                                        placeholder="Custom Regex: [a-zA-Z]+">
+                                                    <select
+                                                        class="form-select form-select-sm fw-bold border-success text-success bg-white"
+                                                        [(ngModel)]="seg.targetField" (ngModelChange)="updateBuilder()">
+                                                        <option [ngValue]="undefined">Discard (Do not save)</option>
+                                                        <option value="comment">Set to Detail
+                                                        </option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <button class="btn btn-sm btn-outline-danger mt-1" (click)="removeSegment(i)"
+                                            *ngIf="segments.length > 1" title="Remove"><i
+                                                class="fa-solid fa-trash"></i></button>
+                                    </div>
+                                    <div *ngIf="segments.length === 0" class="text-center p-3 text-muted small">No
+                                        extraction blocks yet.</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div
+                            class="step-card mt-3 p-3 border border-secondary rounded shadow-sm bg-dark text-white border-top border-warning border-3">
+                            <h6 class="text-warning mb-3 fw-bold"><i class="fa-solid fa-flask text-warning me-2"></i>4.
+                                Live Validation Output</h6>
+
+                            <!-- Snippet showing the raw string being executed -->
+                            <div class="mb-3" *ngIf="inputMode === 'builder'">
+                                <small class="text-muted d-block mb-1 text-uppercase fw-bold"
+                                    style="font-size: 0.65rem;">Engine Pattern</small>
+                                <code
+                                    class="d-block px-2 py-2 text-warning bg-black mx-0 rounded border border-secondary font-monospace lh-base"
+                                    style="font-size: 0.85rem; word-break: break-all;">{{generatedRegex || '(empty)'}}</code>
+                            </div>
+
+                            <div class="d-flex align-items-center mb-2 mt-2">
+                                <div class="test-indicator me-2 shadow-sm rounded-circle"
+                                    style="width: 12px; height: 12px;" [class.bg-success]="isTestValid"
+                                    [class.bg-danger]="!isTestValid"
+                                    *ngIf="sampleLog && (inputMode === 'raw' ? current_regex.regex_pattern : generatedRegex)">
+                                </div>
+                                <span [class.text-success]="isTestValid" [class.text-danger]="!isTestValid"
+                                    class="fw-bold fs-6">{{testFeedback || 'Awaiting valid configuration...'}}</span>
+                            </div>
+
+                            <div *ngIf="isTestValid && simulatedDbRow" class="mt-3 text-dark">
+                                <div class="table-responsive rounded border border-secondary bg-white shadow-sm">
+                                    <table class="table table-hover table-bordered mb-0 align-middle"
+                                        style="font-size: 0.85rem;">
+                                        <thead class="bg-light text-center">
+                                            <tr>
+                                                <th class="py-2" style="width: 20%">Category</th>
+                                                <th class="py-2" style="width: 22%">Event</th>
+                                                <th class="py-2" style="width: 12%">Level</th>
+                                                <th class="py-2" style="width: 44%">Detail</th>
+                                                <th class="py-2" style="width: 12%">Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td class="text-center"><span class="badge w-75 py-2 fw-semibold"
+                                                        [ngClass]="simulatedDbRow.eventtype ? 'bg-primary' : 'bg-secondary'">{{simulatedDbRow.eventtype
+                                                        || 'null'}}</span></td>
+                                                <td class="text-wrap fw-bold ps-2">{{simulatedDbRow.detail || 'null'}}
+                                                </td>
+                                                <td class="text-center">
+                                                    <span class="badge w-75 py-2 fw-bold" [ngClass]="{
+                                                            'bg-info': simulatedDbRow.level?.toLowerCase() === 'info',
+                                                            'bg-warning text-dark': simulatedDbRow.level?.toLowerCase() === 'warning' || simulatedDbRow.level?.toLowerCase() === 'config',
+                                                            'bg-danger': simulatedDbRow.level?.toLowerCase() === 'critical' || simulatedDbRow.level?.toLowerCase() === 'error',
+                                                            'bg-success': simulatedDbRow.level?.toLowerCase() === 'health' || simulatedDbRow.level?.toLowerCase() === 'state'
+                                                        }">{{simulatedDbRow.level || 'null'}}</span>
+                                                </td>
+                                                <td class="text-wrap text-muted font-monospace bg-light ps-2 fs-6">
+                                                    {{simulatedDbRow.comment}}</td>
+                                                <td class="text-center">
+                                                    <span class="badge w-75 py-2 fw-bold" [ngClass]="{
+                                                            'bg-success': simulatedDbRow.status ==  '1',
+                                                            'bg-danger': simulatedDbRow.status == '0'
+                                                        }">{{simulatedDbRow.status == '1' ? 'Fixed' : 'Not
+                                                        Fixed'}}</span>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div> <!-- END RIGHT COLUMN -->
+                </div> <!-- END ROW G-4 -->
+
+            </c-card-body>
+        </c-card>
+    </c-modal-body>
+    <c-modal-footer class="bg-white border-top-0 pt-0 pb-3 pe-4">
+        <button cButton color="secondary" variant="ghost" (click)="EditRegexModalVisible=false">Cancel</button>
+        <button cButton color="primary" class="px-4" (click)="save_regex()"
+            [disabled]="(inputMode === 'raw' && rawRegexError !== '') || (inputMode === 'builder' && generatedRegex === '')">
+            <i class="fa-solid fa-save me-2"></i>Save Regex
+        </button>
+    </c-modal-footer>
+</c-modal>
+
+<!-- Manage Alerts Modal -->
+<c-modal #ManageAlertsModal backdrop="static" size="lg" [(visible)]="ManageAlertsModalVisible" id="ManageAlertsModal">
+    <c-modal-header class="bg-light">
+        <h5 cModalTitle><i class="fa-solid fa-bell me-2"></i>Manage Alert Definitions</h5>
+        <button (click)="ManageAlertsModalVisible=false" cButtonClose></button>
+    </c-modal-header>
+    <c-modal-body class="p-4 bg-light">
+        <c-row>
+            <!-- Form Column -->
+            <c-col xs="12" md="4" class="mb-4">
+                <c-card class="shadow-sm border-0">
+                    <c-card-header class="bg-white">
+                        <h6 class="mb-0">{{editingAlert.id === 0 ? 'Create Alert' : 'Edit Alert'}}</h6>
+                    </c-card-header>
+                    <c-card-body>
+                        <div class="mb-3">
+                            <label class="form-label small text-muted">Alert Name</label>
+                            <input class="form-control" [(ngModel)]="editingAlert.name" placeholder="e.g. CPU High">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small text-muted">Severity Level</label>
+                            <select class="form-select" [(ngModel)]="editingAlert.level">
+                                <option value="Warning">Warning</option>
+                                <option value="Critical">Critical</option>
+                                <option value="Error">Error</option>
+                            </select>
+                        </div>
+                        <button cButton color="primary" class="w-100" (click)="saveAlert()">
+                            <i class="fa-solid fa-save me-1"></i>Save Alert
+                        </button>
+                        <button *ngIf="editingAlert.id !== 0" cButton color="secondary" variant="ghost"
+                            class="w-100 mt-2" (click)="editingAlert = { id: 0, name: '', level: 'info' }">Cancel
+                            Edit</button>
+                    </c-card-body>
+                </c-card>
+            </c-col>
+
+            <!-- List Column -->
+            <c-col xs="12" md="8">
+                <c-card class="shadow-sm border-0">
+                    <c-card-header class="bg-white">
+                        <h6 class="mb-0">Existing Alerts</h6>
+                    </c-card-header>
+                    <c-card-body class="p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0 align-middle">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Level</th>
+                                        <th class="text-end">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr *ngFor="let alert of Alerts">
+                                        <td class="fw-semibold">{{alert.name}}</td>
+                                        <td>
+                                            <c-badge
+                                                [color]="alert.level === 'critical' ? 'danger' : (alert.level === 'warning' ? 'warning' : 'info')">
+                                                {{alert.level | uppercase}}
+                                            </c-badge>
+                                        </td>
+                                        <td class="text-end">
+                                            <button cButton color="info" size="sm" variant="ghost" class="me-1"
+                                                (click)="editAlert(alert)"><i class="fa-solid fa-edit"></i></button>
+                                            <button cButton color="danger" size="sm" variant="ghost"
+                                                (click)="deleteAlert(alert.id)"><i
+                                                    class="fa-solid fa-trash"></i></button>
+                                        </td>
+                                    </tr>
+                                    <tr *ngIf="Alerts.length === 0">
+                                        <td colspan="3" class="text-center text-muted py-4">No alerts defined.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </c-card-body>
+                </c-card>
+            </c-col>
+        </c-row>
+    </c-modal-body>
+</c-modal>

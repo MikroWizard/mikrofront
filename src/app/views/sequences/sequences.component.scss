@@ -1,0 +1,257 @@
+/* Flowchart Builder Styling */
+.bg-grid-pattern {
+    background-image: linear-gradient(to right, #e8ecef 1px, transparent 1px), linear-gradient(to bottom, #e8ecef 1px, transparent 1px);
+    background-size: 20px 20px;
+}
+
+.flow-tree {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1rem 0;
+}
+
+.flow-entry-node {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 0;
+}
+
+.entry-bubble {
+    background: #321fdb;
+    color: white;
+    padding: 0.5rem 1.5rem;
+    border-radius: 50px;
+    font-weight: 600;
+    box-shadow: 0 4px 6px rgba(50, 31, 219, 0.2);
+    z-index: 2;
+}
+
+/* Connectors */
+.flow-connector-down {
+    width: 2px;
+    height: 30px;
+    background-color: #9da5b1;
+    position: relative;
+    z-index: 1;
+}
+
+/* Groups and Branches */
+/* Groups and Branches */
+.condition-group,
+.action-group {
+    display: flex;
+    justify-content: center;
+    gap: 0;
+    position: relative;
+    /* No padding-top here, used on branches instead */
+    flex-wrap: nowrap;
+    min-width: max-content;
+}
+
+/* Horizontal connectors refined */
+.condition-branch::after,
+.action-branch::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background-color: #9da5b1;
+    z-index: 1;
+}
+
+.condition-branch:first-child::after,
+.action-branch:first-child::after {
+    left: 50%;
+}
+
+.condition-branch:last-child::after,
+.action-branch:last-child::after {
+    right: 50%;
+}
+
+.condition-branch:only-child::after,
+.action-branch:only-child::after {
+    display: none;
+}
+
+.condition-branch,
+.action-branch {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    padding: 30px 1rem 0 1rem; /* 30px top padding for connectors */
+    flex: 1 1 0px; /* Equal width branches */
+    min-width: 240px; /* Minimum width to keep content readable */
+    max-width: 400px; /* Reasonable expansion limit */
+}
+
+/* Horizontal connectors spanning between centers of nodes */
+.condition-branch::after,
+.action-branch::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background-color: #9da5b1;
+    z-index: 1;
+}
+
+.condition-branch:first-child::after,
+.action-branch:first-child::after {
+    left: 50%;
+}
+
+.condition-branch:last-child::after,
+.action-branch:last-child::after {
+    right: 50%;
+}
+
+.condition-branch:only-child::after,
+.action-branch:only-child::after {
+    display: none;
+}
+
+/* Vertical connector from horizontal bar down to card */
+.condition-branch::before,
+.action-branch::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 2px;
+    height: 30px;
+    background-color: #9da5b1;
+    z-index: 1;
+}
+
+/* Connector from parent node down to the group's horizontal bar */
+.flow-connector-down {
+    width: 2px;
+    height: 30px;
+    background-color: #9da5b1;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+}
+
+/* Cards with Dynamic Widths based on branch width */
+.node-card {
+    width: 100%; /* Fill the branch */
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    border: 1px solid #d8dbe0;
+    overflow: hidden;
+    position: relative;
+    z-index: 2;
+    transition: all 0.2s ease;
+}
+
+.node-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+.node-header {
+    padding: 0.5rem 1rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.node-body {
+    padding: 1rem;
+}
+
+.condition-node {
+    border-top: 4px solid #f9b115;
+}
+
+.action-node {
+    border-top: 4px solid #2eb85c;
+}
+
+/* Modal Wide Override */
+::ng-deep .builder-modal .modal-xl {
+    max-width: 95vw !important;
+}
+
+.flowchart-container {
+    min-height: 60vh;
+}
+
+.bg-dark {
+    background-color: #1a1d21 !important;
+}
+
+.terminal-container {
+    background-color: #0d1117;
+    border-radius: 6px;
+    padding: 1rem;
+    max-height: 60vh;
+    overflow-y: auto;
+    border: 1px solid #30363d;
+    
+    .terminal-content {
+        background-color: transparent;
+        
+        ::ng-deep pre {
+            display: block !important;
+            white-space: pre-wrap !important;
+            word-break: break-all !important;
+            min-height: 50vh !important;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace !important;
+            font-size: 0.9rem !important;
+            color: #e6edf3 !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            background: transparent !important;
+        }
+
+        ::ng-deep .hljs {
+            background: transparent !important;
+            padding: 0 !important;
+            font-family: inherit !important;
+            font-size: inherit !important;
+        }
+    }
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.hover-shadow:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+::ng-deep .nav-tabs .nav-link {
+    cursor: pointer;
+}
+
+.border-secondary {
+    border-color: #30363d !important;
+}
+
+::ng-deep .nav-tabs .nav-link.active {
+    background-color: #0d1117 !important;
+    border-color: #30363d #30363d transparent !important;
+    color: #fff !important;
+}
+
+::ng-deep .nav-tabs .nav-link {
+    border: 1px solid transparent;
+}
+
+::ng-deep .nav-tabs {
+    border-bottom: 1px solid #30363d;
+}

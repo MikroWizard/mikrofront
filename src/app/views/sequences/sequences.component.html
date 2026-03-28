@@ -1,0 +1,590 @@
+<c-row>
+    <c-col xs>
+        <c-card class="mb-4">
+            <c-card-header>
+                <c-row>
+                    <c-col xs [lg]="3">
+                        Alert Sequences (Pro)
+                    </c-col>
+                    <c-col xs [lg]="9">
+                        <h6 style="text-align: right;">
+                            <button cButton color="dark" class="mx-1" size="sm" (click)="Edit_Sequence('','add')"
+                                style="color: #fff;"><i class="fa-solid fa-plus"></i> Create Sequence</button>
+                            <button cButton color="warning" class="mx-1" size="sm"
+                                (click)="ManageAlertsModalVisible = true" style="color: #000;"><i
+                                    class="fa-solid fa-bell"></i> Manage Alerts</button>
+                        </h6>
+                    </c-col>
+                </c-row>
+            </c-card-header>
+            <c-card-body>
+                <gui-grid [source]="source" [searching]="searching" [paging]="paging" [columnMenu]="columnMenu"
+                    [sorting]="sorting" [infoPanel]="infoPanel" [rowSelection]="rowSelection" [autoResizeWidth]=true>
+                    <gui-grid-column header="Name" field="name">
+                        <ng-template let-value="item.name" let-item="item" let-index="index">
+                            {{value}}
+                        </ng-template>
+                    </gui-grid-column>
+                    <gui-grid-column header="Source Snippet" field="source_snippet_id">
+                        <ng-template let-value="item.source_snippet_id" let-item="item" let-index="index">
+                            Snippet #{{value}}
+                        </ng-template>
+                    </gui-grid-column>
+                    <gui-grid-column header="Active" field="is_active">
+                        <ng-template let-value="item.is_active" let-item="item" let-index="index">
+                            <i *ngIf="value" class="fa-solid fa-check" style="color: green;"></i>
+                            <i *ngIf="!value" class="fa-solid fa-x" style="color: red;"></i>
+                        </ng-template>
+                    </gui-grid-column>
+                    <gui-grid-column header="Created" field="created">
+                        <ng-template let-value="item.created" let-item="item" let-index="index">
+                            <div>{{value}}</div>
+                        </ng-template>
+                    </gui-grid-column>
+                    <gui-grid-column header="Actions" field="action" align="center">
+                        <ng-template let-value="item.id" let-item="item" let-index="index">
+                            <button cButton color="success" size="sm" (click)="Run_Sequence(item)" class=""><i
+                                    class="fa-solid fa-play mx-1"></i>Execute</button>
+                            <button cButton color="primary" size="sm" (click)="Edit_Sequence(item,'edit')" class="mx-1"><i
+                                    class="fa-regular fa-pen-to-square mx-1"></i>Edit</button>
+                            <button cButton color="info" size="sm" (click)="show_history(item)" class=""><i
+                                    class="fa-solid fa-clock-rotate-left mx-1"></i>History</button>
+                            <button cButton color="danger" size="sm" (click)="confirm_delete(item,false)" class="mx-1"><i
+                                    class="fa-regular fa-trash-can mx-1"></i>Delete</button>
+                        </ng-template>
+                    </gui-grid-column>
+                </gui-grid>
+            </c-card-body>
+        </c-card>
+    </c-col>
+</c-row>
+
+<c-modal #EditSequenceModal backdrop="static" size="xl" [(visible)]="EditSequenceModalVisible" id="EditSequenceModal" class="builder-modal">
+    <c-modal-header class="bg-light">
+        <h5 *ngIf="ModalAction=='edit'" cModalTitle>
+            <i class="fa-solid fa-edit me-2"></i>Edit Sequence: {{current_sequence['name']}}
+        </h5>
+        <h5 *ngIf="ModalAction=='add'" cModalTitle>
+            <i class="fa-solid fa-plus me-2"></i>Create New Sequence
+        </h5>
+        <button [cModalToggle]="EditSequenceModal.id" cButtonClose></button>
+    </c-modal-header>
+    <c-modal-body class="p-4 bg-light">
+        <!-- Basic Information -->
+        <c-card class="mb-4 shadow-sm border-0">
+            <c-card-header class="bg-white border-bottom-0 pt-3 pb-0">
+                <h6 class="mb-1"><i class="fa-solid fa-info-circle text-primary me-2"></i>Sequence Details</h6>
+            </c-card-header>
+            <c-card-body>
+                <c-row class="g-3 align-items-center">
+                    <c-col xs="12" md="6">
+                        <label class="form-label text-muted small mb-1">Sequence Name</label>
+                        <input cFormControl placeholder="e.g. Daily Health Check" [(ngModel)]="current_sequence['name']"
+                            class="border-secondary" />
+                    </c-col>
+                    <c-col xs="12" md="6">
+                        <label class="form-label text-muted small mb-1">Source Snippet (Entry Point)</label>
+                        <ngx-super-select [dataSource]="Snippets" [options]="snippetOptions"
+                            (selectionChanged)="onSelectSourceSnippet($event)"
+                            [selectedItemValues]="[current_sequence['source_snippet_id']]"
+                            class="styled border-secondary"></ngx-super-select>
+                    </c-col>
+                </c-row>
+                <div class="mt-3 pt-3 border-top d-flex gap-4">
+                    <c-form-check>
+                        <input cFormCheckInput type="checkbox" id="isActiveSeq"
+                            [(ngModel)]="current_sequence['is_active']" />
+                        <label cFormCheckLabel for="isActiveSeq" class="user-select-none">Sequence Active</label>
+                    </c-form-check>
+                    <c-form-check>
+                        <input cFormCheckInput type="checkbox" id="storeHistorySeq"
+                            [(ngModel)]="current_sequence['store_all_history']" />
+                        <label cFormCheckLabel for="storeHistorySeq" class="user-select-none">Store Execution
+                            History</label>
+                    </c-form-check>
+                </div>
+            </c-card-body>
+        </c-card>
+
+        <!-- Flowchart Builder -->
+        <c-card class="mb-3 shadow-sm border-0 flowchart-container">
+            <c-card-header class="bg-white d-flex justify-content-between align-items-center py-3">
+                <h6 class="mb-0"><i class="fa-solid fa-project-diagram text-primary me-2"></i>Condition Flowchart</h6>
+                <button cButton color="primary" variant="outline" size="sm"
+                    (click)="addCondition(current_sequence.conditions_json)">
+                    <i class="fa-solid fa-plus me-1"></i>Add Root Condition
+                </button>
+            </c-card-header>
+            <c-card-body class="bg-light p-4 overflow-auto bg-grid-pattern">
+
+                <div *ngIf="!current_sequence.conditions_json || current_sequence.conditions_json.length === 0"
+                    class="text-center py-5 text-muted">
+                    <i class="fa-solid fa-code-branch fa-3x mb-3 opacity-25"></i>
+                    <h6>No conditions defined</h6>
+                    <p class="small mb-0">The source snippet will execute unconditionally.<br />Add a condition below to
+                        build branching logic based on the snippet's output.</p>
+                </div>
+
+                <div class="flow-tree"
+                    *ngIf="current_sequence.conditions_json && current_sequence.conditions_json.length > 0">
+                    <!-- Root Entry Node -->
+                    <div class="flow-entry-node">
+                        <div class="entry-bubble"><i class="fa-solid fa-play me-2"></i>Source Snippet Output</div>
+                        <div class="flow-connector-down"></div>
+                    </div>
+
+                    <!-- Recursive Conditions Render -->
+                    <ng-container
+                        *ngTemplateOutlet="conditionNodeTemplate; context: { conditions: current_sequence.conditions_json }"></ng-container>
+                </div>
+
+            </c-card-body>
+        </c-card>
+    </c-modal-body>
+    <c-modal-footer class="bg-white border-top-0 pt-0 pb-3 pe-4">
+        <button cButton color="secondary" variant="ghost" [cModalToggle]="EditSequenceModal.id">Cancel</button>
+        <button cButton color="primary" class="px-4" (click)="save_sequence()"><i class="fa-solid fa-save me-2"></i>Save
+            Sequence</button>
+    </c-modal-footer>
+</c-modal>
+
+<!-- RECURSIVE TEMPLATE FOR CONDITIONS -->
+<ng-template #conditionNodeTemplate let-conditions="conditions">
+    <div class="condition-group" *ngIf="conditions && conditions.length > 0">
+        <div class="condition-branch" *ngFor="let cond of conditions; let i = index">
+
+            <!-- Condition Card -->
+            <div class="node-card condition-node">
+                <div
+                    class="node-header bg-warning bg-opacity-10 text-warning d-flex justify-content-between align-items-center">
+                    <span><i class="fa-solid fa-code-compare me-2"></i>Condition</span>
+                    <button class="btn btn-link text-danger p-0 m-0" (click)="removeNode(conditions, i)"><i
+                            class="fa-solid fa-times"></i></button>
+                </div>
+                <div class="node-body">
+                    <c-row class="g-2 align-items-center">
+                        <c-col xs="12" md="12" class="mb-2">
+                            <select class="form-select form-select-sm" [(ngModel)]="cond.type">
+                                <option value="contains">Contains Content</option>
+                                <option value="not_contain">Does Not Contain</option>
+                            </select>
+                        </c-col>
+                        <c-col xs="12" md="12">
+                            <div class="input-group input-group-sm">
+                                <div class="input-group-text bg-white border-end-0 pe-1">
+                                    <input class="form-check-input mt-0" type="checkbox" [(ngModel)]="cond.is_regex"
+                                        title="Use Regex">
+                                    <small class="ms-1 text-muted" title="Use Regex">Regex</small>
+                                </div>
+                                <input type="text" class="form-control border-start-0 ps-1" [(ngModel)]="cond.pattern"
+                                    placeholder="Match string or pattern...">
+                            </div>
+                        </c-col>
+                    </c-row>
+                    <div class="node-footer mt-2 pt-2 border-top text-center">
+                        <button class="btn btn-sm btn-outline-primary py-0" style="font-size: 0.75rem"
+                            (click)="addAction(cond)">
+                            <i class="fa-solid fa-plus me-1"></i>Add Action
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Flow Connector from Condition to Actions -->
+            <div class="flow-connector-down" *ngIf="cond.actions && cond.actions.length > 0"></div>
+
+            <!-- Render Actions under this condition -->
+            <div class="action-group" *ngIf="cond.actions && cond.actions.length > 0">
+                <div class="action-branch" *ngFor="let act of cond.actions; let j = index">
+
+                    <div class="node-card action-node">
+                        <div
+                            class="node-header bg-success bg-opacity-10 text-success d-flex justify-content-between align-items-center">
+                            <span><i class="fa-solid fa-bolt me-2"></i>Action</span>
+                            <button class="btn btn-link text-danger p-0 m-0" (click)="removeNode(cond.actions, j)"><i
+                                    class="fa-solid fa-times"></i></button>
+                        </div>
+                        <div class="node-body">
+                            <select class="form-select form-select-sm mb-2" [(ngModel)]="act.action_type">
+                                <option value="alert_set">Trigger Alert</option>
+                                <option value="alert_clear">Clear Alert</option>
+                                <option value="execute_snippet">Execute Another Snippet</option>
+                            </select>
+
+                            <!-- Alert Selection -->
+                            <div *ngIf="act.action_type === 'alert_set' || act.action_type === 'alert_clear'">
+                                <select class="form-select form-select-sm" [(ngModel)]="act.alert_id">
+                                    <option [ngValue]="null">Select an Alert Definition...</option>
+                                    <option *ngFor="let a of Alerts" [value]="a.id">{{a.name}} ({{a.level}})</option>
+                                </select>
+                            </div>
+
+                            <!-- Snippet Selection -->
+                            <div *ngIf="act.action_type === 'execute_snippet'">
+                                <select class="form-select form-select-sm" [(ngModel)]="act.snippet_id">
+                                    <option [ngValue]="null">Select a Snippet to Run...</option>
+                                    <option *ngFor="let s of Snippets" [value]="s.id">{{s.name}}</option>
+                                </select>
+
+                                <!-- Recursive Conditions for nested Snippet -->
+                                <div class="mt-2 pt-2 border-top text-center">
+                                    <button class="btn btn-sm btn-outline-warning py-0" style="font-size: 0.75rem"
+                                        (click)="addCondition(act.conditions || (act.conditions = []))">
+                                        <i class="fa-solid fa-code-compare me-1"></i>Add Nested Condition
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recursive render of nested conditions from Snippet Action -->
+                    <div *ngIf="act.action_type === 'execute_snippet' && act.conditions && act.conditions.length > 0">
+                        <div class="flow-connector-down"></div>
+                        <ng-container
+                            *ngTemplateOutlet="conditionNodeTemplate; context: { conditions: act.conditions }"></ng-container>
+                    </div>
+
+                </div> <!-- end action-branch loop -->
+            </div> <!-- end action-group -->
+
+        </div> <!-- end condition-branch loop -->
+    </div> <!-- end condition-group -->
+</ng-template>
+
+<!-- Manage Alerts Modal -->
+<c-modal #ManageAlertsModal backdrop="static" size="lg" [(visible)]="ManageAlertsModalVisible" id="ManageAlertsModal">
+    <c-modal-header class="bg-light">
+        <h5 cModalTitle><i class="fa-solid fa-bell me-2"></i>Manage Alert Definitions</h5>
+        <button [cModalToggle]="ManageAlertsModal.id" cButtonClose></button>
+    </c-modal-header>
+    <c-modal-body class="p-4 bg-light">
+        <c-row>
+            <!-- Form Column -->
+            <c-col xs="12" md="4" class="mb-4">
+                <c-card class="shadow-sm border-0">
+                    <c-card-header class="bg-white">
+                        <h6 class="mb-0">{{editingAlert.id === 0 ? 'Create Alert' : 'Edit Alert'}}</h6>
+                    </c-card-header>
+                    <c-card-body>
+                        <div class="mb-3">
+                            <label class="form-label small text-muted">Alert Name</label>
+                            <input class="form-control" [(ngModel)]="editingAlert.name" placeholder="e.g. CPU High">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small text-muted">Severity Level</label>
+                            <select class="form-select" [(ngModel)]="editingAlert.level">
+                                <option value="Warning">Warning</option>
+                                <option value="Critical">Critical</option>
+                                <option value="Error">Error</option>
+                            </select>
+                        </div>
+                        <button cButton color="primary" class="w-100" (click)="saveAlert()">
+                            <i class="fa-solid fa-save me-1"></i>Save Alert
+                        </button>
+                        <button *ngIf="editingAlert.id !== 0" cButton color="secondary" variant="ghost"
+                            class="w-100 mt-2" (click)="editingAlert = { id: 0, name: '', level: 'info' }">Cancel
+                            Edit</button>
+                    </c-card-body>
+                </c-card>
+            </c-col>
+
+            <!-- List Column -->
+            <c-col xs="12" md="8">
+                <c-card class="shadow-sm border-0">
+                    <c-card-header class="bg-white">
+                        <h6 class="mb-0">Existing Alerts</h6>
+                    </c-card-header>
+                    <c-card-body class="p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0 align-middle">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Level</th>
+                                        <th class="text-end">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr *ngFor="let alert of Alerts">
+                                        <td class="fw-semibold">{{alert.name}}</td>
+                                        <td>
+                                            <c-badge
+                                                [color]="alert.level === 'critical' ? 'danger' : (alert.level === 'warning' ? 'warning' : 'info')">
+                                                {{alert.level | uppercase}}
+                                            </c-badge>
+                                        </td>
+                                        <td class="text-end">
+                                            <button cButton color="info" size="sm" variant="ghost" class="me-1"
+                                                (click)="editAlert(alert)"><i class="fa-solid fa-edit"></i></button>
+                                            <button cButton color="danger" size="sm" variant="ghost"
+                                                (click)="deleteAlert(alert.id)"><i
+                                                    class="fa-solid fa-trash"></i></button>
+                                        </td>
+                                    </tr>
+                                    <tr *ngIf="Alerts.length === 0">
+                                        <td colspan="3" class="text-center text-muted py-4">No alerts defined.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </c-card-body>
+                </c-card>
+            </c-col>
+        </c-row>
+    </c-modal-body>
+</c-modal>
+
+<!-- Execution History Modal -->
+<c-modal #HistoryModal backdrop="static" size="xl" [(visible)]="HistoryModalVisible" id="HistoryModal">
+    <c-modal-header class="bg-light">
+        <h5 cModalTitle><i class="fa-solid fa-clock-rotate-left me-2"></i>Execution History: {{viewing_sequence_name}}
+        </h5>
+        <button [cModalToggle]="HistoryModal.id" cButtonClose></button>
+    </c-modal-header>
+    <c-modal-body class="p-4 bg-light">
+        <c-card class="shadow-sm border-0">
+            <c-card-body class="p-0">
+                <div *ngIf="sequence_history.length > 0">
+                <div *ngIf="sequence_history.length > 0">
+                    <div *ngFor="let run of sequence_history; let i = index" class="mb-3">
+                        <c-card class="border-0 shadow-sm overflow-hidden">
+                            <c-card-header (click)="run.visible = !run.visible" style="cursor: pointer;" 
+                                           class="d-flex justify-content-between align-items-center bg-white border-0 py-3">
+                                <span>
+                                    <i class="fa-solid" [ngClass]="run.visible ? 'fa-chevron-down' : 'fa-chevron-right'" class="me-3 text-muted"></i>
+                                    <i class="fa-solid fa-calendar-check me-2 text-primary"></i>
+                                    <strong>{{run.created}}</strong>
+                                    <small class="text-muted ms-3">Exec ID: {{run.exec_id | slice:0:8}}...</small>
+                                </span>
+                                <div class="d-flex align-items-center">
+                                    <c-badge [color]="run.successCount === run.totalCount ? 'success' : (run.successCount === 0 ? 'danger' : 'warning')" class="px-3 py-2 text-white">
+                                        {{run.successCount}}/{{run.totalCount}} Success
+                                    </c-badge>
+                                </div>
+                            </c-card-header>
+                            <div [visible]="run.visible" cCollapse class="border-top">
+                                <c-card-body class="p-0 border-top">
+                                    <gui-grid [source]="run.devices" 
+                                              [searching]="searchingHistory" 
+                                              [paging]="pagingHistory" 
+                                              [sorting]="sorting" 
+                                              [infoPanel]="false" 
+                                              [autoResizeWidth]="true"
+                                              class="border-0">
+                                        <gui-grid-column header="Device" field="device_id">
+                                            <ng-template let-item="item">
+                                                <div class="fw-semibold ms-2">
+                                                    <i class="fa-solid fa-microchip me-2 opacity-50"></i>Device #{{item.device_id}}
+                                                </div>
+                                            </ng-template>
+                                        </gui-grid-column>
+                                        <gui-grid-column header="Status" field="status" align="center" width="150">
+                                            <ng-template let-item="item">
+                                                <c-badge [color]="item.status === 'success' ? 'success' : 'danger'" class="text-white px-2">
+                                                    {{item.status | uppercase}}
+                                                </c-badge>
+                                            </ng-template>
+                                        </gui-grid-column>
+                                        <gui-grid-column header="Actions" align="right" width="150">
+                                            <ng-template let-item="item">
+                                                <button cButton color="dark" size="sm" variant="outline" class="me-2" (click)="showTrace(item)">
+                                                    <i class="fa-solid fa-terminal me-1"></i> Trace Log
+                                                </button>
+                                            </ng-template>
+                                        </gui-grid-column>
+                                    </gui-grid>
+                                </c-card-body>
+                            </div>
+                        </c-card>
+                    </div>
+                </div>
+                </div>
+                <div *ngIf="sequence_history.length === 0" class="text-center text-muted py-5">
+                    <i class="fa-solid fa-inbox fa-3x mb-3 opacity-25"></i>
+                    <h6>No History Found</h6>
+                    <p class="small mb-0">This sequence hasn't been executed yet or history tracking is disabled.</p>
+                </div>
+            </c-card-body>
+        </c-card>
+    </c-modal-body>
+</c-modal>
+
+<!-- Trace Log Modal (Terminal Style) -->
+<c-modal #TraceModal backdrop="static" size="xl" [(visible)]="TraceModalVisible" id="TraceModal">
+    <c-modal-header class="bg-dark text-white">
+        <h5 cModalTitle><i class="fa-solid fa-terminal me-2"></i>Execution Trace: Device #{{viewing_device_id}}</h5>
+        <button (click)="TraceModalVisible=false" cButtonClose white></button>
+    </c-modal-header>
+    <c-modal-body class="p-0 bg-dark">
+        <div class="nav nav-tabs border-secondary px-3 pt-2">
+            <div class="nav-item">
+                <a [cTabContent]="tabContent" [active]="true" [tabPaneIdx]="0" class="nav-link text-light border-secondary cursor-pointer">
+                    <i class="fa-solid fa-code me-2"></i>SSH Output
+                </a>
+            </div>
+            <div class="nav-item">
+                <a [cTabContent]="tabContent" [active]="false" [tabPaneIdx]="1" class="nav-link text-light border-secondary cursor-pointer">
+                    <i class="fa-solid fa-list-check me-2"></i>Evaluation Details
+                </a>
+            </div>
+        </div>
+        <c-tab-content #tabContent="cTabContent" class="p-3">
+            <c-tab-pane class="p-0">
+                <div class="terminal-container">
+                    <div class="terminal-content">
+                        <div highlight-js lang="routeros" [options]="{}">{{
+                            current_trace.parsedLog?.ssh_output || current_trace.task_log }}</div>
+                    </div>
+                </div>
+            </c-tab-pane>
+            <c-tab-pane class="p-3 text-light">
+                <div class="evaluation-tree" *ngIf="current_trace.parsedLog?.evaluation">
+                    <!-- Structured JSON Evaluation -->
+                    <div *ngIf="isObject(current_trace.parsedLog.evaluation); else flatEval">
+                        <ng-container *ngTemplateOutlet="evalNodeTemplate; context: { node: current_trace.parsedLog.evaluation }"></ng-container>
+                    </div>
+                    <!-- Legacy String Evaluation -->
+                    <ng-template #flatEval>
+                        <pre class="text-info bg-transparent border-0 p-0 m-0" style="white-space: pre-wrap;">{{current_trace.parsedLog.evaluation}}</pre>
+                    </ng-template>
+                </div>
+                <div *ngIf="!current_trace.parsedLog?.evaluation" class="text-center py-4 text-muted">
+                    No evaluation details found for this run.
+                </div>
+            </c-tab-pane>
+        </c-tab-content>
+    </c-modal-body>
+    <c-modal-footer class="bg-dark border-secondary">
+        <button cButton color="secondary" (click)="TraceModalVisible=false">Close Trace</button>
+    </c-modal-footer>
+</c-modal>
+
+<!-- RECURSIVE TEMPLATE FOR EVALUATION LOGS -->
+<ng-template #evalNodeTemplate let-node="node">
+    <div class="eval-node ms-3 border-start border-secondary ps-3 mb-3">
+        <div *ngFor="let rule of (isArray(node) ? node : [node])" class="mb-2">
+            <div class="d-flex align-items-center mb-1">
+                <i class="fa-solid fa-check-circle text-success me-2" *ngIf="rule.matched"></i>
+                <i class="fa-regular fa-circle text-muted me-2" *ngIf="!rule.matched"></i>
+                <span [class.text-white]="rule.matched" [class.text-muted]="!rule.matched">
+                    Rule <strong>[{{rule.type}}]</strong>: '{{rule.pattern}}' &rarr; 
+                    <span [class.text-success]="rule.matched">{{rule.matched ? 'MATCHED' : 'NO MATCH'}}</span>
+                </span>
+            </div>
+            <div *ngIf="rule.matched && rule.actions?.length > 0" class="ms-4 my-2 p-2 bg-opacity-10 bg-info rounded">
+                <div *ngFor="let act of rule.actions" class="mb-1 small">
+                    <i class="fa-solid fa-arrow-right text-info me-2"></i>
+                    <strong>ACTION:</strong> {{act.action_type}}
+                    <span *ngIf="act.alert_id" class="text-warning ms-1">(Alert ID: {{act.alert_id}})</span>
+                    <span *ngIf="act.snippet_id" class="text-primary ms-1">(Snippet: {{act.snippet_id}})</span>
+                    
+                    <!-- Nested Evaluation if another snippet was run -->
+                    <div *ngIf="act.nested_eval" class="mt-2">
+                        <ng-container *ngTemplateOutlet="evalNodeTemplate; context: { node: act.nested_eval }"></ng-container>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</ng-template>
+
+<!-- MANUAL EXECUTION MODAL -->
+<c-modal #ExecSequenceModal backdrop="static" size="xl" [(visible)]="ExecSequenceModalVisible" id="ExecSequenceModal">
+    <c-modal-header>
+        <h5 cModalTitle>Exec Sequence</h5>
+        <button [cModalToggle]="ExecSequenceModal.id" cButtonClose></button>
+    </c-modal-header>
+    <c-modal-body>
+        <div [cFormFloating]="true" class="mb-3">
+            <input cFormControl id="floatingExecName" placeholder="current_sequence['name']"
+                [(ngModel)]="current_sequence['name']" disabled="true" />
+            <label cLabel for="floatingExecName">Sequence Name</label>
+        </div>
+
+        <div [cFormFloating]="true" class="mb-3">
+            <input cFormControl id="floatingExecDesc" placeholder="Description"
+                [(ngModel)]="current_sequence['description']" />
+            <label cLabel for="floatingExecDesc">Description</label>
+        </div>
+
+        <c-input-group class="mb-3">
+            <label cInputGroupText for="inputGroupSelectSeq">
+                Member type
+            </label>
+            <select cSelect id="inputGroupSelectSeq" (change)="form_changed()"
+                [(ngModel)]="current_sequence['selection_type']">
+                <option value="devices">Devices</option>
+                <option value="groups">Groups</option>
+            </select>
+        </c-input-group>
+
+        <h5>Members :</h5>
+        <gui-grid [autoResizeWidth]="true" [source]="SelectedMembers" [columnMenu]="columnMenu" [sorting]="sorting"
+            [infoPanel]="infoPanel" [rowSelection]="rowSelection" [paging]="paging">
+            <gui-grid-column header="Name" field="name">
+                <ng-template let-value="item.name" let-item="item" let-index="index">
+                    &nbsp; {{value}} </ng-template>
+            </gui-grid-column>
+            <gui-grid-column *ngIf="current_sequence['selection_type']=='devices'" header="MAC" field="mac">
+                <ng-template let-value="item.mac" let-item="item" let-index="index">
+                    {{value}}
+                </ng-template>
+            </gui-grid-column>
+            <gui-grid-column header="Actions" width="120" field="action">
+                <ng-template let-value="item.id" let-item="item" let-index="index">
+                    <button cButton color="danger" size="sm" (click)="remove_member(item)">
+                        <i class="fa-regular fa-trash-can"></i>
+                    </button>
+                </ng-template>
+            </gui-grid-column>
+        </gui-grid>
+        <hr />
+        <button cButton color="primary" (click)="show_new_member_form()">+ Add new Members</button>
+
+    </c-modal-body>
+    <c-modal-footer>
+        <button (click)="submit_exec()" cButton color="primary">Execute</button>
+        <button [cModalToggle]="ExecSequenceModal.id" cButton color="secondary">
+            Close
+        </button>
+    </c-modal-footer>
+</c-modal>
+
+<!-- MEMBER SELECTION MODAL -->
+<c-modal #NewMemberModal backdrop="static" size="lg" [(visible)]="NewMemberModalVisible" id="NewMemberModal">
+    <c-modal-header>
+        <h5 cModalTitle>Editing Group </h5>
+        <button (click)="NewMemberModalVisible=!NewMemberModalVisible" cButtonClose></button>
+    </c-modal-header>
+    <c-modal-body>
+        <c-input-group class="mb-3">
+            <h5>Group Members :</h5>
+            <gui-grid [autoResizeWidth]="true" *ngIf="NewMemberModalVisible" [searching]="searching"
+                [source]="availbleMembers" [columnMenu]="columnMenu" [sorting]="sorting" [infoPanel]="infoPanel"
+                [rowSelection]="rowSelection" (selectedRows)="onSelectedRowsNewMembers($event)" [paging]="paging">
+                <gui-grid-column header="Member Name" field="name">
+                    <ng-template let-value="item.name" let-item="item" let-index="index">
+                        &nbsp; {{value}} </ng-template>
+                </gui-grid-column>
+                <gui-grid-column *ngIf="current_sequence['selection_type']=='devices'" header="IP Address" field="ip">
+                    <ng-template let-value="item.ip" let-item="item" let-index="index">
+                        {{value}}
+                    </ng-template>
+                </gui-grid-column>
+                <gui-grid-column *ngIf="current_sequence['selection_type']=='devices'" header="MAC Address" field="mac">
+                    <ng-template let-value="item.mac" let-item="item" let-index="index">
+                        {{value}}
+                    </ng-template>
+                </gui-grid-column>
+            </gui-grid>
+            <br />
+        </c-input-group>
+        <hr />
+    </c-modal-body>
+    <c-modal-footer>
+        <button (click)="add_new_members()" cButton color="primary">Add Selected</button>
+        <button (click)="NewMemberModalVisible=false" cButton color="secondary">
+            Close
+        </button>
+    </c-modal-footer>
+</c-modal>

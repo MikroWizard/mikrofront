@@ -1,0 +1,621 @@
+<div class="fade-in">
+  <!-- Top Cards -->
+  <c-row class="mb-4 d-flex justify-content-between">
+    <!-- Server Status Card -->
+    <c-col sm="4">
+      <c-card class="shadow-sm border-0 h-100"
+        [ngClass]="{'bg-success text-white': status?.status === 'running', 'bg-danger text-white': status?.status === 'error' || !status, 'bg-warning text-dark': status?.status === 'setup_required'}">
+        <c-card-body class="p-3 d-flex align-items-center">
+          <div class="me-3 fs-2 opacity-75">
+            <i class="fas fa-server"></i>
+          </div>
+          <div>
+            <div class="text-uppercase fw-semibold" style="font-size: 0.75rem; letter-spacing: 0.5px; opacity: 0.8;">
+              Server Status</div>
+            <div class="fs-5 fw-bold mt-1">
+              {{status?.status === 'running' ? 'Running' : (status?.status === 'setup_required' ? 'Setup Required' :
+              'Error/Offline')}}
+            </div>
+          </div>
+        </c-card-body>
+      </c-card>
+    </c-col>
+
+    <!-- Total Peers Card -->
+    <c-col sm="4">
+      <c-card class="shadow-sm border-0 h-100 bg-primary text-white">
+        <c-card-body class="p-3 d-flex align-items-center">
+          <div class="me-3 fs-2 opacity-75">
+            <i class="fas fa-network-wired"></i>
+          </div>
+          <div>
+            <div class="text-uppercase fw-semibold" style="font-size: 0.75rem; letter-spacing: 0.5px; opacity: 0.8;">
+              Connected Peers</div>
+            <div class="fs-5 fw-bold mt-1">
+              {{ source.length }} Active
+            </div>
+          </div>
+        </c-card-body>
+      </c-card>
+    </c-col>
+
+    <!-- Total Traffic Card -->
+    <c-col sm="4">
+      <c-card class="shadow-sm border-0 h-100 bg-info text-white position-relative">
+        <button class="btn btn-sm btn-light position-absolute top-0 end-0 m-2" style="opacity: 0.8; z-index: 2;"
+          (click)="promptResetServer()" cTooltip="Reset Server Counters">
+          <i class="fa-solid fa-redo"></i>
+        </button>
+        <c-card-body class="p-3 d-flex align-items-center">
+          <div class="me-3 fs-3 opacity-75">
+            <i class="fas fa-satellite-dish"></i>
+          </div>
+          <div class="w-100">
+            <div class="d-flex justify-content-between text-uppercase fw-semibold"
+              style="font-size: 0.70rem; letter-spacing: 0.5px; opacity: 0.8;">
+              <span>Live Speed</span>
+              <span>Total Vol</span>
+            </div>
+            <div class="d-flex justify-content-between mt-1 w-100">
+              <!-- Live Speeds -->
+              <div class="d-flex flex-column" style="font-size: 0.8rem; font-weight: 500;">
+                <span class="text-nowrap" [ngClass]="{'text-success': liveSpeedRx !== 0}">⬇ {{ formatBytes(liveSpeedRx)
+                  }}/s</span>
+                <span class="text-nowrap" [ngClass]="{'text-warning': liveSpeedTx !== 0}">⬆ {{ formatBytes(liveSpeedTx)
+                  }}/s</span>
+              </div>
+
+              <!-- Total Volumes -->
+              <div class="d-flex flex-column text-end" style="font-size: 0.8rem; font-weight: 500;">
+                <span class="text-nowrap">⬇ {{ (totalRx / 1048576) | number:'1.1-2' }} MB</span>
+                <span class="text-nowrap">⬆ {{ (totalTx / 1048576) | number:'1.1-2' }} MB</span>
+              </div>
+            </div>
+          </div>
+        </c-card-body>
+      </c-card>
+    </c-col>
+  </c-row>
+
+  <!-- Traffic Chart -->
+  <c-row class="mb-4">
+    <c-col sm="12">
+      <c-card class="shadow-sm border-0">
+        <c-card-header>
+          <strong>Live Server Traffic</strong> <small class="text-muted">(Total Cumulative MB)</small>
+        </c-card-header>
+        <c-card-body>
+          <div class="chart-wrapper" style="height: 250px;">
+            <c-chart [data]="chartData" [options]="chartOptions" type="line" height="250"></c-chart>
+          </div>
+        </c-card-body>
+      </c-card>
+    </c-col>
+  </c-row>
+
+  <!-- Peers Table -->
+  <c-row>
+    <c-col xs>
+      <c-card class="mb-4">
+        <c-card-header>
+          <c-row>
+            <c-col xs [lg]="3">
+              <strong>VPN Peers</strong>
+            </c-col>
+            <c-col xs [lg]="9">
+              <h6 style="text-align: right;">
+                <button cButton color="primary" (click)="openServerConfigModal()" class="mx-1" size="sm">
+                  <i class="fas fa-cogs"></i> Server Config
+                </button>
+                <button cButton color="success" (click)="openAddPeerModal()" class="mx-1" size="sm"
+                  style="color: #fff;">
+                  <i class="fa-solid fa-plus"></i> Add Peer
+                </button>
+              </h6>
+            </c-col>
+          </c-row>
+        </c-card-header>
+        <c-card-body>
+          <gui-grid #grid [rowClass]="rowClass" [source]="source" [searching]="searching" [paging]="paging"
+            [columnMenu]="columnMenu" [sorting]="sorting" [infoPanel]="infoPanel" [autoResizeWidth]="true"
+            [loading]="loading">
+
+            <gui-grid-column header="Status" field="status" [width]="50" align="center">
+              <ng-template let-item="item">
+                <i *ngIf="item.status === 'online'" class="fa-solid fa-circle text-success" cTooltip="Online"></i>
+                <i *ngIf="item.status === 'offline'" class="fa-solid fa-circle text-danger" cTooltip="Offline"></i>
+                <i *ngIf="item.status === 'unreachable'" class="fa-solid fa-triangle-exclamation text-warning"
+                  cTooltip="Unreachable (Handshake OK, Ping Failed)"></i>
+                <i *ngIf="!item.status && item.is_enabled" class="fa-solid fa-circle text-info" cTooltip="Enabled"></i>
+                <i *ngIf="!item.status && !item.is_enabled" class="fa-solid fa-circle text-secondary"
+                  cTooltip="Disabled"></i>
+              </ng-template>
+            </gui-grid-column>
+
+            <gui-grid-column header="Identity & IP" field="name" [width]="220">
+              <ng-template let-item="item">
+                <div style="line-height: 1.2;">
+                  <i *ngIf="item.mt_user" class="fas fa-server text-info me-1" cTooltip="Managed MikroTik Device"
+                    style="vertical-align: middle; font-size: 0.9rem;"></i>
+                  <strong class="text-primary fs-6 text-truncate d-inline-block"
+                    style="max-width: 140px; vertical-align: middle;" [title]="item.name || item.assigned_ip">
+                    {{ item.name || item.assigned_ip || (item.public_key | slice:0:8) + '...' }}
+                  </strong>
+                  <c-badge *ngIf="item.is_managed === false" color="secondary" class="ms-1"
+                    style="vertical-align: middle; font-size: 0.65rem;">Unmanaged</c-badge>
+                </div>
+                <div style="font-size: 0.85rem; color: #495057;" class="fw-semibold ms-2">
+                  <i class="fas fa-network-wired opacity-75"></i> {{ item.assigned_ip || 'No IP' }}
+                </div>
+              </ng-template>
+            </gui-grid-column>
+
+            <gui-grid-column header="Details & Description" field="description">
+              <ng-template let-item="item">
+                <div class="d-flex flex-column justify-content-center w-100">
+                  <!-- Description (Bigger if exists, hidden if empty) -->
+                  <div *ngIf="item.description" class="text-muted mb-1 text-wrap"
+                    style="font-size: 0.88rem; line-height: 1.3; font-weight: 500;" [title]="item.description">
+                    {{ item.description }}
+                  </div>
+
+                  <!-- Peer Info (Horizontal flex, smaller if Description exists) -->
+                  <div style="color: #adb5bd;" class="d-flex flex-row align-items-center gap-3"
+                    [ngStyle]="{'font-size': item.description ? '0.7rem' : '0.8rem', 'margin-top': item.description ? '4px' : '0'}">
+                    <div class="text-truncate" title="Public Key" style="max-width: 140px;">
+                      <i class="fas fa-key me-1 opacity-75"></i> {{ item.public_key | slice:0:16 }}...
+                    </div>
+                    <div class="text-truncate" title="Created At">
+                      <i class="fas fa-clock me-1 opacity-75"></i> {{ item.created_at | date:'mediumDate' }}
+                    </div>
+                  </div>
+                </div>
+              </ng-template>
+            </gui-grid-column>
+
+            <gui-grid-column header="Routing & Identity" field="nat_mode" [width]="170">
+              <ng-template let-value="item.nat_mode" let-item="item">
+                <div class="mb-1 mx-1">
+                  <c-badge size="sm"
+                    [color]="value === 'full' ? 'success' : (value === 'split' ? 'info' : 'secondary')">
+                    {{ value | uppercase }}
+                  </c-badge>
+                </div>
+                <div style="font-size: 0.75rem;margin-top: 5px; " class="text-muted">
+                  <i class="fas fa-network-wired"></i> Iface: {{ item.custom_interface || 'Auto' }}
+                </div>
+              </ng-template>
+            </gui-grid-column>
+
+            <gui-grid-column header="Integration" align="center" field="linked_device_id" [width]="250">
+              <ng-template let-item="item">
+                <div class="mb-1">
+                  <a *ngIf="item.linked_device_id" [routerLink]="['/device-stats', {id: item.linked_device_id}]"
+                    target="_blank" class="btn btn-sm btn-outline-primary py-0 px-2"
+                    style="font-size: 0.75rem; transition: all 0.2s;">
+                    <i class="fa-solid fa-link"></i> View Device
+                  </a>
+                  <div class="d-flex flex-row justify-content-center w-100 ng-star-inserted">
+                    <small *ngIf="!item.linked_device_id && !item.scan_status && item.mt_user" class="text-muted">Device
+                      Not Linked</small>
+
+                    <!-- Scan Status Micro-animations -->
+                    <div style="font-size: 0.75rem;"
+                      *ngIf="item.scan_status &&item.scan_status === 'starting' || item.scan_status === 'running'"
+                      class="text-info mx-1 mt-1">
+                      <i class="fas fa-circle-notch fa-spin me-1"></i> Scanning...
+                    </div>
+                    <div style="font-size: 0.75rem;" *ngIf="item.scan_status && item.scan_status === 'completed'"
+                      class="text-success mx-1 mt-1" style="animation: fadeIn 0.5s ease-in-out;">
+                      <i class="fas fa-check-circle me-1"></i> Scan Completed
+                    </div>
+
+                    <div style="font-size: 0.75rem;" *ngIf="item.scan_status &&item.scan_status === 'failed'"
+                      class="text-danger mx-1 mt-1" cTooltip="MikroTik connection or credential validation failed">
+                      <i class="fas fa-exclamation-triangle me-1"></i> Scan Failed
+                    </div>
+
+                    <div style="font-size: 0.75rem;" class="text-secondary mx-1 mt-1">
+                      <i class="fas fa-heartbeat"></i> Keepalive: {{ item.persistent_keepalive }}s
+                    </div>
+
+                  </div>
+
+                </div>
+
+              </ng-template>
+            </gui-grid-column>
+
+            <gui-grid-column align="center" header="Last Handshake" field="stats" [width]="150">
+              <ng-template let-item="item">
+                <div *ngIf="item.stats" style="font-size: 0.85rem;" class="mt-1">
+                  <span *ngIf="item.stats.last_handshake > 0" class="text-secondary fw-semibold">
+                    <i class="fas fa-handshake"></i> {{ item.stats.last_handshake * 1000 | date:'shortTime' }}<br>
+                    <small class="text-muted">{{ item.stats.last_handshake * 1000 | date:'shortDate' }}</small>
+                  </span>
+                  <span *ngIf="!item.stats.last_handshake || item.stats.last_handshake === 0" class="text-muted">
+                    <i class="fas fa-handshake"></i> None
+                  </span>
+                </div>
+                <span *ngIf="!item.stats" class="text-muted text-sm">-</span>
+              </ng-template>
+            </gui-grid-column>
+
+            <gui-grid-column align="center" header="Transfer Speed" field="stats" [width]="130">
+              <ng-template let-item="item">
+                <div *ngIf="item.stats" class="mt-1 flex-column d-flex align-items-start"
+                  style="font-size: 0.75rem; font-family: monospace; font-weight: bold;">
+                  <span [ngStyle]="{'color': item.stats.rx_speed !== 0 ? '#2eb85c' : '#8a93a2'}"
+                    style="transition: color 0.3s ease;">
+                    <i class="fas fa-arrow-down opacity-75"></i> {{ formatBytes(item.stats.rx_speed || 0) }}/s
+                  </span>
+                  <span [ngStyle]="{'color': item.stats.tx_speed !== 0 ? '#3399ff' : '#8a93a2'}" class="mt-1"
+                    style="transition: color 0.3s ease;">
+                    <i class="fas fa-arrow-up opacity-75"></i> {{ formatBytes(item.stats.tx_speed || 0) }}/s
+                  </span>
+                </div>
+                <span *ngIf="!item.stats" class="text-muted text-sm">-</span>
+              </ng-template>
+            </gui-grid-column>
+
+            <gui-grid-column align="center" header="Total Volume" field="stats" [width]="120">
+              <ng-template let-item="item">
+                <div *ngIf="item.stats" class="mt-1 flex-column d-flex align-items-start" style="font-size: 0.75rem;">
+                  <span class="text-success"><i class="fas fa-arrow-down opacity-50"></i> {{(item.stats.rx_bytes /
+                    1048576) | number:'1.2-2'}} MB</span>
+                  <span class="text-info mt-1"><i class="fas fa-arrow-up opacity-50"></i> {{(item.stats.tx_bytes /
+                    1048576) | number:'1.2-2'}} MB</span>
+                </div>
+                <span *ngIf="!item.stats" class="text-muted text-sm">-</span>
+              </ng-template>
+            </gui-grid-column>
+
+            <gui-grid-column align="center" header="State" field="is_enabled" [width]="120">
+              <ng-template let-item="item">
+                <div class="mt-2 d-flex justify-content-center">
+                  <c-form-check [switch]="true">
+                    <input cFormCheckInput type="checkbox" [checked]="item.is_enabled"
+                      (click)="$event.preventDefault(); promptToggleEnabled(item)"
+                      [disabled]="item.is_managed === false" [id]="'switch-peer-' + item.id" />
+                    <label cFormCheckLabel [for]="'switch-peer-' + item.id"
+                      [ngClass]="item.is_enabled ? 'text-success fw-bold' : 'text-secondary'"
+                      style="cursor: pointer; font-size: 0.85rem;">
+                      {{ item.is_enabled ? 'Enabled' : 'Disabled' }}
+                    </label>
+                  </c-form-check>
+                </div>
+              </ng-template>
+            </gui-grid-column>
+
+            <gui-grid-column align="center" header="" field="_search_index" [enabled]="false" [width]="0">
+              <ng-template let-item="item"></ng-template>
+            </gui-grid-column>
+
+            <gui-grid-column align="center" [width]="80" [cellEditing]="false" [sorting]="false" header="Actions">
+              <ng-template let-item="item">
+                <button color="primary" shape="rounded-0" variant="ghost" style="padding: 4px 7px;"
+                  [matMenuTriggerFor]="menu" cButton>
+                  <i class="fa-solid fa-bars"></i>
+                </button>
+                <mat-menu #menu="matMenu">
+                  <div cListGroup>
+                    <button size="sm" cListGroupItem (click)="openEditModal(item)" *ngIf="item.is_managed !== false">
+                      <i class="fa-solid fa-pencil text-primary"></i><small> Edit</small>
+                    </button>
+                    <button *ngIf="item.mt_user && !item.linked_device_id" size="sm" cListGroupItem
+                      (click)="scanDevice(item)">
+                      <i class="fa-solid fa-magnifying-glass text-info"></i><small> Manual Scan</small>
+                    </button>
+                    <button size="sm" cListGroupItem (click)="openScriptModal(item)">
+                      <i class="fa-solid fa-terminal text-secondary"></i><small> MikroTik Script</small>
+                    </button>
+                    <button size="sm" cListGroupItem (click)="openQrModal(item)">
+                      <i class="fa-solid fa-qrcode text-secondary"></i><small> QR Code</small>
+                    </button>
+                    <button size="sm" cListGroupItem (click)="downloadPeerConfigDirect(item)">
+                      <i class="fa-solid fa-download text-secondary"></i><small> Download Config</small>
+                    </button>
+                    <button size="sm" cListGroupItem (click)="promptResetPeer(item)">
+                      <i class="fa-solid fa-sync text-warning"></i><small> Reset Counters</small>
+                    </button>
+                    <button size="sm" cListGroupItem (click)="confirmDelete(item)">
+                      <i class="fa-solid fa-trash text-danger"></i><small> Delete</small>
+                    </button>
+                  </div>
+                </mat-menu>
+              </ng-template>
+            </gui-grid-column>
+
+          </gui-grid>
+        </c-card-body>
+      </c-card>
+    </c-col>
+  </c-row>
+  <!-- MODALS -->
+
+  <!-- Server Config Modal -->
+  <c-modal #ServerConfigModal backdrop="static" [(visible)]="serverConfigModalVisible" id="ServerConfigModal">
+    <c-modal-header>
+      <h6 cModalTitle>VPN Server Configuration</h6>
+      <button [cModalToggle]="ServerConfigModal.id" cButtonClose></button>
+    </c-modal-header>
+    <c-modal-body>
+      <c-input-group class="mb-3">
+        <span cInputGroupText>API Endpoint</span>
+        <input cFormControl [(ngModel)]="serverConfig.api_endpoint" placeholder="http://127.0.0.1:5000" />
+      </c-input-group>
+      <c-input-group class="mb-3">
+        <span cInputGroupText>API Token</span>
+        <input cFormControl type="password" [(ngModel)]="serverConfig.api_token" placeholder="Optional Auth Token" />
+      </c-input-group>
+      <c-input-group class="mb-3">
+        <span cInputGroupText>VPN Subnet</span>
+        <input cFormControl [(ngModel)]="serverConfig.vpn_subnet" placeholder="10.8.0.0/24" />
+      </c-input-group>
+      <c-input-group class="mb-3">
+        <span cInputGroupText>Public Server IP/Host</span>
+        <input cFormControl [(ngModel)]="serverConfig.public_server_ip" placeholder="vpn.mikrowizard.com" />
+      </c-input-group>
+    </c-modal-body>
+    <c-modal-footer>
+      <button cButton color="primary" (click)="saveServerConfig()">Save Changes</button>
+      <button cButton color="secondary" (click)="serverConfigModalVisible = false">Cancel</button>
+    </c-modal-footer>
+  </c-modal>
+
+  <!-- Delete Confirm Modal -->
+  <c-modal #DeleteConfirmModal backdrop="static" [(visible)]="deleteModalVisible" id="DeleteConfirmModal">
+    <c-modal-header>
+      <h6 cModalTitle class="text-danger">Warning: Delete Peer</h6>
+      <button [cModalToggle]="DeleteConfirmModal.id" cButtonClose></button>
+    </c-modal-header>
+    <c-modal-body>
+      <p class="text-danger">
+        <em>Warning: This will permanently remove the VPN tunnel and NAT rules for this peer. Connected devices will
+          lose connection immediately.</em>
+      </p>
+      <p>Are you sure you want to delete peer <strong>{{ peerToDelete?.assigned_ip }}</strong>?</p>
+    </c-modal-body>
+    <c-modal-footer>
+      <button cButton color="danger" (click)="executeDelete()">Yes, Delete Peer</button>
+      <button cButton color="secondary" (click)="deleteModalVisible = false">Cancel</button>
+    </c-modal-footer>
+  </c-modal>
+
+  <!-- Toggle Confirm Modal -->
+  <c-modal #ToggleConfirmModal backdrop="static" [(visible)]="toggleModalVisible" id="ToggleConfirmModal">
+    <c-modal-header>
+      <h6 cModalTitle>Confirm Status Change</h6>
+      <button [cModalToggle]="ToggleConfirmModal.id" cButtonClose></button>
+    </c-modal-header>
+    <c-modal-body>
+      <p>Are you sure you want to <strong [ngClass]="peerToToggle?.is_enabled ? 'text-danger' : 'text-success'">{{
+          peerToToggle?.is_enabled ? 'Disable' : 'Enable' }}</strong> peer <strong class="text-primary">{{
+          peerToToggle?.assigned_ip }}</strong>?</p>
+    </c-modal-body>
+    <c-modal-footer>
+      <button cButton [color]="peerToToggle?.is_enabled ? 'danger' : 'success'" (click)="confirmToggle()">Yes, {{
+        peerToToggle?.is_enabled ? 'Disable' : 'Enable' }}</button>
+      <button cButton color="secondary" (click)="toggleModalVisible = false">Cancel</button>
+    </c-modal-footer>
+  </c-modal>
+
+  <!-- Script Viewer Modal -->
+  <c-modal #ScriptModal backdrop="static" [fullscreen]="true" [(visible)]="scriptModalVisible" id="ScriptModal">
+    <c-modal-header>
+      <h6 cModalTitle>MikroTik Provisioning Script</h6>
+      <button [cModalToggle]="ScriptModal.id" cButtonClose></button>
+    </c-modal-header>
+    <c-modal-body>
+      <div *ngIf="configResult.script">
+        <div style="overflow-y: auto; background-color: #f8f9fa;">
+          <div highlight-js lang="routeros" [options]="{}">{{
+            configResult.script }}</div>
+        </div>
+
+        <div class="mt-3 text-end">
+          <button cButton color="primary" [cdkCopyToClipboard]="configResult.script || ''" (click)="copyScript()">
+            <i class="fas fa-copy"></i> Copy to Clipboard
+          </button>
+        </div>
+      </div>
+    </c-modal-body>
+    <c-modal-footer>
+      <button cButton color="secondary" (click)="scriptModalVisible = false">Close</button>
+    </c-modal-footer>
+  </c-modal>
+
+  <!-- QR Viewer Modal -->
+  <c-modal #QrModal backdrop="static" [(visible)]="qrModalVisible" id="QrModal">
+    <c-modal-header>
+      <h6 cModalTitle>Mobile Quick Setup (QR Code)</h6>
+      <button [cModalToggle]="QrModal.id" cButtonClose></button>
+    </c-modal-header>
+    <c-modal-body>
+      <div *ngIf="configResult.qrBlobUrl" class="text-center mb-3">
+        <img [src]="configResult.qrBlobUrl" alt="WireGuard QR Code"
+          style="max-width: 250px; border: 1px solid #ddd; padding: 10px; border-radius: 8px;" />
+      </div>
+      <div class="alert alert-info py-2 m-0" style="font-size: 0.85rem;">
+        <i class="fas fa-info-circle"></i> <strong>How to connect:</strong> Open the official WireGuard app on your
+        mobile device, tap the <i class="fas fa-plus"></i> button, and select <strong>"Create from QR code"</strong>.
+      </div>
+    </c-modal-body>
+    <c-modal-footer class="d-flex justify-content-between w-100">
+      <div>
+        <button cButton color="primary" variant="outline" size="sm" class="me-2"
+          (click)="activePeerConfig && downloadPeerConfigDirect(activePeerConfig)">
+          <i class="fas fa-download"></i> Download Config
+        </button>
+        <button cButton color="info" variant="outline" size="sm"
+          (click)="activePeerConfig && openScriptModal(activePeerConfig)">
+          <i class="fas fa-terminal"></i> Show Script
+        </button>
+      </div>
+      <button cButton color="secondary" (click)="qrModalVisible = false">Close</button>
+    </c-modal-footer>
+  </c-modal>
+
+  <!-- Add / Edit Peer Wizard Modal -->
+  <c-modal #AddPeerModal backdrop="static" size="lg" [(visible)]="addPeerModalVisible" id="AddPeerModal">
+    <c-modal-header>
+      <h5 cModalTitle>{{ editingPeer ? 'Edit VPN Peer' : 'Create New VPN Peer' }}</h5>
+      <button [cModalToggle]="AddPeerModal.id" cButtonClose></button>
+    </c-modal-header>
+    <c-modal-body>
+      <!-- Step 1: General Info -->
+      <div *ngIf="addPeerStep === 1" style="animation: fadeIn 0.3s ease-in-out;">
+        <h6 class="mb-4 text-primary">Step 1: General Info</h6>
+        <c-input-group class="mb-3">
+          <span cInputGroupText><i class="fas fa-tag"></i></span>
+          <input cFormControl [(ngModel)]="peerForm.name" placeholder="Peer Name (e.g. CEO Laptop)" />
+        </c-input-group>
+        <c-input-group class="mb-3">
+          <span cInputGroupText><i class="fas fa-align-left"></i></span>
+          <textarea cFormControl [(ngModel)]="peerForm.description" placeholder="Optional description..."
+            rows="2"></textarea>
+        </c-input-group>
+      </div>
+
+      <!-- Step 2: Addressing -->
+      <div *ngIf="addPeerStep === 2" style="animation: fadeIn 0.3s ease-in-out;">
+        <h6 class="mb-4 text-primary">Step 2: Addressing</h6>
+        <c-input-group class="mb-3">
+          <span cInputGroupText>Assigned IP</span>
+          <input cFormControl [(ngModel)]="peerForm.custom_ip" placeholder="Leave empty for Auto-assign" />
+        </c-input-group>
+        <c-input-group class="mb-3" *ngIf="editingPeer">
+          <span cInputGroupText>Public Key</span>
+          <input cFormControl [(ngModel)]="peerForm.pubkey" readonly />
+        </c-input-group>
+        <c-input-group class="mb-3">
+          <span cInputGroupText>Keepalive</span>
+          <input cFormControl type="number" [(ngModel)]="peerForm.persistent_keepalive" placeholder="25" />
+          <span cInputGroupText>seconds</span>
+        </c-input-group>
+      </div>
+
+      <!-- Step 3: Routing -->
+      <div *ngIf="addPeerStep === 3" style="animation: fadeIn 0.3s ease-in-out;">
+        <h6 class="mb-4 text-primary">Step 3: Routing</h6>
+        <c-input-group class="mb-3">
+          <span cInputGroupText>NAT Mode</span>
+          <select cSelect [(ngModel)]="peerForm.nat_mode">
+            <option value="full">Full Tunnel (Route all traffic)</option>
+            <option value="split">Split Tunnel (Route specific subnets)</option>
+            <option value="off">Off (Direct Routing)</option>
+          </select>
+        </c-input-group>
+
+        <div *ngIf="peerForm.nat_mode === 'split'" class="mt-3">
+          <h6>Split Tunnel Targets</h6>
+          <div *ngFor="let target of peerForm.split_targets; let i = index; trackBy: trackByIndex" class="d-flex mb-2">
+            <input cFormControl [(ngModel)]="peerForm.split_targets[i]" placeholder="e.g. 192.168.1.0/24"
+              class="me-2" />
+            <button cButton color="danger" variant="outline" (click)="removeSplitTarget(i)"><i
+                class="fas fa-trash"></i></button>
+          </div>
+          <button cButton color="info" size="sm" variant="outline" (click)="addSplitTarget()">
+            <i class="fas fa-plus"></i> Add Subnet
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 4: Identity -->
+      <div *ngIf="addPeerStep === 4" style="animation: fadeIn 0.3s ease-in-out;">
+        <h6 class="mb-4 text-primary">Step 4: Identity & Integrations</h6>
+        <div class="form-check mb-3">
+          <input class="form-check-input" type="checkbox" id="linkDeviceCheck" [(ngModel)]="peerForm.link_device">
+          <label class="form-check-label" for="linkDeviceCheck">
+            Link & Manage as MikroTik Device
+          </label>
+        </div>
+
+        <div *ngIf="peerForm.link_device" class="mt-3" style="animation: fadeIn 0.3s ease-in-out;">
+          <c-input-group class="mb-3">
+            <span cInputGroupText><i class="fas fa-user"></i></span>
+            <input cFormControl [(ngModel)]="peerForm.mt_user" placeholder="MikroTik Username" />
+          </c-input-group>
+          <c-input-group class="mb-3">
+            <span cInputGroupText><i class="fas fa-lock"></i></span>
+            <input cFormControl type="password" [(ngModel)]="peerForm.mt_pass" placeholder="MikroTik Password" />
+          </c-input-group>
+          <c-input-group class="mb-3">
+            <span cInputGroupText><i class="fas fa-network-wired"></i></span>
+            <input cFormControl type="number" [(ngModel)]="peerForm.mt_port" placeholder="8728" />
+          </c-input-group>
+
+          <div class="alert alert-info mt-3" style="font-size: 0.85rem;">
+            <i class="fas fa-info-circle"></i> Once the peer connects and routes traffic (Online), the MikroWizard
+            native scanner will automatically use these credentials in the background to discover and safely add the
+            router into your Devices panel!
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 5: Summary -->
+      <div *ngIf="addPeerStep === 5" style="animation: fadeIn 0.3s ease-in-out;">
+        <h6 class="mb-4 text-primary">Step 5: Summary</h6>
+        <ul class="list-group">
+          <li class="list-group-item"><strong>IP Assignment Preview:</strong> {{ peerForm.custom_ip || 'Auto-assigned'
+            }}</li>
+          <li class="list-group-item"><strong>Routing NAT Mode:</strong> <c-badge color="info">{{ peerForm.nat_mode |
+              uppercase }}</c-badge></li>
+          <li class="list-group-item" *ngIf="peerForm.nat_mode === 'split'"><strong>Split Targets:</strong> {{
+            peerForm.split_targets.join(', ') || 'None' }}</li>
+          <li class="list-group-item"><strong>MikroTik Integration:</strong> {{ peerForm.link_device ? 'Enabled' :
+            'Disabled' }}</li>
+        </ul>
+      </div>
+    </c-modal-body>
+    <c-modal-footer>
+      <button *ngIf="addPeerStep > 1" cButton color="secondary" (click)="addPeerStep = addPeerStep - 1">Back</button>
+      <button *ngIf="addPeerStep < 5" cButton color="primary" (click)="addPeerStep = addPeerStep + 1">Next</button>
+      <button *ngIf="addPeerStep === 5" cButton color="success" (click)="submitPeer()">
+        <i class="fas fa-save"></i> {{ editingPeer ? 'Save Changes' : 'Create Peer' }}
+      </button>
+    </c-modal-footer>
+  </c-modal>
+
+
+
+  <!-- Server Reset Confirm Modal -->
+  <c-modal id="resetServerModal" [visible]="resetServerModalVisible" (visibleChange)="resetServerModalVisible = $event">
+    <c-modal-header class="bg-warning text-dark">
+      <h5 cModalTitle><i class="fas fa-exclamation-triangle"></i> Reset Server Counters</h5>
+      <button cButtonClose (click)="resetServerModalVisible = false"></button>
+    </c-modal-header>
+    <c-modal-body>
+      Are you sure you want to reset all data transfer counters for the VPN Server?
+      <br><br>
+      <small class="text-muted"><i class="fas fa-info-circle"></i> This will immediately set all Total Rx/Tx metrics to
+        zero. This does not disconnect any peers.</small>
+    </c-modal-body>
+    <c-modal-footer>
+      <button cButton color="secondary" (click)="resetServerModalVisible = false">Cancel</button>
+      <button cButton color="warning" (click)="confirmResetServer()">Reset Counters</button>
+    </c-modal-footer>
+  </c-modal>
+
+  <!-- Peer Reset Confirm Modal -->
+  <c-modal id="resetPeerModal" [visible]="resetPeerModalVisible" (visibleChange)="resetPeerModalVisible = $event">
+    <c-modal-header class="bg-warning text-dark">
+      <h5 cModalTitle><i class="fas fa-exclamation-triangle"></i> Reset Peer Counters</h5>
+      <button cButtonClose (click)="resetPeerModalVisible = false"></button>
+    </c-modal-header>
+    <c-modal-body *ngIf="peerToReset">
+      Are you sure you want to reset the traffic counters for peer: <strong>{{ peerToReset.name ||
+        peerToReset.assigned_ip }}</strong>?
+      <br><br>
+      <small class="text-muted"><i class="fas fa-info-circle"></i> This clears their individual Rx/Tx metrics to zero
+        and does not disconnect them.</small>
+    </c-modal-body>
+    <c-modal-footer>
+      <button cButton color="secondary" (click)="resetPeerModalVisible = false">Cancel</button>
+      <button cButton color="warning" (click)="confirmResetPeer()">Reset Counters</button>
+    </c-modal-footer>
+  </c-modal>
+
+  <!-- End of File -->
+</div>
+<c-toaster position="fixed" placement="top-end"></c-toaster>

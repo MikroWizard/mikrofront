@@ -5,17 +5,22 @@ export const navItems: INavData[] = [
     name: 'Dashboard',
     url: '/dashboard',
     iconComponent: { name: 'cil-speedometer' },
-  
+
   },
   {
     name: 'Monitoring Wall',
     url: '/monitoring',
-    icon:'fa-solid fa-tv',
-    attributes: { 'pro':true }
+    icon: 'fa-solid fa-tv',
+    attributes: { 'pro': true }
   },
   {
     title: true,
     name: 'Device Managment'
+  },
+  {
+    name: 'VPN Server',
+    url: '/vpn',
+    icon: 'fa-solid fa-network-wired'
   },
   {
     name: 'Devices',
@@ -31,8 +36,8 @@ export const navItems: INavData[] = [
   {
     name: 'Network Maps',
     url: '/maps',
-    icon:'fa-solid fa-map',
-    attributes: { 'pro':true }
+    icon: 'fa-solid fa-map',
+    attributes: { 'pro': true }
   },
   // {
   //   name: 'Tools',
@@ -71,17 +76,23 @@ export const navItems: INavData[] = [
     icon: 'fa-solid fa-code'
   },
   {
+    name: 'Sequences',
+    url: '/sequences',
+    icon: 'fa-solid fa-code-branch',
+    attributes: { 'pro': true }
+  },
+  {
     name: 'Sync and Cloner',
     url: '/cloner',
     icon: 'fa-solid fa-rotate',
-    attributes: { 'pro':true }
+    attributes: { 'pro': true }
 
   },
   {
     name: 'Password Vault',
     url: '/vault',
-    icon:'fa-solid fa-vault',
-    attributes: { 'pro':true }
+    icon: 'fa-solid fa-vault',
+    attributes: { 'pro': true }
   },
   // {
   //   name: 'Tools',
@@ -134,18 +145,24 @@ export const navItems: INavData[] = [
 
   },
   {
+    name: 'Syslog Custom Regex',
+    url: '/syslog-regex',
+    icon: 'fa-solid fa-code-commit',
+    attributes: { 'pro': true }
+  },
+  {
     title: true,
     name: 'Users'
   },
   {
     name: 'Users Management',
     url: '/user_manager',
-    icon: 'fa-solid fa-user-gear' ,
+    icon: 'fa-solid fa-user-gear',
   },
   {
     name: 'Permissions',
     url: '/permissions',
-    icon: 'fa-solid fa-users' ,
+    icon: 'fa-solid fa-users',
   },
   {
     title: true,
@@ -155,7 +172,7 @@ export const navItems: INavData[] = [
   {
     name: 'Settings',
     url: '/settings',
-    icon: 'fa-solid fa-gear' ,
+    icon: 'fa-solid fa-gear',
   },
   // {
   //   name: 'Backup',
@@ -177,7 +194,7 @@ export const navItems: INavData[] = [
   {
     name: 'Buy Pro',
     url: 'https://mikrowizard.com/pricing/',
-    icon:'fa-solid fa-money-check-dollar',
-    attributes: { 'free':true,target: '_blank' }
+    icon: 'fa-solid fa-money-check-dollar',
+    attributes: { 'free': true, target: '_blank' }
   }
 ];
