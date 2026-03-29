@@ -13,7 +13,9 @@ import {
 
 import { AccRoutingModule } from "./acc-routing.module";
 import { AccComponent } from "./acc.component";
-import { GuiGridModule } from "@generic-ui/ngx-grid";
+import { TableModule } from 'primeng/table';
+import { DrawerModule } from 'primeng/drawer';
+import { InputTextModule } from 'primeng/inputtext';
 
 import { MatDatepickerModule } from "@angular/material/datepicker";
 import { MatInputModule } from "@angular/material/input";
@@ -32,7 +34,9 @@ import { FormsModule } from "@angular/forms";
     ButtonModule,
     FormModule,
     ButtonModule,
-    GuiGridModule,
+    TableModule,
+    DrawerModule,
+    InputTextModule,
     CollapseModule,
     MatFormFieldModule,
     MatInputModule,

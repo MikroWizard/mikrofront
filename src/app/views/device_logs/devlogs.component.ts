@@ -1,19 +1,9 @@
-import { Component, OnInit, ViewEncapsulation,Input } from "@angular/core";
+import { Component, OnInit, ViewChild, ViewEncapsulation, Input } from "@angular/core";
 import { FormControl } from "@angular/forms";
 import { dataProvider } from "../../providers/mikrowizard/data";
 import { Router, ActivatedRoute } from "@angular/router";
 import { loginChecker } from "../../providers/login_checker";
-import {
-  GuiRowDetail,
-  GuiInfoPanel,
-  GuiColumn,
-  GuiColumnMenu,
-  GuiPaging,
-  GuiPagingDisplay,
-  GuiRowSelectionMode,
-  GuiRowSelection,
-  GuiRowSelectionType,
-} from "@generic-ui/ngx-grid";
+import { Table } from 'primeng/table';
 import { formatInTimeZone } from "date-fns-tz";
 import { takeUntil } from "rxjs/operators";
 import { Subject } from "rxjs";
@@ -27,10 +17,14 @@ import { Subject } from "rxjs";
 })
 export class DevLogsComponent implements OnInit {
   @Input() component_devid: any=false;
-  public uid: number;
-  public uname: string;
+  public uid!: number;
+  public uname!: string;
   public tz: string = "UTC"
-  public filterText: string;
+  public filterText!: string;
+  public detailsVisible: boolean = false;
+  public selectedLog: any = null;
+  
+  @ViewChild('dt') table!: Table;
   public filters: any = {
     start_time: false,
     end_time: false,
@@ -73,108 +67,28 @@ export class DevLogsComponent implements OnInit {
     }
   }
   public source: Array<any> = [];
-  public columns: Array<GuiColumn> = [];
   public loading: boolean = true;
   public rows: any = [];
-  public Selectedrows: any;
+  public selected_rows: any[] = [];
+  public Selectedrows: any[] = [];
   public devid: number = 0;
-  public sorting = {
-    enabled: true,
-    multiSorting: true,
-  };
   public bankMultiFilterCtrl: FormControl = new FormControl<string>("");
   protected _onDestroy = new Subject<void>();
 
-  public campaignOnestart: any;
-  public campaignOneend: any;
-  rowDetail: GuiRowDetail = {
-    enabled: true,
-    template: (item) => { 
-      return `
-			<div class='log-detail' style="width: 355px;color:#fff;background-color:${(() => {
-        if (item.level == "Critical") return "#e55353";
-        else if (item.level == "Warning") return "#f9b115";
-        else item.level == "Info";
-        return "#3399ff";
-      })()}">
-			<h1>Device :</h1>
-			<table>
-				<tr>
-					<td>Device Name</td>
-					<td>${item.name}</td>
-				</tr>
-				<tr>
-					<td>Device IP</td>
-					<td>${item.devip}</td>
-				</tr>
-				<tr>
-					<td>Device MAC</td>
-					<td>${item.mac}</td>
-				</tr>
-				</table>
-				<h1 style="margin-top: 10px;">Alert Detail :
-				
-				</h1>
-				<table>
-				<tr>
-					<td>Event</td>
-					<td>${item.detail}</td>
-				</tr>
-				<tr>
-					<td>Event Status</td>
-					<td><span (click)="logger(${item})" style="display:inline-block;background-color:${
-        item.status ? "green" : "#db4848"
-      } ;padding: 4px 10px;border-radius: 5px;line-height: 10px;color: rgba(255, 255, 255, 0.87);">${
-        item.status ? "Fixed" : "Not Fixed"
-      }</span></td>
-				</tr>
-				<tr>
-					<td>Event Category</td>
-					<td>${item.eventtype}</td>
-				</tr>
-				<tr>
-					<td>Exec time</td>
-					<td>${item.eventtime}</td>
-				</tr>
-				<tr>
-					<td>Detail</td>
-					<td>${item.comment}</td>
-				</tr>
-				<tr>
-					<td>Source</td>
-					<td>${item.src}</td>
-				</tr>
-				</table>
-			</div>`;
-    },
-  };
+  getSeverityColor(level: string): string {
+    if (level === "Critical") return "#e55353";
+    if (level === "Warning") return "#f9b115";
+    return "#3399ff";
+  }
 
-  public paging: GuiPaging = {
-    enabled: true,
-    page: 1,
-    pageSize: 10,
-    pageSizes: [5, 10, 25, 50],
-    display: GuiPagingDisplay.ADVANCED,
-  };
+  showLogDetails(log: any) {
+    this.selectedLog = log;
+    this.detailsVisible = true;
+  }
 
-  public columnMenu: GuiColumnMenu = {
-    enabled: true,
-    sort: true,
-    columnsManager: true,
-  };
-
-  public infoPanel: GuiInfoPanel = {
-    enabled: true,
-    infoDialog: false,
-    columnsManager: true,
-    schemaManager: true,
-  };
-
-  public rowSelection: boolean | GuiRowSelection = {
-    enabled: true,
-    type: GuiRowSelectionType.CHECKBOX,
-    mode: GuiRowSelectionMode.MULTIPLE,
-  };
+  applyFilterGlobal($event: any, stringVal: string) {
+    this.table.filterGlobal(($event.target as HTMLInputElement).value, stringVal);
+  }
   ngOnInit(): void {
     var _self = this;
     if (this.component_devid) {

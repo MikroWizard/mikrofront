@@ -7,12 +7,11 @@
 }
 
 .mdc-line-ripple.mdc-line-ripple--deactivating.ng-star-inserted {
-  display: none!important;
+  display: none !important;
 }
 
 /* Settings Container */
 .settings-container {
-  max-width: 1200px;
   margin: 0 auto;
 }
 
@@ -24,7 +23,7 @@
 }
 
 .settings-header {
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  // background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
   border-bottom: 1px solid #dee2e6;
   padding: 1.25rem 1.5rem;
 }
@@ -92,12 +91,12 @@
     padding: 1.5rem;
     transition: all 0.2s ease;
   }
-  
+
   .section-card:hover {
     border-color: #0a58ca;
     background: linear-gradient(135deg, #cfe2ff 0%, #e7f3ff 100%);
   }
-  
+
   .section-header {
     display: flex;
     align-items: center;
@@ -205,7 +204,8 @@
 
 
 /* Form Controls */
-.form-control, .form-select {
+.form-control,
+.form-select {
   border-radius: 6px;
   border: 1px solid #ced4da;
   padding: 0.5rem 0.75rem;
@@ -213,7 +213,8 @@
   transition: all 0.2s ease;
 }
 
-.form-control:focus, .form-select:focus {
+.form-control:focus,
+.form-select:focus {
   border-color: #0d6efd;
   box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
 }
@@ -250,29 +251,30 @@
 
 /* Mobile Responsive for Informative Elements */
 @media (max-width: 768px) {
+
   .info-banner,
   .warning-banner,
   .success-banner {
     padding: 0.5rem 0.75rem;
     font-size: 0.8rem;
   }
-  
+
   .help-icon {
     font-size: 0.75rem;
   }
-  
+
   .setting-help {
     font-size: 0.75rem;
   }
-  
+
   .switch-description {
     font-size: 0.8rem;
   }
-  
+
   .switch-description small {
     font-size: 0.7rem;
   }
-  
+
   ::ng-deep .tooltip-inner {
     max-width: 250px;
     font-size: 0.75rem;
@@ -280,6 +282,7 @@
 }
 
 @media (max-width: 576px) {
+
   .info-banner,
   .warning-banner,
   .success-banner {
@@ -287,7 +290,7 @@
     align-items: flex-start;
     gap: 0.25rem;
   }
-  
+
   .setting-label {
     flex-direction: column;
     align-items: flex-start;
@@ -300,40 +303,40 @@
   .settings-header {
     padding: 1rem;
   }
-  
+
   .settings-tabs {
     padding: 0 1rem;
   }
-  
+
   .tab-content {
     padding: 1rem;
   }
-  
+
   .tab-link {
     padding: 0.75rem 1rem;
     font-size: 0.9rem;
   }
-  
+
   .status-section,
   .config-section,
   .firmware-settings {
     padding: 1rem;
   }
-  
+
   .download-section .section-card {
     padding: 1rem;
   }
-  
+
   .switch-content {
     flex-direction: column;
     align-items: flex-start;
     gap: 1rem;
   }
-  
+
   .switch-info {
     margin-right: 0;
   }
-  
+
   .section-title {
     font-size: 1rem;
   }
@@ -343,15 +346,15 @@
   .settings-container {
     margin: 0 0.5rem;
   }
-  
+
   .settings-card {
     border-radius: 8px;
   }
-  
+
   .tab-content {
     padding: 0.75rem;
   }
-  
+
   .status-section,
   .config-section,
   .firmware-settings {
@@ -421,8 +424,15 @@
 
 /* Animation for dropdown */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .search-dropdown {
@@ -618,16 +628,4 @@
   background: #f8d7da;
   color: #721c24;
   border: 1px solid #f5c6cb;
-}
-
-/* Grid Enhancements */
-::ng-deep .gui-grid {
-  .gui-grid-header {
-    background: #f8f9fa;
-    font-weight: 600;
-  }
-  
-  .gui-grid-cell {
-    padding: 0.75rem 0.5rem;
-  }
 }

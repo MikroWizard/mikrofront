@@ -4,19 +4,22 @@
       <c-col xs="12" md="6">
         <div class="nav nav-underline bg-transparent">
           <div class="nav-item">
-            <a [active]="activetab==0" class="nav-link" [cTabContent]="tabContent" (click)="activetab=0" [tabPaneIdx]="0">
+            <a [active]="activetab==0" class="nav-link" [cTabContent]="tabContent" (click)="activetab=0"
+              [tabPaneIdx]="0">
               <i class="fas fa-cog me-1"></i>Settings
             </a>
           </div>
           <div class="nav-item">
-            <a [active]="activetab==1" class="nav-link" [cTabContent]="tabContent" (click)="get_passwords();activetab=1" [tabPaneIdx]="1">
+            <a [active]="activetab==1" class="nav-link" [cTabContent]="tabContent" (click)="get_passwords();activetab=1"
+              [tabPaneIdx]="1">
               <i class="fas fa-key me-1"></i>Passwords
             </a>
           </div>
         </div>
       </c-col>
       <c-col xs="12" md="6" class="text-end mt-2 mt-md-0">
-        <button *ngIf="activetab==0" cButton size="sm" class="me-2" (click)="runConfirmModalVisible=!runConfirmModalVisible" color="danger">
+        <button *ngIf="activetab==0" cButton size="sm" class="me-2"
+          (click)="runConfirmModalVisible=!runConfirmModalVisible" color="danger">
           <i class="fas fa-play me-1"></i>Execute Now
         </button>
         <button *ngIf="activetab==1" cButton size="sm" (click)="toggleCollapse()" color="info">
@@ -36,11 +39,12 @@
             <i class="fas fa-cog text-primary me-2 fs-4"></i>
             <div>
               <h5 class="mb-1">Password Vault Settings</h5>
-              <p class="text-muted mb-0 small">Configure automated password management for your device groups. Set schedules, define password policies, and manage affected devices.</p>
+              <p class="text-muted mb-0 small">Configure automated password management for your device groups. Set
+                schedules, define password policies, and manage affected devices.</p>
             </div>
           </div>
         </div>
-        
+
         <!-- Password Vault Configuration -->
         <div class="mb-4 pb-4 border-bottom">
           <h6 class="mb-3"><i class="fas fa-shield-alt me-2"></i>Password Vault Configuration</h6>
@@ -54,7 +58,8 @@
               </select>
             </c-col>
             <c-col xs="12" md="6" lg="3">
-              <label class="form-label small">Strategy <i class="fas fa-info-circle text-info ms-1" [cTooltip]="strategyTooltipTemplate" cTooltipPlacement="top"></i></label>
+              <label class="form-label small">Strategy <i class="fas fa-info-circle text-info ms-1"
+                  [cTooltip]="strategyTooltipTemplate" cTooltipPlacement="top"></i></label>
               <select cSelect size="sm" [(ngModel)]="settings['strategy']" class="form-select-sm">
                 <option>Choose...</option>
                 <option value="all">All Local Users</option>
@@ -62,7 +67,8 @@
               </select>
             </c-col>
             <c-col xs="12" md="6" lg="3">
-              <label class="form-label small">Interval <i class="fas fa-info-circle text-info ms-1" [cTooltip]="intervalTooltipTemplate" cTooltipPlacement="top"></i></label>
+              <label class="form-label small">Interval <i class="fas fa-info-circle text-info ms-1"
+                  [cTooltip]="intervalTooltipTemplate" cTooltipPlacement="top"></i></label>
               <select cSelect size="sm" [(ngModel)]="settings['interval']" class="form-select-sm">
                 <option>Choose...</option>
                 <option value="daily">Daily</option>
@@ -74,7 +80,8 @@
               </select>
             </c-col>
             <c-col xs="12" md="6" lg="3">
-              <label class="form-label small">Password Type <i class="fas fa-info-circle text-info ms-1" [cTooltip]="passwordTypeTooltipTemplate" cTooltipPlacement="top"></i></label>
+              <label class="form-label small">Password Type <i class="fas fa-info-circle text-info ms-1"
+                  [cTooltip]="passwordTypeTooltipTemplate" cTooltipPlacement="top"></i></label>
               <select cSelect size="sm" [(ngModel)]="settings['password_type']" class="form-select-sm">
                 <option>Choose...</option>
                 <option value="random">Random</option>
@@ -104,20 +111,26 @@
             </c-col>
           </c-row>
           <div *ngIf="settings['exceptions']?.length > 0">
-            <gui-grid [autoResizeWidth]="true" [source]="settings['exceptions']" [columnMenu]="columnMenu" [paging]="paging" [sorting]="sorting">
-              <gui-grid-column header="Username" field="name">
-                <ng-template let-value="item" let-item="item" let-index="index">
-                  <i class="fas fa-user me-2 text-muted"></i>{{value}}
-                </ng-template>
-              </gui-grid-column>
-              <gui-grid-column header="Actions" width="80" field="action" align="center">
-                <ng-template let-value="item.id" let-item="item" let-index="index">
-                  <button (click)="remove_exception(item)" cButton color="danger" size="sm" variant="outline">
-                    <i class="fas fa-trash"></i>
-                  </button>
-                </ng-template>
-              </gui-grid-column>
-            </gui-grid>
+            <p-table [value]="settings['exceptions']" [showGridlines]="true" [stripedRows]="true"
+              styleClass="p-datatable-sm">
+              <ng-template pTemplate="header">
+                <tr>
+                  <th pSortableColumn="name">Username <p-sortIcon field="name"></p-sortIcon></th>
+                  <th style="width: 80px" class="text-center">Actions</th>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="body" let-item>
+                <tr>
+                  <td><i class="fas fa-user me-2 text-muted"></i>{{item}}</td>
+                  <td class="text-center">
+                    <button (click)="remove_exception(item)" cButton color="danger" size="sm" variant="outline"
+                      pTooltip="Remove Exception">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              </ng-template>
+            </p-table>
           </div>
         </div>
         <!-- Pre-defined Passwords -->
@@ -137,20 +150,26 @@
             </c-col>
           </c-row>
           <div *ngIf="settings['passwords']?.length > 0">
-            <gui-grid [autoResizeWidth]="true" [source]="settings['passwords']" [columnMenu]="columnMenu" [sorting]="sorting" [paging]="paging">
-              <gui-grid-column header="Password" field="name">
-                <ng-template let-value="item" let-item="item" let-index="index">
-                  <i class="fas fa-lock me-2 text-muted"></i>••••••••
-                </ng-template>
-              </gui-grid-column>
-              <gui-grid-column header="Actions" width="80" field="action" align="center">
-                <ng-template let-value="item.id" let-item="item" let-index="index">
-                  <button cButton color="danger" size="sm" variant="outline" (click)="remove_password(item)">
-                    <i class="fas fa-trash"></i>
-                  </button>
-                </ng-template>
-              </gui-grid-column>
-            </gui-grid>
+            <p-table [value]="settings['passwords']" [showGridlines]="true" [stripedRows]="true"
+              styleClass="p-datatable-sm">
+              <ng-template pTemplate="header">
+                <tr>
+                  <th pSortableColumn="name">Password <p-sortIcon field="name"></p-sortIcon></th>
+                  <th style="width: 80px" class="text-center">Actions</th>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="body" let-item>
+                <tr>
+                  <td><i class="fas fa-lock me-2 text-muted"></i>••••••••</td>
+                  <td class="text-center">
+                    <button cButton color="danger" size="sm" variant="outline" (click)="remove_password(item)"
+                      pTooltip="Remove Password">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              </ng-template>
+            </p-table>
           </div>
         </div>
         <!-- Affected Groups -->
@@ -167,20 +186,25 @@
             </c-col>
           </c-row>
           <div *ngIf="Members?.length > 0" class="mb-3">
-            <gui-grid [autoResizeWidth]="true" [source]="Members" [columnMenu]="columnMenu" [sorting]="sorting" [paging]="paging">
-              <gui-grid-column header="Group Name" field="name">
-                <ng-template let-value="item.name" let-item="item" let-index="index">
-                  <i class="fas fa-server me-2 text-primary"></i>{{value}}
-                </ng-template>
-              </gui-grid-column>
-              <gui-grid-column header="Actions" width="80" field="action" align="center">
-                <ng-template let-value="item.id" let-item="item" let-index="index">
-                  <button (click)="delete_group(item.id)" cButton color="danger" size="sm" variant="outline">
-                    <i class="fas fa-trash"></i>
-                  </button>
-                </ng-template>
-              </gui-grid-column>
-            </gui-grid>
+            <p-table [value]="Members" [showGridlines]="true" [stripedRows]="true" styleClass="p-datatable-sm">
+              <ng-template pTemplate="header">
+                <tr>
+                  <th pSortableColumn="name">Group Name <p-sortIcon field="name"></p-sortIcon></th>
+                  <th style="width: 80px" class="text-center">Actions</th>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="body" let-item>
+                <tr>
+                  <td><i class="fas fa-server me-2 text-primary"></i>{{item.name}}</td>
+                  <td class="text-center">
+                    <button (click)="delete_group(item.id)" cButton color="danger" size="sm" variant="outline"
+                      pTooltip="Remove Group">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              </ng-template>
+            </p-table>
           </div>
           <div class="text-end">
             <button cButton color="success" (click)="save_settings()">
@@ -192,25 +216,28 @@
         <!-- Execution History -->
         <div *ngIf="vault_history">
           <h6 class="mb-3"><i class="fas fa-history me-2"></i>Execution Reports</h6>
-          <gui-grid [autoResizeWidth]="true" [source]="vault_history" [columnMenu]="columnMenu" [sorting]="sorting" [paging]="paging">
-            <gui-grid-column header="Start Time" field="started">
-              <ng-template let-value="item.started" let-item="item" let-index="index">
-                <small>{{value}}</small>
-              </ng-template>
-            </gui-grid-column>
-            <gui-grid-column header="End Time" field="ended">
-              <ng-template let-value="item.ended" let-item="item" let-index="index">
-                <small>{{value}}</small>
-              </ng-template>
-            </gui-grid-column>
-            <gui-grid-column header="Results" field="result" align="center" width="100">
-              <ng-template let-value="item['result']" let-item="item" let-index="index">
-                <button (click)="exportToCsv(value)" color="primary" size="sm" cButton variant="outline">
-                  <i class="fas fa-download"></i>
-                </button>
-              </ng-template>
-            </gui-grid-column>
-          </gui-grid>
+          <p-table #dtHistory [value]="vault_history" [paginator]="true" [rows]="10" [showGridlines]="true"
+            [stripedRows]="true" styleClass="p-datatable-sm">
+            <ng-template pTemplate="header">
+              <tr>
+                <th pSortableColumn="started">Start Time <p-sortIcon field="started"></p-sortIcon></th>
+                <th pSortableColumn="ended">End Time <p-sortIcon field="ended"></p-sortIcon></th>
+                <th style="width: 100px" class="text-center">Results</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-item>
+              <tr>
+                <td><small>{{item.started}}</small></td>
+                <td><small>{{item.ended}}</small></td>
+                <td class="text-center">
+                  <button (click)="exportToCsv(item.result)" color="primary" size="sm" cButton variant="outline"
+                    pTooltip="Download CSV">
+                    <i class="fas fa-download"></i>
+                  </button>
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
         </div>
       </c-card-body>
     </c-card>
@@ -224,11 +251,12 @@
             <i class="fas fa-key text-warning me-2 fs-4"></i>
             <div>
               <h5 class="mb-1">Stored Passwords</h5>
-              <p class="text-muted mb-0 small">View and manage passwords stored by the vault system. Use filters to find specific devices or users.</p>
+              <p class="text-muted mb-0 small">View and manage passwords stored by the vault system. Use filters to find
+                specific devices or users.</p>
             </div>
           </div>
         </div>
-        
+
         <!-- Filters -->
         <div class="mb-4 pb-4 border-bottom" [visible]="filters_visible" cCollapse>
           <h6 class="mb-3"><i class="fas fa-filter me-2"></i>Filters</h6>
@@ -257,36 +285,52 @@
         <!-- Stored Passwords -->
         <div *ngIf="passwords">
           <h6 class="mb-3"><i class="fas fa-database me-2"></i>Stored Passwords</h6>
-          <gui-grid [autoResizeWidth]="true" [source]="passwords" [columnMenu]="columnMenu" [sorting]="sorting" [infoPanel]="infoPanel">
-            <gui-grid-column header="Device" field="name">
-              <ng-template let-value="item.name" let-item="item" let-index="index">
-                <div class="d-flex align-items-center">
-                  <i class="fas fa-router me-2 text-primary"></i>
-                  <div>
-                    <div class="fw-semibold">{{value}}</div>
-                    <small class="text-muted">{{item.devip}}</small>
+          <p-table #dtPasswords [value]="passwords" [paginator]="true" [rows]="10" [showGridlines]="true"
+            [stripedRows]="true" [resizableColumns]="true" columnResizeMode="expand"
+            styleClass="p-datatable-sm p-datatable-gridlines p-datatable-striped"
+            [globalFilterFields]="['name', 'devip', 'username', 'changed']" [loading]="loading">
+            <ng-template pTemplate="header">
+              <tr>
+                <th pSortableColumn="name" pResizableColumn>
+                  Device
+                  <p-sortIcon field="name"></p-sortIcon>
+                  <p-columnFilter type="text" field="name" display="menu" class="ms-auto" />
+                </th>
+                <th pSortableColumn="username" pResizableColumn>
+                  User
+                  <p-sortIcon field="username"></p-sortIcon>
+                  <p-columnFilter type="text" field="username" display="menu" class="ms-auto" />
+                </th>
+                <th pSortableColumn="changed" pResizableColumn>
+                  Last Changed
+                  <p-sortIcon field="changed"></p-sortIcon>
+                  <p-columnFilter type="text" field="changed" display="menu" class="ms-auto" />
+                </th>
+                <th style="width: 100px" class="text-center" pResizableColumn>Actions</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-item>
+              <tr>
+                <td>
+                  <div class="d-flex align-items-center">
+                    <i class="fas fa-server me-2 text-primary"></i>
+                    <div>
+                      <div class="fw-semibold">{{item.name}}</div>
+                      <small class="text-muted">{{item.devip}}</small>
+                    </div>
                   </div>
-                </div>
-              </ng-template>
-            </gui-grid-column>
-            <gui-grid-column header="Username" field="username">
-              <ng-template let-value="item.username" let-item="item" let-index="index">
-                <i class="fas fa-user me-2 text-muted"></i>{{value}}
-              </ng-template>
-            </gui-grid-column>
-            <gui-grid-column header="Last Changed" field="changed">
-              <ng-template let-value="item.changed" let-item="item" let-index="index">
-                <small>{{value}}</small>
-              </ng-template>
-            </gui-grid-column>
-            <gui-grid-column header="Actions" width="100" field="action" align="center">
-              <ng-template let-value="item.id" let-item="item" let-index="index">
-                <button cButton *ngIf="ispro" (click)="reveal_password(item.devid,item.username)" color="info" size="sm" variant="outline">
-                  <i class="fas fa-eye"></i>
-                </button>
-              </ng-template>
-            </gui-grid-column>
-          </gui-grid>
+                </td>
+                <td><i class="fas fa-user me-2 text-muted"></i>{{item.username}}</td>
+                <td><small>{{item.changed}}</small></td>
+                <td class="text-center">
+                  <button cButton *ngIf="ispro" (click)="reveal_password(item.devid,item.username)" color="info"
+                    size="sm" variant="outline" pTooltip="View Password">
+                    <i class="fas fa-eye"></i>
+                  </button>
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
         </div>
       </c-card-body>
     </c-card>
@@ -306,7 +350,7 @@
     </div>
     <div class="input-group">
       <span class="input-group-text"><i class="fas fa-key"></i></span>
-      <input [value]="password" cFormControl disabled="true" class="form-control"/>
+      <input [value]="password" cFormControl disabled="true" class="form-control" />
       <button cButton color="secondary" variant="outline" (click)="copyToClipboard(password)">
         <i class="fas fa-copy"></i>
       </button>
@@ -325,7 +369,8 @@
   </c-modal-header>
   <c-modal-body>
     <div class="alert alert-warning">
-      <strong>Warning:</strong> This will execute the password vault job and change passwords on all configured device groups.
+      <strong>Warning:</strong> This will execute the password vault job and change passwords on all configured device
+      groups.
     </div>
     <p>Are you sure you want to proceed with the password vault execution?</p>
   </c-modal-body>
@@ -345,25 +390,50 @@
   </c-modal-header>
   <c-modal-body>
     <p class="text-muted mb-3">Select device groups to include in the password vault task:</p>
-    <gui-grid [autoResizeWidth]="true" *ngIf="NewMemberModalVisible" [searching]="searching"
-      [source]="availbleMembers" [columnMenu]="columnMenu" [sorting]="sorting" [infoPanel]="infoPanel"
-      [rowSelection]="rowSelection" (selectedRows)="onSelectedRowsNewMembers($event)" [paging]="paging">
-      <gui-grid-column header="Group Name" field="name">
-        <ng-template let-value="item.name" let-item="item" let-index="index">
-          <i class="fas fa-server me-2 text-primary"></i>{{value}}
-        </ng-template>
-      </gui-grid-column>
-      <gui-grid-column *ngIf="SelectedTask['selection_type']=='devices'" header="IP Address" field="ip">
-        <ng-template let-value="item.ip" let-item="item" let-index="index">
-          {{value}}
-        </ng-template>
-      </gui-grid-column>
-      <gui-grid-column *ngIf="SelectedTask['selection_type']=='devices'" header="MAC Address" field="mac">
-        <ng-template let-value="item.mac" let-item="item" let-index="index">
-          {{value}}
-        </ng-template>
-      </gui-grid-column>
-    </gui-grid>
+    <div class="mb-3 d-flex justify-content-end">
+      <span class="p-input-icon-left">
+        <i class="pi pi-search"></i>
+        <input type="text" pInputText placeholder="Search groups..." (input)="applyFilterNewMembers($event, 'contains')"
+          class="form-control-sm" />
+      </span>
+    </div>
+
+    <p-table #dtNewMembers [value]="availbleMembers" [paginator]="true" [rows]="10" [showGridlines]="true"
+      [stripedRows]="true" [resizableColumns]="true" columnResizeMode="expand"
+      styleClass="p-datatable-sm p-datatable-gridlines p-datatable-striped" [(selection)]="NewMemberRows"
+      (selectionChange)="onSelectedRowsNewMembers($event)" [globalFilterFields]="['name', 'ip', 'mac']">
+      <ng-template pTemplate="header">
+        <tr>
+          <th style="width: 4rem" pResizableColumn><p-tableHeaderCheckbox></p-tableHeaderCheckbox></th>
+          <th pSortableColumn="name" pResizableColumn>
+            Name
+            <p-sortIcon field="name"></p-sortIcon>
+            <p-columnFilter type="text" field="name" display="menu" class="ms-auto" />
+          </th>
+          <th pSortableColumn="ip" pResizableColumn>
+            IP
+            <p-sortIcon field="ip"></p-sortIcon>
+            <p-columnFilter type="text" field="ip" display="menu" class="ms-auto" />
+          </th>
+          <th pSortableColumn="mac" pResizableColumn>
+            MAC
+            <p-sortIcon field="mac"></p-sortIcon>
+            <p-columnFilter type="text" field="mac" display="menu" class="ms-auto" />
+          </th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-item>
+        <tr>
+          <td><p-tableCheckbox [value]="item"></p-tableCheckbox></td>
+          <td>
+            <div class="d-flex align-items-center">
+              <i class="fas fa-server me-2 text-primary"></i>
+              <strong>{{item.name}}</strong>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
   </c-modal-body>
   <c-modal-footer>
     <button *ngIf="NewMemberRows.length != 0" (click)="add_new_members()" cButton color="primary">

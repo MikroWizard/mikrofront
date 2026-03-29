@@ -18,9 +18,10 @@ export const navItems: INavData[] = [
     name: 'Device Managment'
   },
   {
-    name: 'VPN Server',
+    name: 'WireGuard Server',
     url: '/vpn',
-    icon: 'fa-solid fa-network-wired'
+    icon: 'fa-solid fa-network-wired',
+    attributes: { 'pro': true }
   },
   {
     name: 'Devices',

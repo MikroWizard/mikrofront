@@ -14,44 +14,90 @@
         </c-row>
       </c-card-header>
       <c-card-body>
-        <gui-grid [autoResizeWidth]="true" [source]="source" [columnMenu]="columnMenu" [sorting]="sorting"
-          [infoPanel]="infoPanel" [autoResizeWidth]=true>
-          <gui-grid-column header="Name" field="name">
-            <ng-template let-value="item.name" let-item="item" let-index="index">
-              <i *ngIf="item.task_type=='snippet'" class="fa-solid fa-code"></i>
-              <i *ngIf="item.task_type=='backup'" class="fa-solid fa-database"></i>
-              <i *ngIf="item.task_type=='firmware'" class="fa-solid fa-upload"></i>
-              <i *ngIf="item.task_type=='sequence'" class="fa-solid fa-code-branch"></i>
-              &nbsp; {{value}} </ng-template>
-          </gui-grid-column>
-          <gui-grid-column header="Description" field="description">
-            <ng-template let-value="item.description" let-item="item" let-index="index">
-              {{value}}
-            </ng-template>
-          </gui-grid-column>
-          <gui-grid-column header="Members type" field="selection_type">
-            <ng-template let-value="item.selection_type" let-item="item" let-index="index">
-              {{value}}
-            </ng-template>
-          </gui-grid-column>
+        <div class="mb-3 d-flex justify-content-end">
+          <span class="p-input-icon-left table-search-input">
+            <i class="pi pi-search"></i>
+            <input type="text" pInputText placeholder="Search tasks..." (input)="applyFilterGlobal($event, 'contains')"
+              class="form-control-sm" />
+          </span>
+        </div>
 
-          <gui-grid-column header="Runtime" field="desc_cron">
-            <ng-template let-value="item.desc_cron" let-item="item" let-index="index">
-              {{value}}
-            </ng-template>
-          </gui-grid-column>
+        <p-table #dt [value]="source" [paginator]="true" [rows]="10" [showCurrentPageReport]="true"
+          [rowsPerPageOptions]="[10, 25, 50]" [resizableColumns]="true" columnResizeMode="expand" [showGridlines]="true"
+          [stripedRows]="true" styleClass="p-datatable-sm p-datatable-gridlines p-datatable-striped"
+          [globalFilterFields]="['name', 'description', 'desc_cron']" [loading]="loading">
 
-          <gui-grid-column header="Actions" width="120" field="action">
-            <ng-template let-value="item.id" let-item="item" let-index="index">
-              <button cButton color="warning" size="sm" (click)="editAddTask(item,'edit');"><i
-                  class="fa-regular fa-pen-to-square"></i></button>
-              <!-- <button cButton color="info" size="sm" (click)="confirm_run(item);" class="mx-1"><i
-                  class="fa-solid fa-bolt"></i></button> -->
-              <button class=" mx-1" cButton color="danger" size="sm" (click)="confirm_delete(item);"><i
-                  class="fa-regular fa-trash-can"></i></button>
-            </ng-template>
-          </gui-grid-column>
-        </gui-grid>
+          <ng-template pTemplate="header">
+            <tr>
+              <th pSortableColumn="name" pResizableColumn>
+                <div class="justify-between">
+                  <span>Name</span>
+                  <span>
+                    <p-sortIcon field="name"></p-sortIcon>
+                    <p-columnFilter type="text" field="name" display="menu" class="ms-auto" />
+                  </span>
+                </div>
+              </th>
+              <th pSortableColumn="description" pResizableColumn>
+                <div class="justify-between">
+                  <span>Description</span>
+                  <span>
+                    <p-sortIcon field="description"></p-sortIcon>
+                    <p-columnFilter type="text" field="description" display="menu" class="ms-auto" />
+                  </span>
+                </div>
+              </th>
+              <th pSortableColumn="selection_type" pResizableColumn>
+                <div class="justify-between">
+                  <span>Members type</span>
+                  <span>
+                    <p-sortIcon field="selection_type"></p-sortIcon>
+                    <p-columnFilter type="text" field="selection_type" display="menu" class="ms-auto" />
+                  </span>
+                </div>
+              </th>
+              <th pSortableColumn="desc_cron" pResizableColumn>
+                <div class="justify-between">
+                  <span>Runtime</span>
+                  <p-sortIcon field="desc_cron"></p-sortIcon>
+                  <p-columnFilter type="text" field="desc_cron" display="menu" class="ms-auto" />
+                </div>
+              </th>
+              <th style="width: 120px" class="text-center" pResizableColumn>Actions</th>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="body" let-item>
+            <tr>
+              <td>
+                <i *ngIf="item.task_type=='snippet'" class="fa-solid fa-code me-1"></i>
+                <i *ngIf="item.task_type=='backup'" class="fa-solid fa-database me-1"></i>
+                <i *ngIf="item.task_type=='firmware'" class="fa-solid fa-upload me-1"></i>
+                <i *ngIf="item.task_type=='sequence'" class="fa-solid fa-code-branch me-1"></i>
+                <strong>{{item.name}}</strong>
+              </td>
+              <td>{{item.description}}</td>
+              <td><c-badge color="info" variant="outline">{{item.selection_type}}</c-badge></td>
+              <td>{{item.desc_cron}}</td>
+              <td class="text-center">
+                <div class="d-flex gap-1 justify-content-center">
+                  <button cButton color="warning" size="sm" (click)="editAddTask(item,'edit');" pTooltip="Edit Task">
+                    <i class="fa-regular fa-pen-to-square"></i>
+                  </button>
+                  <button cButton color="danger" size="sm" (click)="confirm_delete(item);" pTooltip="Delete Task">
+                    <i class="fa-regular fa-trash-can"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="5" class="text-center p-4">No tasks found.</td>
+            </tr>
+          </ng-template>
+        </p-table>
       </c-card-body>
     </c-card>
   </c-col>
@@ -299,31 +345,42 @@
               select targets for this task</p>
           </div>
           <div *ngIf="SelectedMembers.length > 0">
-            <gui-grid [autoResizeWidth]="true" [source]="SelectedMembers" [columnMenu]="columnMenu" [sorting]="sorting"
-              [infoPanel]="infoPanel" [autoResizeWidth]=true [paging]="paging">
-              <gui-grid-column header="Name" field="name">
-                <ng-template let-value="item.name" let-item="item" let-index="index">
-                  <div class="d-flex align-items-center">
-                    <i
-                      class="fa-solid fa-{{SelectedTask['selection_type'] === 'devices' ? 'server' : 'layer-group'}} me-2 text-primary"></i>
-                    <strong>{{value}}</strong>
-                  </div>
-                </ng-template>
-              </gui-grid-column>
-              <gui-grid-column *ngIf="SelectedTask['selection_type']=='devices'" header="MAC Address" field="mac">
-                <ng-template let-value="item.mac" let-item="item" let-index="index">
-                  <small class="text-muted">{{value}}</small>
-                </ng-template>
-              </gui-grid-column>
-              <gui-grid-column header="Actions" width="100" field="action" align="CENTER">
-                <ng-template let-value="item.id" let-item="item" let-index="index">
-                  <button cButton color="danger" size="sm" variant="outline" (click)="remove_member(item)"
-                    title="Remove from task">
-                    <i class="fa-solid fa-times"></i>
-                  </button>
-                </ng-template>
-              </gui-grid-column>
-            </gui-grid>
+            <p-table [value]="SelectedMembers" [paginator]="true" [rows]="10" [showGridlines]="true"
+              [stripedRows]="true" styleClass="p-datatable-sm">
+              <ng-template pTemplate="header">
+                <tr>
+                  <th pSortableColumn="name">Name <p-sortIcon field="name"></p-sortIcon></th>
+                  <th *ngIf="SelectedTask['selection_type']=='devices'" pSortableColumn="mac">MAC Address <p-sortIcon
+                      field="mac"></p-sortIcon></th>
+                  <th style="width: 100px" class="text-center">Actions</th>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="body" let-item>
+                <tr>
+                  <td>
+                    <div class="d-flex align-items-center">
+                      <i
+                        class="fa-solid fa-{{SelectedTask['selection_type'] === 'devices' ? 'server' : 'layer-group'}} me-2 text-primary"></i>
+                      <strong>{{item.name}}</strong>
+                    </div>
+                  </td>
+                  <td *ngIf="SelectedTask['selection_type']=='devices'"><small class="text-muted">{{item.mac}}</small>
+                  </td>
+                  <td class="text-center">
+                    <button cButton color="danger" size="sm" variant="outline" (click)="remove_member(item)"
+                      pTooltip="Remove from task">
+                      <i class="fa-solid fa-times"></i>
+                    </button>
+                  </td>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="emptymessage">
+                <tr>
+                  <td [attr.colspan]="SelectedTask['selection_type']=='devices' ? 3 : 2" class="text-center p-2">No
+                    targets selected.</td>
+                </tr>
+              </ng-template>
+            </p-table>
           </div>
         </c-card-body>
       </c-card>
@@ -404,30 +461,50 @@
           <p class="mb-0">No available {{SelectedTask['selection_type']}} to add to this task</p>
         </div>
         <div *ngIf="availbleMembers.length > 0">
-          <gui-grid [autoResizeWidth]="true" *ngIf="NewMemberModalVisible" [searching]="searching"
-            [source]="availbleMembers" [columnMenu]="columnMenu" [sorting]="sorting" [infoPanel]="infoPanel"
-            [rowSelection]="rowSelection" (selectedRows)="onSelectedRowsNewMembers($event)" [autoResizeWidth]=true
-            [paging]="paging">
-            <gui-grid-column header="Name" field="name">
-              <ng-template let-value="item.name" let-item="item" let-index="index">
-                <div class="d-flex align-items-center">
-                  <i
-                    class="fa-solid fa-{{SelectedTask['selection_type'] === 'devices' ? 'server' : 'layer-group'}} me-2 text-primary"></i>
-                  <strong>{{value}}</strong>
-                </div>
-              </ng-template>
-            </gui-grid-column>
-            <gui-grid-column *ngIf="SelectedTask['selection_type']=='devices'" header="IP Address" field="ip">
-              <ng-template let-value="item.ip" let-item="item" let-index="index">
-                <c-badge color="secondary">{{value}}</c-badge>
-              </ng-template>
-            </gui-grid-column>
-            <gui-grid-column *ngIf="SelectedTask['selection_type']=='devices'" header="MAC Address" field="mac">
-              <ng-template let-value="item.mac" let-item="item" let-index="index">
-                <small class="text-muted">{{value}}</small>
-              </ng-template>
-            </gui-grid-column>
-          </gui-grid>
+          <div class="mb-3 d-flex justify-content-end w-100">
+            <span class="p-input-icon-left">
+              <i class="pi pi-search"></i>
+              <input type="text" pInputText placeholder="Search available..."
+                (input)="applyFilterNewMembers($event, 'contains')" class="form-control-sm" />
+            </span>
+          </div>
+
+          <p-table #dtNewMembers [value]="availbleMembers" [paginator]="true" [rows]="10" [showGridlines]="true"
+            [stripedRows]="true" styleClass="p-datatable-sm" [(selection)]="NewMemberRows"
+            (selectionChange)="onSelectedRowsNewMembers($event)" [globalFilterFields]="['name', 'ip', 'mac']">
+            <ng-template pTemplate="header">
+              <tr>
+                <th style="width: 4rem"><p-tableHeaderCheckbox></p-tableHeaderCheckbox></th>
+                <th pSortableColumn="name">Name <p-sortIcon field="name"></p-sortIcon></th>
+                <th *ngIf="SelectedTask['selection_type']=='devices'" pSortableColumn="ip">IP Address <p-sortIcon
+                    field="ip"></p-sortIcon></th>
+                <th *ngIf="SelectedTask['selection_type']=='devices'" pSortableColumn="mac">MAC Address <p-sortIcon
+                    field="mac"></p-sortIcon></th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-item>
+              <tr>
+                <td><p-tableCheckbox [value]="item"></p-tableCheckbox></td>
+                <td>
+                  <div class="d-flex align-items-center">
+                    <i
+                      class="fa-solid fa-{{SelectedTask['selection_type'] === 'devices' ? 'server' : 'layer-group'}} me-2 text-primary"></i>
+                    <strong>{{item.name}}</strong>
+                  </div>
+                </td>
+                <td *ngIf="SelectedTask['selection_type']=='devices'"><c-badge color="secondary">{{item.ip}}</c-badge>
+                </td>
+                <td *ngIf="SelectedTask['selection_type']=='devices'"><small class="text-muted">{{item.mac}}</small>
+                </td>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+              <tr>
+                <td [attr.colspan]="SelectedTask['selection_type']=='devices' ? 4 : 2" class="text-center p-4">No
+                  available targets found.</td>
+              </tr>
+            </ng-template>
+          </p-table>
         </div>
       </c-card-body>
     </c-card>
@@ -511,7 +588,7 @@
     </table>
   </c-modal-body>
   <c-modal-footer>
-    <button (click)="confirm_delete" cButton color="danger">
+    <button (click)="confirm_delete('',true)" cButton color="danger">
       Yes,Run!
     </button>
     <button [cModalToggle]="runConfirmModal.id" cButton color="info">

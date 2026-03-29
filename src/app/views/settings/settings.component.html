@@ -1,511 +1,565 @@
-<div class="settings-container">
-  <c-card class="settings-card">
-    <c-card-header class="settings-header">
-      <div class="d-flex align-items-center justify-content-between">
-        <div class="d-flex align-items-center">
-          <i class="fa-solid fa-cog me-2 text-primary"></i>
-          <h4 class="mb-0">System Settings</h4>
-        </div>
-        <c-badge color="info" class="fs-6">Admin Panel</c-badge>
-      </div>
-    </c-card-header>
-    
-    <div class="settings-tabs">
-      <button class="tab-link" [class.active]="activeTab === 'firmware'" (click)="activeTab = 'firmware'">
-        <i class="fa-solid fa-microchip me-2"></i>Firmware Manager
-      </button>
-      <button class="tab-link" [class.active]="activeTab === 'system'" (click)="activeTab = 'system'">
-        <i class="fa-solid fa-server me-2"></i>System Configuration
-      </button>
-    </div>
+<c-row>
+  <c-col xs>
 
-    <!-- Firmware Tab -->
-    <c-card-body *ngIf="activeTab === 'firmware'" class="tab-content">
-      <!-- Repository Status -->
-      <div class="status-section mb-4">
-        <div class="d-flex align-items-center justify-content-between mb-3">
-          <h5 class="section-title mb-0">
-            <i class="fa-solid fa-database me-2 text-success"></i>Firmware Repository
-            <i class="fa-solid fa-info-circle ms-2 text-info help-icon" 
-              [cTooltip]="'Local firmware repository stores RouterOS versions for offline installation. Devices can be updated without internet access.'" 
-              cTooltipPlacement="top"></i>
-          </h5>
-          <c-badge color="success" class="fs-6">
-            <i class="fa-solid fa-check-circle me-1"></i>{{source.length}} Versions Available
-          </c-badge>
-        </div>
-        <div class="info-banner mb-3">
-          <i class="fa-solid fa-lightbulb me-2"></i>
-          <span><strong>Tip:</strong> Keep multiple firmware versions for compatibility. Always test updates on non-critical devices first.</span>
-        </div>
-        
-        <gui-grid [autoResizeWidth]="true" [source]="source" [columnMenu]="columnMenu" [sorting]="sorting"
-          [infoPanel]="infoPanel" [paging]="paging" class="compact-grid">
-          <gui-grid-column header="Version" field="version">
-            <ng-template let-value="item.version" let-item="item" let-index="index">
-              <c-badge color="primary" class="version-badge">{{value}}</c-badge>
-            </ng-template>
-          </gui-grid-column>
-          <gui-grid-column header="Architecture" field="architecture">
-            <ng-template let-value="item.architecture" let-item="item" let-index="index">
-              <c-badge color="secondary">{{value}}</c-badge>
-            </ng-template>
-          </gui-grid-column>
-          <gui-grid-column header="SHA256" field="sha256">
-            <ng-template let-value="item.sha256" let-item="item" let-index="index">
-              <small class="text-muted font-monospace">{{value.substring(0, 16)}}...</small>
-            </ng-template>
-          </gui-grid-column>
-          <gui-grid-column header="Actions" width="100" field="action" align="CENTER">
-            <ng-template let-value="item.id" let-item="item" let-index="index">
-              <button cButton color="danger" size="sm" variant="outline" (click)="delete_fimrware(item)" title="Delete firmware">
-                <i class="fa-solid fa-trash"></i>
-              </button>
-            </ng-template>
-          </gui-grid-column>
-        </gui-grid>
-      </div>
+    <div class="settings-container">
+      <c-card class="settings-card">
+        <c-card-header class="settings-header">
+          <div class="d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center">
+              <i class="fa-solid fa-cog me-2 text-primary"></i>
+              <h6 class="mb-0">System Settings</h6>
+            </div>
+          </div>
+        </c-card-header>
 
-      <!-- Download Section -->
-      <div class="download-section mb-4">
-        <div class="section-card">
-          <div class="section-header">
-            <i class="fa-solid fa-download me-2 text-primary"></i>
-            <span class="fw-semibold">Download New Firmware</span>
-            <i class="fa-solid fa-question-circle ms-2 text-info help-icon" 
-              [cTooltip]="'Downloads firmware from MikroTik servers. Requires internet access. Downloaded files are verified for integrity.'" 
-              cTooltipPlacement="top"></i>
-          </div>
-          <div class="warning-banner mb-2" *ngIf="!loading">
-            <i class="fa-solid fa-wifi me-2"></i>
-            <span><strong>Internet Required:</strong> Downloads from mikrotik.com. Ensure stable connection and access to mikrotik.com domain.</span>
-          </div>
-          <c-row class="g-3 mt-2" *ngIf="!loading">
-            <c-col md="8">
-              <div class="search-select-wrapper">
-                <label class="form-label">Select RouterOS Version</label>
-                <input cFormControl 
-                  [(ngModel)]="firmwareSearch" 
-                  (input)="filterFirmwares($event)"
-                  (focus)="showFirmwareDropdown = true"
-                  (blur)="hideFirmwareDropdown()"
-                  placeholder="Search and select version..."
-                  class="search-input"
-                  autocomplete="off" />
-                <div *ngIf="showFirmwareDropdown && filteredFirmwares.length > 0" class="search-dropdown">
-                  <div *ngFor="let firm of filteredFirmwares" 
-                    class="search-option" 
-                    (mousedown)="selectFirmware(firm)">
-                    {{firm}}
-                  </div>
-                </div>
-                <div *ngIf="showFirmwareDropdown && filteredFirmwares.length === 0 && firmwareSearch" class="search-no-results">
-                  No versions found
-                </div>
-              </div>
-            </c-col>
-            <c-col md="4" class="d-flex align-items-end">
-              <button cButton color="primary" class="w-100" (click)="ConfirmModalVisible=true" [disabled]="!firmtodownload">
-                <i class="fa-solid fa-download me-1"></i>Download
-              </button>
-            </c-col>
-          </c-row>
-          <div *ngIf="loading" class="text-center py-3">
-            <c-spinner size="sm" class="me-2"></c-spinner>
-            <span class="text-muted">Fetching available versions from MikroTik...</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Firmware Settings -->
-      <div class="firmware-settings">
-        <h5 class="section-title mb-3">
-          <i class="fa-solid fa-cogs me-2 text-warning"></i>Update Configuration
-          <i class="fa-solid fa-info-circle ms-2 text-info help-icon" 
-            [cTooltip]="'These settings control how MikroWizard handles firmware updates across your network. Changes affect all future update operations.'" 
-            cTooltipPlacement="top"></i>
-        </h5>
-        <div class="info-banner mb-3">
-          <i class="fa-solid fa-shield-alt me-2"></i>
-          <span><strong>Best Practice:</strong> Use "Keep v6" for legacy devices. Test new firmware versions in lab environment first.</span>
-        </div>
-        
-        <c-row class="g-3">
-          <c-col md="6">
-            <div class="setting-group">
-              <label class="setting-label">V6 Firmware Behavior
-                <i class="fa-solid fa-question-circle ms-1 text-info help-icon" 
-                  [cTooltip]="'Choose how to handle RouterOS v6 devices: keep them on v6 with selected v6 firmware, or upgrade them to v7 with selected v7 firmware.'" 
-                  cTooltipPlacement="top"></i>
-              </label>
-              <select cSelect [(ngModel)]="updateBehavior" class="form-select">
-                <option value="">Choose behavior...</option>
-                <option value="keep">🛡️ Keep v6 (v6 devices get V6 Firmware Version, v7 devices get Default Firmware Version)</option>
-                <option value="update">⬆️ Upgrade to v7 (all v6 routers will be upgraded to v7)</option>
-              </select>
-              <small class="setting-help">📋 <strong>Keep v6:</strong> v6 devices use V6 Firmware Version, v7 devices use Default Firmware Version</small>
-            </div>
-          </c-col>
-          
-          <c-col md="6">
-            <div class="setting-group">
-              <label class="setting-label">Default Firmware Version
-                <i class="fa-solid fa-question-circle ms-1 text-info help-icon" 
-                  [cTooltip]="'This version will be installed on new devices added to MikroWizard. Choose stable LTS versions for production.'" 
-                  cTooltipPlacement="top"></i>
-              </label>
-              <select cSelect [(ngModel)]="firmwaretoinstall" class="form-select">
-                <option value="">Choose version...</option>
-                <option *ngFor="let f of available_firmwares" [value]="f">{{f}}</option>
-              </select>
-              <small class="setting-help">💡 <strong>Tip:</strong> Choose stable releases for production. LTS versions are only available for v6 firmware</small>
-            </div>
-          </c-col>
-          
-          <c-col md="6" *ngIf="updateBehavior === 'keep'">
-            <div class="setting-group">
-              <label class="setting-label">V6 Firmware Version</label>
-              <select cSelect [(ngModel)]="firmwaretoinstallv6" class="form-select">
-                <option value="">Choose v6 version...</option>
-                <option *ngFor="let f of available_firmwaresv6" [value]="f">{{f}}</option>
-              </select>
-              <small class="setting-help">Firmware version for RouterOS v6 devices</small>
-            </div>
-          </c-col>
-        </c-row>
-        
-        <div class="mt-3">
-          <button cButton color="primary" (click)="saveFirmwareSetting()">
-            <i class="fa-solid fa-save me-1"></i>Save Firmware Settings
+        <div class="settings-tabs">
+          <button class="tab-link" [class.active]="activeTab === 'firmware'" (click)="activeTab = 'firmware'">
+            <i class="fa-solid fa-microchip me-2"></i>Firmware Manager
+          </button>
+          <button class="tab-link" [class.active]="activeTab === 'system'" (click)="activeTab = 'system'">
+            <i class="fa-solid fa-server me-2"></i>System Configuration
           </button>
         </div>
-      </div>
-    </c-card-body>
 
-    <!-- System Tab -->
-    <c-card-body *ngIf="activeTab === 'system' && !SysConfigloading" class="tab-content">
-      <!-- Network Configuration -->
-      <div class="config-section mb-4">
-        <h5 class="section-title mb-3">
-          <i class="fa-solid fa-network-wired me-2 text-primary"></i>Network Configuration
-          <i class="fa-solid fa-info-circle ms-2 text-info help-icon" 
-            [cTooltip]="'Basic network settings for MikroWizard system access and device communication. Ensure these match your network setup.'" 
-            cTooltipPlacement="top"></i>
-        </h5>
-        <div class="info-banner mb-3">
-          <i class="fa-solid fa-network-wired me-2"></i>
-          <span><strong>Network Setup:</strong> Configure these settings to match your network infrastructure for proper device communication.</span>
-        </div>
-        
-        <c-row class="g-3">
-          <c-col md="6">
-            <div class="setting-group">
-              <label class="setting-label">System URL
-                <i class="fa-solid fa-question-circle ms-1 text-info help-icon" 
-                  [cTooltip]="'URL or IP address where MikroWizard is accessible. Used for email notifications and API callbacks. Must be reachable by managed devices.'" 
+        <!-- Firmware Tab -->
+        <c-card-body *ngIf="activeTab === 'firmware'" class="tab-content">
+          <!-- Repository Status -->
+          <div class="status-section mb-4">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+              <h5 class="section-title mb-0">
+                <i class="fa-solid fa-database me-2 text-success"></i>Firmware Repository
+                <i class="fa-solid fa-info-circle ms-2 text-info help-icon"
+                  [cTooltip]="'Local firmware repository stores RouterOS versions for offline installation. Devices can be updated without internet access.'"
                   cTooltipPlacement="top"></i>
-              </label>
-              <input cFormControl [(ngModel)]="sysconfigs['system_url']['value']" 
-                placeholder="https://mikrowizard.yourdomain.com or 192.168.1.100" class="form-control" />
-              <small class="setting-help">🌐 <strong>Examples:</strong> https://mikrowizard.company.com or 192.168.1.100</small>
+              </h5>
+              <c-badge color="info" class="fs-6">
+                <i class="fa-solid fa-check-circle me-1"></i>{{source.length}} downloaded
+              </c-badge>
             </div>
-          </c-col>
-          
-          <c-col md="6">
-            <div class="setting-group">
-              <label class="setting-label">Default IP Address
-                <i class="fa-solid fa-question-circle ms-1 text-info help-icon" 
-                  [cTooltip]="'IP address where MikroWizard web interface is accessible. Used as fallback when domain is not available.'" 
+            <div class="info-banner mb-3">
+              <i class="fa-solid fa-lightbulb me-2"></i>
+              <span><strong>Tip:</strong> Keep multiple firmware versions for compatibility. Always test updates on
+                non-critical devices first.</span>
+            </div>
+
+            <div class="mb-3 d-flex justify-content-end">
+              <span class="p-input-icon-left table-search-input">
+                <i class="pi pi-search"></i>
+                <input type="text" pInputText placeholder="Search repo..."
+                  (input)="applyFilterGlobal($event, 'contains')" class="form-control-sm" />
+              </span>
+            </div>
+
+            <p-table #dt [value]="source" [paginator]="true" [rows]="5" [showCurrentPageReport]="true"
+              [rowsPerPageOptions]="[5, 10, 25]" [resizableColumns]="true" columnResizeMode="expand"
+              [showGridlines]="true" [stripedRows]="true"
+              styleClass="p-datatable-sm p-datatable-gridlines p-datatable-striped"
+              [globalFilterFields]="['version', 'architecture', 'sha256']">
+              <ng-template pTemplate="header">
+                <tr>
+                  <th pSortableColumn="version" pResizableColumn>
+                    <div class="justify-between">
+                      <span>Version</span>
+                      <span>
+                        <p-sortIcon field="version"></p-sortIcon>
+                        <p-columnFilter type="text" field="version" display="menu" class="ms-auto" />
+                      </span>
+                    </div>
+                  </th>
+                  <th pSortableColumn="architecture" pResizableColumn>
+                    <div class="justify-between">
+                      <span>Architecture</span>
+                      <span>
+                        <p-sortIcon field="architecture"></p-sortIcon>
+                        <p-columnFilter type="text" field="architecture" display="menu" class="ms-auto" />
+                      </span>
+                    </div>
+                  </th>
+                  <th pResizableColumn>SHA256</th>
+                  <th style="width: 100px" class="text-center" pResizableColumn>Actions</th>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="body" let-item>
+                <tr>
+                  <td><c-badge color="primary" class="version-badge">{{item.version}}</c-badge></td>
+                  <td><c-badge color="secondary">{{item.architecture}}</c-badge></td>
+                  <td><small class="text-muted font-monospace">{{item.sha256.substring(0, 16)}}...</small></td>
+                  <td class="text-center">
+                    <button cButton color="danger" size="sm" variant="outline" (click)="delete_fimrware(item)"
+                      pTooltip="Delete firmware">
+                      <i class="fa-solid fa-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="emptymessage">
+                <tr>
+                  <td colspan="4" class="text-center p-4">No firmware versions found in repository.</td>
+                </tr>
+              </ng-template>
+            </p-table>
+          </div>
+
+          <!-- Download Section -->
+          <div class="download-section mb-4">
+            <div class="section-card">
+              <div class="section-header">
+                <i class="fa-solid fa-download me-2 text-primary"></i>
+                <span class="fw-semibold">Download New Firmware</span>
+                <i class="fa-solid fa-question-circle ms-2 text-info help-icon"
+                  [cTooltip]="'Downloads firmware from MikroTik servers. Requires internet access. Downloaded files are verified for integrity.'"
                   cTooltipPlacement="top"></i>
-              </label>
-              <input cFormControl [(ngModel)]="sysconfigs['default_ip']['value']" 
-                placeholder="192.168.1.100" class="form-control" />
-              <small class="setting-help">🔧 <strong>Tip:</strong> Use static IP outside DHCP range (e.g., 192.168.1.100-200)</small>
-            </div>
-          </c-col>
-          
-          <c-col md="6">
-            <div class="setting-group">
-              <label class="setting-label">RADIUS Secret
-                <i class="fa-solid fa-question-circle ms-1 text-info help-icon" 
-                  [cTooltip]="'Secret used by MikroWizard internal RADIUS server for authenticating MikroTik system users. This is for device admin authentication, not end users.'" 
-                  cTooltipPlacement="top"></i>
-              </label>
-              <input cFormControl [(ngModel)]="sysconfigs['rad_secret']['value']" 
-                placeholder="Enter MikroWizard RADIUS secret" class="form-control" type="password" />
-              <small class="setting-help">🔐 <strong>Internal RADIUS:</strong> Secret for MikroWizard's built-in RADIUS server (for MikroTik admin authentication)</small>
-            </div>
-          </c-col>
-          
-          <c-col md="6">
-            <div class="setting-group">
-              <label class="setting-label">System Timezone</label>
-              <div class="search-select-wrapper">
-                <input cFormControl 
-                  [(ngModel)]="timezoneSearch" 
-                  (input)="filterTimezones($event)"
-                  (focus)="showTimezoneDropdown = true"
-                  (blur)="hideTimezoneDropdown()"
-                  placeholder="Search and select timezone..."
-                  class="search-input"
-                  autocomplete="off" />
-                <div *ngIf="showTimezoneDropdown && filteredTimezones.length > 0" class="search-dropdown">
-                  <div *ngFor="let tz of filteredTimezones" 
-                    class="search-option" 
-                    (mousedown)="selectTimezone(tz)">
-                    {{tz.text}}
+              </div>
+              <div class="warning-banner mb-2" *ngIf="!loading">
+                <i class="fa-solid fa-wifi me-2"></i>
+                <span><strong>Internet Required:</strong> Downloads from mikrotik.com. Ensure stable connection and
+                  access
+                  to mikrotik.com domain available in server.</span>
+              </div>
+              <c-row class="g-3 mt-2" *ngIf="!loading">
+                <c-col md="8">
+                  <div class="search-select-wrapper">
+                    <label class="form-label">Select RouterOS Version</label>
+                    <input cFormControl [(ngModel)]="firmwareSearch" (input)="filterFirmwares($event)"
+                      (focus)="showFirmwareDropdown = true" (blur)="hideFirmwareDropdown()"
+                      placeholder="Search and select version..." class="search-input" autocomplete="off" />
+                    <div *ngIf="showFirmwareDropdown && filteredFirmwares.length > 0" class="search-dropdown">
+                      <div *ngFor="let firm of filteredFirmwares" class="search-option"
+                        (mousedown)="selectFirmware(firm)">
+                        {{firm}}
+                      </div>
+                    </div>
+                    <div *ngIf="showFirmwareDropdown && filteredFirmwares.length === 0 && firmwareSearch"
+                      class="search-no-results">
+                      No versions found
+                    </div>
                   </div>
+                </c-col>
+                <c-col md="4" class="d-flex align-items-end">
+                  <button cButton color="primary" class="w-100" (click)="ConfirmModalVisible=true"
+                    [disabled]="!firmtodownload">
+                    <i class="fa-solid fa-download me-1"></i>Download
+                  </button>
+                </c-col>
+              </c-row>
+              <div *ngIf="loading" class="text-center py-3">
+                <c-spinner size="sm" class="me-2"></c-spinner>
+                <span class="text-muted">Fetching available versions from MikroTik...</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Firmware Settings -->
+          <div class="firmware-settings">
+            <h5 class="section-title mb-3">
+              <i class="fa-solid fa-cogs me-2 text-warning"></i>Update Configuration
+              <i class="fa-solid fa-info-circle ms-2 text-info help-icon"
+                [cTooltip]="'These settings control how MikroWizard handles firmware updates across your network. Changes affect all future update operations.'"
+                cTooltipPlacement="top"></i>
+            </h5>
+            <div class="info-banner mb-3">
+              <i class="fa-solid fa-shield-alt me-2"></i>
+              <span><strong>Best Practice:</strong> Use "Keep v6" for legacy devices. Test new firmware versions in lab
+                environment first.</span>
+            </div>
+
+            <c-row class="g-3">
+              <c-col md="6">
+                <div class="setting-group">
+                  <label class="setting-label">V6 Firmware Behavior
+                    <i class="fa-solid fa-question-circle ms-1 text-info help-icon"
+                      [cTooltip]="'Choose how to handle RouterOS v6 devices: keep them on v6 with selected v6 firmware, or upgrade them to v7 with selected v7 firmware.'"
+                      cTooltipPlacement="top"></i>
+                  </label>
+                  <select cSelect [(ngModel)]="updateBehavior" class="form-select">
+                    <option value="">Choose behavior...</option>
+                    <option value="keep">🛡️ Keep v6 (v6 devices get V6 Firmware Version, v7 devices get Default
+                      Firmware
+                      Version)</option>
+                    <option value="update">⬆️ Upgrade to v7 (all v6 routers will be upgraded to v7)</option>
+                  </select>
+                  <small class="setting-help">📋 <strong>Keep v6:</strong> v6 devices use V6 Firmware Version, v7
+                    devices
+                    use Default Firmware Version</small>
                 </div>
-                <div *ngIf="showTimezoneDropdown && filteredTimezones.length === 0 && timezoneSearch" class="search-no-results">
-                  No timezones found
+              </c-col>
+
+              <c-col md="6">
+                <div class="setting-group">
+                  <label class="setting-label">Default Firmware Version
+                    <i class="fa-solid fa-question-circle ms-1 text-info help-icon"
+                      [cTooltip]="'This version will be installed on new devices added to MikroWizard. Choose stable LTS versions for production.'"
+                      cTooltipPlacement="top"></i>
+                  </label>
+                  <select cSelect [(ngModel)]="firmwaretoinstall" class="form-select">
+                    <option value="">Choose version...</option>
+                    <option *ngFor="let f of available_firmwares" [value]="f">{{f}}</option>
+                  </select>
+                  <small class="setting-help">💡 <strong>Tip:</strong> Choose stable releases for production. LTS
+                    versions
+                    are only available for v6 firmware</small>
+                </div>
+              </c-col>
+
+              <c-col md="6" *ngIf="updateBehavior === 'keep'">
+                <div class="setting-group">
+                  <label class="setting-label">V6 Firmware Version</label>
+                  <select cSelect [(ngModel)]="firmwaretoinstallv6" class="form-select">
+                    <option value="">Choose v6 version...</option>
+                    <option *ngFor="let f of available_firmwaresv6" [value]="f">{{f}}</option>
+                  </select>
+                  <small class="setting-help">Firmware version for RouterOS v6 devices</small>
+                </div>
+              </c-col>
+            </c-row>
+
+            <div class="mt-3">
+              <button cButton color="primary" (click)="saveFirmwareSetting()">
+                <i class="fa-solid fa-save me-1"></i>Save Firmware Settings
+              </button>
+            </div>
+          </div>
+        </c-card-body>
+
+        <!-- System Tab -->
+        <c-card-body *ngIf="activeTab === 'system' && !SysConfigloading" class="tab-content">
+          <!-- Network Configuration -->
+          <div class="config-section mb-4">
+            <h5 class="section-title mb-3">
+              <i class="fa-solid fa-network-wired me-2 text-primary"></i>Network Configuration
+              <i class="fa-solid fa-info-circle ms-2 text-info help-icon"
+                [cTooltip]="'Basic network settings for MikroWizard system access and device communication. Ensure these match your network setup.'"
+                cTooltipPlacement="top"></i>
+            </h5>
+            <div class="info-banner mb-3">
+              <i class="fa-solid fa-network-wired me-2"></i>
+              <span><strong>Network Setup:</strong> Configure these settings to match your network infrastructure for
+                proper
+                device communication.</span>
+            </div>
+
+            <c-row class="g-3">
+              <c-col md="6">
+                <div class="setting-group">
+                  <label class="setting-label">System URL
+                    <i class="fa-solid fa-question-circle ms-1 text-info help-icon"
+                      [cTooltip]="'URL or IP address where MikroWizard is accessible. Used for email notifications and API callbacks. Must be reachable by managed devices.'"
+                      cTooltipPlacement="top"></i>
+                  </label>
+                  <input cFormControl [(ngModel)]="sysconfigs['system_url']['value']"
+                    placeholder="https://mikrowizard.yourdomain.com or 192.168.1.100" class="form-control" />
+                  <small class="setting-help">🌐 <strong>Examples:</strong> https://mikrowizard.company.com or
+                    192.168.1.100</small>
+                </div>
+              </c-col>
+
+              <c-col md="6">
+                <div class="setting-group">
+                  <label class="setting-label">Default IP Address
+                    <i class="fa-solid fa-question-circle ms-1 text-info help-icon"
+                      [cTooltip]="'IP address where MikroWizard web interface is accessible. Used as fallback when domain is not available.'"
+                      cTooltipPlacement="top"></i>
+                  </label>
+                  <input cFormControl [(ngModel)]="sysconfigs['default_ip']['value']" placeholder="192.168.1.100"
+                    class="form-control" />
+                  <small class="setting-help">🔧 <strong>Tip:</strong> Use static IP outside DHCP range (e.g.,
+                    192.168.1.100-200)</small>
+                </div>
+              </c-col>
+
+              <c-col md="6">
+                <div class="setting-group">
+                  <label class="setting-label">RADIUS Secret
+                    <i class="fa-solid fa-question-circle ms-1 text-info help-icon"
+                      [cTooltip]="'Secret used by MikroWizard internal RADIUS server for authenticating MikroTik system users. This is for device admin authentication, not end users.'"
+                      cTooltipPlacement="top"></i>
+                  </label>
+                  <input cFormControl [(ngModel)]="sysconfigs['rad_secret']['value']"
+                    placeholder="Enter MikroWizard RADIUS secret" class="form-control" type="password" />
+                  <small class="setting-help">🔐 <strong>Internal RADIUS:</strong> Secret for MikroWizard's built-in
+                    RADIUS
+                    server (for MikroTik admin authentication)</small>
+                </div>
+              </c-col>
+
+              <c-col md="6">
+                <div class="setting-group">
+                  <label class="setting-label">System Timezone</label>
+                  <div class="search-select-wrapper">
+                    <input cFormControl [(ngModel)]="timezoneSearch" (input)="filterTimezones($event)"
+                      (focus)="showTimezoneDropdown = true" (blur)="hideTimezoneDropdown()"
+                      placeholder="Search and select timezone..." class="search-input" autocomplete="off" />
+                    <div *ngIf="showTimezoneDropdown && filteredTimezones.length > 0" class="search-dropdown">
+                      <div *ngFor="let tz of filteredTimezones" class="search-option" (mousedown)="selectTimezone(tz)">
+                        {{tz.text}}
+                      </div>
+                    </div>
+                    <div *ngIf="showTimezoneDropdown && filteredTimezones.length === 0 && timezoneSearch"
+                      class="search-no-results">
+                      No timezones found
+                    </div>
+                  </div>
+                  <small class="setting-help">Default system timezone</small>
+                </div>
+              </c-col>
+            </c-row>
+          </div>
+
+          <!-- Authentication -->
+          <div class="config-section mb-4">
+            <h5 class="section-title mb-3">
+              <i class="fa-solid fa-key me-2 text-warning"></i>Device Discovery Credentials
+              <i class="fa-solid fa-info-circle ms-2 text-info help-icon"
+                [cTooltip]="'Default credentials for discovering and connecting to new MikroTik devices. Keep these secure and change default passwords immediately.'"
+                cTooltipPlacement="top"></i>
+            </h5>
+            <div class="warning-banner mb-3">
+              <i class="fa-solid fa-shield-exclamation me-2"></i>
+              <span><strong>Security Warning:</strong> Change default passwords immediately after device setup. Use
+                strong,
+                unique credentials.</span>
+            </div>
+
+            <c-row class="g-3">
+              <c-col md="6">
+                <div class="setting-group">
+                  <label class="setting-label">Default Username
+                    <i class="fa-solid fa-question-circle ms-1 text-info help-icon"
+                      [cTooltip]="'Username for discovering and connecting to MikroTik devices in your network. This is used to find devices with default/common credentials.'"
+                      cTooltipPlacement="top"></i>
+                  </label>
+                  <input cFormControl [(ngModel)]="sysconfigs['default_user']['value']" placeholder="admin"
+                    class="form-control" type="password" />
+                  <small class="setting-help">🔍 <strong>Device Discovery:</strong> Username for finding MikroTik
+                    devices
+                    with default credentials in your network</small>
+                </div>
+              </c-col>
+
+              <c-col md="6">
+                <div class="setting-group">
+                  <label class="setting-label">Default Password
+                    <i class="fa-solid fa-question-circle ms-1 text-info help-icon"
+                      [cTooltip]="'Password for discovering and connecting to MikroTik devices. Many new devices have empty password. Used to find devices with default/common credentials.'"
+                      cTooltipPlacement="top"></i>
+                  </label>
+                  <input cFormControl [(ngModel)]="sysconfigs['default_password']['value']"
+                    placeholder="(often empty on new devices)" class="form-control" type="password" />
+                  <small class="setting-help">🔍 <strong>Device Discovery:</strong> Password for finding MikroTik
+                    devices
+                    with default credentials (often empty on new devices)</small>
+                </div>
+              </c-col>
+            </c-row>
+          </div>
+
+          <!-- License Configuration -->
+          <div class="config-section mb-4">
+            <h5 class="section-title mb-3">
+              <i class="fa-solid fa-certificate me-2 text-primary"></i>License Configuration
+              <i class="fa-solid fa-info-circle ms-2 text-info help-icon"
+                [cTooltip]="'MikroWizard license activation and registration settings. Required for system activation and PRO features.'"
+                cTooltipPlacement="top"></i>
+            </h5>
+
+            <c-row class="g-3">
+              <c-col md="6">
+                <div class="setting-group">
+                  <label class="setting-label">License Username
+                    <i class="fa-solid fa-exclamation-triangle ms-1 text-warning help-icon"
+                      [cTooltip]="'Your username from MikroWizard.com account. Same username you use to login to mikrowizard.com website. Required for license activation.'"
+                      cTooltipPlacement="top"></i>
+                  </label>
+                  <input cFormControl [(ngModel)]="sysconfigs['username']['value']"
+                    placeholder="Same as your mikrowizard.com login" class="form-control" />
+                  <small class="setting-help text-warning">🔑 <strong>Same username</strong> you use to login to
+                    mikrowizard.com website</small>
+                </div>
+              </c-col>
+            </c-row>
+          </div>
+
+          <!-- System Behavior -->
+          <div class="config-section mb-4">
+            <h5 class="section-title mb-3">
+              <i class="fa-solid fa-cogs me-2 text-success"></i>System Behavior
+              <i class="fa-solid fa-info-circle ms-2 text-info help-icon"
+                [cTooltip]="'Controls how MikroWizard handles automatic updates and system maintenance. Choose based on your change management policy.'"
+                cTooltipPlacement="top"></i>
+            </h5>
+
+            <c-row class="g-3">
+              <c-col md="6">
+                <div class="setting-group">
+                  <label class="setting-label">Update Mode
+                    <i class="fa-solid fa-question-circle ms-1 text-info help-icon"
+                      [cTooltip]="'Automatic updates install immediately when available. Manual mode shows notifications in dashboard and waits for user confirmation.'"
+                      cTooltipPlacement="top"></i>
+                  </label>
+                  <select cSelect [(ngModel)]="sysconfigs['update_mode']['value']['mode']" class="form-select">
+                    <option value="">Choose mode...</option>
+                    <option value="auto">🔄 Automatic Updates (Install immediately)</option>
+                    <option value="manual">✋ Manual Updates (Confirm actions in dashboard view)</option>
+                  </select>
+                  <small class="setting-help">📊 <strong>Manual Mode:</strong> Updates require confirmation and actions
+                    in
+                    dashboard view</small>
+                </div>
+              </c-col>
+            </c-row>
+          </div>
+
+          <!-- Security Features -->
+          <div class="config-section mb-4">
+            <h5 class="section-title mb-3">
+              <i class="fa-solid fa-shield-alt me-2 text-danger"></i>Security & Enforcement
+              <i class="fa-solid fa-info-circle ms-2 text-info help-icon"
+                [cTooltip]="'Security policies automatically enforced on all managed devices. These settings override local device configurations for consistency.'"
+                cTooltipPlacement="top"></i>
+            </h5>
+            <div class="warning-banner mb-3">
+              <i class="fa-solid fa-exclamation-triangle me-2"></i>
+              <span><strong>Important:</strong> These settings will override device configurations. Test in lab
+                environment
+                before enabling in production.</span>
+            </div>
+
+            <div class="security-switches">
+              <div class="switch-item">
+                <div class="switch-content">
+                  <div class="switch-info">
+                    <h6 class="switch-title">Force Permissions
+                      <i class="fa-solid fa-question-circle ms-1 text-info help-icon"
+                        [cTooltip]="'Synchronizes MikroTik user groups with MikroWizard permissions. Ensures consistent access control across all managed devices.'"
+                        cTooltipPlacement="top"></i>
+                    </h6>
+                    <p class="switch-description">🔄 Sync MikroTik user groups with MikroWizard permissions
+                      <br><small class="text-info">💡 Ensures consistent user access control across all devices</small>
+                    </p>
+                  </div>
+                  <c-form-check [switch]="true" sizing="lg">
+                    <input cFormCheckInput [(ngModel)]="sysconfigs['force_perms']['value']" type="checkbox" />
+                    <label cFormCheckLabel></label>
+                  </c-form-check>
                 </div>
               </div>
-              <small class="setting-help">Default system timezone</small>
-            </div>
-          </c-col>
-        </c-row>
-      </div>
 
-      <!-- Authentication -->
-      <div class="config-section mb-4">
-        <h5 class="section-title mb-3">
-          <i class="fa-solid fa-key me-2 text-warning"></i>Device Discovery Credentials
-          <i class="fa-solid fa-info-circle ms-2 text-info help-icon" 
-            [cTooltip]="'Default credentials for discovering and connecting to new MikroTik devices. Keep these secure and change default passwords immediately.'" 
-            cTooltipPlacement="top"></i>
-        </h5>
-        <div class="warning-banner mb-3">
-          <i class="fa-solid fa-shield-exclamation me-2"></i>
-          <span><strong>Security Warning:</strong> Change default passwords immediately after device setup. Use strong, unique credentials.</span>
-        </div>
-        
-        <c-row class="g-3">
-          <c-col md="6">
-            <div class="setting-group">
-              <label class="setting-label">Default Username
-                <i class="fa-solid fa-question-circle ms-1 text-info help-icon" 
-                  [cTooltip]="'Username for discovering and connecting to MikroTik devices in your network. This is used to find devices with default/common credentials.'" 
-                  cTooltipPlacement="top"></i>
-              </label>
-              <input cFormControl [(ngModel)]="sysconfigs['default_user']['value']" 
-                placeholder="admin" class="form-control" type="password" />
-              <small class="setting-help">🔍 <strong>Device Discovery:</strong> Username for finding MikroTik devices with default credentials in your network</small>
-            </div>
-          </c-col>
-          
-          <c-col md="6">
-            <div class="setting-group">
-              <label class="setting-label">Default Password
-                <i class="fa-solid fa-question-circle ms-1 text-info help-icon" 
-                  [cTooltip]="'Password for discovering and connecting to MikroTik devices. Many new devices have empty password. Used to find devices with default/common credentials.'" 
-                  cTooltipPlacement="top"></i>
-              </label>
-              <input cFormControl [(ngModel)]="sysconfigs['default_password']['value']" 
-                placeholder="(often empty on new devices)" class="form-control" type="password" />
-              <small class="setting-help">🔍 <strong>Device Discovery:</strong> Password for finding MikroTik devices with default credentials (often empty on new devices)</small>
-            </div>
-          </c-col>
-        </c-row>
-      </div>
+              <div class="switch-item">
+                <div class="switch-content">
+                  <div class="switch-info">
+                    <h6 class="switch-title">Force RADIUS
+                      <i class="fa-solid fa-question-circle ms-1 text-info help-icon"
+                        [cTooltip]="'Configures MikroTik devices to use MikroWizard RADIUS for admin user authentication. This is for MikroTik system users, not end users.'"
+                        cTooltipPlacement="top"></i>
+                    </h6>
+                    <p class="switch-description">🔐 Configure RADIUS on MikroTik devices for admin user authentication
+                      <br><small class="text-info">👥 For MikroTik system users authentication (not end users)</small>
+                    </p>
+                  </div>
+                  <c-form-check [switch]="true" sizing="lg">
+                    <input cFormCheckInput [(ngModel)]="sysconfigs['force_radius']['value']" type="checkbox" />
+                    <label cFormCheckLabel></label>
+                  </c-form-check>
+                </div>
+              </div>
 
-      <!-- License Configuration -->
-      <div class="config-section mb-4">
-        <h5 class="section-title mb-3">
-          <i class="fa-solid fa-certificate me-2 text-primary"></i>License Configuration
-          <i class="fa-solid fa-info-circle ms-2 text-info help-icon" 
-            [cTooltip]="'MikroWizard license activation and registration settings. Required for system activation and PRO features.'" 
-            cTooltipPlacement="top"></i>
-        </h5>
-        
-        <c-row class="g-3">
-          <c-col md="6">
-            <div class="setting-group">
-              <label class="setting-label">License Username
-                <i class="fa-solid fa-exclamation-triangle ms-1 text-warning help-icon" 
-                  [cTooltip]="'Your username from MikroWizard.com account. Same username you use to login to mikrowizard.com website. Required for license activation.'" 
-                  cTooltipPlacement="top"></i>
-              </label>
-              <input cFormControl [(ngModel)]="sysconfigs['username']['value']" 
-                placeholder="Same as your mikrowizard.com login" class="form-control" />
-              <small class="setting-help text-warning">🔑 <strong>Same username</strong> you use to login to mikrowizard.com website</small>
-            </div>
-          </c-col>
-        </c-row>
-      </div>
+              <div class="switch-item">
+                <div class="switch-content">
+                  <div class="switch-info">
+                    <h6 class="switch-title">Force Syslog
+                      <i class="fa-solid fa-exclamation-triangle ms-1 text-warning help-icon"
+                        [cTooltip]="'CRITICAL: Will overwrite syslog configuration on all devices. If MikroWizard server is unreachable, devices may stop logging or experience performance issues.'"
+                        cTooltipPlacement="top"></i>
+                    </h6>
+                    <p class="switch-description">📊 Automatically configure syslog settings on managed devices
+                      <br><small class="text-warning">⚠️ Will OVERWRITE existing syslog configurations on
+                        devices</small>
+                    </p>
+                  </div>
+                  <c-form-check [switch]="true" sizing="lg">
+                    <input cFormCheckInput [(ngModel)]="sysconfigs['force_syslog']['value']" type="checkbox" />
+                    <label cFormCheckLabel></label>
+                  </c-form-check>
+                </div>
+              </div>
 
-      <!-- System Behavior -->
-      <div class="config-section mb-4">
-        <h5 class="section-title mb-3">
-          <i class="fa-solid fa-cogs me-2 text-success"></i>System Behavior
-          <i class="fa-solid fa-info-circle ms-2 text-info help-icon" 
-            [cTooltip]="'Controls how MikroWizard handles automatic updates and system maintenance. Choose based on your change management policy.'" 
-            cTooltipPlacement="top"></i>
-        </h5>
-        
-        <c-row class="g-3">
-          <c-col md="6">
-            <div class="setting-group">
-              <label class="setting-label">Update Mode
-                <i class="fa-solid fa-question-circle ms-1 text-info help-icon" 
-                  [cTooltip]="'Automatic updates install immediately when available. Manual mode shows notifications in dashboard and waits for user confirmation.'" 
-                  cTooltipPlacement="top"></i>
-              </label>
-              <select cSelect [(ngModel)]="sysconfigs['update_mode']['value']['mode']" class="form-select">
-                <option value="">Choose mode...</option>
-                <option value="auto">🔄 Automatic Updates (Install immediately)</option>
-                <option value="manual">✋ Manual Updates (Confirm actions in dashboard view)</option>
-              </select>
-              <small class="setting-help">📊 <strong>Manual Mode:</strong> Updates require confirmation and actions in dashboard view</small>
-            </div>
-          </c-col>
-        </c-row>
-      </div>
+              <div class="switch-item" *ngIf="ispro">
+                <div class="switch-content">
+                  <div class="switch-info">
+                    <h6 class="switch-title">Safe Updates <c-badge color="warning" class="ms-2">PRO</c-badge>
+                      <i class="fa-solid fa-question-circle ms-1 text-info help-icon"
+                        [cTooltip]="'Prevents firmware update failures by installing intermediate versions first. Reduces risk of device brick but takes longer.'"
+                        cTooltipPlacement="top"></i>
+                    </h6>
+                    <p class="switch-description">🛡️ Install required intermediate firmware versions before target
+                      version
+                      <br><small class="text-success">✅ Highly recommended for production environments</small>
+                    </p>
+                  </div>
+                  <c-form-check [switch]="true" sizing="lg">
+                    <input cFormCheckInput [(ngModel)]="sysconfigs['safe_install']['value']" type="checkbox" />
+                    <label cFormCheckLabel></label>
+                  </c-form-check>
+                </div>
+              </div>
 
-      <!-- Security Features -->
-      <div class="config-section mb-4">
-        <h5 class="section-title mb-3">
-          <i class="fa-solid fa-shield-alt me-2 text-danger"></i>Security & Enforcement
-          <i class="fa-solid fa-info-circle ms-2 text-info help-icon" 
-            [cTooltip]="'Security policies automatically enforced on all managed devices. These settings override local device configurations for consistency.'" 
-            cTooltipPlacement="top"></i>
-        </h5>
-        <div class="warning-banner mb-3">
-          <i class="fa-solid fa-exclamation-triangle me-2"></i>
-          <span><strong>Important:</strong> These settings will override device configurations. Test in lab environment before enabling in production.</span>
-        </div>
-        
-        <div class="security-switches">
-          <div class="switch-item">
-            <div class="switch-content">
-              <div class="switch-info">
-                <h6 class="switch-title">Force Permissions
-                  <i class="fa-solid fa-question-circle ms-1 text-info help-icon" 
-                    [cTooltip]="'Synchronizes MikroTik user groups with MikroWizard permissions. Ensures consistent access control across all managed devices.'" 
-                    cTooltipPlacement="top"></i>
-                </h6>
-                <p class="switch-description">🔄 Sync MikroTik user groups with MikroWizard permissions
-                  <br><small class="text-info">💡 Ensures consistent user access control across all devices</small>
-                </p>
+              <div class="switch-item" *ngIf="ispro">
+                <div class="switch-content">
+                  <div class="switch-info">
+                    <h6 class="switch-title">Force Device OTP <c-badge color="warning" class="ms-2">PRO</c-badge>
+                      <i class="fa-solid fa-question-circle ms-1 text-info help-icon"
+                        [cTooltip]="'Requires two-factor authentication for device access. Users must have OTP configured. Significantly improves security.'"
+                        cTooltipPlacement="top"></i>
+                    </h6>
+                    <p class="switch-description">🔐 Require OTP authentication for all device access
+                      <br><small class="text-warning">⚠️ Ensure users have OTP configured before enabling</small>
+                    </p>
+                  </div>
+                  <c-form-check [switch]="true" sizing="lg">
+                    <input cFormCheckInput [(ngModel)]="sysconfigs['otp_force']['value']" type="checkbox" />
+                    <label cFormCheckLabel></label>
+                  </c-form-check>
+                </div>
               </div>
-              <c-form-check [switch]="true" sizing="lg">
-                <input cFormCheckInput [(ngModel)]="sysconfigs['force_perms']['value']" type="checkbox" />
-                <label cFormCheckLabel></label>
-              </c-form-check>
-            </div>
-          </div>
-          
-          <div class="switch-item">
-            <div class="switch-content">
-              <div class="switch-info">
-                <h6 class="switch-title">Force RADIUS
-                  <i class="fa-solid fa-question-circle ms-1 text-info help-icon" 
-                    [cTooltip]="'Configures MikroTik devices to use MikroWizard RADIUS for admin user authentication. This is for MikroTik system users, not end users.'" 
-                    cTooltipPlacement="top"></i>
-                </h6>
-                <p class="switch-description">🔐 Configure RADIUS on MikroTik devices for admin user authentication
-                  <br><small class="text-info">👥 For MikroTik system users authentication (not end users)</small>
-                </p>
-              </div>
-              <c-form-check [switch]="true" sizing="lg">
-                <input cFormCheckInput [(ngModel)]="sysconfigs['force_radius']['value']" type="checkbox" />
-                <label cFormCheckLabel></label>
-              </c-form-check>
-            </div>
-          </div>
-          
-          <div class="switch-item">
-            <div class="switch-content">
-              <div class="switch-info">
-                <h6 class="switch-title">Force Syslog
-                  <i class="fa-solid fa-exclamation-triangle ms-1 text-warning help-icon" 
-                    [cTooltip]="'CRITICAL: Will overwrite syslog configuration on all devices. If MikroWizard server is unreachable, devices may stop logging or experience performance issues.'" 
-                    cTooltipPlacement="top"></i>
-                </h6>
-                <p class="switch-description">📊 Automatically configure syslog settings on managed devices
-                  <br><small class="text-warning">⚠️ Will OVERWRITE existing syslog configurations on devices</small>
-                </p>
-              </div>
-              <c-form-check [switch]="true" sizing="lg">
-                <input cFormCheckInput [(ngModel)]="sysconfigs['force_syslog']['value']" type="checkbox" />
-                <label cFormCheckLabel></label>
-              </c-form-check>
-            </div>
-          </div>
-          
-          <div class="switch-item" *ngIf="ispro">
-            <div class="switch-content">
-              <div class="switch-info">
-                <h6 class="switch-title">Safe Updates <c-badge color="warning" class="ms-2">PRO</c-badge>
-                  <i class="fa-solid fa-question-circle ms-1 text-info help-icon" 
-                    [cTooltip]="'Prevents firmware update failures by installing intermediate versions first. Reduces risk of device brick but takes longer.'" 
-                    cTooltipPlacement="top"></i>
-                </h6>
-                <p class="switch-description">🛡️ Install required intermediate firmware versions before target version
-                  <br><small class="text-success">✅ Highly recommended for production environments</small>
-                </p>
-              </div>
-              <c-form-check [switch]="true" sizing="lg">
-                <input cFormCheckInput [(ngModel)]="sysconfigs['safe_install']['value']" type="checkbox" />
-                <label cFormCheckLabel></label>
-              </c-form-check>
-            </div>
-          </div>
-          
-          <div class="switch-item" *ngIf="ispro">
-            <div class="switch-content">
-              <div class="switch-info">
-                <h6 class="switch-title">Force Device OTP <c-badge color="warning" class="ms-2">PRO</c-badge>
-                  <i class="fa-solid fa-question-circle ms-1 text-info help-icon" 
-                    [cTooltip]="'Requires two-factor authentication for device access. Users must have OTP configured. Significantly improves security.'" 
-                    cTooltipPlacement="top"></i>
-                </h6>
-                <p class="switch-description">🔐 Require OTP authentication for all device access
-                  <br><small class="text-warning">⚠️ Ensure users have OTP configured before enabling</small>
-                </p>
-              </div>
-              <c-form-check [switch]="true" sizing="lg">
-                <input cFormCheckInput [(ngModel)]="sysconfigs['otp_force']['value']" type="checkbox" />
-                <label cFormCheckLabel></label>
-              </c-form-check>
-            </div>
-          </div>
-          
-          <div class="switch-item" *ngIf="ispro">
-            <div class="switch-content">
-              <div class="switch-info">
-                <h6 class="switch-title">WebFig Auto Login <c-badge color="warning" class="ms-2">PRO</c-badge>
-                  <i class="fa-solid fa-question-circle ms-1 text-info help-icon" 
-                    [cTooltip]="'Creates temporary OTP password for automatic WebFig login. Users don\'t need to enter credentials when accessing device WebFig through MikroWizard.'" 
-                    cTooltipPlacement="top"></i>
-                </h6>
-                <p class="switch-description">🌐 Create temporary OTP for automatic WebFig login
-                  <br><small class="text-success">🔑 Users don't need to input passwords to access WebFig admin interface</small>
-                </p>
-              </div>
-              <c-form-check [switch]="true" sizing="lg">
-                <input cFormCheckInput [(ngModel)]="sysconfigs['proxy_auto_login']['value']" type="checkbox" />
-                <label cFormCheckLabel></label>
-              </c-form-check>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <div class="save-section">
-        <button cButton color="primary" size="lg" (click)="saveSysSetting()">
-          <i class="fa-solid fa-save me-2"></i>Save System Settings
-        </button>
-      </div>
-    </c-card-body>
-    
-    <!-- Loading State -->
-    <c-card-body *ngIf="activeTab === 'system' && SysConfigloading" class="text-center py-5">
-      <c-spinner size="sm" class="mb-3"></c-spinner>
-      <h5 class="text-muted">Loading system configuration...</h5>
-    </c-card-body>
-  </c-card>
-</div>
 
+              <div class="switch-item" *ngIf="ispro">
+                <div class="switch-content">
+                  <div class="switch-info">
+                    <h6 class="switch-title">WebFig Auto Login <c-badge color="warning" class="ms-2">PRO</c-badge>
+                      <i class="fa-solid fa-question-circle ms-1 text-info help-icon"
+                        [cTooltip]="'Creates temporary OTP password for automatic WebFig login. Users don\'t need to enter credentials when accessing device WebFig through MikroWizard.'"
+                        cTooltipPlacement="top"></i>
+                    </h6>
+                    <p class="switch-description">🌐 Create temporary OTP for automatic WebFig login
+                      <br><small class="text-success">🔑 Users don't need to input passwords to access WebFig admin
+                        interface</small>
+                    </p>
+                  </div>
+                  <c-form-check [switch]="true" sizing="lg">
+                    <input cFormCheckInput [(ngModel)]="sysconfigs['proxy_auto_login']['value']" type="checkbox" />
+                    <label cFormCheckLabel></label>
+                  </c-form-check>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="save-section">
+            <button cButton color="primary" size="lg" (click)="saveSysSetting()">
+              <i class="fa-solid fa-save me-2"></i>Save System Settings
+            </button>
+          </div>
+        </c-card-body>
+
+        <!-- Loading State -->
+        <c-card-body *ngIf="activeTab === 'system' && SysConfigloading" class="text-center py-5">
+          <c-spinner size="sm" class="mb-3"></c-spinner>
+          <h5 class="text-muted">Loading system configuration...</h5>
+        </c-card-body>
+      </c-card>
+    </div>
+  </c-col>
+</c-row>
 <c-modal #ConfirmModal backdrop="static" [(visible)]="ConfirmModalVisible" id="runConfirmModal">
   <c-modal-header>
     <h6 cModalTitle>Downloading RouterOS ver {{firmtodownload}} </h6>
@@ -539,7 +593,7 @@
     <br />
   </c-modal-body>
   <c-modal-footer>
-    <button  (click)="delete_fimrware(currentFirm,true)" cButton color="danger">
+    <button (click)="delete_fimrware(currentFirm,true)" cButton color="danger">
       Yes,Delete.
     </button>
     <button [cModalToggle]="DeleteConfirmModal.id" cButton color="info">

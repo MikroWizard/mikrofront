@@ -1,13 +1,8 @@
-import { Component, OnInit, QueryList, ViewChildren } from "@angular/core";
+import { Component, OnInit, QueryList, ViewChildren, ViewChild } from "@angular/core";
 import { dataProvider } from "../../providers/mikrowizard/data";
 import { Router } from "@angular/router";
 import { loginChecker } from "../../providers/login_checker";
-import {
-  GuiColumn,
-  GuiColumnMenu,
-  GuiPaging,
-  GuiPagingDisplay,
-} from "@generic-ui/ngx-grid";
+import { Table } from 'primeng/table';
 
 import { ToasterComponent } from "@coreui/angular";
 import { AppToastComponent } from "../toast-simple/toast.component";
@@ -30,8 +25,10 @@ interface IUser {
   templateUrl: "permissions.component.html",
 })
 export class PermissionsComponent implements OnInit {
-  public uid: number;
-  public uname: string;
+  public uid: number = 0;
+  public uname: string = '';
+
+  @ViewChild('dt') table!: Table;
 
   constructor(
     private data_provider: dataProvider,
@@ -63,7 +60,6 @@ export class PermissionsComponent implements OnInit {
   @ViewChildren(ToasterComponent) viewChildren!: QueryList<ToasterComponent>;
 
   public source: Array<any> = [];
-  public columns: Array<GuiColumn> = [];
   public loading: boolean = true;
   public rows: any = [];
   public SelectedPerm: any = {};
@@ -107,24 +103,9 @@ export class PermissionsComponent implements OnInit {
     closeButton: true,
   };
 
-  public sorting = {
-    enabled: true,
-    multiSorting: true,
-  };
-
-  public paging: GuiPaging = {
-    enabled: true,
-    page: 1,
-    pageSize: 10,
-    pageSizes: [5, 10, 25, 50],
-    display: GuiPagingDisplay.ADVANCED,
-  };
-
-  public columnMenu: GuiColumnMenu = {
-    enabled: true,
-    sort: true,
-    columnsManager: true,
-  };
+  applyFilterGlobal($event: any, stringVal: string) {
+    this.table.filterGlobal(($event.target as HTMLInputElement).value, stringVal);
+  }
   show_toast(title: string, body: string, color: string) {
     const { ...props } = { ...this.toasterForm, color, title, body };
     const componentRef = this.viewChildren.first.addToast(

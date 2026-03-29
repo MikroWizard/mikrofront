@@ -1,18 +1,8 @@
-import { Component, OnInit, ViewEncapsulation,Input } from "@angular/core";
+import { Component, OnInit, ViewChild, ViewEncapsulation, Input } from "@angular/core";
 import { dataProvider } from "../../providers/mikrowizard/data";
 import { Router, ActivatedRoute } from "@angular/router";
 import { loginChecker } from "../../providers/login_checker";
-import {
-  GuiSelectedRow,
-  GuiInfoPanel,
-  GuiColumn,
-  GuiColumnMenu,
-  GuiPaging,
-  GuiPagingDisplay,
-  GuiRowSelectionMode,
-  GuiRowSelection,
-  GuiRowSelectionType,
-} from "@generic-ui/ngx-grid";
+import { Table } from 'primeng/table';
 import { formatInTimeZone } from "date-fns-tz";
 
 interface IUser {
@@ -37,10 +27,14 @@ interface IUser {
 })
 export class AuthComponent implements OnInit {
   @Input() component_devid: any=false;
-  public uid: number;
-  public uname: string;
+  public uid!: number;
+  public uname!: string;
   public tz: string = "UTC";
-  public filterText: string;
+  public filterText!: string;
+  public detailsVisible: boolean = false;
+  public selectedLog: any = null;
+  
+  @ViewChild('dt') table!: Table;
   public devid: number = 0;
   public reloading: boolean = false;
   public filters: any = {
@@ -87,42 +81,19 @@ export class AuthComponent implements OnInit {
     }
   }
   public source: Array<any> = [];
-  public columns: Array<GuiColumn> = [];
   public loading: boolean = true;
   public rows: any = [];
-  public Selectedrows: any;
+  public selected_rows: any[] = []; // Used by p-table selection
+  public Selectedrows: any[] = []; // ID array for legacy actions
 
-  public sorting = {
-    enabled: true,
-    multiSorting: true,
-  };
+  showLogDetails(log: any) {
+    this.selectedLog = log;
+    this.detailsVisible = true;
+  }
 
-  public paging: GuiPaging = {
-    enabled: true,
-    page: 1,
-    pageSize: 10,
-    pageSizes: [5, 10, 25, 50],
-    display: GuiPagingDisplay.ADVANCED,
-  };
-
-  public columnMenu: GuiColumnMenu = {
-    enabled: true,
-    sort: true,
-    columnsManager: true,
-  };
-
-  public infoPanel: GuiInfoPanel = {
-    enabled: true,
-    infoDialog: false,
-    columnsManager: true,
-    schemaManager: true,
-  };
-
-  public rowSelection: boolean | GuiRowSelection = {
-    enabled: true,
-    type: GuiRowSelectionType.CHECKBOX,
-    mode: GuiRowSelectionMode.MULTIPLE,
-  };
+  applyFilterGlobal($event: any, stringVal: string) {
+    this.table.filterGlobal(($event.target as HTMLInputElement).value, stringVal);
+  }
 
   reinitgrid(field: string, $event: any) {
     if (field == "start") this.filters["start_time"] = $event.target.value;
@@ -179,9 +150,10 @@ export class AuthComponent implements OnInit {
     }
     this.initGridTable();
   }
-  onSelectedRows(rows: Array<GuiSelectedRow>): void {
-    this.rows = rows;
-    this.Selectedrows = rows.map((m: GuiSelectedRow) => m.source.id);
+  onSelectionChange(value: any[]) {
+    this.selected_rows = value;
+    this.Selectedrows = value.map(item => item.id);
+    this.rows = value;
   }
 
   removefilter(filter: any) {

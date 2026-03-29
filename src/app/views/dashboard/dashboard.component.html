@@ -173,7 +173,7 @@
           <span *ngIf="copy_msg" style="color: #fff!important;" class="badge text-bg-success"><i
               class="fa-solid fa-check"></i>Copy</span>
         </div>
-        <c-badge *ngIf="stats['username']" color="danger">Not Registred</c-badge>
+        <c-badge *ngIf="stats['username']" color="danger">Not Registered</c-badge>
         <c-badge *ngIf="!stats['username']" color="danger">License Validation failed</c-badge>
       </div>
       <div *ngIf="stats['license']=='connection_error'" class="my-1">
@@ -194,7 +194,7 @@
           <span *ngIf="copy_msg" style="color: #fff!important;" class="badge text-bg-success mx-1"><i
               class="fa-solid fa-check"></i>Copy</span>
         </div>
-        <c-badge color="success">Registred</c-badge>
+        <c-badge color="success">Registered</c-badge>
         <c-badge class="mx-1" color="info">License Type : {{stats['license']}}</c-badge>
         <c-badge *ngIf="stats['update_mode']!='auto'" color="info">Manual update</c-badge>
         <c-badge *ngIf="stats['update_mode']=='auto'" color="info">Auto update</c-badge>
@@ -223,8 +223,12 @@
               class="fa-regular fa-hand-pointer fa-beat-fade"></i> Update availble </button>
         </span>
       </div>
-      <p  *ngIf="!stats['license'] && !stats['username']" style="color: rgb(0, 119, 255);"><strong>License User name is not set in settings <a style="color: rgb(0, 119, 255);" target="_blank" href="https://mikrowizard.com/docs/register-serial-number/" >read more!</a></strong></p>
-      <p  *ngIf="!stats['license'] &&  stats['username']" style="color: rgb(0, 119, 255);"><strong>Serial number not submited<a style="color: rgb(0, 119, 255);" target="_blank" href="https://mikrowizard.com/docs/register-serial-number/" >read more!</a></strong> </p>
+      <p *ngIf="!stats['license'] && !stats['username']" style="color: rgb(0, 119, 255);"><strong>License User name is
+          not set in settings <a style="color: rgb(0, 119, 255);" target="_blank"
+            href="https://mikrowizard.com/docs/register-serial-number/">read more!</a></strong></p>
+      <p *ngIf="!stats['license'] &&  stats['username']" style="color: rgb(0, 119, 255);"><strong>Serial number not
+          submited<a style="color: rgb(0, 119, 255);" target="_blank"
+            href="https://mikrowizard.com/docs/register-serial-number/">read more!</a></strong> </p>
 
       <!-- <div *ngIf="stats['update_mode']!='auto'" class="my-1">
         <button cButton color="warning" *ngIf="stats['update_available']" size="sm" style="font-size: 1em;"><i class="fa-regular fa-hand-pointer fa-beat-fade"></i> Update <strong>Mikroman</strong> and reload server</button>

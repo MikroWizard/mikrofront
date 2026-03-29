@@ -63,12 +63,6 @@
     }
 }
 
-// Grid Improvements
-gui-grid {
-    .gui-grid {
-        font-size: 0.85rem;
-    }
-}
 
 // Input Group Compact
 .input-group-sm {
@@ -204,19 +198,6 @@ gui-grid {
     }
 }
 
-// Grid Cell Improvements
-::ng-deep gui-grid {
-    .gui-grid-cell {
-        padding: 0.5rem;
-        font-size: 0.85rem;
-    }
-    
-    .gui-grid-header-cell {
-        font-size: 0.8rem;
-        font-weight: 600;
-        padding: 0.5rem;
-    }
-}
 
 // Tab Info Headers
 .tab-info-header {

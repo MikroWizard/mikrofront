@@ -4,7 +4,7 @@
       <c-card-header>
         <c-row>
           <c-col xs [lg]="11" style="display: flex;flex-direction: column;align-items: flex-start;">
-            <h5>Device LOGS
+            <h5>Device Logs
               <a style="cursor: pointer;" (click)="reinitgrid('none','none')"><i
                   *ngIf="devid!=0 && component_devid && !reloading" class="fa-solid fa-arrows-rotate"
                   style="color: #74C0FC;"></i>
@@ -14,8 +14,10 @@
             </h5>
             <c-badge color="warning" *ngIf="devid!=0 && !component_devid">Filtered Result For Device ID
               {{devid}}</c-badge>
-            <c-alert color="warning" style="padding-top: 5px!important;font-size: 0.8rem;display: inline-block;" *ngIf="!filters['start_time'] && !filters['end_time']">
-              <i class="fa-solid fa-triangle-exclamation mx-1"></i>Showing <strong>last 24 hours logs</strong> by default. Use filters to modify the date and time.
+            <c-alert color="warning" style="padding-top: 5px!important;font-size: 0.8rem;display: inline-block;"
+              *ngIf="!filters['start_time'] && !filters['end_time']">
+              <i class="fa-solid fa-triangle-exclamation mx-1"></i>Showing <strong>last 24 hours logs</strong> by
+              default. Use filters to modify the date and time.
             </c-alert>
           </c-col>
           <c-col xs [lg]="1">
@@ -84,74 +86,207 @@
           </div>
 
         </c-row>
-        <gui-grid wid [rowDetail]="rowDetail" [horizontalGrid]="true" [rowHeight]="52" [source]="source"
-          [columnMenu]="columnMenu" [paging]="paging" [sorting]="sorting" [infoPanel]="infoPanel"
-          [autoResizeWidth]="true">
-          <gui-grid-column header="#No" type="NUMBER" field="index" width="1" align="CENTER">
-            <ng-template let-value="item.index" let-item="item" let-index="index">
-              {{ value }}
-            </ng-template>
-          </gui-grid-column>
+        <div class="mb-3 d-flex justify-content-end">
+          <span class="p-input-icon-left table-search-input">
+            <i class="pi pi-search"></i>
+            <input type="text" pInputText placeholder="Search logs..." (input)="applyFilterGlobal($event, 'contains')"
+              class="form-control-sm" />
+          </span>
+        </div>
 
-          <gui-grid-column header="level" width='90' wid field="level">
-            <ng-template let-value="item.level" let-item="item" let-index="index">
-              <c-badge style="cursor: pointer; font-weight: normal" color="danger" *ngIf="value == 'Critical'">{{ value
-                }}</c-badge>
-              <c-badge style="cursor: pointer; font-weight: normal" color="warning" *ngIf="value == 'Error'">{{ value
-                }}</c-badge>
-              <c-badge style="cursor: pointer; font-weight: normal" color="warning" *ngIf="value == 'Warning'">{{ value
-                }}</c-badge>
-              <c-badge style="cursor: pointer; font-weight: normal; min-width: 60px;" color="info"
-                *ngIf="value == 'info'">{{ value }}</c-badge>
-            </ng-template>
-          </gui-grid-column>
-          <gui-grid-column header="Event" width='200' field="detail">
-            <ng-template let-value="item.detail" let-item="item" let-index="index">
-              {{ value }}
-            </ng-template>
-          </gui-grid-column>
-          <gui-grid-column header="Detail" field="comment">
-            <ng-template let-value="item.comment" let-item="item" let-index="index">
+        <p-table #dt [value]="source" [paginator]="true" [rows]="10" [showCurrentPageReport]="true"
+          [rowsPerPageOptions]="[10, 25, 50]" [resizableColumns]="true" columnResizeMode="expand" [showGridlines]="true"
+          [stripedRows]="true" styleClass="p-datatable-sm p-datatable-gridlines p-datatable-striped"
+          [globalFilterFields]="['detail', 'comment', 'src', 'name', 'devip', 'level']" selectionMode="single"
+          (onRowSelect)="showLogDetails($event.data)">
 
-              <div class="gui-dev-info">
-                {{ value }}
+          <ng-template pTemplate="header">
+            <tr>
+              <th pSortableColumn="index" style="width: 5rem" pResizableColumn>
+                <div class="justify-between">
+                  <span>#No</span>
+                  <p-sortIcon field="index"></p-sortIcon>
+                </div>
+              </th>
+              <th pSortableColumn="level" style="width: 100px" pResizableColumn>
+                <div class="justify-between">
+                  <span>Level</span>
+                  <span>
+                    <p-sortIcon field="level"></p-sortIcon>
+                    <p-columnFilter type="text" field="level" display="menu" class="ms-auto" />
+                  </span>
+                </div>
+              </th>
+              <th pSortableColumn="detail" pResizableColumn>
+                <div class="justify-between">
+                  <span>Event</span>
+                  <span>
+                    <p-sortIcon field="detail"></p-sortIcon>
+                    <p-columnFilter type="text" field="detail" display="menu" class="ms-auto" />
+                  </span>
+                </div>
+              </th>
+              <th pSortableColumn="comment" pResizableColumn>
+                <div class="justify-between">
+                  <span>Detail</span>
+                  <span>
+                    <p-sortIcon field="comment"></p-sortIcon>
+                    <p-columnFilter type="text" field="comment" display="menu" class="ms-auto" />
+                  </span>
+                </div>
+              </th>
+              <th pSortableColumn="src" style="width: 100px" pResizableColumn>
+                <div class="justify-between">
+                  <span>Source</span>
+                  <span>
+                    <p-sortIcon field="src"></p-sortIcon>
+                    <p-columnFilter type="text" field="src" display="menu" class="ms-auto" />
+                  </span>
+                </div>
+              </th>
+              <th pSortableColumn="status" style="width: 100px" pResizableColumn>
+                <div class="justify-between">
+                  <span>Status</span>
+                  <span>
+                    <p-sortIcon field="status"></p-sortIcon>
+                    <p-columnFilter type="text" field="status" display="menu" class="ms-auto" />
+                  </span>
+                </div>
+              </th>
+              <th pSortableColumn="eventtime" style="width: 200px" pResizableColumn>
+                <div class="justify-between">
+                  <span>Time</span>
+                  <span>
+                    <p-sortIcon field="eventtime"></p-sortIcon>
+                    <p-columnFilter type="text" field="eventtime" display="menu" class="ms-auto" />
+                  </span>
+                </div>
+              </th>
+              <th pSortableColumn="name" pResizableColumn>
+                <div class="justify-between">
+                  <span>Device</span>
+                  <span>
+                    <p-sortIcon field="name"></p-sortIcon>
+                    <p-columnFilter type="text" field="name" display="menu" class="ms-auto" />
+                  </span>
+                </div>
+              </th>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="body" let-item>
+            <tr [pSelectableRow]="item" style="cursor: pointer;">
+              <td class="text-center">{{item.index}}</td>
+              <td>
+                <c-badge
+                  [color]="item.level == 'Critical' ? 'danger' : (item.level == 'Error' || item.level == 'Warning' ? 'warning' : 'info')"
+                  style="font-weight: normal; min-width: 65px;">
+                  {{item.level}}
+                </c-badge>
+              </td>
+              <td>{{item.detail}}</td>
+              <td>
+                <div class="text-truncate" style="max-width: 250px;" [pTooltip]="item.comment" tooltipPosition="top">
+                  {{item.comment}}
+                </div>
+              </td>
+              <td>{{item.src}}</td>
+              <td class="text-center">
+                <c-badge [color]="item.status == true ? 'success' : 'danger'" style="font-weight: normal">
+                  {{item.status == true ? 'Fixed' : 'Not Fixed'}}
+                </c-badge>
+              </td>
+              <td class="small">
+                <div *ngIf="item.fixtime" class="d-flex flex-column gap-1">
+                  <div class="d-flex align-items-center gap-1">
+                    <c-badge color="danger" style="font-size: 0.6rem; padding: 2px 4px;">EVT</c-badge>
+                    <span>{{item.eventtime}}</span>
+                  </div>
+                  <div class="d-flex align-items-center gap-1">
+                    <c-badge color="success" style="font-size: 0.6rem; padding: 2px 4px;">FIX</c-badge>
+                    <span>{{item.fixtime}}</span>
+                  </div>
+                </div>
+                <div *ngIf="!item.fixtime">{{item.eventtime}}</div>
+              </td>
+              <td>
+                <div class="fw-bold">{{item.name}}</div>
+                <div class="small text-muted">{{item.devip}}</div>
+              </td>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="8" class="text-center p-4">No device logs found.</td>
+            </tr>
+          </ng-template>
+        </p-table>
+
+        <!-- Details Drawer -->
+        <p-drawer [(visible)]="detailsVisible" position="right" [style]="{width: '500px'}" header="Device Log Details">
+          <div *ngIf="selectedLog" class="p-0">
+            <div [style.background-color]="getSeverityColor(selectedLog.level)" class="p-4 text-white shadow-sm mb-4">
+              <div class="d-flex align-items-center justify-content-between">
+                <div>
+                  <h3 class="m-0"><i class="pi pi-exclamation-triangle me-2"></i>{{selectedLog.level}} Alert</h3>
+                  <div class="opacity-75">{{selectedLog.eventtype || 'System Event'}}</div>
+                </div>
+                <i class="pi pi-bell" style="font-size: 2.5rem; opacity: 0.3;"></i>
               </div>
-            </ng-template>
-          </gui-grid-column>
-          <gui-grid-column header="Source" width='90' field="src">
-            <ng-template let-value="item.src" let-item="item" let-index="index">
-              {{ value }}
-            </ng-template>
-          </gui-grid-column>
-          <gui-grid-column header="status" width='100' field="status" align="CENTER">
-            <ng-template let-value="item.status" let-item="item" let-index="index">
-              <c-badge style=" cursor: pointer; font-weight: normal" color="success"
-                *ngIf="value == true">Fixed</c-badge>
-              <c-badge style="cursor: pointer; font-weight: normal" color="danger" *ngIf="value != true">Not
-                Fixed</c-badge>
-            </ng-template>
-          </gui-grid-column>
-          <gui-grid-column header="eventtime" width='220' field="eventtime">
-            <ng-template let-value="item.eventtime" let-item="item" let-index="index">
-              <div *ngIf="item.fixtime" class="fixed_time"><span><c-badge *ngIf="item.status==true" color="danger"
-                    style="font-size: 0.65em!important;padding: 3px 5px;" size="sm" shape="rounded-pill">Event</c-badge>
-                  {{value}}</span><span>
-                  <c-badge *ngIf="item.status==true" color="success"
-                    style="font-size: 0.65em!important;padding: 3px 5px;" size="sm" shape="rounded-pill">Fixed</c-badge>
-                  {{item.fixtime}}</span>
+            </div>
+
+            <div class="px-4 pb-4">
+              <h5 class="border-bottom pb-2 mb-3"><i class="pi pi-desktop me-2 text-primary"></i>Device Info</h5>
+              <div class="row mb-2">
+                <div class="col-5 fw-bold text-muted small text-uppercase">Device Name:</div>
+                <div class="col-7 fw-bold">{{selectedLog.name}}</div>
               </div>
-              <div *ngIf="!item.fixtime"> {{ value }}</div>
-            </ng-template>
-          </gui-grid-column>
-          <gui-grid-column header="Device" width='200' field="name">
-            <ng-template let-value="item.name" let-item="item" let-index="index">
-              <div class="gui-dev-info">
-                <span class="gui-dev-info-name">{{ value }}</span>
-                <span class="gui-dev-info-ip">{{ item.devip }}</span>
+              <div class="row mb-2">
+                <div class="col-5 fw-bold text-muted small text-uppercase">IP Address:</div>
+                <div class="col-7 font-monospace">{{selectedLog.devip}}</div>
               </div>
-            </ng-template>
-          </gui-grid-column>
-        </gui-grid>
+              <div class="row mb-2">
+                <div class="col-5 fw-bold text-muted small text-uppercase">MAC Address:</div>
+                <div class="col-7 small font-monospace">{{selectedLog.mac}}</div>
+              </div>
+
+              <h5 class="border-bottom pb-2 mb-3 mt-4"><i class="pi pi-info-circle me-2 text-primary"></i>Event Details
+              </h5>
+              <div class="row mb-2">
+                <div class="col-5 fw-bold text-muted small text-uppercase">Event:</div>
+                <div class="col-7">{{selectedLog.detail}}</div>
+              </div>
+              <div class="row mb-2">
+                <div class="col-5 fw-bold text-muted small text-uppercase">Source:</div>
+                <div class="col-7">{{selectedLog.src}}</div>
+              </div>
+              <div class="row mb-2">
+                <div class="col-5 fw-bold text-muted small text-uppercase">Event Time:</div>
+                <div class="col-7 small">{{selectedLog.eventtime}}</div>
+              </div>
+              <div *ngIf="selectedLog.fixtime" class="row mb-2">
+                <div class="col-5 fw-bold text-muted small text-uppercase">Fixed Time:</div>
+                <div class="col-7 small text-success fw-bold">{{selectedLog.fixtime}}</div>
+              </div>
+              <div class="row mb-2">
+                <div class="col-5 fw-bold text-muted small text-uppercase">Status:</div>
+                <div class="col-7">
+                  <c-badge [color]="selectedLog.status == true ? 'success' : 'danger'" style="padding: 5px 10px;">
+                    {{selectedLog.status == true ? 'Fixed' : 'Not Fixed'}}
+                  </c-badge>
+                </div>
+              </div>
+
+              <h5 class="border-bottom pb-2 mb-3 mt-4"><i class="pi pi-comment me-2 text-primary"></i>Detail Message
+              </h5>
+              <div class="bg-light p-3 rounded border italic text-muted text-break"
+                style="font-size: 0.9rem; line-height: 1.4;">
+                {{selectedLog.comment || 'No additional details available for this event.'}}
+              </div>
+            </div>
+          </div>
+        </p-drawer>
       </c-card-body>
     </c-card>
   </c-col>

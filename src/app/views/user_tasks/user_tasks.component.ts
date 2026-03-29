@@ -1,19 +1,8 @@
-import { Component, OnInit, OnDestroy, QueryList, ViewChildren } from "@angular/core";
+import { Component, OnInit, OnDestroy, QueryList, ViewChildren, ViewChild } from "@angular/core";
 import { dataProvider } from "../../providers/mikrowizard/data";
 import { Router } from "@angular/router";
 import { loginChecker } from "../../providers/login_checker";
-import {
-  GuiSelectedRow,
-  GuiSearching,
-  GuiInfoPanel,
-  GuiColumn,
-  GuiColumnMenu,
-  GuiPaging,
-  GuiPagingDisplay,
-  GuiRowSelectionMode,
-  GuiRowSelection,
-  GuiRowSelectionType,
-} from "@generic-ui/ngx-grid";
+import { Table } from 'primeng/table';
 import { NgxSuperSelectOptions } from "ngx-super-select";
 import { _getFocusedElementPierceShadowDom } from "@angular/cdk/platform";
 import { AppToastComponent } from "../toast-simple/toast.component";
@@ -25,9 +14,12 @@ import { ToasterComponent } from "@coreui/angular";
   styleUrls: ["user_tasks.component.scss"]
 })
 export class UserTasksComponent implements OnInit {
-  public uid: number;
-  public uname: string;
+  public uid: number = 0;
+  public uname: string = '';
   public ispro: boolean = false;
+
+  @ViewChild('dt') table!: Table;
+  @ViewChild('dtNewMembers') tableNewMembers!: Table;
 
   @ViewChildren(ToasterComponent) viewChildren!: QueryList<ToasterComponent>;
   toasterForm = {
@@ -67,7 +59,6 @@ export class UserTasksComponent implements OnInit {
     }
   }
   public source: Array<any> = [];
-  public columns: Array<GuiColumn> = [];
   public loading: boolean = true;
   public rows: any = [];
   public SelectedTask: any = {};
@@ -138,14 +129,13 @@ export class UserTasksComponent implements OnInit {
   public cronSearch: string = '';
   public selectedCronPreset: any = null;
   public filteredCrons: any[] = [];
-  public sorting = {
-    enabled: true,
-    multiSorting: true,
-  };
-  searching: GuiSearching = {
-    enabled: true,
-    placeholder: "Search Devices",
-  };
+  applyFilterGlobal($event: any, stringVal: string) {
+    this.table.filterGlobal(($event.target as HTMLInputElement).value, stringVal);
+  }
+
+  applyFilterNewMembers($event: any, stringVal: string) {
+    this.tableNewMembers.filterGlobal(($event.target as HTMLInputElement).value, stringVal);
+  }
 
   options: Partial<NgxSuperSelectOptions> = {
     selectionMode: "single",
@@ -167,32 +157,6 @@ export class UserTasksComponent implements OnInit {
     enableDarkMode: false,
   };
 
-  public paging: GuiPaging = {
-    enabled: true,
-    page: 1,
-    pageSize: 10,
-    pageSizes: [5, 10, 25, 50],
-    display: GuiPagingDisplay.ADVANCED,
-  };
-
-  public columnMenu: GuiColumnMenu = {
-    enabled: true,
-    sort: true,
-    columnsManager: true,
-  };
-
-  public infoPanel: GuiInfoPanel = {
-    enabled: true,
-    infoDialog: false,
-    columnsManager: true,
-    schemaManager: true,
-  };
-
-  public rowSelection: boolean | GuiRowSelection = {
-    enabled: true,
-    type: GuiRowSelectionType.CHECKBOX,
-    mode: GuiRowSelectionMode.MULTIPLE,
-  };
 
   show_new_member_form() {
     this.NewMemberModalVisible = true;
@@ -267,9 +231,9 @@ export class UserTasksComponent implements OnInit {
     }
   }
 
-  onSelectedRowsNewMembers(rows: Array<GuiSelectedRow>): void {
+  onSelectedRowsNewMembers(rows: any[]): void {
     this.NewMemberRows = rows;
-    this.SelectedNewMemberRows = rows.map((m: GuiSelectedRow) => m.source);
+    this.SelectedNewMemberRows = rows;
   }
 
   add_new_members() {

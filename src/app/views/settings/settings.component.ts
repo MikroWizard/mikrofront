@@ -4,21 +4,12 @@ import {
   QueryList,
   ViewChildren,
   ViewEncapsulation,
+  ViewChild
 } from "@angular/core";
 import { dataProvider } from "../../providers/mikrowizard/data";
 import { Router } from "@angular/router";
 import { loginChecker } from "../../providers/login_checker";
-import {
-  GuiSelectedRow,
-  GuiInfoPanel,
-  GuiColumn,
-  GuiColumnMenu,
-  GuiPaging,
-  GuiPagingDisplay,
-  GuiRowSelectionMode,
-  GuiRowSelection,
-  GuiRowSelectionType,
-} from "@generic-ui/ngx-grid";
+import { Table } from 'primeng/table';
 import { ToasterComponent } from "@coreui/angular";
 import { AppToastComponent } from "../toast-simple/toast.component";
 import { TimeZones } from "./timezones-data";
@@ -30,14 +21,16 @@ import { TimeZones } from "./timezones-data";
 })
 
 export class SettingsComponent implements OnInit {
-  public uid: number;
-  public uname: string;
+  public uid: number = 0;
+  public uname: string = '';
   public ispro:boolean=false;
-  public filterText: string;
+  public filterText: string = '';
   public filters: any = {};
   public firms: any = {};
   public firmtodownload: any = {};
   public activeTab: string = 'firmware';
+
+  @ViewChild('dt') dt!: Table;
   
   // Search functionality properties
   public firmwareSearch: string = '';
@@ -81,7 +74,6 @@ export class SettingsComponent implements OnInit {
   @ViewChildren(ToasterComponent) viewChildren!: QueryList<ToasterComponent>;
 
   public source: Array<any> = [];
-  public columns: Array<GuiColumn> = [];
   public loading: boolean = true;
   public SysConfigloading: boolean = true;
 
@@ -104,37 +96,9 @@ export class SettingsComponent implements OnInit {
     closeButton: true,
   };
 
-  public sorting = {
-    enabled: true,
-    multiSorting: true,
-  };
-
-  public paging: GuiPaging = {
-    enabled: true,
-    page: 1,
-    pageSize: 5,
-    pageSizes: [5, 10, 25, 50],
-    display: GuiPagingDisplay.ADVANCED,
-  };
-
-  public columnMenu: GuiColumnMenu = {
-    enabled: true,
-    sort: true,
-    columnsManager: true,
-  };
-
-  public infoPanel: GuiInfoPanel = {
-    enabled: true,
-    infoDialog: false,
-    columnsManager: true,
-    schemaManager: true,
-  };
-
-  public rowSelection: boolean | GuiRowSelection = {
-    enabled: true,
-    type: GuiRowSelectionType.CHECKBOX,
-    mode: GuiRowSelectionMode.MULTIPLE,
-  };
+  applyFilterGlobal($event: any, stringVal: string) {
+    this.dt.filterGlobal(($event.target as HTMLInputElement).value, stringVal);
+  }
   public timezones = this.TimeZones.timezones;
 
   ngOnInit(): void {
@@ -208,9 +172,9 @@ export class SettingsComponent implements OnInit {
       });
   }
 
-  onSelectedRows(rows: Array<GuiSelectedRow>): void {
+  onSelectedRows(rows: any[]): void {
     this.rows = rows;
-    this.Selectedrows = rows.map((m: GuiSelectedRow) => m.source.id);
+    this.Selectedrows = rows.map((m: any) => m.id);
   }
 
   show_toast(title: string, body: string, color: string) {

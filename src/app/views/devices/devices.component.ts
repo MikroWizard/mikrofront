@@ -10,21 +10,9 @@ import { dataProvider } from "../../providers/mikrowizard/data";
 import { Router, ActivatedRoute } from "@angular/router";
 import { loginChecker } from "../../providers/login_checker";
 import {
-  GuiGridComponent,
-  GuiGridApi,
-  GuiRowClass,
-  GuiSearching,
-  GuiSelectedRow,
-  GuiInfoPanel,
-  GuiColumn,
-  GuiColumnMenu,
-  GuiPaging,
-  GuiPagingDisplay,
-  GuiRowSelectionMode,
-  GuiRowSelection,
-  GuiRowSelectionType,
-} from "@generic-ui/ngx-grid";
-import { ToasterComponent } from "@coreui/angular";
+  ToasterComponent
+} from "@coreui/angular";
+import { Table } from 'primeng/table';
 import { AppToastComponent } from "../toast-simple/toast.component";
 import { formatInTimeZone } from "date-fns-tz";
 
@@ -34,9 +22,9 @@ import { formatInTimeZone } from "date-fns-tz";
   templateUrl: "devices.component.html",
 })
 export class DevicesComponent implements OnInit, OnDestroy {
-  public uid: number;
-  public uname: string;
-  public tz: string;
+  public uid!: number;
+  public uname!: string;
+  public tz!: string;
   public ispro:boolean=false;
 
   constructor( 
@@ -69,14 +57,11 @@ export class DevicesComponent implements OnInit, OnDestroy {
       return value !== undefined && value !== null && value !== "";
     }
   }
-  @ViewChild("grid", { static: true }) gridComponent: GuiGridComponent;
+  @ViewChild("dt") table!: Table;
   @ViewChildren(ToasterComponent) viewChildren!: QueryList<ToasterComponent>;
   public source: Array<any> = [];
   public originalSource: Array<any> = [];
-  public columns: Array<GuiColumn> = [];
   public loading: boolean = true;
-  public rows: any = [];
-  public Selectedrows: any;
   public upgrades: any = [];
   public updates: any = [];
   public scanwizard_step: number = 1;
@@ -117,6 +102,10 @@ export class DevicesComponent implements OnInit, OnDestroy {
   public uploadResult = { success: 0, failed: 0, resultFile: null };
   public currentTaskId: string = '';
   public statusCheckTimer: any;
+
+  public selected_rows: any[] = []; // Used by p-table selection
+  public Selectedrows: any[] = []; // Legacy ID array used by actions
+  public rows: any = []; // For legacy internal use
   
   toasterForm = {
     autohide: true,
@@ -125,7 +114,7 @@ export class DevicesComponent implements OnInit, OnDestroy {
     fade: true,
     closeButton: true,
   };
-  rowClass: GuiRowClass = {
+  rowClass: any = {
     class: "row-highlighted",
   };
   public sorting = {
@@ -134,38 +123,36 @@ export class DevicesComponent implements OnInit, OnDestroy {
   };
   public ip_scanner: any;
 
-  searching: GuiSearching = {
-    enabled: true,
-    placeholder: "Search Devices",
-  };
+  applyFilterGlobal($event: any, stringVal: string) {
+    this.table.filterGlobal(($event.target as HTMLInputElement).value, stringVal);
+  }
 
-  public paging: GuiPaging = {
+  public paging: any = {
     enabled: true,
     page: 1,
     pageSize: 10,
     pageSizes: [5, 10, 25, 50],
-    display: GuiPagingDisplay.ADVANCED,
   };
 
-  public columnMenu: GuiColumnMenu = {
+  public columnMenu: any = {
     enabled: true,
     sort: true,
     columnsManager: true,
   };
 
-  public infoPanel: GuiInfoPanel = {
+  public infoPanel: any = {
     enabled: true,
     infoDialog: false,
     columnsManager: true,
     schemaManager: true,
   };
 
-  public rowSelection: GuiRowSelection = {
-    enabled: true,
-    type: GuiRowSelectionType.CHECKBOX,
-    mode: GuiRowSelectionMode.MULTIPLE,
-  };
-
+  onSelectionChange(value: any[]) {
+    this.selected_rows = value;
+    this.Selectedrows = value.map(item => item.id);
+    this.rows = value; // For legacy compat if needed
+  }
+  
   ngOnInit(): void {
     this.selected_group = Number(this.route.snapshot.paramMap.get("id"));
     this.initGridTable();
@@ -177,8 +164,7 @@ export class DevicesComponent implements OnInit, OnDestroy {
   }
 
   single_device_action(dev: any, action: string) {
-    const api: GuiGridApi = this.gridComponent.api;
-    api.unselectAll();
+    this.selected_rows = [];
     this.Selectedrows = [dev["id"]];
     switch (action) {
       case "edit":
@@ -273,10 +259,7 @@ export class DevicesComponent implements OnInit, OnDestroy {
     });
   }
 
-  onSelectedRows(rows: Array<GuiSelectedRow>): void {
-    this.rows = rows;
-    this.Selectedrows = rows.map((m: GuiSelectedRow) => m.source.id);
-  }
+  // Removed legacy onSelectedRows
 
   checkvalid(type: string): boolean {
     var rx =

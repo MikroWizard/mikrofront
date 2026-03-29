@@ -2,10 +2,13 @@ import { NgModule ,APP_INITIALIZER} from '@angular/core';
 import { HashLocationStrategy, LocationStrategy, PathLocationStrategy } from '@angular/common';
 import { BrowserModule, Title } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
+import { providePrimeNG } from 'primeng/config';
+import Aura from '@primeuix/themes/aura';
 import { ReactiveFormsModule,FormsModule } from '@angular/forms';
 
 import { NgScrollbarModule } from 'ngx-scrollbar';
-import { HttpClientModule } from '@angular/common/http';
+import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 
 // Import routing module
 import { AppRoutingModule } from './app-routing.module';
@@ -54,60 +57,63 @@ const APP_CONTAINERS = [
 export function loginStatusProviderFactory(provider: loginChecker) {
   return () => provider.load();
 }
-@NgModule({
-  declarations: [AppComponent, ...APP_CONTAINERS],
-  imports: [
-    BrowserModule,
-    BrowserAnimationsModule,
-    AppRoutingModule,
-    AvatarModule,
-    BreadcrumbModule,
-    FooterModule,
-    DropdownModule,
-    GridModule,
-    HeaderModule,
-    SidebarModule,
-    IconModule,
-    NavModule,
-    HttpClientModule,
-    ButtonModule,
-    FormModule,
-    UtilitiesModule,
-    ButtonGroupModule,
-    ReactiveFormsModule,
-    FormsModule,
-    SidebarModule,
-    SharedModule,
-    TabsModule,
-    ListGroupModule,
-    ProgressModule,
-    BadgeModule,
-    ListGroupModule,
-    CardModule,
-    NgScrollbarModule,
-    ModalModule,
-    FontAwesomeModule,
-    TableModule
-  ],
-  providers: [
-    {
-      provide: LocationStrategy,
-      useClass: HashLocationStrategy
-    },
-    MikroWizardProvider,
-    dataProvider,
-    loginChecker,
-    IconSetService,
-    provideDateFnsAdapter(),
-    {
-      provide: APP_INITIALIZER,
-      useFactory: loginStatusProviderFactory,
-      deps: [loginChecker],
-      multi: true,
-    },
-    Title
-  ],
-  bootstrap: [AppComponent]
-})
+@NgModule({ declarations: [AppComponent, ...APP_CONTAINERS],
+    bootstrap: [AppComponent], imports: [BrowserModule,
+        BrowserAnimationsModule,
+        AppRoutingModule,
+        AvatarModule,
+        BreadcrumbModule,
+        FooterModule,
+        DropdownModule,
+        GridModule,
+        HeaderModule,
+        SidebarModule,
+        IconModule,
+        NavModule,
+        ButtonModule,
+        FormModule,
+        UtilitiesModule,
+        ButtonGroupModule,
+        ReactiveFormsModule,
+        FormsModule,
+        SidebarModule,
+        SharedModule,
+        TabsModule,
+        ListGroupModule,
+        ProgressModule,
+        BadgeModule,
+        ListGroupModule,
+        CardModule,
+        NgScrollbarModule,
+        ModalModule,
+        FontAwesomeModule,
+        TableModule], providers: [
+        {
+            provide: LocationStrategy,
+            useClass: HashLocationStrategy
+        },
+        MikroWizardProvider,
+        dataProvider,
+        loginChecker,
+        IconSetService,
+        provideDateFnsAdapter(),
+        provideAnimationsAsync(),
+        providePrimeNG({
+            theme: {
+                preset: Aura,
+                options: {
+                    darkModeSelector: 'none'
+                }
+            }
+        }),
+        {
+            provide: APP_INITIALIZER,
+            useFactory: loginStatusProviderFactory,
+            deps: [loginChecker],
+            multi: true,
+        },
+        Title,
+        provideHttpClient(withInterceptorsFromDi())
+    ] })
 export class AppModule {
 }

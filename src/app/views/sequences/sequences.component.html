@@ -4,7 +4,7 @@
             <c-card-header>
                 <c-row>
                     <c-col xs [lg]="3">
-                        Alert Sequences (Pro)
+                        Sequences
                     </c-col>
                     <c-col xs [lg]="9">
                         <h6 style="text-align: right;">
@@ -18,48 +18,109 @@
                 </c-row>
             </c-card-header>
             <c-card-body>
-                <gui-grid [source]="source" [searching]="searching" [paging]="paging" [columnMenu]="columnMenu"
-                    [sorting]="sorting" [infoPanel]="infoPanel" [rowSelection]="rowSelection" [autoResizeWidth]=true>
-                    <gui-grid-column header="Name" field="name">
-                        <ng-template let-value="item.name" let-item="item" let-index="index">
-                            {{value}}
-                        </ng-template>
-                    </gui-grid-column>
-                    <gui-grid-column header="Source Snippet" field="source_snippet_id">
-                        <ng-template let-value="item.source_snippet_id" let-item="item" let-index="index">
-                            Snippet #{{value}}
-                        </ng-template>
-                    </gui-grid-column>
-                    <gui-grid-column header="Active" field="is_active">
-                        <ng-template let-value="item.is_active" let-item="item" let-index="index">
-                            <i *ngIf="value" class="fa-solid fa-check" style="color: green;"></i>
-                            <i *ngIf="!value" class="fa-solid fa-x" style="color: red;"></i>
-                        </ng-template>
-                    </gui-grid-column>
-                    <gui-grid-column header="Created" field="created">
-                        <ng-template let-value="item.created" let-item="item" let-index="index">
-                            <div>{{value}}</div>
-                        </ng-template>
-                    </gui-grid-column>
-                    <gui-grid-column header="Actions" field="action" align="center">
-                        <ng-template let-value="item.id" let-item="item" let-index="index">
-                            <button cButton color="success" size="sm" (click)="Run_Sequence(item)" class=""><i
-                                    class="fa-solid fa-play mx-1"></i>Execute</button>
-                            <button cButton color="primary" size="sm" (click)="Edit_Sequence(item,'edit')" class="mx-1"><i
-                                    class="fa-regular fa-pen-to-square mx-1"></i>Edit</button>
-                            <button cButton color="info" size="sm" (click)="show_history(item)" class=""><i
-                                    class="fa-solid fa-clock-rotate-left mx-1"></i>History</button>
-                            <button cButton color="danger" size="sm" (click)="confirm_delete(item,false)" class="mx-1"><i
-                                    class="fa-regular fa-trash-can mx-1"></i>Delete</button>
-                        </ng-template>
-                    </gui-grid-column>
-                </gui-grid>
+                <div class="mb-3 d-flex justify-content-end">
+                    <span class="p-input-icon-left table-search-input">
+                        <i class="pi pi-search"></i>
+                        <input type="text" pInputText placeholder="Search sequences..."
+                            (input)="applyFilterGlobal($event, 'contains')" class="form-control-sm" />
+                    </span>
+                </div>
+
+                <p-table #dt [value]="source" [paginator]="true" [rows]="10" [showCurrentPageReport]="true"
+                    [rowsPerPageOptions]="[10, 25, 50]" [resizableColumns]="true" columnResizeMode="expand"
+                    [showGridlines]="true" [stripedRows]="true"
+                    styleClass="p-datatable-sm p-datatable-gridlines p-datatable-striped"
+                    [globalFilterFields]="['name', 'created']" [loading]="false">
+
+                    <ng-template pTemplate="header">
+                        <tr>
+                            <th pSortableColumn="name" pResizableColumn>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span>Name</span>
+                                    <span>
+                                        <p-sortIcon field="name"></p-sortIcon>
+                                        <p-columnFilter type="text" field="name" display="menu" class="ms-auto" />
+                                    </span>
+                                </div>
+                            </th>
+                            <th pSortableColumn="source_snippet_id" pResizableColumn>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span>Source Snippet</span>
+                                    <span>
+                                        <p-sortIcon field="source_snippet_id"></p-sortIcon>
+                                        <p-columnFilter type="numeric" field="source_snippet_id" display="menu"
+                                            class="ms-auto" />
+                                    </span>
+                                </div>
+                            </th>
+                            <th pSortableColumn="is_active" class="text-center" pResizableColumn>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span>Active</span>
+                                    <span>
+                                        <p-sortIcon field="is_active"></p-sortIcon>
+                                        <p-columnFilter type="boolean" field="is_active" display="menu"
+                                            class="ms-auto" />
+                                    </span>
+                                </div>
+                            </th>
+                            <th pSortableColumn="created" pResizableColumn>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span>Created</span>
+                                    <span>
+                                        <p-sortIcon field="created"></p-sortIcon>
+                                        <p-columnFilter type="text" field="created" display="menu" class="ms-auto" />
+                                    </span>
+                                </div>
+                            </th>
+                            <th style="width: 280px" class="text-center" pResizableColumn>Actions</th>
+                        </tr>
+                    </ng-template>
+
+                    <ng-template pTemplate="body" let-item>
+                        <tr>
+                            <td><strong>{{item.name}}</strong></td>
+                            <td>Snippet #{{item.source_snippet_id}}</td>
+                            <td class="text-center">
+                                <i *ngIf="item.is_active" class="fa-solid fa-check" style="color: green;"></i>
+                                <i *ngIf="!item.is_active" class="fa-solid fa-x" style="color: red;"></i>
+                            </td>
+                            <td>{{item.created}}</td>
+                            <td class="text-center">
+                                <div class="d-flex gap-1 justify-content-center">
+                                    <button cButton color="success" size="sm" (click)="Run_Sequence(item)"
+                                        pTooltip="Execute Sequence">
+                                        <i class="fa-solid fa-play"></i>
+                                    </button>
+                                    <button cButton color="primary" size="sm" (click)="Edit_Sequence(item,'edit')"
+                                        pTooltip="Edit Sequence">
+                                        <i class="fa-regular fa-pen-to-square"></i>
+                                    </button>
+                                    <button cButton color="info" size="sm" (click)="show_history(item)"
+                                        pTooltip="Execution History">
+                                        <i class="fa-solid fa-clock-rotate-left"></i>
+                                    </button>
+                                    <button cButton color="danger" size="sm" (click)="confirm_delete(item,false)"
+                                        pTooltip="Delete Sequence">
+                                        <i class="fa-regular fa-trash-can"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </ng-template>
+
+                    <ng-template pTemplate="emptymessage">
+                        <tr>
+                            <td colspan="5" class="text-center p-4">No sequences found.</td>
+                        </tr>
+                    </ng-template>
+                </p-table>
             </c-card-body>
         </c-card>
     </c-col>
 </c-row>
 
-<c-modal #EditSequenceModal backdrop="static" size="xl" [(visible)]="EditSequenceModalVisible" id="EditSequenceModal" class="builder-modal">
+<c-modal #EditSequenceModal backdrop="static" size="xl" [(visible)]="EditSequenceModalVisible" id="EditSequenceModal"
+    class="builder-modal">
     <c-modal-header class="bg-light">
         <h5 *ngIf="ModalAction=='edit'" cModalTitle>
             <i class="fa-solid fa-edit me-2"></i>Edit Sequence: {{current_sequence['name']}}
@@ -345,59 +406,71 @@
         <c-card class="shadow-sm border-0">
             <c-card-body class="p-0">
                 <div *ngIf="sequence_history.length > 0">
-                <div *ngIf="sequence_history.length > 0">
-                    <div *ngFor="let run of sequence_history; let i = index" class="mb-3">
-                        <c-card class="border-0 shadow-sm overflow-hidden">
-                            <c-card-header (click)="run.visible = !run.visible" style="cursor: pointer;" 
-                                           class="d-flex justify-content-between align-items-center bg-white border-0 py-3">
-                                <span>
-                                    <i class="fa-solid" [ngClass]="run.visible ? 'fa-chevron-down' : 'fa-chevron-right'" class="me-3 text-muted"></i>
-                                    <i class="fa-solid fa-calendar-check me-2 text-primary"></i>
-                                    <strong>{{run.created}}</strong>
-                                    <small class="text-muted ms-3">Exec ID: {{run.exec_id | slice:0:8}}...</small>
-                                </span>
-                                <div class="d-flex align-items-center">
-                                    <c-badge [color]="run.successCount === run.totalCount ? 'success' : (run.successCount === 0 ? 'danger' : 'warning')" class="px-3 py-2 text-white">
-                                        {{run.successCount}}/{{run.totalCount}} Success
-                                    </c-badge>
+                    <div *ngIf="sequence_history.length > 0">
+                        <div *ngFor="let run of sequence_history; let i = index" class="mb-3">
+                            <c-card class="border-0 shadow-sm overflow-hidden">
+                                <c-card-header (click)="run.visible = !run.visible" style="cursor: pointer;"
+                                    class="d-flex justify-content-between align-items-center bg-white border-0 py-3">
+                                    <span>
+                                        <i class="fa-solid"
+                                            [ngClass]="run.visible ? 'fa-chevron-down' : 'fa-chevron-right'"
+                                            class="me-3 text-muted"></i>
+                                        <i class="fa-solid fa-calendar-check me-2 text-primary"></i>
+                                        <strong>{{run.created}}</strong>
+                                        <small class="text-muted ms-3">Exec ID: {{run.exec_id | slice:0:8}}...</small>
+                                    </span>
+                                    <div class="d-flex align-items-center">
+                                        <c-badge
+                                            [color]="run.successCount === run.totalCount ? 'success' : (run.successCount === 0 ? 'danger' : 'warning')"
+                                            class="px-3 py-2 text-white">
+                                            {{run.successCount}}/{{run.totalCount}} Success
+                                        </c-badge>
+                                    </div>
+                                </c-card-header>
+                                <div [visible]="run.visible" cCollapse class="border-top">
+                                    <c-card-body class="p-0 border-top">
+                                        <p-table [value]="run.devices" [paginator]="true" [rows]="5"
+                                            [showGridlines]="true" [stripedRows]="true" styleClass="p-datatable-sm"
+                                            class="border-0">
+                                            <ng-template pTemplate="header">
+                                                <tr>
+                                                    <th pSortableColumn="device_id">Device <p-sortIcon
+                                                            field="device_id"></p-sortIcon></th>
+                                                    <th pSortableColumn="status" class="text-center"
+                                                        style="width: 150px">Status <p-sortIcon
+                                                            field="status"></p-sortIcon></th>
+                                                    <th style="width: 150px" class="text-end">Actions</th>
+                                                </tr>
+                                            </ng-template>
+                                            <ng-template pTemplate="body" let-dev>
+                                                <tr>
+                                                    <td>
+                                                        <div class="fw-semibold ms-2">
+                                                            <i class="fa-solid fa-microchip me-2 opacity-50"></i>Device
+                                                            #{{dev.device_id}}
+                                                        </div>
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <c-badge
+                                                            [color]="dev.status === 'success' ? 'success' : 'danger'"
+                                                            class="text-white px-2">
+                                                            {{dev.status | uppercase}}
+                                                        </c-badge>
+                                                    </td>
+                                                    <td class="text-end">
+                                                        <button cButton color="dark" size="sm" variant="outline"
+                                                            pTooltip="Trace Log" (click)="showTrace(dev)">
+                                                            <i class="fa-solid fa-terminal"></i>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            </ng-template>
+                                        </p-table>
+                                    </c-card-body>
                                 </div>
-                            </c-card-header>
-                            <div [visible]="run.visible" cCollapse class="border-top">
-                                <c-card-body class="p-0 border-top">
-                                    <gui-grid [source]="run.devices" 
-                                              [searching]="searchingHistory" 
-                                              [paging]="pagingHistory" 
-                                              [sorting]="sorting" 
-                                              [infoPanel]="false" 
-                                              [autoResizeWidth]="true"
-                                              class="border-0">
-                                        <gui-grid-column header="Device" field="device_id">
-                                            <ng-template let-item="item">
-                                                <div class="fw-semibold ms-2">
-                                                    <i class="fa-solid fa-microchip me-2 opacity-50"></i>Device #{{item.device_id}}
-                                                </div>
-                                            </ng-template>
-                                        </gui-grid-column>
-                                        <gui-grid-column header="Status" field="status" align="center" width="150">
-                                            <ng-template let-item="item">
-                                                <c-badge [color]="item.status === 'success' ? 'success' : 'danger'" class="text-white px-2">
-                                                    {{item.status | uppercase}}
-                                                </c-badge>
-                                            </ng-template>
-                                        </gui-grid-column>
-                                        <gui-grid-column header="Actions" align="right" width="150">
-                                            <ng-template let-item="item">
-                                                <button cButton color="dark" size="sm" variant="outline" class="me-2" (click)="showTrace(item)">
-                                                    <i class="fa-solid fa-terminal me-1"></i> Trace Log
-                                                </button>
-                                            </ng-template>
-                                        </gui-grid-column>
-                                    </gui-grid>
-                                </c-card-body>
-                            </div>
-                        </c-card>
+                            </c-card>
+                        </div>
                     </div>
-                </div>
                 </div>
                 <div *ngIf="sequence_history.length === 0" class="text-center text-muted py-5">
                     <i class="fa-solid fa-inbox fa-3x mb-3 opacity-25"></i>
@@ -418,12 +491,14 @@
     <c-modal-body class="p-0 bg-dark">
         <div class="nav nav-tabs border-secondary px-3 pt-2">
             <div class="nav-item">
-                <a [cTabContent]="tabContent" [active]="true" [tabPaneIdx]="0" class="nav-link text-light border-secondary cursor-pointer">
+                <a [cTabContent]="tabContent" [active]="true" [tabPaneIdx]="0"
+                    class="nav-link text-light border-secondary cursor-pointer">
                     <i class="fa-solid fa-code me-2"></i>SSH Output
                 </a>
             </div>
             <div class="nav-item">
-                <a [cTabContent]="tabContent" [active]="false" [tabPaneIdx]="1" class="nav-link text-light border-secondary cursor-pointer">
+                <a [cTabContent]="tabContent" [active]="false" [tabPaneIdx]="1"
+                    class="nav-link text-light border-secondary cursor-pointer">
                     <i class="fa-solid fa-list-check me-2"></i>Evaluation Details
                 </a>
             </div>
@@ -441,11 +516,13 @@
                 <div class="evaluation-tree" *ngIf="current_trace.parsedLog?.evaluation">
                     <!-- Structured JSON Evaluation -->
                     <div *ngIf="isObject(current_trace.parsedLog.evaluation); else flatEval">
-                        <ng-container *ngTemplateOutlet="evalNodeTemplate; context: { node: current_trace.parsedLog.evaluation }"></ng-container>
+                        <ng-container
+                            *ngTemplateOutlet="evalNodeTemplate; context: { node: current_trace.parsedLog.evaluation }"></ng-container>
                     </div>
                     <!-- Legacy String Evaluation -->
                     <ng-template #flatEval>
-                        <pre class="text-info bg-transparent border-0 p-0 m-0" style="white-space: pre-wrap;">{{current_trace.parsedLog.evaluation}}</pre>
+                        <pre class="text-info bg-transparent border-0 p-0 m-0"
+                            style="white-space: pre-wrap;">{{current_trace.parsedLog.evaluation}}</pre>
                     </ng-template>
                 </div>
                 <div *ngIf="!current_trace.parsedLog?.evaluation" class="text-center py-4 text-muted">
@@ -467,7 +544,7 @@
                 <i class="fa-solid fa-check-circle text-success me-2" *ngIf="rule.matched"></i>
                 <i class="fa-regular fa-circle text-muted me-2" *ngIf="!rule.matched"></i>
                 <span [class.text-white]="rule.matched" [class.text-muted]="!rule.matched">
-                    Rule <strong>[{{rule.type}}]</strong>: '{{rule.pattern}}' &rarr; 
+                    Rule <strong>[{{rule.type}}]</strong>: '{{rule.pattern}}' &rarr;
                     <span [class.text-success]="rule.matched">{{rule.matched ? 'MATCHED' : 'NO MATCH'}}</span>
                 </span>
             </div>
@@ -477,10 +554,11 @@
                     <strong>ACTION:</strong> {{act.action_type}}
                     <span *ngIf="act.alert_id" class="text-warning ms-1">(Alert ID: {{act.alert_id}})</span>
                     <span *ngIf="act.snippet_id" class="text-primary ms-1">(Snippet: {{act.snippet_id}})</span>
-                    
+
                     <!-- Nested Evaluation if another snippet was run -->
                     <div *ngIf="act.nested_eval" class="mt-2">
-                        <ng-container *ngTemplateOutlet="evalNodeTemplate; context: { node: act.nested_eval }"></ng-container>
+                        <ng-container
+                            *ngTemplateOutlet="evalNodeTemplate; context: { node: act.nested_eval }"></ng-container>
                     </div>
                 </div>
             </div>
@@ -519,25 +597,34 @@
         </c-input-group>
 
         <h5>Members :</h5>
-        <gui-grid [autoResizeWidth]="true" [source]="SelectedMembers" [columnMenu]="columnMenu" [sorting]="sorting"
-            [infoPanel]="infoPanel" [rowSelection]="rowSelection" [paging]="paging">
-            <gui-grid-column header="Name" field="name">
-                <ng-template let-value="item.name" let-item="item" let-index="index">
-                    &nbsp; {{value}} </ng-template>
-            </gui-grid-column>
-            <gui-grid-column *ngIf="current_sequence['selection_type']=='devices'" header="MAC" field="mac">
-                <ng-template let-value="item.mac" let-item="item" let-index="index">
-                    {{value}}
-                </ng-template>
-            </gui-grid-column>
-            <gui-grid-column header="Actions" width="120" field="action">
-                <ng-template let-value="item.id" let-item="item" let-index="index">
-                    <button cButton color="danger" size="sm" (click)="remove_member(item)">
-                        <i class="fa-regular fa-trash-can"></i>
-                    </button>
-                </ng-template>
-            </gui-grid-column>
-        </gui-grid>
+        <p-table #dtMembers [value]="SelectedMembers" [paginator]="true" [rows]="10" [showGridlines]="true"
+            [stripedRows]="true" styleClass="p-datatable-sm">
+            <ng-template pTemplate="header">
+                <tr>
+                    <th pSortableColumn="name">Name <p-sortIcon field="name"></p-sortIcon></th>
+                    <th *ngIf="current_sequence['selection_type']=='devices'" pSortableColumn="mac">MAC <p-sortIcon
+                            field="mac"></p-sortIcon></th>
+                    <th style="width: 100px" class="text-center">Actions</th>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-item>
+                <tr>
+                    <td>{{item.name}}</td>
+                    <td *ngIf="current_sequence['selection_type']=='devices'">{{item.mac}}</td>
+                    <td class="text-center">
+                        <button cButton color="danger" size="sm" (click)="remove_member(item)" pTooltip="Remove Member">
+                            <i class="fa-regular fa-trash-can"></i>
+                        </button>
+                    </td>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+                <tr>
+                    <td [attr.colspan]="current_sequence['selection_type']=='devices' ? 3 : 2" class="text-center p-2">
+                        No members added.</td>
+                </tr>
+            </ng-template>
+        </p-table>
         <hr />
         <button cButton color="primary" (click)="show_new_member_form()">+ Add new Members</button>
 
@@ -559,24 +646,56 @@
     <c-modal-body>
         <c-input-group class="mb-3">
             <h5>Group Members :</h5>
-            <gui-grid [autoResizeWidth]="true" *ngIf="NewMemberModalVisible" [searching]="searching"
-                [source]="availbleMembers" [columnMenu]="columnMenu" [sorting]="sorting" [infoPanel]="infoPanel"
-                [rowSelection]="rowSelection" (selectedRows)="onSelectedRowsNewMembers($event)" [paging]="paging">
-                <gui-grid-column header="Member Name" field="name">
-                    <ng-template let-value="item.name" let-item="item" let-index="index">
-                        &nbsp; {{value}} </ng-template>
-                </gui-grid-column>
-                <gui-grid-column *ngIf="current_sequence['selection_type']=='devices'" header="IP Address" field="ip">
-                    <ng-template let-value="item.ip" let-item="item" let-index="index">
-                        {{value}}
-                    </ng-template>
-                </gui-grid-column>
-                <gui-grid-column *ngIf="current_sequence['selection_type']=='devices'" header="MAC Address" field="mac">
-                    <ng-template let-value="item.mac" let-item="item" let-index="index">
-                        {{value}}
-                    </ng-template>
-                </gui-grid-column>
-            </gui-grid>
+            <div class="mb-3 d-flex justify-content-end w-100">
+                <span class="p-input-icon-left table-search-input">
+                    <i class="pi pi-search"></i>
+                    <input type="text" pInputText placeholder="Search members..."
+                        (input)="applyFilterNewMembers($event, 'contains')" class="form-control-sm" />
+                </span>
+            </div>
+
+            <p-table #dtNewMembers [value]="availbleMembers" [paginator]="true" [rows]="10" [showGridlines]="true"
+                [stripedRows]="true" styleClass="p-datatable-sm" [(selection)]="SelectedNewMemberRows"
+                (selectionChange)="onSelectedRowsNewMembers($event)" [globalFilterFields]="['name', 'ip', 'mac']">
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th style="width: 4rem" pResizableColumn><p-tableHeaderCheckbox></p-tableHeaderCheckbox></th>
+                        <th pSortableColumn="name" pResizableColumn>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>Member Name</span>
+                                <p-sortIcon field="name"></p-sortIcon>
+                            </div>
+                        </th>
+                        <th *ngIf="current_sequence['selection_type']=='devices'" pSortableColumn="ip" pResizableColumn>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>IP Address</span>
+                                <p-sortIcon field="ip"></p-sortIcon>
+                            </div>
+                        </th>
+                        <th *ngIf="current_sequence['selection_type']=='devices'" pSortableColumn="mac"
+                            pResizableColumn>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>MAC Address</span>
+                                <p-sortIcon field="mac"></p-sortIcon>
+                            </div>
+                        </th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-item>
+                    <tr>
+                        <td><p-tableCheckbox [value]="item"></p-tableCheckbox></td>
+                        <td>{{item.name}}</td>
+                        <td *ngIf="current_sequence['selection_type']=='devices'">{{item.ip}}</td>
+                        <td *ngIf="current_sequence['selection_type']=='devices'">{{item.mac}}</td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                    <tr>
+                        <td [attr.colspan]="current_sequence['selection_type']=='devices' ? 4 : 2"
+                            class="text-center p-4">No available members found.</td>
+                    </tr>
+                </ng-template>
+            </p-table>
             <br />
         </c-input-group>
         <hr />

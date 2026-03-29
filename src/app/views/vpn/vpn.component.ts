@@ -4,16 +4,7 @@ import { Router } from '@angular/router';
 import { loginChecker } from '../../providers/login_checker';
 import { VpnService, VpnStatusResponse, VpnPeer, VpnServerConfig } from '../../providers/mikrowizard/vpn.service';
 import { Subscription, delay, of, repeat, switchMap, timer, catchError } from 'rxjs';
-import {
-    GuiGridComponent,
-    GuiRowClass,
-    GuiSearching,
-    GuiColumn,
-    GuiColumnMenu,
-    GuiPaging,
-    GuiPagingDisplay,
-    GuiInfoPanel
-} from "@generic-ui/ngx-grid";
+import { Table } from 'primeng/table';
 import { ToasterComponent, ToasterPlacement } from "@coreui/angular";
 import { AppToastComponent } from "../toast-simple/toast.component";
 
@@ -22,7 +13,7 @@ import { AppToastComponent } from "../toast-simple/toast.component";
     styleUrls: ['vpn.component.scss']
 })
 export class VpnComponent implements OnInit, OnDestroy {
-    @ViewChild("grid", { static: true }) gridComponent!: GuiGridComponent;
+    @ViewChild("dt") table!: Table;
     @ViewChildren(ToasterComponent) viewChildren!: QueryList<ToasterComponent>;
 
     toasterForm = {
@@ -155,18 +146,9 @@ export class VpnComponent implements OnInit, OnDestroy {
 
     public resetServerModalVisible = false;
 
-    rowClass: GuiRowClass = { class: "row-highlighted" };
-    searching: GuiSearching = { enabled: true, placeholder: "Search Peers" };
-    public paging: GuiPaging = {
-        enabled: true,
-        page: 1,
-        pageSize: 10,
-        pageSizes: [5, 10, 25, 50],
-        display: GuiPagingDisplay.ADVANCED,
-    };
-    public columnMenu: GuiColumnMenu = { enabled: true, sort: true, columnsManager: true };
-    public infoPanel: GuiInfoPanel = { enabled: true, infoDialog: false, columnsManager: true, schemaManager: true };
-    public sorting = { enabled: true, multiSorting: true };
+    applyFilterGlobal($event: any, stringVal: string) {
+        this.table.filterGlobal(($event.target as HTMLInputElement).value, stringVal);
+    }
 
     constructor(
         private login_checker: loginChecker,

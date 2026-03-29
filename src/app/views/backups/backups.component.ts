@@ -1,18 +1,8 @@
-import { Component, OnInit, QueryList, ViewChildren } from "@angular/core";
+import { Component, OnInit, QueryList, ViewChildren, ViewChild } from "@angular/core";
 import { dataProvider } from "../../providers/mikrowizard/data";
 import { Router, ActivatedRoute } from "@angular/router";
 import { loginChecker } from "../../providers/login_checker";
-import {
-	GuiSearching,
-	GuiInfoPanel,
-	GuiColumn,
-	GuiColumnMenu,
-	GuiPaging,
-	GuiPagingDisplay,
-	GuiRowSelectionMode,
-	GuiRowSelection,
-	GuiRowSelectionType,
-} from "@generic-ui/ngx-grid";
+import { Table } from 'primeng/table';
 import { formatInTimeZone } from "date-fns-tz";
 import { ToasterComponent } from "@coreui/angular";
 import { AppToastComponent } from "../toast-simple/toast.component";
@@ -22,10 +12,10 @@ import { AppToastComponent } from "../toast-simple/toast.component";
 	styleUrls: ["backups.component.scss"],
 })
 export class BackupsComponent implements OnInit {
-	public uid: number;
-	public uname: string;
+	public uid: number = 0;
+	public uname: string = '';
 	public tz: string = "UTC";
-	public filterText: string;
+	public filterText: string = '';
 	public filters: any = {};
 	public codeForHighlightAuto: string = "";
 	public ispro: boolean = false;
@@ -69,34 +59,19 @@ export class BackupsComponent implements OnInit {
 			return value !== undefined && value !== null && value !== "";
 		}
 	}
+	@ViewChild("dt") table!: Table;
 	@ViewChildren(ToasterComponent) viewChildren!: QueryList<ToasterComponent>;
 
 	public source: Array<any> = [];
-	public columns: Array<GuiColumn> = [];
 	public loading: boolean = true;
-	public backuploading : boolean=false;
+	public backuploading: boolean = false;
 	public rows: any = [];
 	public Selectedrows: any;
 	public BakcupModalVisible: boolean = false;
 	public devid: number = 0;
 	public filters_visible: boolean = false;
-	public currentBackup:any=false;
-	public hlang:string='';
-	public sorting = {
-		enabled: true,
-		multiSorting: true,
-	};
-	searching: GuiSearching = {
-		enabled: true,
-		placeholder: "Search Devices",
-	};
-	public paging: GuiPaging = {
-		enabled: true,
-		page: 1,
-		pageSize: 10,
-		pageSizes: [5, 10, 25, 50],
-		display: GuiPagingDisplay.ADVANCED,
-	};
+	public currentBackup: any = false;
+	public hlang: string = '';
 
 	toasterForm = {
 		autohide: true,
@@ -105,25 +80,10 @@ export class BackupsComponent implements OnInit {
 		fade: true,
 		closeButton: true,
 	};
-	
-	public columnMenu: GuiColumnMenu = {
-		enabled: true,
-		sort: true,
-		columnsManager: true,
-	};
 
-	public infoPanel: GuiInfoPanel = {
-		enabled: true,
-		infoDialog: false,
-		columnsManager: true,
-		schemaManager: true,
-	};
-
-	public rowSelection: boolean | GuiRowSelection = {
-		enabled: true,
-		type: GuiRowSelectionType.CHECKBOX,
-		mode: GuiRowSelectionMode.MULTIPLE,
-	};
+	applyFilterGlobal($event: any, stringVal: string) {
+		this.table.filterGlobal(($event.target as HTMLInputElement).value, stringVal);
+	}
 
 	ngOnInit(): void {
 		this.devid = Number(this.route.snapshot.paramMap.get("devid"));

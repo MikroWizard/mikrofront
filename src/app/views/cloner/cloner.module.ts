@@ -18,7 +18,9 @@ import {
 } from "@coreui/angular";
 import { ClonerRoutingModule } from "./cloner-routing.module";
 import { ClonerComponent } from "./cloner.component";
-import { GuiGridModule } from "@generic-ui/ngx-grid";
+import { TableModule as PTableModule } from 'primeng/table';
+import { InputTextModule as PInputTextModule } from 'primeng/inputtext';
+import { TooltipModule as PTooltipModule } from 'primeng/tooltip';
 
 import { NgxSuperSelectModule} from "ngx-super-select";
 
@@ -31,7 +33,9 @@ import { NgxSuperSelectModule} from "ngx-super-select";
     FormModule,
     ButtonModule,
     ButtonGroupModule,
-    GuiGridModule,
+    PTableModule,
+    PInputTextModule,
+    PTooltipModule,
     ModalModule,
     ReactiveFormsModule,
     FormsModule,

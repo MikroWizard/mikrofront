@@ -1,19 +1,8 @@
-import { Component, OnInit, ViewChildren ,QueryList} from "@angular/core";
+import { Component, OnInit, ViewChildren, QueryList, ViewChild } from "@angular/core";
 import { dataProvider } from "../../providers/mikrowizard/data";
 import { Router } from "@angular/router";
 import { loginChecker } from "../../providers/login_checker";
-import {
-  GuiSelectedRow,
-  GuiSearching,
-  GuiInfoPanel,
-  GuiColumn,
-  GuiColumnMenu,
-  GuiPaging,
-  GuiPagingDisplay,
-  GuiRowSelectionMode,
-  GuiRowSelection,
-  GuiRowSelectionType,
-} from "@generic-ui/ngx-grid";
+import { Table } from 'primeng/table';
 import { NgxSuperSelectOptions } from "ngx-super-select";
 import { _getFocusedElementPierceShadowDom } from "@angular/cdk/platform";
 import { formatInTimeZone } from "date-fns-tz";
@@ -27,10 +16,14 @@ import { AppToastComponent } from "../toast-simple/toast.component";
 
 })
 export class VaultComponent implements OnInit {
-  public uid: number;
-  public uname: string;
+  public uid: number = 0;
+  public uname: string = '';
   public ispro: boolean = false;
-  public tz: string;
+  public tz: string = '';
+
+  @ViewChild('dtPasswords') dtPasswords!: Table;
+  @ViewChild('dtHistory') dtHistory!: Table;
+  @ViewChild('dtNewMembers') dtNewMembers!: Table;
   
   constructor(
     private data_provider: dataProvider,
@@ -71,7 +64,6 @@ export class VaultComponent implements OnInit {
   public password:string="";
   public PasswordModalVisible:boolean=false;
   public source: Array<any> = [];
-  public columns: Array<GuiColumn> = [];
   public loading: boolean = true;
   public rows: any = [];
   public SelectedTask: any = {};
@@ -87,16 +79,7 @@ export class VaultComponent implements OnInit {
   public filters: any = {};
   public activetab:number=0;
 
-  public sorting = {
-    enabled: true,
-    multiSorting: true,
-  };
-  searching: GuiSearching = {
-    enabled: true,
-    placeholder: "Search Devices",
-  };
-
-  toasterForm = {
+  public toasterForm = {
     autohide: true,
     delay: 3000,
     position: "fixed",
@@ -104,42 +87,17 @@ export class VaultComponent implements OnInit {
     closeButton: true,
   };
 
-  options: Partial<NgxSuperSelectOptions> = {
-    selectionMode: "single",
-    actionsEnabled: false,
-    displayExpr: "name",
-    valueExpr: "id",
-    placeholder: "Snippet",
-    searchEnabled: true,
-    enableDarkMode: false,
-  };
+  applyFilterPasswords($event: any, stringVal: string) {
+    this.dtPasswords.filterGlobal(($event.target as HTMLInputElement).value, stringVal);
+  }
 
-  public paging: GuiPaging = {
-    enabled: true,
-    page: 1,
-    pageSize: 10,
-    pageSizes: [5, 10, 25, 50],
-    display: GuiPagingDisplay.ADVANCED,
-  };
+  applyFilterHistory($event: any, stringVal: string) {
+    this.dtHistory.filterGlobal(($event.target as HTMLInputElement).value, stringVal);
+  }
 
-  public columnMenu: GuiColumnMenu = {
-    enabled: true,
-    sort: true,
-    columnsManager: true,
-  };
-
-  public infoPanel: GuiInfoPanel = {
-    enabled: true,
-    infoDialog: false,
-    columnsManager: true,
-    schemaManager: true,
-  };
-
-  public rowSelection: boolean | GuiRowSelection = {
-    enabled: true,
-    type: GuiRowSelectionType.CHECKBOX,
-    mode: GuiRowSelectionMode.MULTIPLE,
-  };
+  applyFilterNewMembers($event: any, stringVal: string) {
+    this.dtNewMembers.filterGlobal(($event.target as HTMLInputElement).value, stringVal);
+  }
 
 	reinitgrid(field: string, $event: any) {
 		if (field == "username") this.filters["username"] = $event;
@@ -153,10 +111,9 @@ export class VaultComponent implements OnInit {
     this.get_vault_history();
   }
 
-  onSelectedRowsNewMembers(rows: Array<GuiSelectedRow>): void {
+  onSelectedRowsNewMembers(rows: any[]): void {
     this.NewMemberRows = rows;
-    this.SelectedNewMemberRows = rows.map((m: GuiSelectedRow) => ({'id': m.source.id,'name':m.source.name}));
-    
+    this.SelectedNewMemberRows = rows.map((m: any) => ({'id': m.id,'name':m.name}));
   }
 
 	toggleCollapse(): void {

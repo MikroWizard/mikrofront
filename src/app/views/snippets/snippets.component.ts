@@ -12,32 +12,18 @@ import { UntypedFormControl, UntypedFormGroup } from "@angular/forms";
 import { dataProvider } from "../../providers/mikrowizard/data";
 import { Router } from "@angular/router";
 import { loginChecker } from "../../providers/login_checker";
-import { HttpClient, HttpClientModule, HttpParams } from "@angular/common/http";
-import {
-  GuiCellView,
-  GuiSearching,
-  GuiSelectedRow,
-  GuiInfoPanel,
-  GuiColumn,
-  GuiColumnMenu,
-  GuiDataType,
-  GuiPaging,
-  GuiPagingDisplay,
-  GuiRowColoring,
-  GuiRowSelectionMode,
-  GuiRowSelection,
-  GuiRowSelectionType,
-} from "@generic-ui/ngx-grid";
+import { HttpClient, HttpParams } from "@angular/common/http";
 import { formatInTimeZone } from "date-fns-tz";
+import { Table } from 'primeng/table';
 
 
 @Component({
   templateUrl: "snippets.component.html",
 })
 export class SnippetsComponent implements OnInit, OnDestroy {
-  public uid: number;
-  public uname: string;
-  public tz: string;
+  public uid!: number;
+  public uname!: string;
+  public tz!: string;
   public ispro: boolean = false;
 
   constructor(
@@ -75,9 +61,9 @@ export class SnippetsComponent implements OnInit, OnDestroy {
     }
   }
   @ViewChild("nameSummaryCell")
-  nameSummaryCell: TemplateRef<any>;
+  nameSummaryCell!: TemplateRef<any>;
   public source: Array<any> = [];
-  public columns: Array<GuiColumn> = [];
+  public columns: Array<any> = [];
   public loading: boolean = true;
   public rows: any = [];
   public Selectedrows: any;
@@ -96,6 +82,9 @@ export class SnippetsComponent implements OnInit, OnDestroy {
   public NewMemberRows: any = [];
   public SelectedNewMemberRows: any;
 
+  @ViewChild('dtNewMember') dtNewMember!: Table;
+  @ViewChild('dtHistory') dtHistory!: Table;
+
   public current_snippet: any = {
     content: "",
     created: "",
@@ -112,44 +101,15 @@ export class SnippetsComponent implements OnInit, OnDestroy {
     name: "",
   };
 
-  public sorting = {
-    enabled: true,
-    multiSorting: true,
-  };
-
   public ip_scanner: any;
 
-  searching: GuiSearching = {
-    enabled: true,
-    placeholder: "Search Devices",
-  };
+  applyFilterNewMember($event: any, stringVal: string) {
+    this.dtNewMember.filterGlobal(($event.target as HTMLInputElement).value, stringVal);
+  }
 
-  public paging: GuiPaging = {
-    enabled: true,
-    page: 1,
-    pageSize: 10,
-    pageSizes: [5, 10, 25, 50],
-    display: GuiPagingDisplay.ADVANCED,
-  };
-
-  public columnMenu: GuiColumnMenu = {
-    enabled: true,
-    sort: true,
-    columnsManager: true,
-  };
-
-  public infoPanel: GuiInfoPanel = {
-    enabled: true,
-    infoDialog: false,
-    columnsManager: true,
-    schemaManager: true,
-  };
-
-  public rowSelection: boolean | GuiRowSelection = {
-    enabled: true,
-    type: GuiRowSelectionType.CHECKBOX,
-    mode: GuiRowSelectionMode.MULTIPLE,
-  };
+  applyFilterHistory($event: any, stringVal: string) {
+    this.dtHistory.filterGlobal(($event.target as HTMLInputElement).value, stringVal);
+  }
 
   ngOnInit(): void {
     this.initGridTable();
@@ -256,9 +216,9 @@ export class SnippetsComponent implements OnInit, OnDestroy {
       });
   }
 
-  onSelectedRowsNewMembers(rows: Array<GuiSelectedRow>): void {
+  onSelectedRowsNewMembers(rows: Array<any>): void {
     this.NewMemberRows = rows;
-    this.SelectedNewMemberRows = rows.map((m: GuiSelectedRow) => m.source);
+    this.SelectedNewMemberRows = rows.map((m: any) => m.source || m);
   }
 
   add_new_members() {
@@ -305,9 +265,9 @@ export class SnippetsComponent implements OnInit, OnDestroy {
     });
   }
 
-  onSelectedRows(rows: Array<GuiSelectedRow>): void {
+  onSelectedRows(rows: Array<any>): void {
     this.rows = rows;
-    this.Selectedrows = rows.map((m: GuiSelectedRow) => m.source.id);
+    this.Selectedrows = rows.map((m: any) => (m.source ? m.source.id : m.id));
   }
 
   remove(item: any) {

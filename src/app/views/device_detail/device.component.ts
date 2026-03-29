@@ -1,18 +1,8 @@
-import { Component, OnDestroy, OnInit ,ViewEncapsulation} from "@angular/core";
+import { Component, OnDestroy, OnInit, ViewEncapsulation, ViewChild } from "@angular/core";
 import { Router, ActivatedRoute } from "@angular/router";
 import { dataProvider } from "../../providers/mikrowizard/data";
 import { loginChecker } from "../../providers/login_checker";
-import {
-  GuiSearching,
-  GuiInfoPanel,
-  GuiColumn,
-  GuiColumnMenu,
-  GuiPaging,
-  GuiPagingDisplay,
-  GuiRowSelectionMode,
-  GuiRowSelection,
-  GuiRowSelectionType,
-} from "@generic-ui/ngx-grid";
+import { Table } from 'primeng/table';
 import { __setFunctionName } from "tslib";
 interface IUser {
   name: string;
@@ -38,10 +28,10 @@ type radiodata = {
   encapsulation: ViewEncapsulation.None,
 })
 export class DeviceComponent implements OnInit, OnDestroy {
-  public uid: number;
+  public uid!: number;
   public sessionloaded: boolean = false;
-  public uname: string;
-  public tz: string;
+  public uname!: string;
+  public tz!: string;
   public ispro: boolean = false;
   public small_screen=false;
   public show_dev_logs: boolean = false; 
@@ -81,8 +71,11 @@ export class DeviceComponent implements OnInit, OnDestroy {
   }
   public devdata: any;
   public devsensors: any;
-  public radio_devsensors: radiodata;
-  public columns: Array<GuiColumn> = [];
+  public radiodata!: radiodata;
+  public radio_devsensors!: any;
+  
+  @ViewChild('dtInterfaces') dtInterfaces!: Table;
+
   public loading: boolean = true;
   public radio_loading: boolean = true;
   public InterfaceChartModalVisible: boolean = false;
@@ -98,45 +91,11 @@ export class DeviceComponent implements OnInit, OnDestroy {
   public dhcp_server_available: boolean = false;
   public dhcp_server_data: any = {};
   
-  public sorting = {
-    enabled: true,
-    multiSorting: true,
-  };
   public interfaces: Array<any> = [];
-  public paging: GuiPaging = {
-    enabled: true,
-    page: 1,
-    pageSize: 20,
-    pageSizes: [20],
-    display: GuiPagingDisplay.ADVANCED,
-  };
 
-  public columnMenu: GuiColumnMenu = {
-    enabled: true,
-    sort: true,
-    columnsManager: true,
-  };
-  objectlen(object:any){
-    return Object.keys(object).length;
+  applyFilterGlobal($event: any, stringVal: string) {
+    this.dtInterfaces.filterGlobal(($event.target as HTMLInputElement).value, stringVal);
   }
-  strangth_at_rate_extract(data:string){
-    return data.split(',');
-  }
-  public infoPanel: GuiInfoPanel = {
-    enabled: true,
-    infoDialog: false,
-    columnsManager: true,
-    schemaManager: true,
-  };
-  searching: GuiSearching = {
-    enabled: true,
-    placeholder: "Search In table",
-  };
-  public rowSelection: boolean | GuiRowSelection = {
-    enabled: true,
-    type: GuiRowSelectionType.CHECKBOX,
-    mode: GuiRowSelectionMode.MULTIPLE,
-  };
   reload_dhcp_server(){
     this.get_DHCP_data();
   }
@@ -552,6 +511,12 @@ export class DeviceComponent implements OnInit, OnDestroy {
   }
   show_history(itme:any) {
     return
+  }
+  objectlen(object:any){
+    return object ? Object.keys(object).length : 0;
+  }
+  strangth_at_rate_extract(data:string){
+    return data ? data.split(',') : [];
   }
   ngOnDestroy() {
     clearInterval(this.data_interval);

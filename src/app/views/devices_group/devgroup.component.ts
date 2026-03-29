@@ -1,20 +1,9 @@
-import { Component, OnInit } from "@angular/core";
+import { Component, OnInit, ViewChild } from "@angular/core";
 import { dataProvider } from "../../providers/mikrowizard/data";
 import { Router } from "@angular/router";
 import { loginChecker } from "../../providers/login_checker";
 import { formatInTimeZone } from "date-fns-tz";
-import {
-  GuiSearching,
-  GuiSelectedRow,
-  GuiInfoPanel,
-  GuiColumn,
-  GuiColumnMenu,
-  GuiPaging,
-  GuiPagingDisplay,
-  GuiRowSelectionMode,
-  GuiRowSelection,
-  GuiRowSelectionType,
-} from "@generic-ui/ngx-grid";
+import { Table } from 'primeng/table';
 
 interface IUser {
   name: string;
@@ -35,9 +24,13 @@ interface IUser {
   styleUrls: ["devgroup.component.scss"]
 })
 export class DevicesGroupComponent implements OnInit {
-  public uid: number;
-  public uname: string;
-  public tz: string;
+  public uid: number = 0;
+  public uname: string = '';
+  public tz: string = '';
+
+  @ViewChild('dt') table!: Table;
+  @ViewChild('dtMembers') tableMembers!: Table;
+  @ViewChild('dtNewMembers') tableNewMembers!: Table;
 
   constructor(
     private data_provider: dataProvider,
@@ -68,7 +61,6 @@ export class DevicesGroupComponent implements OnInit {
     }
   }
   public source: Array<any> = [];
-  public columns: Array<GuiColumn> = [];
   public loading: boolean = true;
   public MemberRows: any = [];
   public NewMemberRows: any = [];
@@ -117,42 +109,17 @@ export class DevicesGroupComponent implements OnInit {
     id: 0,
     name: "",
   };
-  public sorting = {
-    enabled: true,
-    multiSorting: true,
-  };
+  applyFilterGlobal($event: any, stringVal: string) {
+    this.table.filterGlobal(($event.target as HTMLInputElement).value, stringVal);
+  }
 
-  searching: GuiSearching = {
-    enabled: true,
-    placeholder: "Search Devices",
-  };
+  applyFilterMembers($event: any, stringVal: string) {
+    this.tableMembers.filterGlobal(($event.target as HTMLInputElement).value, stringVal);
+  }
 
-  public paging: GuiPaging = {
-    enabled: true,
-    page: 1,
-    pageSize: 10,
-    pageSizes: [5, 10, 25, 50],
-    display: GuiPagingDisplay.ADVANCED,
-  };
-
-  public columnMenu: GuiColumnMenu = {
-    enabled: true,
-    sort: true,
-    columnsManager: true,
-  };
-
-  public infoPanel: GuiInfoPanel = {
-    enabled: true,
-    infoDialog: false,
-    columnsManager: true,
-    schemaManager: true,
-  };
-
-  public rowSelection: boolean | GuiRowSelection = {
-    enabled: true,
-    type: GuiRowSelectionType.CHECKBOX,
-    mode: GuiRowSelectionMode.MULTIPLE,
-  };
+  applyFilterNewMembers($event: any, stringVal: string) {
+    this.tableNewMembers.filterGlobal(($event.target as HTMLInputElement).value, stringVal);
+  }
 
   ngOnInit(): void {
     this.initGridTable();
@@ -175,13 +142,13 @@ export class DevicesGroupComponent implements OnInit {
     });
   }
 
-  onSelectedRowsMembers(rows: Array<GuiSelectedRow>): void {
+  onSelectedRowsMembers(rows: any[]): void {
     this.MemberRows = rows;
-    this.SelectedMemberRows = rows.map((m: GuiSelectedRow) => m.source.id);
+    this.SelectedMemberRows = rows.map((m: any) => m.id);
   }
-  onSelectedRowsNewMembers(rows: Array<GuiSelectedRow>): void {
+  onSelectedRowsNewMembers(rows: any[]): void {
     this.NewMemberRows = rows;
-    this.SelectedNewMemberRows = rows.map((m: GuiSelectedRow) => m.source.id);
+    this.SelectedNewMemberRows = rows.map((m: any) => m.id);
   }
   add_new_members() {
     var _self = this;
@@ -193,7 +160,7 @@ export class DevicesGroupComponent implements OnInit {
     this.groupMembers = [
       ...new Set(
         this.groupMembers.concat(
-          this.NewMemberRows.map((m: GuiSelectedRow) => m.source)
+          this.NewMemberRows
         )
       ),
     ];

@@ -15,7 +15,9 @@ import {
 } from "@coreui/angular";
 import { SettingsRoutingModule } from "./settings-routing.module";
 import { SettingsComponent } from "./settings.component";
-import { GuiGridModule } from "@generic-ui/ngx-grid";
+import { TableModule as PTableModule } from 'primeng/table';
+import { InputTextModule as PInputTextModule } from 'primeng/inputtext';
+import { TooltipModule as PTooltipModule } from 'primeng/tooltip';
 
 import { FormsModule } from "@angular/forms";
 
@@ -29,7 +31,9 @@ import { FormsModule } from "@angular/forms";
     FormModule,
     ButtonModule,
     ButtonGroupModule,
-    GuiGridModule,
+    PTableModule,
+    PInputTextModule,
+    PTooltipModule,
     SpinnerModule,
     ToastModule,
     ModalModule,

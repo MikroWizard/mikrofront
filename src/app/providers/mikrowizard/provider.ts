@@ -1,6 +1,6 @@
 import { Injectable, Inject } from '@angular/core';
 
-import { HttpClient,HttpResponse  } from '@angular/common/http';
+import { HttpClient, HttpResponse } from '@angular/common/http';
 
 class Cookies { // cookies doesn't work with Android default browser / Ionic
 	private session_id: string = "";

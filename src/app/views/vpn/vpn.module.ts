@@ -1,7 +1,6 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { GuiGridModule } from '@generic-ui/ngx-grid';
 import { ChartjsModule } from '@coreui/angular-chartjs';
 import { HighlightJsModule } from 'ngx-highlight-js';
 import { ClipboardModule } from '@angular/cdk/clipboard';
@@ -33,6 +32,9 @@ import { IconModule } from '@coreui/icons-angular';
 
 import { VpnRoutingModule } from './vpn-routing.module';
 import { VpnComponent } from './vpn.component';
+import { TableModule as PTableModule } from 'primeng/table';
+import { TooltipModule as PTooltipModule } from 'primeng/tooltip';
+import { InputTextModule } from 'primeng/inputtext';
 
 @NgModule({
     imports: [
@@ -42,7 +44,9 @@ import { VpnComponent } from './vpn.component';
         IconModule,
         TabsModule,
         CommonModule,
-        GuiGridModule,
+        PTableModule,
+        PTooltipModule,
+        InputTextModule,
         ProgressModule,
         ReactiveFormsModule,
         ButtonModule,

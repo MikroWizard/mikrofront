@@ -8,46 +8,71 @@
           </c-col>
           <c-col xs [lg]="9">
             <h6 style="text-align: right;">
-              <button cButton color="dark"  class="mx-1" size="sm" (click)="Edit_Snippet('','showadd')"
+              <button cButton color="dark" class="mx-1" size="sm" (click)="Edit_Snippet('','showadd')"
                 style="color: #fff;"><i class="fa-solid fa-plus"></i> </button>
             </h6>
           </c-col>
         </c-row>
       </c-card-header>
       <c-card-body>
-        <gui-grid [source]="source" [searching]="searching" [paging]="paging" [columnMenu]="columnMenu" [sorting]="sorting" [infoPanel]="infoPanel"
-          [rowSelection]="rowSelection" (selectedRows)="onSelectedRows($event)" [autoResizeWidth]=true>
-          <gui-grid-column header="Name" field="name">
-            <ng-template let-value="item.name" let-item="item" let-index="index">
-              <img *ngIf="item.status=='updating'" width="20px" src="assets/img/loading.svg" />
-              <i *ngIf="item.status=='updated'" style="color: green;margin: 5px;" class="fa-solid fa-check"></i>
-              <i *ngIf="item.status=='failed'" style="color: red;margin: 5px;" class="fa-solid fa-x"></i>
-              {{value}}
-            </ng-template>
-          </gui-grid-column>
-          <gui-grid-column header="Description" field="description">
-            <ng-template let-value="item.description" let-item="item" let-index="index">
-              {{value}}
-            </ng-template>
-          </gui-grid-column>
-          <gui-grid-column header="Created" field="created">
-            <ng-template let-value="item.created" let-item="item" let-index="index">
-              <div>{{value}}</div>
-            </ng-template>
-          </gui-grid-column>
-          <gui-grid-column header="Actions" field="action" align="center">
-            <ng-template let-value="item.id" let-item="item" let-index="index">
-              <button cButton color="primary" size="sm" (click)="Edit_Snippet(item,'edit')" class=""><i
-                  class="fa-regular fa-pen-to-square mx-1"></i>Edit</button>
-              <button cButton color="warning" size="sm" (click)="Run_Snippet(item,'exec')" class="mx-1"><i
-                    class="fa-solid fa-bolt mx-1"></i>Execute</button>
-              <button cButton color="info" size="sm" (click)="show_exec(item)" class="mx-1"><i
-                      class="fa-solid fa-bolt mx-1"></i>Data</button>
-              <button cButton color="danger" size="sm" (click)="confirm_delete(item,false)" class=""><i
-                  class="fa-regular fa-trash-can mx-1"></i>Delete</button>
-            </ng-template>
-          </gui-grid-column>
-        </gui-grid>
+        <p-table #dt [value]="source" [paginator]="true" [rows]="10" [showCurrentPageReport]="true"
+          [(selection)]="Selectedrows" [rowsPerPageOptions]="[10, 25, 50]" [resizableColumns]="true"
+          columnResizeMode="expand" [showGridlines]="true" [stripedRows]="true"
+          styleClass="p-datatable-sm p-datatable-gridlines p-datatable-striped"
+          [globalFilterFields]="['name','description']">
+          <ng-template pTemplate="header">
+            <tr>
+              <th pSortableColumn="name" pResizableColumn>
+                <div class="justify-between">
+                  Name
+                  <p-sortIcon field="name"></p-sortIcon>
+                  <p-columnFilter type="text" field="name" display="menu" class="ms-auto" />
+                </div>
+              </th>
+              <th pSortableColumn="description" pResizableColumn>
+                <div class="justify-between">
+                  Description
+                  <p-sortIcon field="description"></p-sortIcon>
+                  <p-columnFilter type="text" field="description" display="menu" class="ms-auto" />
+                </div>
+              </th>
+              <th pSortableColumn="created" pResizableColumn>
+                <div class="justify-between">
+                  Created
+                  <p-sortIcon field="created"></p-sortIcon>
+                  <p-columnFilter type="text" field="created" display="menu" class="ms-auto" />
+                </div>
+              </th>
+              <th style="width: 280px" class="text-center" pResizableColumn>Actions</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-item>
+            <tr>
+              <td>
+                <img *ngIf="item.status=='updating'" width="20px" src="assets/img/loading.svg" />
+                <i *ngIf="item.status=='updated'" style="color: green;margin-right: 5px;" class="fa-solid fa-check"></i>
+                <i *ngIf="item.status=='failed'" style="color: red;margin-right: 5px;" class="fa-solid fa-x"></i>
+                {{item.name}}
+              </td>
+              <td>{{item.description}}</td>
+              <td class="small">{{item.created}}</td>
+              <td class="text-center">
+                <button cButton color="primary" size="sm" (click)="Edit_Snippet(item,'edit')" class="me-1">
+                  <i class="fa-regular fa-pen-to-square me-1"></i>Edit
+                </button>
+                <button cButton color="warning" size="sm" (click)="Run_Snippet(item,'exec')" class="me-1">
+                  <i class="fa-solid fa-bolt me-1"></i>Execute
+                </button>
+                <button cButton color="info" size="sm" (click)="show_exec(item)" class="me-1">
+                  <i class="fa-solid fa-history me-1"></i>History
+                </button>
+                <button cButton color="danger" size="sm" (click)="confirm_delete(item,false)">
+                  <i class="fa-regular fa-trash-can me-1"></i>Delete
+                </button>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
       </c-card-body>
     </c-card>
   </c-col>
@@ -63,7 +88,8 @@
   </c-modal-header>
   <c-modal-body>
     <div [cFormFloating]="true" class="mb-3">
-      <input cFormControl id="floatingInput" placeholder="current_snippet['name']" [(ngModel)]="current_snippet['name']" disabled="true"/>
+      <input cFormControl id="floatingInput" placeholder="current_snippet['name']" [(ngModel)]="current_snippet['name']"
+        disabled="true" />
       <label cLabel for="floatingInput">Snipet Name</label>
     </div>
 
@@ -84,30 +110,36 @@
     </c-input-group>
 
     <h5>Members :</h5>
-    <gui-grid [autoResizeWidth]="true" [source]="SelectedMembers" [columnMenu]="columnMenu" [sorting]="sorting"
-      [infoPanel]="infoPanel" [rowSelection]="rowSelection" [autoResizeWidth]=true [paging]="paging">
-      <gui-grid-column header="Name" field="name">
-        <ng-template let-value="item.name" let-item="item" let-index="index">
-          &nbsp; {{value}} </ng-template>
-      </gui-grid-column>
-      <gui-grid-column *ngIf="current_snippet['selection_type']=='devices'" header="MAC" field="mac">
-        <ng-template let-value="item.mac" let-item="item" let-index="index">
-          {{value}}
-        </ng-template>
-      </gui-grid-column>
-      <gui-grid-column header="Actions" width="120" field="action">
-        <ng-template let-value="item.id" let-item="item" let-index="index">
-          <button cButton color="danger" size="sm" (click)="remove_member(item)"><i
-              class="fa-regular fa-trash-can"></i></button>
-        </ng-template>
-      </gui-grid-column>
-    </gui-grid>
+    <p-table #dtSelected [value]="SelectedMembers" [paginator]="true" [rows]="5" [resizableColumns]="true"
+      columnResizeMode="expand" [showGridlines]="true" [stripedRows]="true"
+      styleClass="p-datatable-sm p-datatable-gridlines p-datatable-striped">
+      <ng-template pTemplate="header">
+        <tr>
+          <th pSortableColumn="name" pResizableColumn>Name <p-sortIcon field="name"></p-sortIcon></th>
+          <th *ngIf="current_snippet['selection_type']=='devices'" pSortableColumn="mac" pResizableColumn>MAC
+            <p-sortIcon field="mac"></p-sortIcon>
+          </th>
+          <th style="width: 80px" class="text-center" pResizableColumn>Actions</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-member>
+        <tr>
+          <td>{{member.name}}</td>
+          <td *ngIf="current_snippet['selection_type']=='devices'">{{member.mac}}</td>
+          <td class="text-center">
+            <button cButton color="danger" size="sm" (click)="remove_member(member)">
+              <i class="fa-regular fa-trash-can"></i>
+            </button>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
     <hr />
     <button cButton color="primary" (click)="show_new_member_form()">+ Add new Members</button>
 
   </c-modal-body>
   <c-modal-footer>
-    <button  (click)="submit('exec')" cButton color="primary">Execute</button>
+    <button (click)="submit('exec')" cButton color="primary">Execute</button>
     <button [cModalToggle]="ExecSnipetModal.id" cButton color="secondary">
       Close
     </button>
@@ -123,25 +155,48 @@
   <c-modal-body>
     <c-input-group class="mb-3">
       <h5>Group Members :</h5>
-      <gui-grid [autoResizeWidth]="true" *ngIf="NewMemberModalVisible" [searching]="searching"
-        [source]="availbleMembers" [columnMenu]="columnMenu" [sorting]="sorting" [infoPanel]="infoPanel"
-        [rowSelection]="rowSelection" (selectedRows)="onSelectedRowsNewMembers($event)" [autoResizeWidth]=true
-        [paging]="paging">
-        <gui-grid-column header="Member Name" field="name">
-          <ng-template let-value="item.name" let-item="item" let-index="index">
-            &nbsp; {{value}} </ng-template>
-        </gui-grid-column>
-        <gui-grid-column *ngIf="current_snippet['selection_type']=='devices'" header="IP Address" field="ip">
-          <ng-template let-value="item.ip" let-item="item" let-index="index">
-            {{value}}
-          </ng-template>
-        </gui-grid-column>
-        <gui-grid-column *ngIf="current_snippet['selection_type']=='devices'" header="MAC Address" field="mac">
-          <ng-template let-value="item.mac" let-item="item" let-index="index">
-            {{value}}
-          </ng-template>
-        </gui-grid-column>
-      </gui-grid>
+      <div class="mb-3 d-flex justify-content-end w-100">
+        <span class="p-input-icon-left">
+          <i class="pi pi-search"></i>
+          <input type="text" pInputText placeholder="Search..." (input)="applyFilterNewMember($event, 'contains')"
+            class="form-control-sm" />
+        </span>
+      </div>
+      <p-table #dtNewMember [value]="availbleMembers" [paginator]="true" [rows]="10"
+        [(selection)]="SelectedNewMemberRows" (selectionChange)="NewMemberRows = $event" [resizableColumns]="true"
+        columnResizeMode="expand" [showGridlines]="true" [stripedRows]="true"
+        Class="p-datatable-sm p-datatable-gridlines p-datatable-striped" [globalFilterFields]="['name','ip','mac']">
+        <ng-template pTemplate="header">
+          <tr>
+            <th style="width: 3rem" pResizableColumn>
+              <p-tableHeaderCheckbox></p-tableHeaderCheckbox>
+            </th>
+            <th pSortableColumn="name" pResizableColumn>
+              Name
+              <p-sortIcon field="name"></p-sortIcon>
+              <p-columnFilter type="text" field="name" display="menu" class="ms-auto" />
+            </th>
+            <th *ngIf="current_snippet['selection_type']=='devices'" pSortableColumn="ip" pResizableColumn>
+              IP
+              <p-sortIcon field="ip"></p-sortIcon>
+              <p-columnFilter type="text" field="ip" display="menu" class="ms-auto" />
+            </th>
+            <th *ngIf="current_snippet['selection_type']=='devices'" pSortableColumn="mac" pResizableColumn>
+              MAC
+              <p-sortIcon field="mac"></p-sortIcon>
+              <p-columnFilter type="text" field="mac" display="menu" class="ms-auto" />
+            </th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-member>
+          <tr>
+            <td><p-tableCheckbox [value]="member"></p-tableCheckbox></td>
+            <td>{{member.name}}</td>
+            <td *ngIf="current_snippet['selection_type']=='devices'">{{member.ip}}</td>
+            <td *ngIf="current_snippet['selection_type']=='devices'">{{member.mac}}</td>
+          </tr>
+        </ng-template>
+      </p-table>
       <br />
     </c-input-group>
     <hr />
@@ -164,25 +219,44 @@
   </c-modal-header>
   <c-modal-body>
     <c-input-group class="mb-3">
-      <gui-grid [autoResizeWidth]="true" *ngIf="ExecutedDataModalVisible" [searching]="searching"
-        [source]="ExecutedData" [columnMenu]="columnMenu" [sorting]="sorting" [infoPanel]="infoPanel"
-       [autoResizeWidth]=true
-        [paging]="paging">
-        <gui-grid-column header="Start time" field="start">
-          <ng-template let-value="item['started']" let-item="item" let-index="index">
-            &nbsp; {{value}} </ng-template>
-        </gui-grid-column>
-        <gui-grid-column   header="End time" field="end">
-          <ng-template let-value="item['ended']" let-item="item" let-index="index">
-            {{value}}
-          </ng-template>
-        </gui-grid-column>
-        <gui-grid-column header="info" field="mac" align="center">
-          <ng-template let-value="item['result']" let-item="item" let-index="index">
-            <button (click)="exportToCsv(value)"  color="primary" cButton>download</button>
-          </ng-template>
-        </gui-grid-column>
-      </gui-grid>
+      <div class="mb-3 d-flex justify-content-end w-100">
+        <span class="p-input-icon-left">
+          <i class="pi pi-search"></i>
+          <input type="text" pInputText placeholder="Search history..." (input)="applyFilterHistory($event, 'contains')"
+            class="form-control-sm" />
+        </span>
+      </div>
+      <p-table #dtHistory width="100%" [value]="ExecutedData" [paginator]="true" [rows]="10" [resizableColumns]="true"
+        columnResizeMode="expand" [showGridlines]="true" [stripedRows]="true"
+        styleClass="p-datatable-sm p-datatable-gridlines p-datatable-striped"
+        [globalFilterFields]="['username','detail']">
+        <ng-template pTemplate="header">
+          <tr>
+            <th pSortableColumn="started" pResizableColumn>
+              Start time
+              <p-sortIcon field="started"></p-sortIcon>
+              <p-columnFilter type="text" field="started" display="menu" class="ms-auto" />
+            </th>
+            <th pSortableColumn="ended" pResizableColumn>
+              End time
+              <p-sortIcon field="ended"></p-sortIcon>
+              <p-columnFilter type="text" field="ended" display="menu" class="ms-auto" />
+            </th>
+            <th style="width: 120px" class="text-center" pResizableColumn>Info</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-item>
+          <tr>
+            <td class="small">{{item.started}}</td>
+            <td class="small">{{item.ended}}</td>
+            <td class="text-center">
+              <button (click)="exportToCsv(item.result)" color="primary" pTooltip="Download CSV" size="sm" cButton>
+                <i class="fas fa-download"></i>
+              </button>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
       <br />
     </c-input-group>
     <hr />
@@ -210,16 +284,19 @@
     </c-input-group>
     <c-input-group class="mb-3">
       <div [cFormFloating]="true" class="mb-3">
-        <input cFormControl id="floatingInput" placeholder="Snippet Description" [(ngModel)]="current_snippet['description']" />
+        <input cFormControl id="floatingInput" placeholder="Snippet Description"
+          [(ngModel)]="current_snippet['description']" />
         <label cLabel for="floatingInput">Description</label>
       </div>
     </c-input-group>
     <c-input-group class="mb-3">
       <div [cFormFloating]="true" class="mb-3">
-        <textarea   [style.height.px]="50 + (23 * lineNum)"
-        cFormControl (ngModelChange)="calcline($event)" id="floatingInput" placeholder="Snippet code" [(ngModel)]="current_snippet['content']" ></textarea>
+        <textarea [style.height.px]="50 + (23 * lineNum)" cFormControl (ngModelChange)="calcline($event)"
+          id="floatingInput" placeholder="Snippet code" [(ngModel)]="current_snippet['content']"></textarea>
         <label cLabel for="floatingInput">Code</label>
-        <div class="col-sm-12 c-d-block c-text-truncate">Note : In case of multiple IP addresses for the MikroWizard server, use<code style="padding: 0!important;">[mikrowizard]</code> instead of the MikroWizard server IP.</div>
+        <div class="col-sm-12 c-d-block c-text-truncate">Note : In case of multiple IP addresses for the MikroWizard
+          server, use<code style="padding: 0!important;">[mikrowizard]</code> instead of the MikroWizard server IP.
+        </div>
       </div>
     </c-input-group>
     <br />
@@ -230,27 +307,28 @@
   </c-modal-footer>
 </c-modal>
 
-<c-modal #DeleteConfirmModal backdrop="static"  [(visible)]="DeleteConfirmModalVisible"
-  id="DeleteConfirmModal">
+<c-modal #DeleteConfirmModal backdrop="static" [(visible)]="DeleteConfirmModalVisible" id="DeleteConfirmModal">
   <c-modal-header>
-    <h5 cModalTitle>Confirm delete  {{ SelectedSnippet['name'] }}</h5>
+    <h5 cModalTitle>Confirm delete {{ SelectedSnippet['name'] }}</h5>
     <button [cModalToggle]="DeleteConfirmModal.id" cButtonClose></button>
   </c-modal-header>
   <c-modal-body>
     Are you sure that You want to delete following Snippet ?
-    <br/>
-    <br/>
+    <br />
+    <br />
     <table style="width: 100%;">
-    <tr>
-    <td><b>Snippet name : </b>{{ SelectedSnippet['name'] }}
-    </tr>
-    <tr>
-    </tr>
-    <tr>
-      <td>
-        <p ><code  style="padding: 0!important;"><b>Warning:</b> ALL <b>Tasks</b> related to this snippet Will be <b>modifed or deleted</b> and stop working!</code></p>
-      </td>
-    </tr>
+      <tr>
+        <td><b>Snippet name : </b>{{ SelectedSnippet['name'] }}
+      </tr>
+      <tr>
+      </tr>
+      <tr>
+        <td>
+          <p><code
+              style="padding: 0!important;"><b>Warning:</b> ALL <b>Tasks</b> related to this snippet Will be <b>modifed or deleted</b> and stop working!</code>
+          </p>
+        </td>
+      </tr>
     </table>
   </c-modal-body>
   <c-modal-footer>
@@ -264,5 +342,3 @@
 </c-modal>
 
 <c-toaster position="fixed" placement="top-end"></c-toaster>
-
-

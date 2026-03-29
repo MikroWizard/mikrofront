@@ -22,7 +22,9 @@ import { ChartjsModule } from "@coreui/angular-chartjs";
 
 import { DeviceRoutingModule } from "./device-routing.module";
 import { DeviceComponent } from "./device.component";
-import { GuiGridModule } from "@generic-ui/ngx-grid";
+import { TableModule as PTableModule } from 'primeng/table';
+import { InputTextModule as PInputTextModule } from 'primeng/inputtext';
+import { TooltipModule as PTooltipModule } from 'primeng/tooltip';
 
 import { WidgetsModule } from "../widgets/widgets.module";
 import { DeviceInfoModule } from "./device-info/device-info.module";
@@ -53,7 +55,9 @@ import { AccModule } from "../acc_log/acc.module";
     AuthModule,
     AccModule,
     SpinnerModule,
-    GuiGridModule,
+    PTableModule,
+    PInputTextModule,
+    PTooltipModule,
     NavbarModule,
     ModalModule,
     TableModule, 

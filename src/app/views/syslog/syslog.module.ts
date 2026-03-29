@@ -12,7 +12,9 @@ import {
 import { NgxMatSelectSearchModule } from "ngx-mat-select-search";
 import { SyslogRoutingModule } from "./syslog-routing.module";
 import { SyslogComponent } from "./syslog.component";
-import { GuiGridModule } from "@generic-ui/ngx-grid";
+import { TableModule } from 'primeng/table';
+import { DrawerModule } from 'primeng/drawer';
+import { InputTextModule } from 'primeng/inputtext';
 import { MatDatepickerModule } from "@angular/material/datepicker";
 import { MatInputModule } from "@angular/material/input";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -28,7 +30,9 @@ import { MatSelectModule } from "@angular/material/select";
     GridModule,
     FormsModule,
     ButtonModule,
-    GuiGridModule,
+    TableModule,
+    DrawerModule,
+    InputTextModule,
     CollapseModule,
     DropdownModule,
     MatInputModule,

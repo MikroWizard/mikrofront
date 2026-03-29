@@ -1,18 +1,8 @@
-import { Component, OnInit, ViewEncapsulation } from "@angular/core";
+import { Component, OnInit, ViewChild, ViewEncapsulation } from "@angular/core";
 import { dataProvider } from "../../providers/mikrowizard/data";
 import { Router, ActivatedRoute } from "@angular/router";
 import { loginChecker } from "../../providers/login_checker";
-import {
-  GuiRowDetail,
-  GuiInfoPanel,
-  GuiColumn,
-  GuiColumnMenu,
-  GuiPaging,
-  GuiPagingDisplay,
-  GuiRowSelectionMode,
-  GuiRowSelection,
-  GuiRowSelectionType,
-} from "@generic-ui/ngx-grid";
+import { Table } from 'primeng/table';
 import { formatInTimeZone } from "date-fns-tz";
 
 
@@ -22,10 +12,11 @@ import { formatInTimeZone } from "date-fns-tz";
   encapsulation: ViewEncapsulation.None,
 })
 export class SyslogComponent implements OnInit {
-  public uid: number;
-  public uname: string;
+  public uid!: number;
+  public uname!: string;
   public tz: string= "UTC";
-  public filterText: string;
+  public filterText!: string;
+  public userid: number = 0;
   public filters: any = {
     start_time: false,
     end_time: false,
@@ -36,6 +27,10 @@ export class SyslogComponent implements OnInit {
   public event_section: any = [];
   public event_action: any = [];
   public filters_visible: boolean = false;
+  public detailsVisible: boolean = false;
+  public selectedLog: any = null;
+  
+  @ViewChild('dt') table!: Table;
   constructor(
     private data_provider: dataProvider,
     private router: Router,
@@ -66,95 +61,18 @@ export class SyslogComponent implements OnInit {
     }
   }
   public source: Array<any> = [];
-  public columns: Array<GuiColumn> = [];
   public loading: boolean = true;
   public rows: any = [];
-  public Selectedrows: any;
-  public userid: number = 0;
-  public sorting = {
-    enabled: true,
-    multiSorting: true,
-  };
-  public campaignOnestart: any;
-  public campaignOneend: any;
-  rowDetail: GuiRowDetail = {
-    enabled: true,
-    template: (item) => {
-      return `
-			<div class='log-detail' style="width: 355px;color:#fff;background-color:#3399ff">
-			<h2>System Log :</h2>
-			<table>
-				<tr>
-					<td>Section</td>
-					<td>${item.section}</td>
-				</tr>
-				<tr>
-					<td>Action</td>
-					<td>${item.action}</td>
-				</tr>
-				<tr>
-					<td>Time</td>
-					<td>${item.created}</td>
-				</tr>
-				</table>
-				<h2 style="margin-top: 5px;">User Detail :
-				</h2>
-				<table>
-				<tr>
-					<td>User</td>
-					<td>${item.username}</td>
-				</tr>
-				<tr>
-					<td>FirstName</td>
-					<td>${item.first_name}</td>
-				</tr>
-				<tr>
-					<td>LastName</td>
-					<td>${item.last_name}</td>
-				</tr>
-				<tr>
-					<td>IP</td>
-					<td>${item.ip}</td>
-				</tr>
-				<tr>
-					<td>Agent</td>
-					<td><div style="height: 40px;overflow-y: scroll;">${item.agent}</div></td>
-				</tr>
-				</table>
-				<div class="code-title">data</div>
-				<code>
-					${item.data}
-				</code>
-			</div>`;
-    },
-  };
+  showLogDetails(log: any) {
+    this.selectedLog = log;
+    this.detailsVisible = true;
+  }
+  
+  applyFilterGlobal($event: any, stringVal: string) {
+    this.table.filterGlobal(($event.target as HTMLInputElement).value, stringVal);
+  }
 
-  public paging: GuiPaging = {
-    enabled: true,
-    page: 1,
-    pageSize: 10,
-    pageSizes: [5, 10, 25, 50],
-    display: GuiPagingDisplay.ADVANCED,
-  };
-
-  public columnMenu: GuiColumnMenu = {
-    enabled: true,
-    sort: true,
-    columnsManager: true,
-  };
-
-  public infoPanel: GuiInfoPanel = {
-    enabled: true,
-    infoDialog: false,
-    columnsManager: true,
-    schemaManager: true,
-  };
-
-  public rowSelection: boolean | GuiRowSelection = {
-    enabled: true,
-    type: GuiRowSelectionType.CHECKBOX,
-    mode: GuiRowSelectionMode.MULTIPLE,
-  };
+  // Removed legacy GuiGrid configs
   ngOnInit(): void {
     var _self = this;
     this.userid = Number(this.route.snapshot.paramMap.get("userid"));

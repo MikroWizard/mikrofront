@@ -8,7 +8,7 @@ const routes: Routes = [
     path: '',
     component: SyslogComponent,
     data: {
-      title: $localize`Mikrowizard System Logs` 
+      title: $localize`System Logs`
     }
   }
 ];

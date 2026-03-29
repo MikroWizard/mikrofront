@@ -20,7 +20,9 @@ import {
 import { HighlightJsModule } from 'ngx-highlight-js';
 import { SequencesRoutingModule } from "./sequences-routing.module";
 import { SequencesComponent } from "./sequences.component";
-import { GuiGridModule } from "@generic-ui/ngx-grid";
+import { TableModule } from 'primeng/table';
+import { InputTextModule } from 'primeng/inputtext';
+import { TooltipModule } from 'primeng/tooltip';
 import { NgxSuperSelectModule } from "ngx-super-select";
 
 @NgModule({
@@ -32,7 +34,9 @@ import { NgxSuperSelectModule } from "ngx-super-select";
         FormModule,
         ButtonModule,
         ButtonGroupModule,
-        GuiGridModule,
+        TableModule,
+        InputTextModule,
+        TooltipModule,
         ModalModule,
         ToastModule,
         FormsModule,

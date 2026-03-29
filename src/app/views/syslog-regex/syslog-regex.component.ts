@@ -1,4 +1,5 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
+import { Table } from 'primeng/table';
 import { dataProvider } from "../../providers/mikrowizard/data";
 import { NgxSuperSelectOptions } from "ngx-super-select";
 import { ToastComponent } from '@coreui/angular';
@@ -16,6 +17,7 @@ interface RegexSegment {
     styleUrls: ['./syslog-regex.component.scss']
 })
 export class SyslogRegexComponent implements OnInit {
+    @ViewChild('dt') dt: Table | undefined;
 
     public syslogRegexes: any[] = [];
 
@@ -91,6 +93,10 @@ export class SyslogRegexComponent implements OnInit {
     ngOnInit(): void {
         this.loadRegexes();
         this.loadAlerts();
+    }
+
+    applyFilterGlobal($event: any, stringVal: string) {
+        this.dt!.filterGlobal(($event.target as HTMLInputElement).value, stringVal);
     }
 
     loadRegexes() {

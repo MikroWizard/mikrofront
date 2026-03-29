@@ -17,62 +17,93 @@
                 </c-row>
             </c-card-header>
             <c-card-body>
-                <gui-grid [source]="source" [searching]="searching" [paging]="paging" [columnMenu]="columnMenu"
-                    [sorting]="sorting" [infoPanel]="infoPanel" [rowSelection]="rowSelection" [autoResizeWidth]=true>
-                    <gui-grid-column header="Name" field="name">
-                        <ng-template let-value="item.name" let-item="item" let-index="index">
-                            {{value}}
-                        </ng-template>
-                    </gui-grid-column>
-                    <gui-grid-column header="Regex Pattern" field="regex_pattern">
-                        <ng-template let-value="item.regex_pattern" let-item="item" let-index="index">
-                            <code class="px-1 py-1">{{value}}</code>
-                        </ng-template>
-                    </gui-grid-column>
-                    <gui-grid-column header="Alert / Severity" field="alert_id">
-                        <ng-template let-value="item.alert_id" let-item="item" let-index="index">
-                            <div class="d-flex flex-row gap-1">
-                                <span class="fw-bold">{{ getAlertName(value) }}</span>
-                                <c-badge size="sm" [color]="getAlertLevel(value).toLowerCase() =='critical' ? 'danger' :
-                                     getAlertLevel(value).toLowerCase() =='warning' ? 'warning' :
-                                      getAlertLevel(value).toLowerCase() =='info' ? 'info' :
-                                       getAlertLevel(value).toLowerCase() =='error' ? 'danger' : 'secondary'">{{
-                                    getAlertLevel(value)}}</c-badge>
-                            </div>
-                        </ng-template>
-                    </gui-grid-column>
-                    <gui-grid-column header="Alert Enabled/Type" field="alert_enabled" align="center" width="150">
-                        <ng-template let-value="item.alert_enabled" let-item="item" let-index="index">
-                            <i *ngIf="value" class="fa-solid fa-check mx-1" style="color: green;"></i>
-                            <i *ngIf="!value" class="fa-solid fa-x mx-1" style="color: red;"></i>
-                            <span *ngIf="item.alert_enabled && item.global_alert"><i
-                                    class="fa-solid fa-earth-americas text-primary"
-                                    title="Global Alert"></i>Global</span>
-                            <span *ngIf="item.alert_enabled && !item.global_alert"><i
-                                    class="fa-solid fa-server text-secondary" title="Device Specific"></i>String
-                                Match</span>
-                        </ng-template>
-                    </gui-grid-column>
+                <div class="mb-3 d-flex justify-content-end">
+                    <span class="p-input-icon-left">
+                        <i class="pi pi-search"></i>
+                        <input type="text" pInputText placeholder="Search regexes..."
+                            (input)="applyFilterGlobal($event, 'contains')" class="form-control-sm" />
+                    </span>
+                </div>
 
-                    <gui-grid-column header="Match String" field="match_string">
-                        <ng-template let-value="item.match_string" let-item="item" let-index="index">
-                            {{value}}
-                        </ng-template>
-                    </gui-grid-column>
-                    <gui-grid-column header="Created" field="created">
-                        <ng-template let-value="item.created" let-item="item" let-index="index">
-                            <div>{{value}}</div>
-                        </ng-template>
-                    </gui-grid-column>
-                    <gui-grid-column header="Actions" field="action" align="center" width="200">
-                        <ng-template let-value="item.id" let-item="item" let-index="index">
-                            <button cButton color="primary" size="sm" (click)="Edit_Regex(item,'edit')" class="mx-1"><i
-                                    class="fa-regular fa-pen-to-square mx-1"></i>Edit</button>
-                            <button cButton color="danger" size="sm" (click)="confirm_delete(item,false)"
-                                class="mx-1"><i class="fa-regular fa-trash-can mx-1"></i>Delete</button>
-                        </ng-template>
-                    </gui-grid-column>
-                </gui-grid>
+                <p-table #dt showGridlines [value]="source" [paginator]="true" [rows]="10"
+                    [showCurrentPageReport]="true" [rowsPerPageOptions]="[10, 25, 50]" [resizableColumns]="true"
+                    columnResizeMode="expand" styleClass="p-datatable-sm p-datatable-gridlines p-datatable-striped"
+                    [globalFilterFields]="['name','regex_pattern','match_string']">
+
+                    <ng-template pTemplate="header">
+                        <tr>
+                            <th pSortableColumn="name" pResizableColumn>
+                                Name 
+                                <p-sortIcon field="name"></p-sortIcon>
+                                <p-columnFilter type="text" field="name" display="menu" class="ms-auto" />
+                            </th>
+                            <th pSortableColumn="regex_pattern" pResizableColumn>
+                                Regex Pattern 
+                                <p-sortIcon field="regex_pattern"></p-sortIcon>
+                                <p-columnFilter type="text" field="regex_pattern" display="menu" class="ms-auto" />
+                            </th>
+                            <th pSortableColumn="alert_id" pResizableColumn>Alert / Severity <p-sortIcon
+                                    field="alert_id"></p-sortIcon></th>
+                            <th pSortableColumn="alert_enabled" pResizableColumn
+                                style="width: 15rem; text-align: center;">Alert Enabled/Type <p-sortIcon
+                                    field="alert_enabled"></p-sortIcon></th>
+                            <th pSortableColumn="match_string" pResizableColumn>
+                                Match String 
+                                <p-sortIcon field="match_string"></p-sortIcon>
+                                <p-columnFilter type="text" field="match_string" display="menu" class="ms-auto" />
+                            </th>
+                            <th pSortableColumn="created" pResizableColumn>Created <p-sortIcon
+                                    field="created"></p-sortIcon></th>
+                            <th style="width: 10rem; text-align: center;" class="p-resizable-column">Actions</th>
+                        </tr>
+                    </ng-template>
+
+                    <ng-template pTemplate="body" let-item>
+                        <tr>
+                            <td>{{item.name}}</td>
+                            <td><code class="px-1 py-1">{{item.regex_pattern}}</code></td>
+                            <td>
+                                <div class="d-flex flex-row gap-1 align-items-center">
+                                    <span class="fw-bold">{{ getAlertName(item.alert_id) }}</span>
+                                    <c-badge size="sm"
+                                        [color]="getAlertLevel(item.alert_id).toLowerCase() =='critical' ? 'danger' :
+                                         getAlertLevel(item.alert_id).toLowerCase() =='warning' ? 'warning' :
+                                          getAlertLevel(item.alert_id).toLowerCase() =='info' ? 'info' :
+                                           getAlertLevel(item.alert_id).toLowerCase() =='error' ? 'danger' : 'secondary'">{{
+                                        getAlertLevel(item.alert_id)}}</c-badge>
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                <i *ngIf="item.alert_enabled" class="fa-solid fa-check mx-1" style="color: green;"></i>
+                                <i *ngIf="!item.alert_enabled" class="fa-solid fa-x mx-1" style="color: red;"></i>
+                                <span *ngIf="item.alert_enabled && item.global_alert"><i
+                                        class="fa-solid fa-earth-americas text-primary" title="Global Alert"></i>
+                                    Global</span>
+                                <span *ngIf="item.alert_enabled && !item.global_alert"><i
+                                        class="fa-solid fa-server text-secondary" title="Device Specific"></i> String
+                                    Match</span>
+                            </td>
+                            <td>{{item.match_string}}</td>
+                            <td>{{item.created}}</td>
+                            <td class="text-center">
+                                <button cButton color="primary" size="sm" (click)="Edit_Regex(item,'edit')" class="mx-1"
+                                    title="Edit">
+                                    <i class="fa-regular fa-pen-to-square"></i>
+                                </button>
+                                <button cButton color="danger" size="sm" (click)="confirm_delete(item,false)"
+                                    class="mx-1" title="Delete">
+                                    <i class="fa-regular fa-trash-can"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    </ng-template>
+
+                    <ng-template pTemplate="emptymessage">
+                        <tr>
+                            <td colspan="7">No regexes found.</td>
+                        </tr>
+                    </ng-template>
+                </p-table>
             </c-card-body>
         </c-card>
     </c-col>

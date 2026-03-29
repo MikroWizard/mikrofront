@@ -1,19 +1,8 @@
-import { Component, OnInit, OnDestroy, ViewChildren ,QueryList } from "@angular/core";
+import { Component, OnInit, OnDestroy, ViewChildren, QueryList, ViewChild } from "@angular/core";
 import { dataProvider } from "../../providers/mikrowizard/data";
 import { Router } from "@angular/router";
 import { loginChecker } from "../../providers/login_checker";
-import {
-  GuiSelectedRow,
-  GuiSearching,
-  GuiInfoPanel,
-  GuiColumn,
-  GuiColumnMenu,
-  GuiPaging,
-  GuiPagingDisplay,
-  GuiRowSelectionMode,
-  GuiRowSelection,
-  GuiRowSelectionType,
-} from "@generic-ui/ngx-grid";
+import { Table } from 'primeng/table';
 import { NgxSuperSelectOptions } from "ngx-super-select";
 import { _getFocusedElementPierceShadowDom } from "@angular/cdk/platform";
 
@@ -27,9 +16,12 @@ import { AppToastComponent } from "../toast-simple/toast.component";
 
 })
 export class ClonerComponent implements OnInit {
-  public uid: number;
-  public uname: string;
+  public uid: number = 0;
+  public uname: string = '';
   public ispro: boolean = false;
+
+  @ViewChild('dt') table!: Table;
+  @ViewChild('dtNewMembers') tableNewMembers!: Table;
 
   constructor(
     private data_provider: dataProvider,
@@ -62,7 +54,6 @@ export class ClonerComponent implements OnInit {
   @ViewChildren(ToasterComponent) viewChildren!: QueryList<ToasterComponent>;
   
   public source: Array<any> = [];
-  public columns: Array<GuiColumn> = [];
   public loading: boolean = true;
   public rows: any = [];
   public SelectedCloner: any = {};
@@ -74,9 +65,17 @@ export class ClonerComponent implements OnInit {
   public NewMemberModalVisible: boolean = false;
   public availbleMembers: any = [];
   public NewMemberRows: any = [];
-  public SelectedNewMemberRows: any;
+  public SelectedNewMemberRows: any[] = [];
   public master: number = 0;
-  public active_commands:any=[];
+  public active_commands: any = [];
+
+  toasterForm = {
+    autohide: true,
+    delay: 3000,
+    position: "fixed",
+    fade: true,
+    closeButton: true,
+  };
   public tabs:any=[
       {
         "name": "Network",
@@ -186,59 +185,13 @@ export class ClonerComponent implements OnInit {
       }
     ];
   
-  public sorting = {
-    enabled: true,
-    multiSorting: true,
-  };
-  searching: GuiSearching = {
-    enabled: true,
-    placeholder: "Search Devices",
-  };
+  applyFilterGlobal($event: any, stringVal: string) {
+    this.table.filterGlobal(($event.target as HTMLInputElement).value, stringVal);
+  }
 
-  options: Partial<NgxSuperSelectOptions> = {
-    selectionMode: "single",
-    actionsEnabled: false,
-    displayExpr: "name",
-    valueExpr: "id",
-    placeholder: "Snippet",
-    searchEnabled: true,
-    enableDarkMode: false,
-  };
-
-  public paging: GuiPaging = {
-    enabled: true,
-    page: 1,
-    pageSize: 10,
-    pageSizes: [5, 10, 25, 50],
-    display: GuiPagingDisplay.ADVANCED,
-  };
-
-  public columnMenu: GuiColumnMenu = {
-    enabled: true,
-    sort: true,
-    columnsManager: true,
-  };
-
-  toasterForm = {
-    autohide: true,
-    delay: 3000,
-    position: "fixed",
-    fade: true,
-    closeButton: true,
-  };
-
-  public infoPanel: GuiInfoPanel = {
-    enabled: true,
-    infoDialog: false,
-    columnsManager: true,
-    schemaManager: true,
-  };
-
-  public rowSelection: boolean | GuiRowSelection = {
-    enabled: true,
-    type: GuiRowSelectionType.CHECKBOX,
-    mode: GuiRowSelectionMode.MULTIPLE,
-  };
+  applyFilterGlobalNewMembers($event: any, stringVal: string) {
+    this.tableNewMembers.filterGlobal(($event.target as HTMLInputElement).value, stringVal);
+  }
   activate_command(command:string){
     // add to active_commands if it not added before
     if(!this.active_commands.includes(command)){
@@ -340,9 +293,9 @@ export class ClonerComponent implements OnInit {
     }
   }
 
-  onSelectedRowsNewMembers(rows: Array<GuiSelectedRow>): void {
+  onSelectedRowsNewMembers(rows: any[]): void {
     this.NewMemberRows = rows;
-    this.SelectedNewMemberRows = rows.map((m: GuiSelectedRow) => m.source);
+    this.SelectedNewMemberRows = rows;
   }
 
   add_new_members() {

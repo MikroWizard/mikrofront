@@ -4,9 +4,11 @@
       <c-card-header>
         <c-row>
           <c-col xs [lg]="11" style="display: flex;flex-direction: column;align-items: flex-start;">
-            <h5>Devices</h5>
-            <c-alert color="warning" style="padding-top: 5px!important;font-size: 0.8rem;display: inline-block;" *ngIf="!filters['start_time'] && !filters['end_time']">
-              <i class="fa-solid fa-triangle-exclamation mx-1"></i>Showing <strong>last 24 hours logs</strong> by default. Use filters to modify the date and time.
+            <h5>System Logs</h5>
+            <c-alert color="warning" style="padding-top: 5px!important;font-size: 0.8rem;display: inline-block;"
+              *ngIf="!filters['start_time'] && !filters['end_time']">
+              <i class="fa-solid fa-triangle-exclamation mx-1"></i>Showing <strong>last 24 hours logs</strong> by
+              default. Use filters to modify the date and time.
             </c-alert>
           </c-col>
           <c-col xs [lg]="1">
@@ -62,44 +64,144 @@
           </div>
 
         </c-row>
-        <gui-grid wid [rowDetail]="rowDetail" [horizontalGrid]="true" [rowHeight]="52" [source]="source"
-          [columnMenu]="columnMenu" [paging]="paging" [sorting]="sorting" [infoPanel]="infoPanel"
-          [autoResizeWidth]="true">
-          <gui-grid-column header="#No" type="NUMBER" field="index" width="1" align="CENTER">
-            <ng-template let-value="item.index" let-item="item" let-index="index">
-              {{ value }}
-            </ng-template>
-          </gui-grid-column>
+        <div class="mb-3 d-flex justify-content-end">
+          <span class="p-input-icon-left">
+            <i class="pi pi-search"></i>
+            <input type="text" pInputText placeholder="Search logs..." (input)="applyFilterGlobal($event, 'contains')"
+              class="form-control-sm" />
+          </span>
+        </div>
 
-          <gui-grid-column header="username" field="username">
-            <ng-template let-value="item.username" let-item="item" let-index="index">
-              <div class="gui-dev-info">
-                <span class="gui-dev-info-name">{{ value }}</span>
-                <span class="gui-dev-info-ip">{{ item.first_name }} {{ item.last_name }}</span>
+        <p-table #dt [value]="source" [paginator]="true" [rows]="10" [showCurrentPageReport]="true"
+          [rowsPerPageOptions]="[10, 25, 50]" [resizableColumns]="true" columnResizeMode="expand" [showGridlines]="true"
+          [stripedRows]="true" styleClass="p-datatable-sm p-datatable-gridlines p-datatable-striped"
+          [globalFilterFields]="['username','section','action','ip']" selectionMode="single"
+          (onRowSelect)="showLogDetails($event.data)">
+
+          <ng-template pTemplate="header">
+            <tr>
+              <th pSortableColumn="index" style="width: 5rem" pResizableColumn>
+                <div class="justify-between">
+                  <span>#No</span>
+                  <p-sortIcon field="index"></p-sortIcon>
+                </div>
+              </th>
+              <th pSortableColumn="username" pResizableColumn>
+                <div class="justify-between">
+                  <span>Username</span>
+                  <span>
+                    <p-sortIcon field="username"></p-sortIcon>
+                    <p-columnFilter type="text" field="username" display="menu" class="ms-auto" />
+                  </span>
+                </div>
+              </th>
+              <th pSortableColumn="section" pResizableColumn>
+                <div class="justify-between">
+                  <span>Section</span>
+                  <span>
+                    <p-sortIcon field="section"></p-sortIcon>
+                    <p-columnFilter type="text" field="section" display="menu" class="ms-auto" />
+                  </span>
+                </div>
+              </th>
+              <th pSortableColumn="action" pResizableColumn>
+                <div class="justify-between">
+                  <span>Action</span>
+                  <span>
+                    <p-sortIcon field="action"></p-sortIcon>
+                    <p-columnFilter type="text" field="action" display="menu" class="ms-auto" />
+                  </span>
+                </div>
+              </th>
+              <th pSortableColumn="ip" pResizableColumn>
+                <div class="justify-between">
+                  <span>IP</span>
+                  <span>
+                    <p-sortIcon field="ip"></p-sortIcon>
+                    <p-columnFilter type="text" field="ip" display="menu" class="ms-auto" />
+                  </span>
+                </div>
+              </th>
+              <th pSortableColumn="created" pResizableColumn>
+                <div class="justify-between">
+                  <span>Time</span>
+                  <span>
+                    <p-sortIcon field="created"></p-sortIcon>
+                    <p-columnFilter type="text" field="created" display="menu" class="ms-auto" />
+                  </span>
+                </div>
+              </th>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="body" let-item>
+            <tr [pSelectableRow]="item" style="cursor: pointer;">
+              <td>{{item.index}}</td>
+              <td>
+                <div class="gui-dev-info">
+                  <span class="gui-dev-info-name">{{ item.username }}</span>
+                  <span class="gui-dev-info-ip" style="font-size: 0.75rem; color: #666;">{{ item.first_name }} {{
+                    item.last_name }}</span>
+                </div>
+              </td>
+              <td>{{item.section}}</td>
+              <td>{{item.action}}</td>
+              <td>{{item.ip}}</td>
+              <td>{{item.created}}</td>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="6">No logs found.</td>
+            </tr>
+          </ng-template>
+        </p-table>
+
+        <!-- Details Drawer -->
+        <p-drawer [(visible)]="detailsVisible" position="right" [style]="{width: '450px'}" header="Log Details">
+          <div *ngIf="selectedLog" class="p-3">
+            <h5 class="border-bottom pb-2 mb-3"><i class="pi pi-info-circle me-2 text-primary"></i>System Log</h5>
+            <div class="row mb-2">
+              <div class="col-4 fw-bold">Section:</div>
+              <div class="col-8">{{selectedLog.section}}</div>
+            </div>
+            <div class="row mb-2">
+              <div class="col-4 fw-bold">Action:</div>
+              <div class="col-8">{{selectedLog.action}}</div>
+            </div>
+            <div class="row mb-4">
+              <div class="col-4 fw-bold">Time:</div>
+              <div class="col-8 text-muted small">{{selectedLog.created}}</div>
+            </div>
+
+            <h5 class="border-bottom pb-2 mb-3 mt-4"><i class="pi pi-user me-2 text-primary"></i>User Detail</h5>
+            <div class="row mb-2">
+              <div class="col-4 fw-bold">User:</div>
+              <div class="col-8">{{selectedLog.username}}</div>
+            </div>
+            <div class="row mb-2">
+              <div class="col-4 fw-bold">Name:</div>
+              <div class="col-8">{{selectedLog.first_name}} {{selectedLog.last_name}}</div>
+            </div>
+            <div class="row mb-2">
+              <div class="col-4 fw-bold">IP:</div>
+              <div class="col-8">{{selectedLog.ip}}</div>
+            </div>
+            <div class="row mb-2">
+              <div class="col-4 fw-bold">Agent:</div>
+              <div class="col-8 small text-wrap text-break" style="max-height: 80px; overflow-y: auto;">
+                {{selectedLog.agent}}
               </div>
-            </ng-template>
-          </gui-grid-column>
-          <gui-grid-column header="Section" field="section">
-            <ng-template let-value="item.section" let-item="item" let-index="index">
-              {{ value }}
-            </ng-template>
-          </gui-grid-column>
-          <gui-grid-column header="action" field="action">
-            <ng-template let-value="item.action" let-item="item" let-index="index">
-              {{ value }}
-            </ng-template>
-          </gui-grid-column>
-          <gui-grid-column header="ip" field="ip">
-            <ng-template let-value="item.ip" let-item="item" let-index="index">
-              {{ value }}
-            </ng-template>
-          </gui-grid-column>
-          <gui-grid-column header="Time" field="created">
-            <ng-template let-value="item.created" let-item="item" let-index="index">
-              {{ value }}
-            </ng-template>
-          </gui-grid-column>
-        </gui-grid>
+            </div>
+
+            <h5 class="border-bottom pb-2 mb-3 mt-4"><i class="pi pi-code me-2 text-primary"></i>Raw Data</h5>
+            <div class="bg-light p-3 rounded"
+              style="max-height: 250px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.85rem; border: 1px solid #dee2e6;">
+              {{selectedLog.data}}
+            </div>
+          </div>
+        </p-drawer>
 
       </c-card-body>
     </c-card>

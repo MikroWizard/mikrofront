@@ -1,10 +1,10 @@
 <c-row>
   <c-col xs>
-    <c-card class="mb-4"  [ngStyle]="component_devid && {'border-top': 'none'}">
+    <c-card class="mb-4" [ngStyle]="component_devid && {'border-top': 'none'}">
       <c-card-header>
         <c-row>
           <c-col xs [lg]="11" style="display: flex;flex-direction: column;align-items: flex-start;">
-            <h5>Accunting Logs
+            <h5>Accounting Logs
               <a style="cursor: pointer;" (click)="reinitgrid('none','none')"><i
                   *ngIf="devid!=0 && component_devid && !reloading" class="fa-solid fa-arrows-rotate"
                   style="color: #74C0FC;"></i>
@@ -14,8 +14,10 @@
             </h5>
             <c-badge color="warning" *ngIf="devid!=0 && !component_devid">Filtered Result For Device ID
               {{devid}}</c-badge>
-            <c-alert color="warning" style="padding-top: 5px!important;font-size: 0.8rem;display: inline-block;" *ngIf="!filters['start_time'] && !filters['end_time']">
-              <i class="fa-solid fa-triangle-exclamation mx-1"></i>Showing <strong>last 24 hours logs</strong> by default. Use filters to modify the date and time.
+            <c-alert color="warning" style="padding-top: 5px!important;font-size: 0.8rem;display: inline-block;"
+              *ngIf="!filters['start_time'] && !filters['end_time']">
+              <i class="fa-solid fa-triangle-exclamation mx-1"></i>Showing <strong>last 24 hours logs</strong> by
+              default. Use filters to modify the date and time.
             </c-alert>
           </c-col>
           <c-col xs [lg]="1">
@@ -73,49 +75,143 @@
             </c-col>
           </div>
         </c-row>
-        <gui-grid [rowDetail]="rowDetail" [source]="source" [columnMenu]="columnMenu" [paging]="paging"
-          [sorting]="sorting" [infoPanel]="infoPanel" [autoResizeWidth]=true>
-          <gui-grid-column header="#No" type="NUMBER" field="index" width=25 align="CENTER">
-            <ng-template let-value="item.index" let-item="item" let-index="index">
-              {{value}}
-            </ng-template>
-          </gui-grid-column>
-          <gui-grid-column header="Device Name" field="name">
-            <ng-template let-value="item.name" let-item="item" let-index="index">
-              {{value}}
-            </ng-template>
-          </gui-grid-column>
-          <gui-grid-column header="Device IP" field="devip">
-            <ng-template let-value="item.devip" let-item="item" let-index="index">
-              {{value}}
-            </ng-template>
-          </gui-grid-column>
-          <gui-grid-column header="Username" field="username">
-            <ng-template let-value="item.username" let-item="item" let-index="index">
-              {{value}}
-            </ng-template>
-          </gui-grid-column>
-          <gui-grid-column header="Action" field="action">
-            <ng-template let-value="item.action" let-item="item" let-index="index">
-              <div>{{value}}</div>
-            </ng-template>
-          </gui-grid-column>
-          <gui-grid-column header="Section" field="section">
-            <ng-template let-value="item.section" let-item="item" let-index="index">
-              {{value}}
-            </ng-template>
-          </gui-grid-column>
-          <gui-grid-column header="Date" field="created">
-            <ng-template let-value="item.created" let-item="item" let-index="index">
-              {{value}}
-            </ng-template>
-          </gui-grid-column>
-          <gui-grid-column header="Message" field="message" [enabled]="false">
-            <ng-template let-value="item.message" let-item="item" let-index="index">
-              {{value}}
-            </ng-template>
-          </gui-grid-column>
-        </gui-grid>
+        <div class="mb-3 d-flex justify-content-end">
+          <span class="p-input-icon-left table-search-input">
+            <i class="pi pi-search"></i>
+            <input type="text" pInputText placeholder="Search commands/users..."
+              (input)="applyFilterGlobal($event, 'contains')" class="form-control-sm" />
+          </span>
+        </div>
+
+        <p-table #dt [value]="source" [paginator]="true" [rows]="10" [showCurrentPageReport]="true"
+          [rowsPerPageOptions]="[10, 25, 50]" [resizableColumns]="true" columnResizeMode="expand" [showGridlines]="true"
+          [stripedRows]="true" styleClass="p-datatable-sm p-datatable-gridlines p-datatable-striped"
+          [globalFilterFields]="['username', 'name', 'address', 'config', 'section', 'action']" selectionMode="single"
+          (onRowSelect)="showLogDetails($event.data)">
+
+          <ng-template pTemplate="header">
+            <tr>
+              <th pSortableColumn="index" style="width: 5rem" pResizableColumn>
+                <div class="justify-between">
+                  <span>#No</span>
+                  <p-sortIcon field="index"></p-sortIcon>
+                </div>
+              </th>
+              <th pSortableColumn="name" pResizableColumn>
+                <div class="justify-between">
+                  <span>Device Name</span>
+                  <span>
+                    <p-sortIcon field="name"></p-sortIcon>
+                    <p-columnFilter type="text" field="name" display="menu" class="ms-auto" />
+                  </span>
+                </div>
+              </th>
+              <th pSortableColumn="devip" pResizableColumn>
+                <div class="justify-between">
+                  <span>Device IP</span>
+                  <span>
+                    <p-sortIcon field="devip"></p-sortIcon>
+                    <p-columnFilter type="text" field="devip" display="menu" class="ms-auto" />
+                  </span>
+                </div>
+              </th>
+              <th pSortableColumn="username" pResizableColumn>
+                <div class="justify-between">
+                  <span>User Name</span>
+                  <span>
+                    <p-sortIcon field="username"></p-sortIcon>
+                    <p-columnFilter type="text" field="username" display="menu" class="ms-auto" />
+                  </span>
+                </div>
+              </th>
+              <th pSortableColumn="action" pResizableColumn>
+                <div class="justify-between">
+                  <span>Action</span>
+                  <span>
+                    <p-sortIcon field="action"></p-sortIcon>
+                    <p-columnFilter type="text" field="action" display="menu" class="ms-auto" />
+                  </span>
+                </div>
+              </th>
+              <th pSortableColumn="section" pResizableColumn>
+                <div class="justify-between">
+                  <span>Section</span>
+                  <span>
+                    <p-sortIcon field="section"></p-sortIcon>
+                    <p-columnFilter type="text" field="section" display="menu" class="ms-auto" />
+                  </span>
+                </div>
+              </th>
+              <th pSortableColumn="created" pResizableColumn>
+                <div class="justify-between">
+                  <span>Date</span>
+                  <span>
+                    <p-sortIcon field="created"></p-sortIcon>
+                    <p-columnFilter type="text" field="created" display="menu" class="ms-auto" />
+                  </span>
+                </div>
+              </th>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="body" let-item>
+            <tr [pSelectableRow]="item" style="cursor: pointer;">
+              <td class="text-center">{{item.index}}</td>
+              <td class="fw-bold">{{item.name}}</td>
+              <td>{{item.devip}}</td>
+              <td>{{item.username}}</td>
+              <td>{{item.action}}</td>
+              <td>{{item.section}}</td>
+              <td class="small">{{item.created}}</td>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="7" class="text-center p-4">No accounting logs found.</td>
+            </tr>
+          </ng-template>
+        </p-table>
+
+        <!-- Details Drawer -->
+        <p-drawer [(visible)]="detailsVisible" position="right" [style]="{width: '500px'}"
+          header="Accounting Log Details">
+          <div *ngIf="selectedLog" class="p-3">
+            <h5 class="border-bottom pb-2 mb-3"><i class="pi pi-desktop me-2 text-primary"></i>Device Info</h5>
+            <div class="mb-3">
+              <div class="h4 m-0 text-primary">{{selectedLog.name}}</div>
+              <div class="text-muted">{{selectedLog.devip}}</div>
+            </div>
+
+            <h5 class="border-bottom pb-2 mb-3 mt-4"><i class="pi pi-user me-2 text-primary"></i>Session Details</h5>
+            <div class="row mb-2">
+              <div class="col-5 fw-bold">User Name:</div>
+              <div class="col-7">{{selectedLog.username}}</div>
+            </div>
+            <div class="row mb-2">
+              <div class="col-5 fw-bold">User IP:</div>
+              <div class="col-7">{{selectedLog.address}}</div>
+            </div>
+            <div class="row mb-2">
+              <div class="col-5 fw-bold">Section:</div>
+              <div class="col-7">{{selectedLog.section}}</div>
+            </div>
+            <div class="row mb-2">
+              <div class="col-5 fw-bold">Action:</div>
+              <div class="col-7">{{selectedLog.action}}</div>
+            </div>
+            <div class="row mb-2">
+              <div class="col-5 fw-bold">Exec time:</div>
+              <div class="col-7 small">{{selectedLog.created}}</div>
+            </div>
+
+            <h5 class="border-bottom pb-2 mb-3 mt-4"><i class="pi pi-code me-2 text-primary"></i>Executed Config</h5>
+            <div class="bg-dark text-success p-3 rounded shadow-inner"
+              style="max-height: 400px; overflow-y: auto; font-family: 'Consolas', 'Monaco', 'Lucida Console', monospace; font-size: 0.9rem; border: 1px solid #333;">
+              <pre class="m-0" style="white-space: pre-wrap;">{{selectedLog.config}}</pre>
+            </div>
+          </div>
+        </p-drawer>
       </c-card-body>
     </c-card>
   </c-col>

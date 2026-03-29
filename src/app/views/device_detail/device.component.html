@@ -104,69 +104,97 @@
             <c-card class="mb-1">
               <c-card-body>
                 <c-row style="flex-direction: row">
-                  <gui-grid [source]="interfaces" [columnMenu]="columnMenu" [sorting]="sorting" [infoPanel]="infoPanel"
-                    [autoResizeWidth]="true">
-                    <gui-grid-column header="Name" field="name">
-                      <ng-template let-value="item.name" let-item="item" let-index="index">
-                        {{ value }} - {{ item["default-name"] }}
-                      </ng-template>
-                    </gui-grid-column>
+                <div class="mb-3 d-flex justify-content-end w-100">
+                  <span class="p-input-icon-left">
+                    <i class="pi pi-search"></i>
+                    <input type="text" pInputText placeholder="Search interfaces..." (input)="applyFilterGlobal($event, 'contains')"
+                      class="form-control-sm" />
+                  </span>
+                </div>
 
-                    <gui-grid-column header="MAC" field="mac-address">
-                      <ng-template let-value="item['mac-address']" let-item="item" let-index="index">
-                        {{ value }}
-                      </ng-template>
-                    </gui-grid-column>
-                    <gui-grid-column header="rx" field="rx-byte">
-                      <ng-template let-value="item['rx-byte']" let-item="item" let-index="index">
-                        <div>{{ convert_bw_human(value, "rx") }}</div>
-                      </ng-template>
-                    </gui-grid-column>
-                    <gui-grid-column header="tx" field="tx-byte">
-                      <ng-template let-value="item['tx-byte']" let-item="item" let-index="index">
-                        {{ convert_bw_human(value, "tx") }}
-                      </ng-template>
-                    </gui-grid-column>
-                    <gui-grid-column header="l2mtu" field="l2mtu">
-                      <ng-template let-value="item.l2mtu" let-item="item" let-index="index">
-                        curr:{{ value }}<br />
-                        max : {{ item["max-l2mtu"] }}
-                      </ng-template>
-                    </gui-grid-column>
-                    <gui-grid-column header="rx/s" field="rx-bits-per-second" [enabled]="false">
-                      <ng-template let-value="item['rx-bits-per-second']" let-item="item" let-index="index">
-                        {{ convert_bw_human(value, "rx") }}
-                      </ng-template>
-                    </gui-grid-column>
-                    <gui-grid-column header="tx/s" field="tx-bits-per-second" [enabled]="false">
-                      <ng-template let-value="item['tx-bits-per-second']" let-item="item" let-index="index">
-                        {{ convert_bw_human(value, "tx") }}
-                      </ng-template>
-                    </gui-grid-column>
-                    <gui-grid-column header="Created" field="created" [enabled]="false">
-                      <ng-template let-value="item.created" let-item="item.id" let-index="index">
-                        {{ value }}
-                      </ng-template>
-                    </gui-grid-column>
-                    <gui-grid-column header="Last Up" field="last-link-up-time">
-                      <ng-template let-value="item['last-link-up-time']" let-item="item" let-index="index">
-                        {{ value }}
-                      </ng-template>
-                    </gui-grid-column>
-                    <gui-grid-column header="Created" field="created" [enabled]="false">
-                      <ng-template let-value="item.created" let-item="item.id" let-index="index">
-                        {{ value }}
-                      </ng-template>
-                    </gui-grid-column>
-                    <gui-grid-column header="Actions" field="action" width="60" align="center">
-                      <ng-template let-value="item.id" let-item="item" let-index="index">
-                        <button cButton color="info" size="sm" (click)="show_interface_rate(item['default-name'])"
-                          class="mx-1">
+                <p-table #dtInterfaces [value]="interfaces" [paginator]="true" [rows]="10"
+                  [showGridlines]="true" [stripedRows]="true" 
+                  [resizableColumns]="true" columnResizeMode="expand"
+                  styleClass="p-datatable-sm p-datatable-gridlines p-datatable-striped"
+                  [globalFilterFields]="['name', 'default-name', 'mac-address']">
+                  <ng-template pTemplate="header">
+                    <tr>
+                      <th pSortableColumn="name" pResizableColumn>
+                        <div class="justify-between">
+                          <span>Name</span>
+                          <span>
+                            <p-sortIcon field="name"></p-sortIcon>
+                            <p-columnFilter type="text" field="name" display="menu" class="ms-auto" />
+                          </span>
+                        </div>
+                      </th>
+                      <th pSortableColumn="mac-address" pResizableColumn>
+                        <div class="justify-between">
+                          <span>MAC</span>
+                          <span>
+                            <p-sortIcon field="mac-address"></p-sortIcon>
+                            <p-columnFilter type="text" field="mac-address" display="menu" class="ms-auto" />
+                          </span>
+                        </div>
+                      </th>
+                      <th pSortableColumn="rx-byte" pResizableColumn>
+                        <div class="justify-between">
+                          <span>RX</span>
+                          <span>
+                            <p-sortIcon field="rx-byte"></p-sortIcon>
+                            <p-columnFilter type="numeric" field="rx-byte" display="menu" class="ms-auto" />
+                          </span>
+                        </div>
+                      </th>
+                      <th pSortableColumn="tx-byte" pResizableColumn>
+                        <div class="justify-between">
+                          <span>TX</span>
+                          <span>
+                            <p-sortIcon field="tx-byte"></p-sortIcon>
+                            <p-columnFilter type="numeric" field="tx-byte" display="menu" class="ms-auto" />
+                          </span>
+                        </div>
+                      </th>
+                      <th pSortableColumn="l2mtu" pResizableColumn>
+                        <div class="justify-between">
+                          <span>L2MTU</span>
+                          <span>
+                            <p-sortIcon field="l2mtu"></p-sortIcon>
+                            <p-columnFilter type="numeric" field="l2mtu" display="menu" class="ms-auto" />
+                          </span>
+                        </div>
+                      </th>
+                      <th pSortableColumn="last-link-up-time" pResizableColumn>
+                        <div class="justify-between">
+                          <span>Last Up</span>
+                          <span>
+                            <p-sortIcon field="last-link-up-time"></p-sortIcon>
+                            <p-columnFilter type="text" field="last-link-up-time" display="menu" class="ms-auto" />
+                          </span>
+                        </div>
+                      </th>
+                      <th style="width: 60px" class="text-center" pResizableColumn>Actions</th>
+                    </tr>
+                  </ng-template>
+                  <ng-template pTemplate="body" let-iface>
+                    <tr>
+                      <td>{{iface.name}} <small class="text-muted">({{iface['default-name']}})</small></td>
+                      <td><small class="font-monospace">{{iface['mac-address']}}</small></td>
+                      <td>{{convert_bw_human(iface['rx-byte'], 'rx')}}</td>
+                      <td>{{convert_bw_human(iface['tx-byte'], 'tx')}}</td>
+                      <td>
+                        <small>curr: {{iface.l2mtu}}</small><br/>
+                        <small>max: {{iface['max-l2mtu']}}</small>
+                      </td>
+                      <td><small>{{iface['last-link-up-time']}}</small></td>
+                      <td class="text-center">
+                        <button cButton color="info" size="sm" (click)="show_interface_rate(iface['default-name'])" pTooltip="Interface Chart">
                           <i class="fa-solid fa-chart-line"></i>
                         </button>
-                      </ng-template>
-                    </gui-grid-column>
-                  </gui-grid>
+                      </td>
+                    </tr>
+                  </ng-template>
+                </p-table>
                 </c-row>
               </c-card-body>
             </c-card>
@@ -182,16 +210,16 @@
               </c-card-header>
               <c-card-body>
                 <h6>{{ raddata.key }}</h6>
-                <app-widgets-dropdown [devicedata]="raddata.value"></app-widgets-dropdown>
+                <app-widgets-dropdown [devicedata]="$any(raddata.value)"></app-widgets-dropdown>
                 <c-row>
                   <c-col md="3">
                     <table style="word-break: break-word" small stripedColumns cTable>
                       <tbody>
                         <ng-container *ngFor="
-                          let d of raddata.value['data'] | keyvalue;
+                          let d of $any(raddata.value)['data'] | keyvalue;
                           let i = index
                         ">
-                          <tr *ngIf="i < objectlen(raddata.value['data']) / 4">
+                          <tr *ngIf="i < objectlen($any(raddata.value)['data']) / 4">
                             <th style="width: 20%; text-wrap: nowrap">
                               {{ d.key }}
                             </th>
@@ -205,12 +233,12 @@
                     <table style="word-break: break-word" small stripedColumns cTable>
                       <tbody>
                         <ng-container *ngFor="
-                          let d of raddata.value['data'] | keyvalue;
+                          let d of $any(raddata.value)['data'] | keyvalue;
                           let i = index
                         ">
                           <tr *ngIf="
-                            i >= objectlen(raddata.value['data']) / 4 &&
-                            i < (objectlen(raddata.value['data']) / 4) * 2
+                            i >= objectlen($any(raddata.value)['data']) / 4 &&
+                            i < (objectlen($any(raddata.value)['data']) / 4) * 2
                           ">
                             <th style="width: 20%; text-wrap: nowrap">
                               {{ d.key }}
@@ -225,12 +253,12 @@
                     <table style="word-break: break-word" small stripedColumns cTable>
                       <tbody>
                         <ng-container *ngFor="
-                          let d of raddata.value['data'] | keyvalue;
+                          let d of $any(raddata.value)['data'] | keyvalue;
                           let i = index
                         ">
                           <tr *ngIf="
-                            i >= (objectlen(raddata.value['data']) / 4) * 2 &&
-                            i < (objectlen(raddata.value['data']) / 4) * 3
+                            i >= (objectlen($any(raddata.value)['data']) / 4) * 2 &&
+                            i < (objectlen($any(raddata.value)['data']) / 4) * 3
                           ">
                             <th style="width: 20%; text-wrap: nowrap">
                               {{ d.key }}
@@ -245,11 +273,11 @@
                     <table small stripedColumns cTable>
                       <tbody>
                         <ng-container *ngFor="
-                          let d of raddata.value['data'] | keyvalue;
+                          let d of $any(raddata.value)['data'] | keyvalue;
                           let i = index
                         ">
                           <tr *ngIf="
-                            i >= (objectlen(raddata.value['data']) / 4) * 3
+                            i >= (objectlen($any(raddata.value)['data']) / 4) * 3
                           ">
                             <th>{{ d.key }}</th>
                             <td scope="row">{{ d.value }}</td>
@@ -259,7 +287,7 @@
                     </table>
                   </c-col>
                 </c-row>
-                <c-row *ngIf="raddata.value['strength-at-rates']">
+                <c-row *ngIf="$any(raddata.value)['strength-at-rates']">
                   <c-col>
                     <table style="word-break: break-word" small borderless cTable>
                       <tbody>
@@ -276,7 +304,7 @@
                           <td scope="row">
                             <c-badge color="info" style="font-size: 0.85em" class="mx-1" *ngFor="
                               let st of strangth_at_rate_extract(
-                                raddata.value['strength-at-rates']
+                                $any(raddata.value)['strength-at-rates']
                               )
                             ">{{ st }}</c-badge>
                           </td>
@@ -292,8 +320,7 @@
       </c-tab-pane>
       <c-tab-pane>
         <ng-container *ngIf="dhcp_server_available">
-          <app-dhcp-info [tz]="tz" [dhcp_server_data]="dhcp_server_data" [small_screen]="small_screen" [columnMenu]="columnMenu"
-            [sorting]="sorting" [searching]="searching" [infoPanel]="infoPanel" [paging]="paging"></app-dhcp-info>
+          <app-dhcp-info [tz]="tz" [dhcp_server_data]="dhcp_server_data" [small_screen]="small_screen"></app-dhcp-info>
         </ng-container>
       </c-tab-pane>
       <c-tab-pane style="width: 100%;padding-top: 10px;background-color: #fff;">

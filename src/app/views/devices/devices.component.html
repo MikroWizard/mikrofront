@@ -8,22 +8,24 @@
           </c-col>
           <c-col xs [lg]="9">
             <h6 style="text-align: right;">
-              <button cButton color="success" (click)="openAddDeviceModal()" class="mx-1"
-                size="sm" style="color: #fff;"><i class="fa-solid fa-plus"></i> Bulk Add </button>
+              <button cButton color="success" (click)="openAddDeviceModal()" class="mx-1" size="sm"
+                style="color: #fff;"><i class="fa-solid fa-plus"></i> Bulk Add </button>
               <button cButton color="dark" (click)="scanwizard(1,'')" [cModalToggle]="ScannerModal.id" class="mx-1"
                 size="sm" style="color: #fff;"><i class="fa-solid fa-magnifying-glass"></i> Scan</button>
-              <button cButton color="primary" (click)="show_exec()" class="mx-1"
-                size="sm" style="color: #fff;"><i class="fa-solid fa-history"></i> History</button>
+              <button cButton color="primary" (click)="show_exec()" class="mx-1" size="sm" style="color: #fff;"><i
+                  class="fa-solid fa-history"></i> History</button>
             </h6>
           </c-col>
         </c-row>
       </c-card-header>
       <c-card-body>
-        <c-row> 
+        <c-row>
           <c-col [lg]="9">
-            <button cButton color="danger" class="mx-1" size="sm" style="color: #fff;" (click)="filterUpdatable()">{{updates.length}} Updatable
+            <button cButton color="danger" class="mx-1" size="sm" style="color: #fff;"
+              (click)="filterUpdatable()">{{updates.length}} Updatable
             </button>
-            <button cButton color="warning" class="mx-1" size="sm" style="color: #fff;" (click)="filterUpgradable()">{{upgrades.length}}
+            <button cButton color="warning" class="mx-1" size="sm" style="color: #fff;"
+              (click)="filterUpgradable()">{{upgrades.length}}
               Upgradable</button>
             <button cButton color="secondary" class="mx-1" size="sm" (click)="clearFilter()">Clear Filter</button>
           </c-col>
@@ -38,116 +40,162 @@
             </c-input-group>
           </c-col>
         </c-row>
-        <gui-grid #grid [rowClass]="rowClass" [source]="source" [searching]="searching" [paging]="paging"
-          [columnMenu]="columnMenu" [sorting]="sorting" [infoPanel]="infoPanel" [rowSelection]="rowSelection"
-          (selectedRows)="onSelectedRows($event)" [autoResizeWidth]=true>
-          <gui-grid-column header="Name" field="name">
-            <ng-template let-value="item.name" let-item="item" let-index="index">
-              <button cButton size="sm" variant="ghost" color="primary" (click)="webAccess(item)" 
-                style="padding: 2px 4px; margin-right: 5px; border: none;" cTooltip="Web Access">
-                <i class="fas fa-globe" style="font-size: 12px;"></i>
-              </button>
-              <img *ngIf="item.status=='updating'" width="20px" src="assets/img/loading.svg" />
-              <i *ngIf="item.status=='updated'" cTooltip="Tooltip text"
-                style="color: green; margin-right: 3px;font-size: .7em;" class="fa-solid fa-check"></i>
-              <i *ngIf="item.status=='failed'" cTooltip="Update failed"
-                style="color: red; margin-right: 3px;font-size: .7em;" class="fa-solid fa-x"></i>
-              {{value}}
-            </ng-template>
-          </gui-grid-column>
-          <gui-grid-column header="CPU Type" field="arch">
-            <ng-template let-value="item.arch" let-item="item" let-index="index">
-              {{value}}
-            </ng-template>
-          </gui-grid-column>
-          <gui-grid-column header="Firmware" field="current_firmware">
-            <ng-template let-value="item.current_firmware" let-item="item" let-index="index">
-              <div>{{value}}</div>
-              <i *ngIf="item.update_availble" cTooltip="Firmware Update availble"
-                class="fa-solid fa-up-long text-primary mx-1"></i>
-              <i *ngIf="item.upgrade_availble" cTooltip="Device Firmware not Upgraded"
-                class="fa-solid fa-microchip text-danger mx-1"></i>
-            </ng-template>
-          </gui-grid-column>
-          <gui-grid-column header="IP Address" field="ip">
-            <ng-template let-value="item.ip" let-item="item" let-index="index">
-              {{value}}
-            </ng-template>
-          </gui-grid-column>
-          <gui-grid-column header="MAC Address" field="mac">
-            <ng-template let-value="item.mac" let-item="item" let-index="index">
-              {{value}}
-            </ng-template>
-          </gui-grid-column>
-          <gui-grid-column header="License" field="license" [enabled]="false">
-            <ng-template let-value="item.license" let-item="item" let-index="index">
-              {{value}}
-            </ng-template>
-          </gui-grid-column>
-          <gui-grid-column header="Interface" field="interface" [enabled]="false">
-            <ng-template let-value="item.interface" let-item="item" let-index="index">
-              {{value}}
-            </ng-template>
-          </gui-grid-column>
-          <gui-grid-column header="Created" field="created" [enabled]="false">
-            <ng-template let-value="item.created" let-item="item.id" let-index="index">
-              {{value}}
-            </ng-template>
-          </gui-grid-column>
-          <gui-grid-column header="Uptime" field="uptime">
-            <ng-template let-value="item.uptime" let-item="item" let-index="index">
-              {{value}}
-            </ng-template>
-          </gui-grid-column>
-          <gui-grid-column header="Created" field="created" [enabled]="false">
-            <ng-template let-value="item.created" let-item="item.id" let-index="index">
-              {{value}}
-            </ng-template>
-          </gui-grid-column>
-          <gui-grid-column align="center" [cellEditing]="false" [sorting]="false" header="Action">
-            <ng-template let-value="value" let-item="item">
-              <button size="sm" shape="rounded-0" variant="outline" cButton color="primary" (click)="show_detail(item)"
-                style="border: none;padding: 4px 7px;"><i class="fa-regular fa-eye"></i><small> Details</small>
-              </button>
-              <button color="primary" shape="rounded-0" variant="ghost" style="padding: 4px 7px;"
-                [matMenuTriggerFor]="menu" cButton>
-                <i class="fa-solid fa-bars"></i>
-              </button>
-              <mat-menu #menu="matMenu">
-                <div cListGroup>
-                  <li cListGroupItem [active]="false" color="dark">Actions Menu</li>
-                  <button size="sm" (click)="single_device_action(item,'edit')" style="padding: 4px 7px;"
-                    cListGroupItem><i class="fa-solid fa-pencil"></i><small>
-                      Edit Device</small></button>
-                  <button size="sm" (click)="single_device_action(item,'firmware')" style="padding: 4px 7px;"
-                    cListGroupItem><i class="text-primary fa-solid fa-magnifying-glass"></i><small>
-                      Check Firmware</small></button>
-                  <button size="sm" (click)="single_device_action(item,'update')" style="padding: 4px 7px;"
-                    cListGroupItem><i class="text-primary fa-solid fa-upload"></i><small>
-                      Update Firmware</small></button>
-                  <button size="sm" (click)="single_device_action(item,'upgrade')" style="padding: 4px 7px;"
-                    cListGroupItem><i class="text-primary fa-solid fa-microchip"></i><small>
-                      Upgrade Firmware</small></button>
-                  <button size="sm" (click)="single_device_action(item,'devlogs')" style="padding: 4px 7px;"
-                    cListGroupItem><i class="fa-regular fa-rectangle-list"></i><small>
-                      Device Logs</small></button>
-                  <button size="sm" (click)="single_device_action(item,'logauth')" style="padding: 4px 7px;"
-                    cListGroupItem><i class="text-primary fa-regular fa-clock"></i><small>
-                      Show Auth Logs</small></button>
-                  <button size="sm" (click)="single_device_action(item,'logacc')" style="padding: 4px 7px;"
-                    cListGroupItem><i class="text-primary fa-solid fa-table-list"></i><small>
-                      Show Acc Logs</small></button>
-                  <button size="sm" (click)="single_device_action(item,'backup')" style="padding: 4px 7px;"
-                    cListGroupItem><i class="text-success fa-solid fa-database"></i><small>
-                      Show Backups</small></button>
-                  <button size="sm" (click)="single_device_action(item,'delete')" style="padding: 4px 7px;"
-                    cListGroupItem><i class="text-danger fa-solid fa-trash"></i><small>
-                      Delete Device</small></button>
+        <div class="mb-1 d-flex justify-content-end">
+          <span class="p-input-icon-left table-search-input">
+            <i class="pi pi-search"></i>
+            <input type="text" pInputText placeholder="Search devices..."
+              (input)="applyFilterGlobal($event, 'contains')" class="form-control-sm" />
+          </span>
+        </div>
+
+        <p-table #dt [value]="source" [paginator]="true" [rows]="10" [showCurrentPageReport]="true"
+          [(selection)]="selected_rows" (selectionChange)="onSelectionChange($event)"
+          [rowsPerPageOptions]="[10, 25, 50]" [resizableColumns]="true" columnResizeMode="expand" [showGridlines]="true"
+          [stripedRows]="true" styleClass="p-datatable-sm p-datatable-gridlines p-datatable-striped"
+          [globalFilterFields]="['name','ip','mac','arch']">
+
+          <ng-template pTemplate="header">
+            <tr>
+              <th style="width: 3rem" pResizableColumn>
+                <p-tableHeaderCheckbox></p-tableHeaderCheckbox>
+              </th>
+              <th pSortableColumn="name" pResizableColumn>
+                <div class="justify-between">
+                  <span>Name</span>
+                  <p-sortIcon field="name"></p-sortIcon>
+                  <p-columnFilter type="text" field="name" display="menu" class="ms-auto" />
                 </div>
-              </mat-menu>
-            </ng-template>
-          </gui-grid-column>
-        </gui-grid>
+              </th>
+              <th pSortableColumn="arch" pResizableColumn>
+                <div class="justify-between">
+                  <span>CPU Type</span>
+                  <span>
+                    <p-sortIcon field="arch"></p-sortIcon>
+                    <p-columnFilter type="text" field="arch" display="menu" class="ms-auto" />
+                  </span>
+                </div>
+              </th>
+              <th pSortableColumn="current_firmware" pResizableColumn>
+                <div class="justify-between">
+                  <span>Current Firmware</span>
+                  <span>
+                    <p-sortIcon field="current_firmware"></p-sortIcon>
+                    <p-columnFilter type="text" field="current_firmware" display="menu" class="ms-auto" />
+                  </span>
+                </div>
+              </th>
+              <th pSortableColumn="ip" pResizableColumn>
+                <div class="justify-between">
+                  <span>IP Address</span>
+                  <span>
+                    <p-sortIcon field="ip"></p-sortIcon>
+                    <p-columnFilter type="text" field="ip" display="menu" class="ms-auto" />
+                  </span>
+                </div>
+              </th>
+              <th pSortableColumn="mac" pResizableColumn>
+                <div class="justify-between">
+                  <span>MAC Address</span>
+                  <span>
+                    <p-sortIcon field="mac"></p-sortIcon>
+                    <p-columnFilter type="text" field="mac" display="menu" class="ms-auto" />
+                  </span>
+                </div>
+              </th>
+
+
+              <th pSortableColumn="uptime" pResizableColumn>
+                <div class="justify-between">
+                  <span>Uptime</span>
+                  <span>
+                    <p-sortIcon field="uptime"></p-sortIcon>
+                    <p-columnFilter type="text" field="uptime" display="menu" class="ms-auto" />
+                  </span>
+                </div>
+              </th>
+              <th style="width: 120px" class="text-center" pResizableColumn>Actions</th>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="body" let-item>
+            <tr [ngClass]="item.status === 'updating' ? 'row-highlighted' : ''">
+              <td>
+                <p-tableCheckbox [value]="item"></p-tableCheckbox>
+              </td>
+              <td>
+                <button cButton size="sm" variant="ghost" color="primary" (click)="webAccess(item)"
+                  style="padding: 2px 4px; margin-right: 5px; border: none;" cTooltip="Web Access">
+                  <i class="fas fa-globe" style="font-size: 12px;"></i>
+                </button>
+                <img *ngIf="item.status=='updating'" width="20px" src="assets/img/loading.svg" />
+                <i *ngIf="item.status=='updated'" cTooltip="Updated"
+                  style="color: green; margin-right: 3px;font-size: .7em;" class="fa-solid fa-check"></i>
+                <i *ngIf="item.status=='failed'" cTooltip="Update failed"
+                  style="color: red; margin-right: 3px;font-size: .7em;" class="fa-solid fa-x"></i>
+                {{item.name}}
+              </td>
+              <td>{{item.arch}}</td>
+              <td>
+                <div style="display:inline-block">{{item.current_firmware}}</div>
+                <i *ngIf="item.update_availble" cTooltip="Firmware Update available"
+                  class="fa-solid fa-up-long text-primary mx-1"></i>
+                <i *ngIf="item.upgrade_availble" cTooltip="Device Firmware not Upgraded"
+                  class="fa-solid fa-microchip text-danger mx-1"></i>
+              </td>
+              <td>{{item.ip}}</td>
+              <td>{{item.mac}}</td>
+              <td>{{item.uptime}}</td>
+              <td class="text-center">
+                <button size="sm" shape="rounded-0" variant="outline" cButton color="primary"
+                  (click)="show_detail(item)" style="border: none;padding: 4px 7px;"><i
+                    class="fa-regular fa-eye"></i><small> Details</small>
+                </button>
+                <button color="primary" shape="rounded-0" variant="ghost" style="padding: 4px 7px;"
+                  [matMenuTriggerFor]="menu" cButton>
+                  <i class="fa-solid fa-bars"></i>
+                </button>
+                <mat-menu #menu="matMenu">
+                  <div cListGroup>
+                    <li cListGroupItem [active]="false" color="dark">Actions Menu</li>
+                    <button size="sm" (click)="single_device_action(item,'edit')" style="padding: 4px 7px;"
+                      cListGroupItem><i class="fa-solid fa-pencil"></i><small>
+                        Edit Device</small></button>
+                    <button size="sm" (click)="single_device_action(item,'firmware')" style="padding: 4px 7px;"
+                      cListGroupItem><i class="text-primary fa-solid fa-magnifying-glass"></i><small>
+                        Check Firmware</small></button>
+                    <button size="sm" (click)="single_device_action(item,'update')" style="padding: 4px 7px;"
+                      cListGroupItem><i class="text-primary fa-solid fa-upload"></i><small>
+                        Update Firmware</small></button>
+                    <button size="sm" (click)="single_device_action(item,'upgrade')" style="padding: 4px 7px;"
+                      cListGroupItem><i class="text-primary fa-solid fa-microchip"></i><small>
+                        Upgrade Firmware</small></button>
+                    <button size="sm" (click)="single_device_action(item,'devlogs')" style="padding: 4px 7px;"
+                      cListGroupItem><i class="fa-regular fa-rectangle-list"></i><small>
+                        Device Logs</small></button>
+                    <button size="sm" (click)="single_device_action(item,'logauth')" style="padding: 4px 7px;"
+                      cListGroupItem><i class="text-primary fa-regular fa-clock"></i><small>
+                        Show Auth Logs</small></button>
+                    <button size="sm" (click)="single_device_action(item,'logacc')" style="padding: 4px 7px;"
+                      cListGroupItem><i class="text-primary fa-solid fa-table-list"></i><small>
+                        Show Acc Logs</small></button>
+                    <button size="sm" (click)="single_device_action(item,'backup')" style="padding: 4px 7px;"
+                      cListGroupItem><i class="text-success fa-solid fa-database"></i><small>
+                        Show Backups</small></button>
+                    <button size="sm" (click)="single_device_action(item,'delete')" style="padding: 4px 7px;"
+                      cListGroupItem><i class="text-danger fa-solid fa-trash"></i><small>
+                        Delete Device</small></button>
+                  </div>
+                </mat-menu>
+              </td>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="8">No devices found.</td>
+            </tr>
+          </ng-template>
+        </p-table>
         <c-navbar *ngIf="rows.length!= 0" class="bg-light" colorScheme="light" expand="lg">
           <c-container [fluid]="true">
             <a cNavbarBrand href="javascript:;">
@@ -292,54 +340,105 @@
         </select>
       </c-input-group>
     </div>
-    <gui-grid [autoResizeWidth]="true" *ngIf="ExecutedDataModalVisible" [searching]="searching"
-      [source]="filteredExecutedData" [columnMenu]="columnMenu" [sorting]="sorting" [infoPanel]="infoPanel" [paging]="paging">
-      <gui-grid-column header="Type" field="task_type" [width]="100">
-        <ng-template let-value="item['task_type']" let-item="item" let-index="index">
-          <i *ngIf="item.task_type === 'ip-scan'" class="fas fa-search" style="margin-right: 3px; color: #0d6efd;"></i>
-          <i *ngIf="item.task_type === 'bulk-add'" class="fas fa-plus-circle" style="margin-right: 3px; color: #198754;"></i>
-          <span style="font-size: 11px;">{{getTaskTypeLabel(value)}}</span>
-        </ng-template>
-      </gui-grid-column>
-      <gui-grid-column header="Time" field="time" [width]="220">
-        <ng-template let-value="value" let-item="item" let-index="index">
-          <div style="font-size: 10px; line-height: 1.3;">
-            <div><strong>Start:</strong> {{item.started}}</div>
-            <div><strong>End:</strong> {{item.ended}}</div>
-          </div>
-        </ng-template>
-      </gui-grid-column>
-      <gui-grid-column header="Details" field="details">
-        <ng-template let-value="value" let-item="item" let-index="index">
-          <div *ngIf="item.task_type === 'ip-scan'" style="font-size: 12px; line-height: 1.3;">
-            <div>{{item.start_ip}} - {{item.end_ip}}</div>
-            <div>User: {{item.username}}</div>
-          </div>
-          <div *ngIf="item.task_type === 'bulk-add'" style="font-size: 12px; line-height: 1.3;">
-            <div>{{item.device_count}} devices</div>
-            <div style="word-break: break-all;">{{item.task_id}}</div>
-          </div>
-        </ng-template>
-      </gui-grid-column>
-      <gui-grid-column header="Results" field="results" align="center" [width]="70">
-        <ng-template let-value="value" let-item="item" let-index="index">
-          <div style="font-size: 11px;">
-            <span style="color: green;">✓ {{item.success_count}}</span>
-            <span *ngIf="item.failed_count > 0" style="color: red; margin-left: 5px;">✗ {{item.failed_count}}</span>
-          </div>
-        </ng-template>
-      </gui-grid-column>
-      <gui-grid-column header="Actions" field="actions" align="center" [width]="160">
-        <ng-template let-value="value" let-item="item" let-index="index">
-          <button (click)="showTaskDetails(item)" color="info" size="sm" cButton class="me-1">
-            <i class="fas fa-eye"></i> Details
-          </button>
-          <button (click)="exportToCsv(item.result)" color="primary" size="sm" cButton>
-            <i class="fas fa-download"></i> CSV
-          </button>
-        </ng-template>
-      </gui-grid-column>
-    </gui-grid>
+    <div class="mb-3 d-flex justify-content-end">
+      <span class="p-input-icon-left">
+        <i class="pi pi-search"></i>
+        <input type="text" pInputText placeholder="Search history..."
+          (input)="dtTask.filterGlobal($any($event.target).value, 'contains')" class="form-control-sm" />
+      </span>
+    </div>
+
+    <p-table #dtTask [value]="filteredExecutedData" [paginator]="true" [rows]="10" [showCurrentPageReport]="true"
+      [rowsPerPageOptions]="[10, 25, 50]" [resizableColumns]="true" columnResizeMode="expand" [showGridlines]="true"
+      [stripedRows]="true" styleClass="p-datatable-sm p-datatable-gridlines p-datatable-striped"
+      [globalFilterFields]="['task_id', 'username', 'start_ip', 'end_ip']">
+
+      <ng-template pTemplate="header">
+        <tr>
+          <th pSortableColumn="index" style="width: 5rem" pResizableColumn>
+            <div class="justify-between">
+              <span>#No</span>
+              <p-sortIcon field="index"></p-sortIcon>
+            </div>
+          </th>
+          <th pSortableColumn="name" pResizableColumn>
+            <div class="justify-between">
+              <span>Name</span>
+              <span>
+                <p-sortIcon field="name"></p-sortIcon>
+                <p-columnFilter type="text" field="name" display="menu" class="ms-auto" />
+              </span>
+            </div>
+          </th>
+          <th pSortableColumn="createdC" pResizableColumn>
+            <div class="justify-between">
+              <span>Execution Time</span>
+              <span>
+                <p-sortIcon field="createdC"></p-sortIcon>
+                <p-columnFilter type="text" field="createdC" display="menu" class="ms-auto" />
+              </span>
+            </div>
+          </th>
+          <th pSortableColumn="username" pResizableColumn>
+            <div class="justify-between">
+              <span>User</span>
+              <span>
+                <p-sortIcon field="username"></p-sortIcon>
+                <p-columnFilter type="text" field="username" display="menu" class="ms-auto" />
+              </span>
+            </div>
+          </th>
+          <th style="width: 100px" class="text-center" pResizableColumn>Actions</th>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-item>
+        <tr>
+          <td>
+            <div class="d-flex align-items-center gap-1">
+              <i *ngIf="item.task_type === 'ip-scan'" class="fas fa-search text-primary"></i>
+              <i *ngIf="item.task_type === 'bulk-add'" class="fas fa-plus-circle text-success"></i>
+              <span class="small">{{getTaskTypeLabel(item.task_type)}}</span>
+            </div>
+          </td>
+          <td class="small">
+            <div><strong>S:</strong> {{item.started}}</div>
+            <div><strong>E:</strong> {{item.ended}}</div>
+          </td>
+          <td>
+            <div *ngIf="item.task_type === 'ip-scan'" class="small">
+              <div>{{item.start_ip}} - {{item.end_ip}}</div>
+              <div class="text-muted">User: {{item.username}}</div>
+            </div>
+            <div *ngIf="item.task_type === 'bulk-add'" class="small">
+              <div>{{item.device_count}} devices</div>
+              <div class="text-muted text-truncate" style="max-width: 150px;">{{item.task_id}}</div>
+            </div>
+          </td>
+          <td class="text-center">
+            <div class="d-flex flex-column align-items-center">
+              <span class="text-success small">✓ {{item.success_count}}</span>
+              <span *ngIf="item.failed_count > 0" class="text-danger small">✗ {{item.failed_count}}</span>
+            </div>
+          </td>
+          <td class="text-center">
+            <button (click)="showTaskDetails(item)" color="info" size="sm" cButton class="me-1"
+              style="padding: 2px 6px;">
+              <i class="fas fa-eye"></i> Details
+            </button>
+            <button (click)="exportToCsv(item.result)" color="primary" size="sm" cButton style="padding: 2px 6px;">
+              <i class="fas fa-download"></i> CSV
+            </button>
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="5" class="text-center p-4">No task history found.</td>
+        </tr>
+      </ng-template>
+    </p-table>
   </c-modal-body>
   <c-modal-footer>
     <button (click)="ExecutedDataModalVisible=!ExecutedDataModalVisible" cButton color="secondary">
@@ -453,7 +552,8 @@
   <c-modal-body>
     <div *ngIf="addDeviceStep === 1">
       <h6>Upload CSV File</h6>
-      <p>Please upload a CSV file containing device information with columns: IP Address, Username, Password, API Port</p>
+      <p>Please upload a CSV file containing device information with columns: IP Address, Username, Password, API Port
+      </p>
       <input type="file" accept=".csv" (change)="onFileSelected($event)" class="form-control mb-3">
       <div *ngIf="csvPreview.length > 0">
         <h6>Preview (First 3 rows):</h6>
@@ -522,7 +622,8 @@
     </div>
   </c-modal-body>
   <c-modal-footer>
-    <button *ngIf="addDeviceStep === 1" cButton color="primary" (click)="uploadDevices()" [disabled]="!isValidMapping()">
+    <button *ngIf="addDeviceStep === 1" cButton color="primary" (click)="uploadDevices()"
+      [disabled]="!isValidMapping()">
       Add Devices
     </button>
     <button *ngIf="addDeviceStep === 3" cButton color="success" (click)="closeAddDeviceModal()">
@@ -557,13 +658,14 @@
 </c-modal>
 
 <!-- Task Details Modal -->
-<c-modal #TaskDetailsModal backdrop="static" size="xl" [(visible)]="detailsModalVisible" id="TaskDetailsModal" 
-         style="z-index: 1060; backdrop-filter: blur(2px);">
+<c-modal #TaskDetailsModal backdrop="static" size="xl" [(visible)]="detailsModalVisible" id="TaskDetailsModal"
+  style="z-index: 1060; backdrop-filter: blur(2px);">
   <c-modal-header style="background: rgba(255,255,255,0.95); backdrop-filter: blur(10px);">
     <h5 cModalTitle>{{getTaskTypeLabel(selectedTaskDetails?.task_type)}} Results</h5>
     <button (click)="closeDetailsModal()" cButtonClose></button>
   </c-modal-header>
-  <c-modal-body *ngIf="selectedTaskDetails" style="background: rgba(255,255,255,0.98); backdrop-filter: blur(10px); max-height: 70vh; overflow-y: auto;">
+  <c-modal-body *ngIf="selectedTaskDetails"
+    style="background: rgba(255,255,255,0.98); backdrop-filter: blur(10px); max-height: 70vh; overflow-y: auto;">
     <div class="mb-3">
       <c-row>
         <c-col md="6">
@@ -587,8 +689,8 @@
     <div class="d-flex justify-content-between align-items-center mb-3">
       <h6 class="mb-0">Detailed Results:</h6>
       <div class="col-md-4">
-        <input type="text" class="form-control form-control-sm" placeholder="Search IP or error..." 
-               [(ngModel)]="detailsSearchTerm" (input)="onDetailsSearch()">
+        <input type="text" class="form-control form-control-sm" placeholder="Search IP or error..."
+          [(ngModel)]="detailsSearchTerm" (input)="onDetailsSearch()">
       </div>
     </div>
     <table class="table table-striped table-hover table-responsive">
@@ -620,19 +722,20 @@
     <nav *ngIf="getTotalDetailsPages() > 1" class="mt-3">
       <ul class="pagination pagination-sm justify-content-center">
         <li class="page-item" [class.disabled]="detailsCurrentPage === 1">
-          <button class="page-link" (click)="onDetailsPageChange(detailsCurrentPage - 1)" [disabled]="detailsCurrentPage === 1">
+          <button class="page-link" (click)="onDetailsPageChange(detailsCurrentPage - 1)"
+            [disabled]="detailsCurrentPage === 1">
             Previous
           </button>
         </li>
-        <li class="page-item" *ngFor="let page of [].constructor(getTotalDetailsPages()); let i = index" 
-            [class.active]="detailsCurrentPage === i + 1">
+        <li class="page-item" *ngFor="let page of [].constructor(getTotalDetailsPages()); let i = index"
+          [class.active]="detailsCurrentPage === i + 1">
           <button class="page-link" (click)="onDetailsPageChange(i + 1)">
             {{i + 1}}
           </button>
         </li>
         <li class="page-item" [class.disabled]="detailsCurrentPage === getTotalDetailsPages()">
-          <button class="page-link" (click)="onDetailsPageChange(detailsCurrentPage + 1)" 
-                  [disabled]="detailsCurrentPage === getTotalDetailsPages()">
+          <button class="page-link" (click)="onDetailsPageChange(detailsCurrentPage + 1)"
+            [disabled]="detailsCurrentPage === getTotalDetailsPages()">
             Next
           </button>
         </li>

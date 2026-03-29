@@ -1,19 +1,8 @@
-import { Component, OnInit,  ViewEncapsulation,Input } from "@angular/core";
+import { Component, OnInit, ViewChild, ViewEncapsulation, Input } from "@angular/core";
 import { dataProvider } from "../../providers/mikrowizard/data";
 import { Router, ActivatedRoute } from "@angular/router";
 import { loginChecker } from "../../providers/login_checker";
-import {
-  GuiRowDetail,
-  GuiSelectedRow,
-  GuiInfoPanel,
-  GuiColumn,
-  GuiColumnMenu,
-  GuiPaging,
-  GuiPagingDisplay,
-  GuiRowSelectionMode,
-  GuiRowSelection,
-  GuiRowSelectionType,
-} from "@generic-ui/ngx-grid";
+import { Table } from 'primeng/table';
 import { formatInTimeZone } from "date-fns-tz";
 
 
@@ -26,10 +15,14 @@ import { formatInTimeZone } from "date-fns-tz";
 })
 export class AccComponent implements OnInit {
   @Input() component_devid: any=false;
-  public uid: number;
-  public uname: string;
-  public tz: string;
-  public filterText: string;
+  public uid!: number;
+  public uname!: string;
+  public tz!: string;
+  public filterText!: string;
+  public detailsVisible: boolean = false;
+  public selectedLog: any = null;
+  
+  @ViewChild('dt') table!: Table;
   public reloading: boolean = false;
   public filters: any = {
     devid: false,
@@ -75,78 +68,20 @@ export class AccComponent implements OnInit {
     }
   }
   public source: Array<any> = [];
-  public columns: Array<GuiColumn> = [];
   public loading: boolean = true;
   public rows: any = [];
-  public Selectedrows: any;
+  public selected_rows: any[] = [];
+  public Selectedrows: any[] = [];
   public devid: number = 0;
-  public sorting = {
-    enabled: true,
-    multiSorting: true,
-  };
-  rowDetail: GuiRowDetail = {
-    enabled: true,
-    template: (item) => {
-      return `
-			<div class='log-detail' style="width: 355px;">
-				<h1>${item.name}</h1>
-				<small>${item.devip}</small>
-				<table>
-				<tr>
-					<td>User Address</td>
-					<td>${item.address}</td>
-				</tr>
-				<tr>
-					<td>User Name</td>
-					<td>${item.username}</td>
-				</tr>
-				<tr>
-					<td>Connection Type</td>
-					<td>${item.ctype}</td>
-				</tr>
-				<tr>
-					<td>Section</td>
-					<td>${item.section}</td>
-				</tr>
-				<tr>
-					<td>Exec time</td>
-					<td>${item.created}</td>
-				</tr>
-				</table>
-				<div class="code-title">Executed Config</div>
-				<code>
-					${item.config}
-				</code>
-			</div>`;
-    },
-  };
 
-  public paging: GuiPaging = {
-    enabled: true,
-    page: 1,
-    pageSize: 10,
-    pageSizes: [5, 10, 25, 50],
-    display: GuiPagingDisplay.ADVANCED,
-  };
+  showLogDetails(log: any) {
+    this.selectedLog = log;
+    this.detailsVisible = true;
+  }
 
-  public columnMenu: GuiColumnMenu = {
-    enabled: true,
-    sort: true,
-    columnsManager: true,
-  };
-
-  public infoPanel: GuiInfoPanel = {
-    enabled: true,
-    infoDialog: false,
-    columnsManager: true,
-    schemaManager: true,
-  };
-
-  public rowSelection: boolean | GuiRowSelection = {
-    enabled: true,
-    type: GuiRowSelectionType.CHECKBOX,
-    mode: GuiRowSelectionMode.MULTIPLE,
-  };
+  applyFilterGlobal($event: any, stringVal: string) {
+    this.table.filterGlobal(($event.target as HTMLInputElement).value, stringVal);
+  }
 
   reinitgrid(field: string, $event: any) {
     if (field == "start") this.filters["start_time"] = $event.target.value;
@@ -170,9 +105,10 @@ export class AccComponent implements OnInit {
     this.initGridTable();
   }
   OnDestroy(): void {}
-  onSelectedRows(rows: Array<GuiSelectedRow>): void {
-    this.rows = rows;
-    this.Selectedrows = rows.map((m: GuiSelectedRow) => m.source.id);
+  onSelectionChange(value: any[]) {
+    this.selected_rows = value;
+    this.Selectedrows = value.map(item => item.id);
+    this.rows = value;
   }
 
   removefilter(filter: any) {

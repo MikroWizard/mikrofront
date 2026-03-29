@@ -23,7 +23,9 @@ import { WidgetsModule } from "../../widgets/widgets.module";
 
 // import { WidgetsRoutingModule } from './widgets-routing.module';
 import { DhcpInfoComponent } from './dhcp-info.component';
-import { GuiGridModule } from "@generic-ui/ngx-grid";
+import { TableModule as PTableModule } from 'primeng/table';
+import { InputTextModule as PInputTextModule } from 'primeng/inputtext';
+import { TooltipModule as PTooltipModule } from 'primeng/tooltip';
 
 @NgModule({
   declarations: [
@@ -42,7 +44,9 @@ import { GuiGridModule } from "@generic-ui/ngx-grid";
       WidgetsModule,
       NavbarModule,
       ModalModule,
-      GuiGridModule,
+      PTableModule,
+      PInputTextModule,
+      PTooltipModule,
       TableModule, 
       UtilitiesModule,
       BadgeModule,

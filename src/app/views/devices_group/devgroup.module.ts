@@ -15,7 +15,9 @@ import {
 } from "@coreui/angular";
 import { DevicesGroupRoutingModule } from "./devgroup-routing.module";
 import { DevicesGroupComponent } from "./devgroup.component";
-import { GuiGridModule } from "@generic-ui/ngx-grid";
+import { TableModule as PTableModule } from 'primeng/table';
+import { InputTextModule as PInputTextModule } from 'primeng/inputtext';
+import { TooltipModule as PTooltipModule } from 'primeng/tooltip';
 import { BadgeModule } from "@coreui/angular";
 import { FormsModule } from "@angular/forms";
 import { MatMenuModule } from "@angular/material/menu";
@@ -30,7 +32,9 @@ import { MatMenuModule } from "@angular/material/menu";
     FormModule,
     ButtonModule,
     ButtonGroupModule,
-    GuiGridModule,
+    PTableModule,
+    PInputTextModule,
+    PTooltipModule,
     CollapseModule,
     ModalModule,
     BadgeModule,

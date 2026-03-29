@@ -22,7 +22,11 @@ import {
 import { MatMenuModule } from "@angular/material/menu";
 import { DevicesRoutingModule } from "./devices-routing.module";
 import { DevicesComponent } from "./devices.component";
-import { GuiGridModule } from "@generic-ui/ngx-grid";
+import { TableModule as PrimeNGTableModule } from 'primeng/table';
+import { CheckboxModule } from 'primeng/checkbox';
+import { InputTextModule } from 'primeng/inputtext';
+import { MultiSelectModule } from 'primeng/multiselect';
+import { TooltipModule as PrimeNGTooltipModule } from 'primeng/tooltip';
 
 @NgModule({
   imports: [
@@ -34,7 +38,6 @@ import { GuiGridModule } from "@generic-ui/ngx-grid";
     FormModule,
     ButtonModule,
     ButtonGroupModule,
-    GuiGridModule,
     NavbarModule,
     CollapseModule,
     DropdownModule,
@@ -46,6 +49,11 @@ import { GuiGridModule } from "@generic-ui/ngx-grid";
     MatMenuModule,
     TooltipModule,
     TableModule,
+    PrimeNGTableModule,
+    CheckboxModule,
+    InputTextModule,
+    MultiSelectModule,
+    PrimeNGTooltipModule
   ],
   declarations: [DevicesComponent],
 })

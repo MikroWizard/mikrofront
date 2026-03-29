@@ -16,7 +16,9 @@ import {
 } from "@coreui/angular";
 import { VaultRoutingModule } from "./vault-routing.module";
 import { VaultComponent } from "./vault.component";
-import { GuiGridModule } from "@generic-ui/ngx-grid";
+import { TableModule as PTableModule } from 'primeng/table';
+import { InputTextModule as PInputTextModule } from 'primeng/inputtext';
+import { TooltipModule as PTooltipModule } from 'primeng/tooltip';
 
 import { MatInputModule } from "@angular/material/input";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -29,7 +31,9 @@ import { MatFormFieldModule } from "@angular/material/form-field";
     FormModule,
     ButtonModule,
     ButtonGroupModule,
-    GuiGridModule,
+    PTableModule,
+    PInputTextModule,
+    PTooltipModule,
     ModalModule,
     ReactiveFormsModule,
     FormsModule,

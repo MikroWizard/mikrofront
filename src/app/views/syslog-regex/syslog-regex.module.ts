@@ -20,8 +20,12 @@ import {
 import { HighlightJsModule } from 'ngx-highlight-js';
 import { SyslogRegexRoutingModule } from "./syslog-regex-routing.module";
 import { SyslogRegexComponent } from "./syslog-regex.component";
-import { GuiGridModule } from "@generic-ui/ngx-grid";
 import { NgxSuperSelectModule } from "ngx-super-select";
+import { TableModule } from 'primeng/table';
+import { InputTextModule } from 'primeng/inputtext';
+import { MultiSelectModule } from 'primeng/multiselect';
+import { TooltipModule } from 'primeng/tooltip';
+import { DropdownModule } from 'primeng/dropdown';
 
 @NgModule({
     imports: [
@@ -32,7 +36,11 @@ import { NgxSuperSelectModule } from "ngx-super-select";
         FormModule,
         ButtonModule,
         ButtonGroupModule,
-        GuiGridModule,
+        TableModule,
+        InputTextModule,
+        MultiSelectModule,
+        TooltipModule,
+        DropdownModule,
         ModalModule,
         ToastModule,
         FormsModule,

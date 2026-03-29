@@ -13,7 +13,9 @@ import {
 } from "@coreui/angular";
 import { SnippetsRoutingModule } from "./snippets-routing.module";
 import { SnippetsComponent } from "./snippets.component";
-import { GuiGridModule } from "@generic-ui/ngx-grid";
+import { TableModule as PTableModule } from 'primeng/table';
+import { InputTextModule as PInputTextModule } from 'primeng/inputtext';
+import { TooltipModule as PTooltipModule } from 'primeng/tooltip';
 
 @NgModule({
   imports: [
@@ -24,7 +26,9 @@ import { GuiGridModule } from "@generic-ui/ngx-grid";
     FormModule,
     ButtonModule,
     ButtonGroupModule,
-    GuiGridModule,
+    PTableModule,
+    PInputTextModule,
+    PTooltipModule,
     ModalModule,
     ToastModule,
     FormsModule,

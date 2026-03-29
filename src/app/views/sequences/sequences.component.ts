@@ -1,7 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { dataProvider } from "../../providers/mikrowizard/data";
 import { ToastComponent } from '@coreui/angular';
 import { NgxSuperSelectOptions } from "ngx-super-select";
+import { Table } from 'primeng/table';
 
 @Component({
     selector: 'app-sequences',
@@ -11,26 +12,23 @@ import { NgxSuperSelectOptions } from "ngx-super-select";
 export class SequencesComponent implements OnInit {
 
     public sequences: any[] = [];
+    public source: any[] = [];
 
-    // Grid config
-    source: Array<any> = [];
-    searching = {
-        enabled: true,
-        placeholder: 'Search sequences...'
-    };
-    paging = {
-        enabled: true,
-        pageSize: 10,
-        pageSizes: [10, 25, 50]
-    };
-    columnMenu = { enabled: false };
-    sorting = { enabled: true };
-    infoPanel = { enabled: true };
-    rowSelection: any = {
-        enabled: true,
-        type: 'checkbox',
-        mode: 'multiple',
-    };
+    @ViewChild('dt') table!: Table;
+    @ViewChild('dtMembers') tableMembers!: Table;
+    @ViewChild('dtNewMembers') tableNewMembers!: Table;
+
+    applyFilterGlobal($event: any, stringVal: string) {
+        this.table.filterGlobal(($event.target as HTMLInputElement).value, stringVal);
+    }
+
+    applyFilterMembers($event: any, stringVal: string) {
+        this.tableMembers.filterGlobal(($event.target as HTMLInputElement).value, stringVal);
+    }
+
+    applyFilterNewMembers($event: any, stringVal: string) {
+        this.tableNewMembers.filterGlobal(($event.target as HTMLInputElement).value, stringVal);
+    }
 
     public EditSequenceModalVisible: boolean = false;
     public current_sequence: any = {
@@ -57,21 +55,7 @@ export class SequencesComponent implements OnInit {
     public SelectedNewMemberRows: any[] = [];
     public NewMemberRows: any[] = [];
     
-    public searchingMembers = {
-        enabled: true,
-        placeholder: 'Search members...'
-    };
-
-    // Device History Grid Config
-    searchingHistory = {
-        enabled: true,
-        placeholder: 'Search devices in this run...'
-    };
-    pagingHistory = {
-        enabled: true,
-        pageSize: 5,
-        pageSizes: [5, 10, 25]
-    };
+    public loading: boolean = true;
 
     // super select options
     snippetOptions: Partial<NgxSuperSelectOptions> = {

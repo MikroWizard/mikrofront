@@ -20,15 +20,14 @@
                     <i class="fa-solid fa-code-compare me-1"></i>{{compareitems.length}} Selected
                   </c-badge>
                   <div class="selected-items d-flex gap-1">
-                    <c-badge color="secondary" *ngFor="let item of compareitems; index as i" 
+                    <c-badge color="secondary" *ngFor="let item of compareitems; index as i"
                       class="selected-item d-flex align-items-center">
                       <span class="me-1">{{item.devname}}</span>
-                      <i class="fa-solid fa-times cursor-pointer" (click)="delete_compare(i)" 
+                      <i class="fa-solid fa-times cursor-pointer" (click)="delete_compare(i)"
                         title="Remove from comparison"></i>
                     </c-badge>
                   </div>
-                  <button *ngIf="compareitems.length > 1" (click)="start_compare()" 
-                    cButton color="success" size="sm">
+                  <button *ngIf="compareitems.length > 1" (click)="start_compare()" cButton color="success" size="sm">
                     <i class="fa-solid fa-code-compare me-1"></i>Compare
                   </button>
                   <button (click)="clearAllCompare()" cButton color="secondary" size="sm" variant="outline">
@@ -39,7 +38,7 @@
               <!-- Filter Toggle -->
               <button (click)="toggleCollapse()" cButton color="primary" variant="outline">
                 <i class="fa-solid fa-filter me-1"></i>Filters
-                <i class="fa-solid" [class]="filters_visible ? 'fa-chevron-up' : 'fa-chevron-down'" 
+                <i class="fa-solid" [class]="filters_visible ? 'fa-chevron-up' : 'fa-chevron-down'"
                   style="margin-left: 0.5rem; font-size: 0.8rem;"></i>
               </button>
             </div>
@@ -84,8 +83,8 @@
                       <i class="fa-solid fa-magnifying-glass me-1 text-primary"></i>Config Search
                     </label>
                     <mat-form-field appearance="outline" class="w-100">
-                      <input (ngModelChange)="reinitgrid('search',$event)" [(ngModel)]="filters['search']" 
-                        matInput placeholder="Search in configurations...">
+                      <input (ngModelChange)="reinitgrid('search',$event)" [(ngModel)]="filters['search']" matInput
+                        placeholder="Search in configurations...">
                     </mat-form-field>
                   </div>
                 </c-col>
@@ -93,65 +92,104 @@
             </c-card-body>
           </c-card>
         </div>
-        <gui-grid [source]="source" [paging]="paging" [columnMenu]="columnMenu" [sorting]="sorting"
-          [infoPanel]="infoPanel" [columnMenu]="columnMenu" [sorting]="sorting" [infoPanel]="infoPanel"
-          [autoResizeWidth]=true>
-          <gui-grid-column header="#No" type="NUMBER" field="index" width=25 align="CENTER">
-            <ng-template let-value="item.index" let-item="item" let-index="index">
-              {{value}}
-            </ng-template>
-          </gui-grid-column>
-          <gui-grid-column header="Device Name" field="devname">
-            <ng-template let-value="item.devname" let-item="item" let-index="index">
-              {{value}}
-            </ng-template>
-          </gui-grid-column>
-          <gui-grid-column header="Device IP" field="devip">
-            <ng-template let-value="item.devip" let-item="item" let-index="index">
-              {{value}}
-            </ng-template>
-          </gui-grid-column>
-          <gui-grid-column header="backup Time" field="createdC">
-            <ng-template let-value="item.createdC" let-item="item" let-index="index">
-              {{value}}
-            </ng-template>
-          </gui-grid-column>
-          <gui-grid-column header="File Size" field="filesize">
-            <ng-template let-value="item.filesize" let-item="item" let-index="index">
-              {{value}}
-            </ng-template>
-          </gui-grid-column>
-          <gui-grid-column header="MAC" field="devmac" [enabled]="false">
-            <ng-template let-value="item.devmac" let-item="item" let-index="index">
-              {{value}}
-            </ng-template>
-          </gui-grid-column>
-          <gui-grid-column header="Actions" field="id" width="280">
-            <ng-template let-value="item.id" let-item="item" let-index="index">
-              <div class="d-flex gap-1">
-                <button cButton [disabled]="backuploading" color="primary" size="sm" 
-                  (click)="ShowBackup(item)" variant="outline" title="View backup content">
-                  <i *ngIf="backuploading && currentBackup?.id === item.id" 
-                    class="fa-solid fa-spinner fa-spin me-1"></i>
-                  <i *ngIf="!backuploading || currentBackup?.id !== item.id" 
-                    class="fa-solid fa-eye me-1"></i>
-                  View
-                </button>
-                <button *ngIf="ispro" cButton color="info" size="sm" variant="outline"
-                  (click)="add_for_compare(item)" title="Add to comparison"
-                  [disabled]="isInCompareList(item)">
-                  <i class="fa-solid fa-code-compare me-1"></i>
-                  {{isInCompareList(item) ? 'Added' : 'Compare'}}
-                </button>
-                <button *ngIf="ispro" cButton color="warning" size="sm" variant="outline"
-                  (click)="restore_backup(false, false, item)" title="Restore this backup">
-                  <i class="fa-solid fa-rotate-left me-1"></i>
-                  Restore
-                </button>
-              </div>
-            </ng-template>
-          </gui-grid-column>
-        </gui-grid>
+        <div class="mb-3 d-flex justify-content-end">
+          <span class="p-input-icon-left table-search-input">
+            <i class="pi pi-search"></i>
+            <input type="text" pInputText placeholder="Search backups..."
+              (input)="applyFilterGlobal($event, 'contains')" class="form-control-sm" />
+          </span>
+        </div>
+
+        <p-table #dt [value]="source" [paginator]="true" [rows]="10" [showCurrentPageReport]="true"
+          [rowsPerPageOptions]="[10, 25, 50]" [resizableColumns]="true" columnResizeMode="expand" [showGridlines]="true"
+          [stripedRows]="true" styleClass="p-datatable-sm p-datatable-gridlines p-datatable-striped"
+          [globalFilterFields]="['devname', 'devip', 'createdC', 'filesize']" [loading]="loading">
+
+          <ng-template pTemplate="header">
+            <tr>
+              <th pSortableColumn="index" style="width: 70px" class="text-center" pResizableColumn>
+                <div class="justify-between">
+                  <span>#No</span>
+                  <p-sortIcon field="index"></p-sortIcon>
+                </div>
+              </th>
+              <th pSortableColumn="devname" pResizableColumn>
+                <div class="justify-between">
+                  <span>Device Name</span>
+                  <span>
+                    <p-sortIcon field="devname"></p-sortIcon>
+                    <p-columnFilter type="text" field="devname" display="menu" class="ms-auto" />
+                  </span>
+                </div>
+              </th>
+              <th pSortableColumn="devip" pResizableColumn>
+                <div class="justify-between">
+                  <span>Device IP</span>
+                  <span>
+                    <p-sortIcon field="devip"></p-sortIcon>
+                    <p-columnFilter type="text" field="devip" display="menu" class="ms-auto" />
+                  </span>
+                </div>
+              </th>
+              <th pSortableColumn="createdC" pResizableColumn>
+                <div class="justify-between">
+                  <span>Backup Time</span>
+                  <span>
+                    <p-sortIcon field="createdC"></p-sortIcon>
+                    <p-columnFilter type="text" field="createdC" display="menu" class="ms-auto" />
+                  </span>
+                </div>
+              </th>
+              <th pSortableColumn="filesize" pResizableColumn>
+                <div class="justify-between">
+                  <span>File Size</span>
+                  <span>
+                    <p-sortIcon field="filesize"></p-sortIcon>
+                    <p-columnFilter type="text" field="filesize" display="menu" class="ms-auto" />
+                  </span>
+                </div>
+              </th>
+              <th style="width: 280px" class="text-center" pResizableColumn>Actions</th>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="body" let-item>
+            <tr>
+              <td class="text-center">{{item.index}}</td>
+              <td>{{item.devname}}</td>
+              <td>{{item.devip}}</td>
+              <td>{{item.createdC}}</td>
+              <td>{{item.filesize}}</td>
+              <td class="text-center">
+                <div class="d-flex gap-1 justify-content-center">
+                  <button cButton [disabled]="backuploading" color="primary" size="sm" (click)="ShowBackup(item)"
+                    variant="outline" title="View backup content">
+                    <i *ngIf="backuploading && currentBackup?.id === item.id"
+                      class="fa-solid fa-spinner fa-spin me-1"></i>
+                    <i *ngIf="!backuploading || currentBackup?.id !== item.id" class="fa-solid fa-eye me-1"></i>
+                    View
+                  </button>
+                  <button *ngIf="ispro" cButton color="info" size="sm" variant="outline" (click)="add_for_compare(item)"
+                    title="Add to comparison" [disabled]="isInCompareList(item)">
+                    <i class="fa-solid fa-code-compare me-1"></i>
+                    {{isInCompareList(item) ? 'Added' : 'Compare'}}
+                  </button>
+                  <button *ngIf="ispro" cButton color="warning" size="sm" variant="outline"
+                    (click)="restore_backup(false, false, item)" title="Restore this backup">
+                    <i class="fa-solid fa-rotate-left me-1"></i>
+                    Restore
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="6" class="text-center p-4">No backups found.</td>
+            </tr>
+          </ng-template>
+        </p-table>
       </c-card-body>
     </c-card>
   </c-col>
@@ -166,11 +204,12 @@
     <!-- <pre style="height: 100%;">
     <code *ngIf="!loading" language="yaml" style="height:70vh" [highlight]="codeForHighlightAuto" 
     lineNumbers></code></pre> -->
-    <div highlight-js [lang]="hlang" [options]="{}"  >{{codeForHighlightAuto}}</div>
+    <div highlight-js [lang]="hlang" [options]="{}">{{codeForHighlightAuto}}</div>
 
   </c-modal-body>
   <c-modal-footer style="justify-content: space-between;">
-    <button [cdkCopyToClipboard]="codeForHighlightAuto" [style.background-color]="copy_msg ? 'green' : null" (click)="copy_this()" cButton color="secondary">
+    <button [cdkCopyToClipboard]="codeForHighlightAuto" [style.background-color]="copy_msg ? 'green' : null"
+      (click)="copy_this()" cButton color="secondary">
       <i class="fa-regular fa-copy"></i> To clipboard
     </button>
     <div>
@@ -230,7 +269,7 @@
       <i class="fa-solid fa-rotate-left fa-3x text-warning mb-3"></i>
       <h6>Restore Configuration Backup</h6>
     </div>
-    
+
     <div class="backup-info bg-light p-3 rounded mb-3">
       <h6 class="mb-2"><i class="fa-solid fa-info-circle me-2 text-primary"></i>Backup Details</h6>
       <div class="row">
@@ -276,7 +315,7 @@
 
     <div class="confirmation-box bg-light border border-danger p-3 rounded">
       <p class="mb-3 fw-bold">To proceed with this critical action, type <code>CONFIRM</code> in the box below:</p>
-      <input cFormControl [(ngModel)]="confirmationText" placeholder="Type CONFIRM to proceed" 
+      <input cFormControl [(ngModel)]="confirmationText" placeholder="Type CONFIRM to proceed"
         class="form-control text-center fw-bold" style="letter-spacing: 2px;" />
     </div>
 
@@ -290,8 +329,7 @@
     <button (click)="cancelCriticalRestore()" cButton color="secondary">
       <i class="fa-solid fa-times me-1"></i>Cancel
     </button>
-    <button (click)="restore_backup(true, true)" cButton color="danger" 
-      [disabled]="confirmationText !== 'CONFIRM'">
+    <button (click)="restore_backup(true, true)" cButton color="danger" [disabled]="confirmationText !== 'CONFIRM'">
       <i class="fa-solid fa-rotate-left me-1"></i>RESTORE BACKUP
     </button>
   </c-modal-footer>

@@ -13,30 +13,66 @@
         </c-row>
       </c-card-header>
       <c-card-body>
-        <gui-grid [rowHeight]="82" [autoResizeWidth]="true" [source]="source" [columnMenu]="columnMenu"
-          [sorting]="sorting" [autoResizeWidth]=true [paging]="paging">
-          <gui-grid-column header="Name" field="name">
-            <ng-template let-value="item.name" let-item="item" let-index="index">
-              &nbsp; {{value}} </ng-template>
-          </gui-grid-column>
-          <gui-grid-column width="auto" header="Perms" field="perms">
-            <ng-template let-value="item.role" let-item="item" let-index="index">
-              <div style="text-wrap: initial;">
-                <ng-container *ngFor="let perm of item['perms'] | keyvalue">
-                  <c-badge *ngIf="perm.value" class="m-1" color="success">{{perm.key}}</c-badge>
-                </ng-container>
-              </div>
-            </ng-template>
-          </gui-grid-column>
-          <gui-grid-column header="Actions" width="120" field="action">
-            <ng-template let-value="item.id" let-item="item" let-index="index">
-              <button cButton color="warning" size="sm" class="mx-1" (click)="editAddTask(item,'edit');"><i
-                  class="fa-regular fa-pen-to-square"></i></button>
-              <button cButton color="danger" size="sm" (click)="confirm_delete(item);"><i
-                  class="fa-regular fa-trash-can"></i></button>
-            </ng-template>
-          </gui-grid-column>
-        </gui-grid>
+        <div class="mb-3 d-flex justify-content-end">
+          <span class="p-input-icon-left">
+            <i class="pi pi-search"></i>
+            <input type="text" pInputText placeholder="Search permissions..." (input)="applyFilterGlobal($event, 'contains')"
+              class="form-control-sm" />
+          </span>
+        </div>
+
+        <p-table #dt [value]="source" [paginator]="true" [rows]="10" [showCurrentPageReport]="true"
+          [rowsPerPageOptions]="[10, 25, 50]" [resizableColumns]="true" columnResizeMode="expand"
+          [showGridlines]="true" [stripedRows]="true" 
+          styleClass="p-datatable-sm p-datatable-gridlines p-datatable-striped"
+          [globalFilterFields]="['name']"
+          [loading]="loading">
+
+          <ng-template pTemplate="header">
+            <tr>
+              <th pSortableColumn="name" pResizableColumn>
+                <div class="justify-between">
+                  <span>Permission Name</span>
+                  <span>
+                    <p-sortIcon field="name"></p-sortIcon>
+                    <p-columnFilter type="text" field="name" display="menu" class="ms-auto" />
+                  </span>
+                </div>
+              </th>
+              <th pResizableColumn>Perms</th>
+              <th style="width: 120px" class="text-center" pResizableColumn>Actions</th>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="body" let-item>
+            <tr>
+              <td>{{item.name}}</td>
+              <td>
+                <div class="d-flex flex-wrap gap-1">
+                  <ng-container *ngFor="let perm of item['perms'] | keyvalue">
+                    <c-badge *ngIf="perm.value" color="success">{{perm.key}}</c-badge>
+                  </ng-container>
+                </div>
+              </td>
+              <td class="text-center">
+                <div class="d-flex gap-1 justify-content-center">
+                  <button cButton color="warning" size="sm" (click)="editAddTask(item,'edit');" pTooltip="Edit Permission">
+                    <i class="fa-regular fa-pen-to-square"></i>
+                  </button>
+                  <button cButton color="danger" size="sm" (click)="confirm_delete(item);" pTooltip="Delete Permission">
+                    <i class="fa-regular fa-trash-can"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="3" class="text-center p-4">No permissions found.</td>
+            </tr>
+          </ng-template>
+        </p-table>
       </c-card-body>
     </c-card>
   </c-col>

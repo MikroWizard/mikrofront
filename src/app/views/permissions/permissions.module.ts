@@ -18,7 +18,9 @@ import { IconModule } from "@coreui/icons-angular";
 
 import { PermissionsRoutingModule } from "./permissions-routing.module";
 import { PermissionsComponent } from "./permissions.component";
-import { GuiGridModule } from "@generic-ui/ngx-grid";
+import { TableModule } from 'primeng/table';
+import { InputTextModule } from 'primeng/inputtext';
+import { TooltipModule } from 'primeng/tooltip';
 
 @NgModule({
   imports: [
@@ -33,7 +35,9 @@ import { GuiGridModule } from "@generic-ui/ngx-grid";
     FormModule,
     ButtonModule,
     ButtonGroupModule,
-    GuiGridModule,
+    TableModule,
+    InputTextModule,
+    TooltipModule,
     ModalModule,
     FormsModule,
     BadgeModule,

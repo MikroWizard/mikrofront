@@ -11,7 +11,10 @@ import {
 } from '@coreui/angular';
 import { AuthRoutingModule } from './auth-routing.module';
 import { AuthComponent } from './auth.component';
-import { GuiGridModule } from '@generic-ui/ngx-grid';
+import { TableModule } from 'primeng/table';
+import { DrawerModule } from 'primeng/drawer';
+import { InputTextModule } from 'primeng/inputtext';
+import { TooltipModule } from 'primeng/tooltip';
 
 import { FormsModule } from '@angular/forms'; 
 
@@ -27,7 +30,10 @@ import {MatSelectModule} from '@angular/material/select';
     GridModule,
     FormsModule,
     ButtonModule,
-    GuiGridModule,
+    TableModule,
+    DrawerModule,
+    InputTextModule,
+    TooltipModule,
     CollapseModule,
     MatFormFieldModule,
     MatInputModule,

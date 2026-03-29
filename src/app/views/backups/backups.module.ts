@@ -17,7 +17,9 @@ import {
 
 import { BackupsRoutingModule } from "./backups-routing.module";
 import { BackupsComponent } from "./backups.component";
-import { GuiGridModule } from "@generic-ui/ngx-grid";
+import { TableModule } from 'primeng/table';
+import { InputTextModule } from 'primeng/inputtext';
+import { TooltipModule } from 'primeng/tooltip';
 import { MatDatepickerModule } from "@angular/material/datepicker";
 import { MatInputModule } from "@angular/material/input";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -35,7 +37,9 @@ import { ClipboardModule } from "@angular/cdk/clipboard";
     FormModule,
     FormsModule,
     ButtonModule,
-    GuiGridModule,
+    TableModule,
+    InputTextModule,
+    TooltipModule,
     CollapseModule,
     BadgeModule,
     AlertModule,

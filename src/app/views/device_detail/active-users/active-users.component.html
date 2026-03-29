@@ -12,7 +12,7 @@
             <tr>
               <th scope="col">#</th>
               <th scope="col">Address</th>
-              <th scope="col">Att</th>
+              <th scope="col">At</th>
               <th scope="col">Group</th>
               <th scope="col">Name</th>
               <th scope="col">Via</th>
@@ -27,8 +27,9 @@
               <td>{{item['group']}}</td>
               <td>{{item['name']}}</td>
               <td>{{item['via']}}</td>
-              <td><button cButton (click)="killsession(item)" style="padding: 0;" size="sm" color="danger" variant="ghost"><i class="fa-solid fa-skull-crossbones"></i>
-                    kill</button></td>
+              <td><button cButton (click)="killsession(item)" style="padding: 0;" size="sm" color="danger"
+                  variant="ghost"><i class="fa-solid fa-skull-crossbones"></i>
+                  kill</button></td>
             </tr>
           </tbody>
         </table>

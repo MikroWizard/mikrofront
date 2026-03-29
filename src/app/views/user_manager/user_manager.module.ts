@@ -16,7 +16,9 @@ import { NgxMatSelectSearchModule } from "ngx-mat-select-search";
 
 import { UserManagerRoutingModule } from "./user_manager-routing.module";
 import { UserManagerComponent } from "./user_manager.component";
-import { GuiGridModule } from "@generic-ui/ngx-grid";
+import { TableModule } from 'primeng/table';
+import { InputTextModule } from 'primeng/inputtext';
+import { TooltipModule } from 'primeng/tooltip';
 
 @NgModule({
   imports: [
@@ -29,7 +31,9 @@ import { GuiGridModule } from "@generic-ui/ngx-grid";
     FormModule,
     ButtonModule,
     ButtonGroupModule,
-    GuiGridModule,
+    TableModule,
+    InputTextModule,
+    TooltipModule,
     ModalModule,
     FormsModule,
     ToastModule,
