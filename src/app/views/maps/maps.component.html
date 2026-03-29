@@ -1,10 +1,27 @@
 <c-row class="network-container">
   <c-col [xs]="12" class="network-col">
     <c-card class="network-card">
-      <button cButton color="primary" size="sm" (click)="refreshData()" class="refresh-btn">
-        <i class="fas fa-sync-alt"></i> Refresh
-      </button>
-      <div #network class="network-canvas"></div>
+      <div class="map-actions">
+        <button cButton color="primary" size="sm" (click)="refreshData()" class="refresh-btn">
+          <i class="fas fa-sync-alt"></i> Refresh
+        </button>
+        <button cButton color="warning" size="sm" (click)="resetLocations()" class="refresh-btn">
+          <i class="fas fa-thumbtack"></i> Reset Locations
+        </button>
+        <button cButton color="danger" size="sm" (click)="showResetModal = true" class="refresh-btn">
+          <i class="fas fa-trash-alt"></i> Reset Map
+        </button>
+      </div>
+      <div class="network-canvas">
+        <div #network class="full-size"></div>
+        <div *ngIf="loadingMap && mikrotikData.length === 0" class="map-loading-overlay">
+          <div class="loader-content">
+            <i class="fas fa-project-diagram fa-spin"></i>
+            <h3>Generating Map...</h3>
+            <p>Please wait while we discover your network topology. This might take a few minutes. (Polling every 30s)</p>
+          </div>
+        </div>
+      </div>
     </c-card>
   </c-col>
 </c-row>
@@ -78,5 +95,21 @@
   </c-modal-body>
   <c-modal-footer>
     <button cButton color="secondary" (click)="closeWebAccessModal()">Cancel</button>
+  </c-modal-footer>
+</c-modal>
+
+<!-- Reset Map Confirmation Modal -->
+<c-modal #ResetMapModal backdrop="static" [(visible)]="showResetModal" id="ResetMapModal">
+  <c-modal-header>
+    <h6 cModalTitle>Confirm Map Reset</h6>
+    <button cButtonClose (click)="showResetModal = false"></button>
+  </c-modal-header>
+  <c-modal-body>
+    <p>Are you sure you want to reset all network discovery data?</p>
+    <p class="text-danger"><i class="fas fa-exclamation-triangle"></i> This will delete all current neighbors' data and trigger a fresh scan. Node positions will also be reset.</p>
+  </c-modal-body>
+  <c-modal-footer>
+    <button cButton color="secondary" (click)="showResetModal = false">Cancel</button>
+    <button cButton color="danger" (click)="confirmResetMap()">Reset Everything</button>
   </c-modal-footer>
 </c-modal>

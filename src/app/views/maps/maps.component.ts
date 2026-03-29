@@ -10,7 +10,7 @@ import { DataSet } from 'vis-data';
   templateUrl: "maps.component.html",
   styleUrls: ["maps.component.scss"],
 })
-export class MapsComponent implements OnInit {
+export class MapsComponent implements OnInit, OnDestroy {
   public uid: number;
   public uname: string;
   public ispro: boolean = false;
@@ -19,8 +19,11 @@ export class MapsComponent implements OnInit {
   public savedPositionsKey = "network-layout";
   public selectedDevice: any = null;
   public showWebAccessModal: boolean = false;
-  public showMoreInfoModal: boolean = false;
   public currentDeviceInfo: any = null;
+  public showResetModal: boolean = false;
+  public loadingMap: boolean = false;
+  private pollingTimer: any;
+
   constructor(
     private data_provider: dataProvider,
     private router: Router,
@@ -54,13 +57,35 @@ export class MapsComponent implements OnInit {
     this.loadNetworkData();
   }
 
+  ngOnDestroy(): void {
+    if (this.pollingTimer) {
+      clearTimeout(this.pollingTimer);
+    }
+  }
+
   loadNetworkData(): void {
+    clearTimeout(this.pollingTimer);
+    this.loadingMap = true;
     this.data_provider.getNetworkMap().then((res) => {
-      this.mikrotikData = res;
-      console.dir(res);
-      setTimeout(() => {
-        this.createNetworkMap();
-      }, 100);
+      // Normalize response - handle array or object with 'result' property
+      const data = (res && res.result) ? res.result : res;
+      
+      if (Array.isArray(data) && data.length > 0) {
+        this.loadingMap = false;
+        this.mikrotikData = data;
+        setTimeout(() => {
+          this.createNetworkMap();
+        }, 100);
+      } else {
+        console.log("Map data is empty, likely generating. Retrying in 30s...");
+        this.mikrotikData = [];
+        this.pollingTimer = setTimeout(() => {
+          this.loadNetworkData();
+        }, 30000);
+      }
+    }).catch(err => {
+      console.error("Error loading network map:", err);
+      this.loadingMap = false;
     });
   }
 
@@ -474,6 +499,33 @@ Object.entries(connectionMap).forEach(([connectionKey, interfacePairs]) => {
   configureDevice(devid: number) {
     console.log('Configure device:', this.selectedDevice);
     // Implement configuration interface
+  }
+
+  resetLocations() {
+    localStorage.removeItem(this.savedPositionsKey);
+    this.savedPositions = {};
+    this.refreshData();
+  }
+
+  confirmResetMap() {
+    this.showResetModal = false;
+    this.loadingMap = true;
+    this.mikrotikData = [];
+    this.selectedDevice = null;
+
+    this.data_provider.resetNetworkMap().then((res) => {
+      if (res.status === 'success') {
+        localStorage.removeItem(this.savedPositionsKey);
+        this.savedPositions = {};
+        this.loadNetworkData();
+      } else {
+        this.loadingMap = false;
+        alert("Error: " + (res.error || "Failed to reset map"));
+      }
+    }).catch(err => {
+      this.loadingMap = false;
+      alert("Error resetting map: " + err);
+    });
   }
 
 }

@@ -667,6 +667,10 @@ export class dataProvider {
         return this.MikroWizardRPC.sendJsonRequest("/api/networkmap/get", {});
     }
 
+    resetNetworkMap() {
+        return this.MikroWizardRPC.sendJsonRequest("/api/networkmap/reset", {});
+    }
+
     bulk_add_devices(devices: any[]) {
         var data = {
             'devices': devices
