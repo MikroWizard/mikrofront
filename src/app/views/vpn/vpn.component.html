@@ -1,10 +1,33 @@
 <div class="fade-in">
+  <!-- Communication Error Alert -->
+  <c-row class="mb-4" *ngIf="isCommunicationError">
+    <c-col sm="12">
+      <div class="alert alert-danger shadow-sm border-0 d-flex align-items-start p-4 mb-0">
+        <div class="me-3 fs-2">
+          <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <div>
+          <h5 class="alert-heading fw-bold">Need to check docker container and wireguard server</h5>
+          <p class="mb-2">For this feature, the MikroWizard WireGuard server must be installed. If already installed,
+            please verify that the Docker container is running and accessible.</p>
+          <hr>
+          <div class="d-flex align-items-center">
+            <span class="me-2 text-muted fw-semibold">Troubleshooting and installation Instruction:</span>
+            <a href="https://mikrowizard.com/docs/install-mikrowizard-wireguard-docker-server/" target="_blank"
+              class="btn btn-danger btn-sm text-decoration-none">
+              <i class="fas fa-external-link-alt me-1"></i> Install Mikrowizard wireguard docker server
+            </a>
+          </div>
+        </div>
+      </div>
+    </c-col>
+  </c-row>
   <!-- Top Cards -->
   <c-row class="mb-4 d-flex justify-content-between">
     <!-- Server Status Card -->
     <c-col sm="4">
       <c-card class="shadow-sm border-0 h-100"
-        [ngClass]="{'bg-success text-white': status?.status === 'running', 'bg-danger text-white': status?.status === 'error' || !status, 'bg-warning text-dark': status?.status === 'setup_required'}">
+        [ngClass]="{'bg-success text-white': status?.status === 'running' && !isCommunicationError, 'bg-danger text-white': status?.status === 'error' || isCommunicationError || !status, 'bg-warning text-dark': status?.status === 'setup_required' && !isCommunicationError}">
         <c-card-body class="p-3 d-flex align-items-center">
           <div class="me-3 fs-2 opacity-75">
             <i class="fas fa-server"></i>
@@ -13,8 +36,9 @@
             <div class="text-uppercase fw-semibold" style="font-size: 0.75rem; letter-spacing: 0.5px; opacity: 0.8;">
               Server Status</div>
             <div class="fs-5 fw-bold mt-1">
-              {{status?.status === 'running' ? 'Running' : (status?.status === 'setup_required' ? 'Setup Required' :
-              'Error/Offline')}}
+              {{isCommunicationError ? 'Communication Failed' : (status?.status === 'running' ? 'Running' :
+              (status?.status === 'setup_required' ? 'Setup Required' :
+              'Error/Offline'))}}
             </div>
           </div>
         </c-card-body>
@@ -119,17 +143,16 @@
           <div class="mb-3 d-flex justify-content-end">
             <span class="p-input-icon-left">
               <i class="pi pi-search"></i>
-              <input type="text" pInputText placeholder="Search peers..." (input)="applyFilterGlobal($event, 'contains')"
-                class="form-control-sm" />
+              <input type="text" pInputText placeholder="Search peers..."
+                (input)="applyFilterGlobal($event, 'contains')" class="form-control-sm" />
             </span>
           </div>
 
           <p-table #dt [value]="source" [paginator]="true" [rows]="10" [showCurrentPageReport]="true"
             [rowsPerPageOptions]="[10, 25, 50]" [resizableColumns]="true" columnResizeMode="expand"
-            [showGridlines]="true" [stripedRows]="true" 
+            [showGridlines]="true" [stripedRows]="true"
             styleClass="p-datatable-sm p-datatable-gridlines p-datatable-striped"
-            [globalFilterFields]="['name', 'assigned_ip', 'public_key', 'description']"
-            [loading]="loading">
+            [globalFilterFields]="['name', 'assigned_ip', 'public_key', 'description']" [loading]="loading">
             <ng-template pTemplate="header">
               <tr>
                 <th style="width: 50px" class="text-center" pResizableColumn>Status</th>
@@ -182,11 +205,14 @@
             <ng-template pTemplate="body" let-item>
               <tr [ngClass]="{'row-highlighted': item.status === 'online'}">
                 <td class="text-center">
-                  <i *ngIf="item.status === 'online'" class="fa-solid fa-circle text-success" [pTooltip]="'Online'" tooltipPosition="top"></i>
-                  <i *ngIf="item.status === 'offline'" class="fa-solid fa-circle text-danger" [pTooltip]="'Offline'" tooltipPosition="top"></i>
+                  <i *ngIf="item.status === 'online'" class="fa-solid fa-circle text-success" [pTooltip]="'Online'"
+                    tooltipPosition="top"></i>
+                  <i *ngIf="item.status === 'offline'" class="fa-solid fa-circle text-danger" [pTooltip]="'Offline'"
+                    tooltipPosition="top"></i>
                   <i *ngIf="item.status === 'unreachable'" class="fa-solid fa-triangle-exclamation text-warning"
                     [pTooltip]="'Unreachable (Handshake OK, Ping Failed)'" tooltipPosition="top"></i>
-                  <i *ngIf="!item.status && item.is_enabled" class="fa-solid fa-circle text-info" [pTooltip]="'Enabled'" tooltipPosition="top"></i>
+                  <i *ngIf="!item.status && item.is_enabled" class="fa-solid fa-circle text-info" [pTooltip]="'Enabled'"
+                    tooltipPosition="top"></i>
                   <i *ngIf="!item.status && !item.is_enabled" class="fa-solid fa-circle text-secondary"
                     [pTooltip]="'Disabled'" tooltipPosition="top"></i>
                 </td>
@@ -207,7 +233,8 @@
                 </td>
                 <td>
                   <div class="d-flex flex-column justify-content-center w-100">
-                    <div *ngIf="item.description" class="text-muted mb-1 text-wrap small fw-bold" [title]="item.description">
+                    <div *ngIf="item.description" class="text-muted mb-1 text-wrap small fw-bold"
+                      [title]="item.description">
                       {{ item.description }}
                     </div>
                     <div style="color: #adb5bd; font-size: 0.75rem" class="d-flex flex-row align-items-center gap-3">
@@ -238,14 +265,17 @@
                       <i class="fa-solid fa-link"></i> View Device
                     </a>
                     <div class="d-flex flex-row justify-content-center w-100 container-fluid p-0">
-                      <small *ngIf="!item.linked_device_id && !item.scan_status && item.mt_user" class="text-muted" style="font-size: 0.65rem;">Not Linked</small>
-                      <div style="font-size: 0.7rem;" *ngIf="item.scan_status === 'starting' || item.scan_status === 'running'" class="text-info">
+                      <small *ngIf="!item.linked_device_id && !item.scan_status && item.mt_user" class="text-muted"
+                        style="font-size: 0.65rem;">Not Linked</small>
+                      <div style="font-size: 0.7rem;"
+                        *ngIf="item.scan_status === 'starting' || item.scan_status === 'running'" class="text-info">
                         <i class="fas fa-circle-notch fa-spin me-1"></i> Scanning...
                       </div>
                       <div style="font-size: 0.7rem;" *ngIf="item.scan_status === 'completed'" class="text-success">
                         <i class="fas fa-check-circle me-1"></i> Success
                       </div>
-                      <div style="font-size: 0.7rem;" *ngIf="item.scan_status === 'failed'" class="text-danger" [pTooltip]="'MikroTik connection failed'" tooltipPosition="top">
+                      <div style="font-size: 0.7rem;" *ngIf="item.scan_status === 'failed'" class="text-danger"
+                        [pTooltip]="'MikroTik connection failed'" tooltipPosition="top">
                         <i class="fas fa-exclamation-triangle me-1"></i> Failed
                       </div>
                     </div>
@@ -264,7 +294,8 @@
                   </div>
                 </td>
                 <td>
-                  <div *ngIf="item.stats" class="d-flex flex-column" style="font-size: 0.72rem; font-family: monospace; font-weight: bold;">
+                  <div *ngIf="item.stats" class="d-flex flex-column"
+                    style="font-size: 0.72rem; font-family: monospace; font-weight: bold;">
                     <span [style.color]="item.stats.rx_speed !== 0 ? '#2eb85c' : '#8a93a2'">
                       <i class="fas fa-arrow-down opacity-75"></i> {{ formatBytes(item.stats.rx_speed || 0) }}/s
                     </span>
@@ -275,8 +306,10 @@
                 </td>
                 <td>
                   <div *ngIf="item.stats" class="d-flex flex-column" style="font-size: 0.7rem;">
-                    <span class="text-success"><i class="fas fa-arrow-down opacity-50"></i> {{(item.stats.rx_bytes / 1048576) | number:'1.2-2'}} MB</span>
-                    <span class="text-info"><i class="fas fa-arrow-up opacity-50"></i> {{(item.stats.tx_bytes / 1048576) | number:'1.2-2'}} MB</span>
+                    <span class="text-success"><i class="fas fa-arrow-down opacity-50"></i> {{(item.stats.rx_bytes /
+                      1048576) | number:'1.2-2'}} MB</span>
+                    <span class="text-info"><i class="fas fa-arrow-up opacity-50"></i> {{(item.stats.tx_bytes / 1048576)
+                      | number:'1.2-2'}} MB</span>
                   </div>
                 </td>
                 <td class="text-center">

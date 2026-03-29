@@ -45,10 +45,11 @@ export interface VpnServerConfig {
 }
 
 export interface VpnStatusResponse {
-  status: 'running' | 'setup_required' | 'error';
+  status: 'running' | 'setup_required' | 'error' | 'failed';
   peers?: VpnPeer[];
   server_config?: VpnServerConfig;
   message?: string;
+  error?: string;
 }
 
 export interface VpnLiveStatusResponse {

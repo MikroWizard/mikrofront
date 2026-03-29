@@ -33,6 +33,7 @@ export class VpnComponent implements OnInit, OnDestroy {
     public totalTx: number = 0;
     public liveSpeedRx: number = 0;
     public liveSpeedTx: number = 0;
+    public isCommunicationError: boolean = false;
 
     formatBytes(bytes: number, decimals: number = 2): string {
         if (!+bytes) return '0 B';
@@ -187,12 +188,19 @@ export class VpnComponent implements OnInit, OnDestroy {
             next: (res) => {
                 if (res) {
                     this.status = res;
-                    this.source = (res.peers || []).map(p => ({
-                        ...p,
-                        _search_index: `${p.name || ''} ${p.assigned_ip || ''} ${p.public_key || ''} ${p.description || ''}`
-                    }));
-                    this.computeTotals();
-                    this.loading = false;
+                    this.isCommunicationError = res.status === 'failed' && (res.error?.includes('Connection refused') || false);
+                    
+                    if (!this.isCommunicationError) {
+                        this.source = (res.peers || []).map(p => ({
+                            ...p,
+                            _search_index: `${p.name || ''} ${p.assigned_ip || ''} ${p.public_key || ''} ${p.description || ''}`
+                        }));
+                        this.computeTotals();
+                        this.loading = false;
+                    } else {
+                        this.loading = false;
+                        this.source = [];
+                    }
                 } else {
                     if (!this.status) {
                         this.loading = true; // Show loading if we never got a successful status
@@ -242,11 +250,17 @@ export class VpnComponent implements OnInit, OnDestroy {
             next: (res) => {
                 if (res) {
                     this.status = res;
-                    this.source = (res.peers || []).map(p => ({
-                        ...p,
-                        _search_index: `${p.name || ''} ${p.assigned_ip || ''} ${p.public_key || ''} ${p.description || ''}`
-                    }));
-                    this.computeTotals();
+                    this.isCommunicationError = res.status === 'failed' && (res.error?.includes('Connection refused') || false);
+
+                    if (!this.isCommunicationError) {
+                        this.source = (res.peers || []).map(p => ({
+                            ...p,
+                            _search_index: `${p.name || ''} ${p.assigned_ip || ''} ${p.public_key || ''} ${p.description || ''}`
+                        }));
+                        this.computeTotals();
+                    } else {
+                        this.source = [];
+                    }
                 }
             },
             error: (err) => console.error("Error refreshing data:", err)
