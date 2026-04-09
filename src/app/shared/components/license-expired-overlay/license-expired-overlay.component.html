@@ -1,0 +1,15 @@
+<div class="license-overlay" *ngIf="isExpired$ | async">
+  <div class="overlay-content">
+    <div class="icon-container">
+      <i class="fa-solid fa-triangle-exclamation"></i>
+    </div>
+    <h2>Pro Feature: License Expired</h2>
+    <p>This view is restricted to pro-licensed customers. Your license has either expired or is not valid for this feature.</p>
+    <div class="actions">
+      <a href="https://mikrowizard.com/license-renewal" target="_blank" class="btn-renew">
+        <i class="fa-solid fa-cart-shopping"></i> Renew License
+      </a>
+      <button class="btn-dismiss" (click)="dismiss()">Later</button>
+    </div>
+  </div>
+</div>

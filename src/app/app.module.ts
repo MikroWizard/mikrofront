@@ -8,7 +8,9 @@ import Aura from '@primeuix/themes/aura';
 import { ReactiveFormsModule,FormsModule } from '@angular/forms';
 
 import { NgScrollbarModule } from 'ngx-scrollbar';
-import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
+import { provideHttpClient, withInterceptorsFromDi, HTTP_INTERCEPTORS } from '@angular/common/http';
+import { LicenseService } from './providers/license.service';
+import { LicenseInterceptor } from './providers/license-interceptor.service';
 
 // Import routing module
 import { AppRoutingModule } from './app-routing.module';
@@ -113,6 +115,12 @@ export function loginStatusProviderFactory(provider: loginChecker) {
             multi: true,
         },
         Title,
+        LicenseService,
+        {
+            provide: HTTP_INTERCEPTORS,
+            useClass: LicenseInterceptor,
+            multi: true
+        },
         provideHttpClient(withInterceptorsFromDi())
     ] })
 export class AppModule {

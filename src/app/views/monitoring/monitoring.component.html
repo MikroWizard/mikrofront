@@ -1,3 +1,4 @@
+<div style="position: relative;">
 <c-row style="height: calc(100vh - 10rem);" (click)="disableContextMenu()" >
   <c-col xs="3" style="height:100%;">
     <c-card style="height:100%">
@@ -176,6 +177,8 @@
     </c-card>
   </c-col>
 </c-row>
+<app-license-expired-overlay></app-license-expired-overlay>
+</div>
 <div *ngIf="contextmenu">
   <div class="contextmenu" [ngStyle]="{'left.px': contextmenuX, 'top.px': contextmenuY}">
     <c-card style="padding: 1px;">

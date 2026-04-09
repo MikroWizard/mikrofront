@@ -27,6 +27,7 @@ import { MapsRoutingModule } from "./maps-routing.module";
 import { MapsComponent } from "./maps.component";
 import { ClipboardModule } from "@angular/cdk/clipboard";
 import { InfiniteScrollModule } from 'ngx-infinite-scroll';
+import { SharedModule } from "../../shared/shared.module";
 
 @NgModule({
   imports: [
@@ -53,7 +54,8 @@ import { InfiniteScrollModule } from 'ngx-infinite-scroll';
     TooltipModule,
     UtilitiesModule,
     InfiniteScrollModule,
-    IconModule
+    IconModule,
+    SharedModule
   ],
   declarations: [MapsComponent],
 })

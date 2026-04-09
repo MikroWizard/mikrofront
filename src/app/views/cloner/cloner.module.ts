@@ -23,6 +23,7 @@ import { InputTextModule as PInputTextModule } from 'primeng/inputtext';
 import { TooltipModule as PTooltipModule } from 'primeng/tooltip';
 
 import { NgxSuperSelectModule} from "ngx-super-select";
+import { SharedModule } from "../../shared/shared.module";
 
 @NgModule({
   imports: [
@@ -46,6 +47,7 @@ import { NgxSuperSelectModule} from "ngx-super-select";
     TabsModule,
     BadgeModule,
     AlertModule,
+    SharedModule,
   ],
   declarations: [ClonerComponent],
   providers: [TitleCasePipe],

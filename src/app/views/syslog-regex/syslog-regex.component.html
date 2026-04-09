@@ -1,3 +1,4 @@
+<div style="position: relative;">
 <c-row>
     <c-col xs>
         <c-card class="mb-4">
@@ -108,6 +109,8 @@
         </c-card>
     </c-col>
 </c-row>
+<app-license-expired-overlay></app-license-expired-overlay>
+</div>
 
 <c-modal #EditRegexModal backdrop="static" size="xl" [fullscreen]="true" [(visible)]="EditRegexModalVisible"
     id="EditRegexModal">

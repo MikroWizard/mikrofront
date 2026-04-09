@@ -25,6 +25,7 @@ import { MonitoringRoutingModule } from "./monitoring-routing.module";
 import { MonitoringComponent } from "./monitoring.component";
 import { ClipboardModule } from "@angular/cdk/clipboard";
 import { InfiniteScrollModule } from 'ngx-infinite-scroll';
+import { SharedModule } from "../../shared/shared.module";
 
 @NgModule({
   imports: [
@@ -49,7 +50,8 @@ import { InfiniteScrollModule } from 'ngx-infinite-scroll';
     TableModule,
     TooltipModule,
     UtilitiesModule,
-    InfiniteScrollModule
+    InfiniteScrollModule,
+    SharedModule
   ],
   declarations: [MonitoringComponent],
 })

@@ -22,6 +22,7 @@ import { TooltipModule as PTooltipModule } from 'primeng/tooltip';
 
 import { MatInputModule } from "@angular/material/input";
 import { MatFormFieldModule } from "@angular/material/form-field";
+import { SharedModule } from "../../shared/shared.module";
 @NgModule({
   imports: [
     VaultRoutingModule,
@@ -42,7 +43,8 @@ import { MatFormFieldModule } from "@angular/material/form-field";
     MatInputModule,
     MatFormFieldModule,
     CollapseModule,
-    TooltipModule
+    TooltipModule,
+    SharedModule
   ],
   declarations: [VaultComponent],
 })

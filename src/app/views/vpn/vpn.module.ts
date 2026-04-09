@@ -4,6 +4,7 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ChartjsModule } from '@coreui/angular-chartjs';
 import { HighlightJsModule } from 'ngx-highlight-js';
 import { ClipboardModule } from '@angular/cdk/clipboard';
+import { SharedModule as AppSharedModule } from "../../shared/shared.module";
 
 import {
     AvatarModule,
@@ -67,7 +68,8 @@ import { InputTextModule } from 'primeng/inputtext';
         CoreUIGridModule,
         MatMenuModule,
         HighlightJsModule,
-        ClipboardModule
+        ClipboardModule,
+        AppSharedModule
     ],
     declarations: [VpnComponent]
 })

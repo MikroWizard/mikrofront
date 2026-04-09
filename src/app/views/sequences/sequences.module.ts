@@ -24,6 +24,7 @@ import { TableModule } from 'primeng/table';
 import { InputTextModule } from 'primeng/inputtext';
 import { TooltipModule } from 'primeng/tooltip';
 import { NgxSuperSelectModule } from "ngx-super-select";
+import { SharedModule } from "../../shared/shared.module";
 
 @NgModule({
     imports: [
@@ -47,7 +48,8 @@ import { NgxSuperSelectModule } from "ngx-super-select";
         TabsModule,
         AlertModule,
         HighlightJsModule,
-        CollapseModule
+        CollapseModule,
+        SharedModule
     ],
     declarations: [SequencesComponent],
 })

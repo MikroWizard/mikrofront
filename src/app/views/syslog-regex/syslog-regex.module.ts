@@ -26,6 +26,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { TooltipModule } from 'primeng/tooltip';
 import { DropdownModule } from 'primeng/dropdown';
+import { SharedModule } from "../../shared/shared.module";
 
 @NgModule({
     imports: [
@@ -51,7 +52,8 @@ import { DropdownModule } from 'primeng/dropdown';
         TabsModule,
         AlertModule,
         HighlightJsModule,
-        CollapseModule
+        CollapseModule,
+        SharedModule
     ],
     declarations: [SyslogRegexComponent],
 })

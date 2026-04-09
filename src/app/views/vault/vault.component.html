@@ -1,3 +1,4 @@
+<div style="position: relative;">
 <c-card class="mb-4" style="margin-bottom: 0 !important;">
   <c-card-header style="padding: 0;">
     <c-row class="align-items-center">
@@ -336,6 +337,8 @@
     </c-card>
   </c-tab-pane>
 </c-tab-content>
+<app-license-expired-overlay></app-license-expired-overlay>
+</div>
 
 <!-- Password Reveal Modal -->
 <c-modal #PasswordModal backdrop="static" [(visible)]="PasswordModalVisible" id="PasswordModal">
