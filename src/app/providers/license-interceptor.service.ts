@@ -25,7 +25,7 @@ export class LicenseInterceptor implements HttpInterceptor {
     'snippet/syslogregex/list'
   ];
 
-  constructor(private licenseService: LicenseService) {}
+  constructor(private licenseService: LicenseService) { }
 
   private isProEndpoint(url: string): boolean {
     return this.proEndpoints.some(endpoint => url.includes(endpoint));

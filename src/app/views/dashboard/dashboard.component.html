@@ -142,102 +142,179 @@
         </form>
       </c-col>
     </c-row>
-    <div *ngIf="!chart_data.datasets" style="height: 250px;">
+    <div *ngIf="!chart_data.datasets" style="height: 230px;">
       <div class="placeholder-glow" style="height: 100%;">
-        <div class="placeholder col-12" style="height: 250px;"></div>
+        <div class="placeholder col-12" style="height: 230px;"></div>
       </div>
     </div>
-    <c-chart *ngIf="chart_data.datasets" [data]="chart_data" [options]="options" [height]="250" type="line">
+    <c-chart *ngIf="chart_data.datasets" [data]="chart_data" [options]="options" [height]="230" type="line">
     </c-chart>
   </c-card-body>
 </c-card>
-<c-row>
-  <c-col xl="6" lg="12" class="h-100" style="min-height: 160px!important;display: grid">
-    <c-card class="mb-1 p-1 h-100" style="padding-left: 5px!important;">
-      <div class="my-1">
-        <h4 style="display: inline-block;">Version and Serial information</h4>
-      </div>
-      <div *ngIf="!stats">
-        <div class="placeholder-glow">
-          <div class="placeholder col-8"></div>
-          <div class="placeholder col-6"></div>
-          <div class="placeholder col-10"></div>
-          <div class="placeholder col-7"></div>
+<c-row class="align-items-stretch">
+  <c-col xl="6" lg="12" class="d-flex flex-column mb-3 mb-xl-0" style="min-height: 160px!important;">
+    <c-card class="flex-grow-1 border-0 shadow-sm"
+      style="margin: 0 !important; overflow: hidden; background: linear-gradient(to bottom right, #ffffff, #f8f9fa);">
+      <c-card-body class="d-flex flex-column justify-content-between p-2 px-3">
+        <!-- Skeleton loader -->
+        <div *ngIf="!stats">
+          <div class="placeholder-glow">
+            <div class="placeholder col-8 mb-2"></div>
+            <div class="placeholder col-6 mb-2"></div>
+            <div class="placeholder col-10 mb-2"></div>
+            <div class="placeholder col-7"></div>
+          </div>
         </div>
-      </div>
-      <div *ngIf="!stats['license']" class="my-1">
-        <div style="display: inline-block;margin-right: 5px;">
-          <code style="padding: 0!important;">Serial:</code> <small
-            style="background-color: #ccc;padding: 5px;border-radius: 5px;cursor: pointer;" (click)="copy_this()"
-            [cdkCopyToClipboard]="stats['serial']">{{ stats['serial'] }}</small>
-          <span *ngIf="copy_msg" style="color: #fff!important;" class="badge text-bg-success"><i
-              class="fa-solid fa-check"></i>Copy</span>
-        </div>
-        <c-badge *ngIf="stats['username']" color="danger">Not Registered</c-badge>
-        <c-badge *ngIf="!stats['username']" color="danger">License Validation failed</c-badge>
-      </div>
-      <div *ngIf="stats['license']=='connection_error'" class="my-1">
-        <div style="display: inline-block;margin-right: 5px;">
-          <code style="padding: 0!important;">Serial:</code> <small
-            style="background-color: #ccc;padding: 5px;border-radius: 5px;cursor: pointer;" (click)="copy_this()"
-            [cdkCopyToClipboard]="stats['serial']">{{ stats['serial'] }}</small>
-          <span *ngIf="copy_msg" style="color: #fff!important;" class="badge text-bg-success mx-1"><i
-              class="fa-solid fa-check"></i>Copy</span>
-        </div>
-        <c-badge class="mx-1" color="danger">Unable connect to server/Check server internet connection</c-badge>
-      </div>
-      <div *ngIf="stats['license']!='connection_error' && stats['license']" class="my-1">
-        <div style="display: inline-block;margin-right: 5px;">
-          <code style="padding: 0!important;">Serial:</code> <small
-            style="background-color: #ccc;padding: 5px;border-radius: 5px;cursor: pointer;" (click)="copy_this()"
-            [cdkCopyToClipboard]="stats['serial']">{{ stats['serial'] }}</small>
-          <span *ngIf="copy_msg" style="color: #fff!important;" class="badge text-bg-success mx-1"><i
-              class="fa-solid fa-check"></i>Copy</span>
-        </div>
-        <c-badge color="success">Registered</c-badge>
-        <c-badge class="mx-1" color="info">License Type : {{stats['license']}}</c-badge>
-        <c-badge *ngIf="stats['update_mode']!='auto'" color="info">Manual update</c-badge>
-        <c-badge *ngIf="stats['update_mode']=='auto'" color="info">Auto update</c-badge>
-      </div>
-      <div *ngIf="stats['license']!='connection_error'" class="my-1">
-        <span style="font-size: 0.9rem; display: inline-block;margin-right: 5px"><c-badge
-            [color]="stats['update_available'] ? 'success' : 'secondary'"
-            style="margin: 0!important;padding: 8px;height: 27px;">Your Mikroman version : {{stats['version']}}
-          </c-badge>
-          <i class="fa-solid fa-spinner fa-spin" *ngIf="stats['update_inprogress']"></i>
-          <button cButton color="warning"
-            *ngIf="stats['update_mode']!='auto' && stats['update_available'] && !stats['update_inprogress']" size="sm"
-            (click)="showConfirmModal('update_mikroman')"
-            style="font-size: 0.75em;position: relative;left: -4px;top: 1px;border-top-left-radius: 0;border-bottom-left-radius: 0;height: 27px;"><i
-              class="fa-regular fa-hand-pointer fa-beat-fade"></i> Update availble </button>
-        </span>
-        <span style="font-size: 0.9rem; display: inline-block;"><c-badge
-            [color]="stats['front_update_available'] ? 'success' : 'secondary'" style="padding: 8px;height: 27px;"
-            color="secondary">Your Mikrofront version : {{front_version}}
-          </c-badge>
-          <i class="fa-solid fa-spinner fa-spin" *ngIf="stats['front_update_inprogress']"></i>
-          <button cButton color="warning"
-            *ngIf="stats['update_mode']!='auto' && stats['front_update_available'] && !stats['front_update_inprogress']"
-            size="sm" (click)="showConfirmModal('update_mikrofront')"
-            style="font-size: 0.75em;position: relative;left: -4px;top: 1px;border-top-left-radius: 0;border-bottom-left-radius: 0;height: 27px;"><i
-              class="fa-regular fa-hand-pointer fa-beat-fade"></i> Update availble </button>
-        </span>
-      </div>
-      <p *ngIf="!stats['license'] && !stats['username']" style="color: rgb(0, 119, 255);"><strong>License User name is
-          not set in settings <a style="color: rgb(0, 119, 255);" target="_blank"
-            href="https://mikrowizard.com/docs/register-serial-number/">read more!</a></strong></p>
-      <p *ngIf="!stats['license'] &&  stats['username']" style="color: rgb(0, 119, 255);"><strong>Serial number not
-          submited<a style="color: rgb(0, 119, 255);" target="_blank"
-            href="https://mikrowizard.com/docs/register-serial-number/">read more!</a></strong> </p>
 
-      <!-- <div *ngIf="stats['update_mode']!='auto'" class="my-1">
-        <button cButton color="warning" *ngIf="stats['update_available']" size="sm" style="font-size: 1em;"><i class="fa-regular fa-hand-pointer fa-beat-fade"></i> Update <strong>Mikroman</strong> and reload server</button>
-        <button cButton color="warning" *ngIf="stats['front_update_available']" size="sm" style="font-size: 1em;margin-left: 5px;"><i class="fa-regular fa-hand-pointer fa-beat-fade"></i> Update <strong>MikroFront</strong> and reload Page</button>
-      </div> -->
+        <div *ngIf="stats" class="d-flex flex-column h-100">
+          <!-- Header / Serial -->
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <div>
+              <h6 class="fw-bold mb-0 d-inline-block me-2" style="color: #2c384af0;">Version & License</h6>
+              <div class="text-muted d-inline-block align-items-center" style="font-size: 0.75rem;">
+                <span class="me-1 font-monospace fw-semibold">{{ stats['serial'] }}</span>
+                <button (click)="copy_this()" [cdkCopyToClipboard]="stats['serial']"
+                  class="btn btn-sm btn-light py-0 px-2 border-0 rounded-pill shadow-none lh-1"
+                  style="font-size: 0.7rem; background-color: #e2e8f0; color: #475569;">
+                  <i class="fa-regular fa-copy"></i>
+                </button>
+                <span *ngIf="copy_msg" class="badge bg-success ms-1 fade-in" style="font-size: 0.65rem;"><i
+                    class="fa-solid fa-check"></i></span>
+              </div>
+            </div>
+            <div>
+              <span class="badge rounded-pill fw-semibold shadow-sm lh-1"
+                [ngClass]="stats?.license_info?.status === 'connection_error' ? 'text-bg-secondary' : 'text-bg-success'"
+                style="font-size: 0.7rem; padding: 4px 8px;">
+                <i class="fa-solid me-1"
+                  [ngClass]="stats?.license_info?.status === 'connection_error' ? 'fa-globe-slash' : 'fa-globe'"></i>
+                {{ stats?.update_mode === 'auto' ? 'Auto Updates On' : 'Manual Updates' }}
+              </span>
+            </div>
+          </div>
+
+          <!-- License Info Banner -->
+          <div class="p-2 mb-2 rounded-3 position-relative" [ngClass]="{
+                 'bg-success bg-opacity-10 border-start border-4 border-success': stats?.license_info?.status === 'Pro' || stats?.license_info?.status === 'Free',
+                 'bg-danger bg-opacity-10 border-start border-4 border-danger': stats?.license_info?.status === 'expired' || stats?.license_info?.status === 'connection_error',
+                 'bg-warning bg-opacity-10 border-start border-4 border-warning': stats?.license_info?.action_required === 'set_username'
+               }" style="box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
+
+            <div class="d-flex justify-content-between align-items-center">
+              <strong class="mb-0 text-dark d-flex align-items-center" style="font-size: 0.9rem;">
+                <i class="fa-solid flex-shrink-0 me-2" [ngClass]="{
+                   'fa-crown text-warning': stats?.license_info?.status === 'Pro',
+                   'fa-leaf text-success': stats?.license_info?.status === 'Free',
+                   'fa-circle-xmark text-danger': stats?.license_info?.status === 'expired',
+                   'fa-triangle-exclamation text-danger': stats?.license_info?.status === 'connection_error',
+                   'fa-user-xmark text-warning': stats?.license_info?.status === 'no_username'
+                 }"></i>
+                <span *ngIf="stats?.license_info?.status === 'Pro'">Pro License Active</span>
+                <span *ngIf="stats?.license_info?.status === 'Free'">Free License Active</span>
+                <span *ngIf="stats?.license_info?.status === 'expired'">License Expired</span>
+                <span *ngIf="stats?.license_info?.status === 'connection_error'">Connection Error</span>
+                <span *ngIf="stats?.license_info?.status === 'no_username'">Registration Required</span>
+              </strong>
+              <span *ngIf="stats?.license_info?.status === 'Pro' || stats?.license_info?.status === 'Free'"
+                class="badge fw-bold shadow-sm"
+                [ngClass]="stats?.license_info?.status === 'Pro' ? 'bg-warning text-dark' : 'bg-secondary'">
+                {{ stats?.license_info?.status | uppercase }}
+              </span>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mt-1">
+              <p class="mb-0 text-dark opacity-100" style="font-size: 0.75rem; line-height: 1.2; font-weight: 500;">
+                {{ stats?.license_info?.message || (stats?.license_info?.status === 'connection_error' ? 'Cannot connect
+                to server to verify license and updates.' : 'License information unavailable.') }}
+              </p>
+
+              <div
+                *ngIf="stats?.license_info?.action_required !== 'none' && stats?.license_info?.status !== 'connection_error'">
+                <a *ngIf="stats?.license_info?.action_required === 'set_username'"
+                  href="https://mikrowizard.com/docs/register-serial-number/" target="_blank"
+                  class="btn btn-sm btn-warning text-dark py-0 px-2 rounded-pill fw-semibold shadow-sm"
+                  style="font-size: 0.7rem;"><i class="fa-solid fa-arrow-up-right-from-square me-1"></i> Setup</a>
+                <a *ngIf="stats?.license_info?.action_required === 'renew_license'"
+                  href="https://mikrowizard.com/pricing" target="_blank"
+                  class="btn btn-sm btn-danger py-0 px-2 rounded-pill fw-semibold shadow-sm"
+                  style="font-size: 0.7rem;"><i class="fa-solid fa-cart-shopping me-1"></i> Renew</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Update Modules -->
+          <div class="mt-auto row g-2" *ngIf="stats?.license_info?.status !== 'connection_error'">
+            <div class="col-12 col-xl-6">
+              <div
+                class="p-1 px-2 border rounded-3 bg-white shadow-sm d-flex justify-content-between align-items-center h-100"
+                [ngClass]="{'border-success border-2 bg-success bg-opacity-10': stats['update_available']}">
+                <div>
+                  <div class="fw-bold text-dark mb-0 d-flex align-items-center lh-1" style="font-size: 0.75rem;">
+                    <i class="fa-solid fa-server me-1 text-secondary"></i>Mikroman Backend v{{stats['version']}}
+                  </div>
+                  <div class="text-muted lh-1 mt-1" style="font-size: 0.65rem;" *ngIf="!stats['update_available']">Up to
+                    date</div>
+                  <div class="text-success fw-bold lh-1 mt-1" style="font-size: 0.65rem;"
+                    *ngIf="stats['update_available']"><i
+                      class="fa-solid fa-arrow-up me-1"></i>v{{stats['latest_version']}} Available</div>
+                </div>
+                <div class="text-end">
+                  <span *ngIf="stats['update_mode'] == 'auto' && stats['update_available']"
+                    class="text-muted small fw-semibold" style="font-size: 0.65rem;"><i
+                      class="fa-solid fa-clock me-1"></i>Auto-updating</span>
+                  <button class="btn btn-sm btn-success rounded-pill fw-semibold py-0 px-2 shadow lh-1"
+                    *ngIf="stats['update_mode']!='auto' && stats['update_available'] && !stats['update_inprogress']"
+                    (click)="showConfirmModal('update_mikroman')"
+                    style="font-size: 0.65rem; background: linear-gradient(45deg, #198754, #20c997); border: none; height: 20px;">
+                    <i class="fa-solid fa-download me-1"></i> Update
+                  </button>
+                  <i class="fa-solid fa-circle-notch fa-spin text-success" style="font-size: 0.8rem;"
+                    *ngIf="stats['update_inprogress']"></i>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-12 col-xl-6">
+              <div
+                class="p-1 px-2 border rounded-3 bg-white shadow-sm d-flex justify-content-between align-items-center h-100"
+                [ngClass]="{'border-success border-2 bg-success bg-opacity-10': stats['front_update_available']}">
+                <div>
+                  <div class="fw-bold text-dark mb-0 d-flex align-items-center lh-1" style="font-size: 0.75rem;">
+                    <i class="fa-brands fa-angular me-1 text-secondary"></i>MikroFront UI v{{front_version}}
+                  </div>
+                  <div class="text-muted lh-1 mt-1" style="font-size: 0.65rem;"
+                    *ngIf="!stats['front_update_available']">Up to date</div>
+                  <div class="text-success fw-bold lh-1 mt-1" style="font-size: 0.65rem;"
+                    *ngIf="stats['front_update_available']"><i
+                      class="fa-solid fa-arrow-up me-1"></i>v{{stats['front_latest_version']}} Available</div>
+                </div>
+                <div class="text-end">
+                  <span *ngIf="stats['update_mode'] == 'auto' && stats['front_update_available']"
+                    class="text-muted small fw-semibold" style="font-size: 0.65rem;"><i
+                      class="fa-solid fa-clock me-1"></i>Auto-updating</span>
+                  <button class="btn btn-sm btn-success rounded-pill fw-semibold py-0 px-2 shadow lh-1"
+                    *ngIf="stats['update_mode']!='auto' && stats['front_update_available'] && !stats['front_update_inprogress']"
+                    (click)="showConfirmModal('update_mikrofront')"
+                    style="font-size: 0.65rem; background: linear-gradient(45deg, #198754, #20c997); border: none; height: 20px;">
+                    <i class="fa-solid fa-download me-1"></i> Update
+                  </button>
+                  <i class="fa-solid fa-circle-notch fa-spin text-success" style="font-size: 0.8rem;"
+                    *ngIf="stats['front_update_inprogress']"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="stats?.license_info?.status === 'connection_error'" class="mt-auto py-1 text-center text-muted">
+            <div class="small fw-semibold opacity-50" style="font-size: 0.75rem;"><i
+                class="fa-solid fa-network-wired me-1"></i>Local functionality only. Remote services unreachable.</div>
+          </div>
+        </div>
+      </c-card-body>
     </c-card>
   </c-col>
-  <c-col xl="6" lg="12" class="h-100" style="min-height: 160px!important;display: grid;">
-    <c-card class="h-100" style="padding: 0!important;margin: 0!important;">
+  <c-col xl="6" lg="12" class="d-flex flex-column" style="min-height: 160px!important;">
+    <c-card class="flex-grow-1" style="padding: 0!important;margin: 0!important;">
       <div *ngIf="!stats" style="padding: 20px;">
         <div class="placeholder-glow">
           <div class="placeholder col-4" style="height: 150px; float: left; margin-right: 20px;"></div>

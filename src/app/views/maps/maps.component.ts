@@ -23,6 +23,7 @@ export class MapsComponent implements OnInit, OnDestroy {
   public showResetModal: boolean = false;
   public loadingMap: boolean = false;
   private pollingTimer: any;
+  private isDestroyed: boolean = false;
 
   constructor(
     private data_provider: dataProvider,
@@ -58,15 +59,18 @@ export class MapsComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.isDestroyed = true;
     if (this.pollingTimer) {
       clearTimeout(this.pollingTimer);
     }
   }
 
   loadNetworkData(): void {
+    if (this.isDestroyed) return;
     clearTimeout(this.pollingTimer);
     this.loadingMap = true;
     this.data_provider.getNetworkMap().then((res) => {
+      if (this.isDestroyed) return;
       // Normalize response - handle array or object with 'result' property
       const data = (res && res.result) ? res.result : res;
       
