@@ -48,6 +48,14 @@
         </a>
       </c-nav-item>
     </c-header-nav> -->
+    <!-- Global Device Select for Customers -->
+    <div class="d-flex align-items-center gap-2 me-auto ms-3" *ngIf="current_user && current_user.role === 'customer'" style="margin-left: 20px;">
+      <label for="globalDeviceSelect" class="fw-semibold text-muted mb-0" style="font-size: 0.85rem;">Selected Router:</label>
+      <select id="globalDeviceSelect" class="form-select form-select-sm w-auto fw-bold" [(ngModel)]="selectedDeviceId" (change)="onDeviceChange()" style="font-size: 0.85rem; border-color: #3b82f6; cursor: pointer; padding: 0.25rem 2rem 0.25rem 0.75rem;">
+        <option *ngFor="let dev of devices" [value]="dev.id">{{dev.name}} ({{dev.ip}})</option>
+      </select>
+    </div>
+
     <c-header-nav class="ms-3">
       <ng-container *ngTemplateOutlet="taskDropdown"></ng-container> | 
       <ng-container *ngTemplateOutlet="userDropdown"></ng-container>

@@ -1,0 +1,165 @@
+<ng-container *ngIf="ispro">
+  <c-card class="mb-4 shadow-sm border-0">
+    <c-card-header class="bg-white border-0 py-3">
+      <div class="d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center">
+          <i class="fa-solid fa-comments me-2 text-primary"></i>
+          <h6 class="mb-0 fw-bold">AI Chatbot Audit Logs for this Device</h6>
+        </div>
+        <button cButton color="light" size="sm" (click)="loadAuditSessions()" [disabled]="auditLoading">
+          <i class="fa-solid fa-rotate" [class.fa-spin]="auditLoading"></i>
+        </button>
+      </div>
+    </c-card-header>
+    <c-card-body class="p-0">
+      <p-table [value]="auditSessions" [paginator]="true" [rows]="10" [showCurrentPageReport]="true"
+        [rowsPerPageOptions]="[10, 25, 50]" [resizableColumns]="true" columnResizeMode="expand"
+        [showGridlines]="true" [stripedRows]="true"
+        styleClass="p-datatable-sm p-datatable-gridlines p-datatable-striped" [loading]="auditLoading">
+
+        <ng-template pTemplate="header">
+          <tr>
+            <th style="width: 80px;">ID</th>
+            <th>User</th>
+            <th>Session Title</th>
+            <th style="width: 120px;" class="text-center">Messages</th>
+            <th style="width: 150px;">Last Active</th>
+            <th style="width: 100px;" class="text-center">Action</th>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="body" let-session>
+          <tr>
+            <td><code>#{{session.id}}</code></td>
+            <td>
+              <div class="fw-semibold">{{session.customer_name}}</div>
+              <span class="badge" [class.bg-success]="session.customer_role === 'admin'"
+                [class.bg-info]="session.customer_role !== 'admin'" style="font-size: 0.7rem;">
+                {{session.customer_role === 'admin' ? 'Admin' : 'Customer'}}
+              </span>
+            </td>
+            <td>
+              <div class="fw-bold">{{session.title}}</div>
+            </td>
+            <td class="text-center">
+              <span
+                class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-20 rounded-pill px-2">
+                {{session.history_len}}
+              </span>
+            </td>
+            <td><small class="text-muted">{{session.modified | date:'short'}}</small></td>
+            <td class="text-center">
+              <button cButton color="primary" size="sm" variant="outline"
+                (click)="viewAuditSessionDetails(session)">
+                <i class="fa-regular fa-eye me-1"></i> View
+              </button>
+            </td>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="6" class="text-center p-4">No AI chat sessions found for this device.</td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </c-card-body>
+  </c-card>
+</ng-container>
+
+<!-- Modal: AI Chat Audit Transcript Details -->
+<c-modal #auditDetailsModal backdrop="static" size="lg" [visible]="auditDetailsModalVisible"
+  (visibleChange)="auditDetailsModalVisible = $event" id="auditDetailsModal">
+  <c-modal-header *ngIf="activeAuditSession">
+    <h5 cModalTitle>
+      <i class="fa-solid fa-robot text-success me-2"></i>Audit Transcript: {{activeAuditSession.title}}
+    </h5>
+    <button (click)="auditDetailsModalVisible = false" cButtonClose></button>
+  </c-modal-header>
+
+  <c-modal-body class="p-4 bg-light" *ngIf="activeAuditSession" style="max-height: 550px; overflow-y: auto;">
+    <!-- Context Card -->
+    <div class="p-3 bg-white rounded-3 shadow-sm border mb-3">
+      <div class="row text-muted" style="font-size: 0.82rem;">
+        <div class="col-md-6 mb-2 mb-md-0">
+          <strong>User:</strong> {{activeAuditSession.customer_name}}
+          (<code>{{activeAuditSession.customer_email}}</code>)<br>
+          <strong>Role:</strong> <span class="badge" [class.bg-success]="activeAuditSession.customer_role === 'admin'"
+            [class.bg-info]="activeAuditSession.customer_role !== 'admin'">{{activeAuditSession.customer_role ===
+            'admin' ? 'Admin' : 'Customer'}}</span>
+        </div>
+        <div class="col-md-6 text-md-end">
+          <strong>Session ID:</strong> #{{activeAuditSession.id}}<br>
+          <strong>Started:</strong> {{activeAuditSession.created | date:'medium'}}<br>
+          <strong>Last Action:</strong> {{activeAuditSession.modified | date:'medium'}}
+        </div>
+      </div>
+    </div>
+
+    <hr class="my-4">
+
+    <!-- Loading Details Spinner -->
+    <div *ngIf="auditLoadingDetail" class="text-center py-5">
+      <c-spinner color="success"></c-spinner>
+      <div class="text-muted mt-2">Loading session history details...</div>
+    </div>
+
+    <!-- Transcript timeline -->
+    <div *ngIf="!auditLoadingDetail" class="d-flex flex-column gap-3 mb-2">
+      <div *ngFor="let msg of auditChatHistory" class="d-flex flex-column">
+
+        <!-- User prompt (right aligned) -->
+        <div *ngIf="msg.role === 'user'" class="d-flex justify-content-end ms-5">
+          <div class="p-3 rounded-3 shadow-sm border bg-primary text-white" style="max-width: 90%;">
+            <div class="d-flex align-items-center gap-1.5 mb-1.5 border-bottom border-white border-opacity-10 pb-1"
+              style="font-size: 0.72rem; opacity: 0.85;">
+              <i class="fa-solid fa-user me-1"></i><strong>{{activeAuditSession.customer_name}}</strong>
+            </div>
+            <div style="font-size: 0.85rem; white-space: pre-wrap;">{{msg.content}}</div>
+          </div>
+        </div>
+
+        <!-- Assistant reply (left aligned) -->
+        <div *ngIf="(msg.role === 'assistant' || msg.role === 'model') && msg.content" class="d-flex justify-content-start me-5">
+          <div class="p-3 rounded-3 shadow-sm border bg-white text-dark" style="max-width: 90%;">
+            <div class="d-flex align-items-center gap-1.5 mb-1.5 border-bottom pb-1"
+               style="font-size: 0.72rem; color: #10b981; font-weight: 600;">
+              <i class="fa-solid fa-robot me-1"></i><strong>AI Admin Assistant</strong>
+            </div>
+            <div style="font-size: 0.85rem; white-space: pre-wrap;" [class.text-danger]="msg._is_error">{{msg.content}}</div>
+          </div>
+        </div>
+
+        <!-- Assistant Tool Call (Technical system representation) -->
+        <div *ngIf="(msg.role === 'assistant' || msg.role === 'model') && msg.tool_calls" class="d-flex justify-content-start me-5">
+          <div class="p-2.5 rounded-3 shadow-sm border bg-dark text-warning w-100"
+            style="font-family: monospace; font-size: 0.75rem;">
+            <div class="fw-bold mb-1"><i class="fa-solid fa-gear me-1"></i> AI TRIGGERED ACTIONS:</div>
+            <div *ngFor="let tc of msg.tool_calls" class="border-top border-secondary border-opacity-30 pt-2 mt-1.5">
+              <strong>Function:</strong> <code>{{tc.function?.name}}</code><br>
+              <strong>Arguments:</strong> <code>{{tc.function?.arguments}}</code>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tool / System Outputs (Technical log style) -->
+        <div *ngIf="msg.role === 'tool'" class="d-flex justify-content-start me-5">
+          <div
+            class="p-2.5 rounded-3 shadow-sm border bg-secondary bg-opacity-10 border-secondary border-opacity-25 text-muted w-100"
+            style="font-family: monospace; font-size: 0.72rem;">
+            <div><i class="fa-solid fa-terminal me-1"></i> <strong>TOOL RESULT:</strong> <code>{{msg.name}}</code></div>
+            <div class="mt-1 bg-dark bg-opacity-25 p-2 rounded text-dark text-opacity-75"
+              style="max-height: 120px; overflow-y: auto;">
+              {{msg.content}}
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </c-modal-body>
+
+  <c-modal-footer>
+    <button cButton color="secondary" size="sm" (click)="auditDetailsModalVisible = false">Close Audit</button>
+  </c-modal-footer>
+</c-modal>

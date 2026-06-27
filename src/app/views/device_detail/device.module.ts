@@ -34,8 +34,13 @@ import { PingStatsModule } from "./ping-status/ping-status.module";
 import { ActiveUsersModule } from "./active-users/active-users.module";
 import { AuthModule } from "../auth_log/auth.module";
 import { AccModule } from "../acc_log/acc.module";
+import { FormsModule } from "@angular/forms";
+import { SpeedTestModule } from "./speed-test/speed-test.module";
+import { AIChatLogsModule } from "./ai-chat-logs/ai-chat-logs.module";
+
 @NgModule({
   imports: [
+    FormsModule,
     DeviceRoutingModule,
     CardModule,
     AlertModule,
@@ -65,6 +70,8 @@ import { AccModule } from "../acc_log/acc.module";
     BadgeModule,
     NavModule, 
     TabsModule,
+    SpeedTestModule,
+    AIChatLogsModule,
   ],
   declarations: [DeviceComponent],
 })

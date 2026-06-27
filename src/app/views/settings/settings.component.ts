@@ -88,6 +88,27 @@ export class SettingsComponent implements OnInit {
   public available_firmwaresv6: any = [];
   public sysconfigs: any = [];
   public currentFirm:any = [];
+  
+  // Speed Test Server state
+  public newServer: any = {
+    name: '',
+    host: '',
+    api_port: '8200',
+    btest_port: '2000',
+    token: '',
+    is_local: false
+  };
+
+  // OpenRouter model selection state
+  public openrouterModels: any[] = [];
+  public openrouterModelsLoading: boolean = false;
+  public openrouterModelsError: string = '';
+  public openrouterModelSearch: string = '';
+  public openrouterModelSearch2: string = '';
+  public openrouterModelSearch3: string = '';
+  public showOpenrouterDropdown: boolean[] = [false, false, false];
+  public filteredOpenrouterModels: any[] = [];
+
   toasterForm = {
     autohide: true,
     delay: 3000,
@@ -267,6 +288,75 @@ export class SettingsComponent implements OnInit {
       _self.sysconfigs = res.sysconfigs;
       _self.sysconfigs["default_user"]["value"] = "";
       _self.sysconfigs["default_password"]["value"] = "";
+
+      // Initialize AI configurations
+      const aiKeys = ['ai_provider', 'ai_api_key', 'ai_model', 'ai_system_instruction', 'ai_openrouter_mode', 'ai_openrouter_models'];
+      aiKeys.forEach(k => {
+        if (!(k in _self.sysconfigs) || !_self.sysconfigs[k] || typeof _self.sysconfigs[k] !== 'object') {
+          if (k === 'ai_provider') _self.sysconfigs[k] = { value: 'gemini' };
+          else if (k === 'ai_openrouter_mode') _self.sysconfigs[k] = { value: 'auto' };
+          else if (k === 'ai_openrouter_models') _self.sysconfigs[k] = { value: ['', '', ''] };
+          else _self.sysconfigs[k] = { value: '' };
+        } else if (!('value' in _self.sysconfigs[k])) {
+          if (k === 'ai_provider') _self.sysconfigs[k]['value'] = 'gemini';
+          else if (k === 'ai_openrouter_mode') _self.sysconfigs[k]['value'] = 'auto';
+          else if (k === 'ai_openrouter_models') _self.sysconfigs[k]['value'] = ['', '', ''];
+          else _self.sysconfigs[k]['value'] = '';
+        } else if (k === 'ai_provider' && !_self.sysconfigs[k]['value']) {
+          _self.sysconfigs[k]['value'] = 'gemini';
+        } else if (k === 'ai_openrouter_mode' && !_self.sysconfigs[k]['value']) {
+          _self.sysconfigs[k]['value'] = 'auto';
+        } else if (k === 'ai_openrouter_models') {
+          // Parse stored JSON string into array of 3 slots
+          let models: string[] = ['', '', ''];
+          try {
+            const parsed = typeof _self.sysconfigs[k]['value'] === 'string'
+              ? JSON.parse(_self.sysconfigs[k]['value'])
+              : _self.sysconfigs[k]['value'];
+            if (Array.isArray(parsed)) {
+              for (let i = 0; i < 3; i++) models[i] = parsed[i] || '';
+            }
+          } catch (e) {}
+          _self.sysconfigs[k]['value'] = models;
+        }
+      });
+      _self.sysconfigs['ai_api_key']['value'] = ""; // Clear API key on load for input security
+
+      // Initialize SMTP configurations
+      const smtpKeys = ['smtp_host', 'smtp_port', 'smtp_user', 'smtp_password', 'smtp_from'];
+      smtpKeys.forEach(k => {
+        if (!(k in _self.sysconfigs)) {
+          _self.sysconfigs[k] = { value: k === 'smtp_port' ? '587' : (k === 'smtp_from' ? 'noreply@mikrowizard.com' : '') };
+        }
+      });
+      _self.sysconfigs['smtp_password']['value'] = ""; // Clear SMTP password on load for input security
+
+      if (!('smtp_use_tls' in _self.sysconfigs)) {
+        _self.sysconfigs['smtp_use_tls'] = { value: true };
+      } else {
+        _self.sysconfigs['smtp_use_tls']['value'] = /true/i.test(_self.sysconfigs['smtp_use_tls']['value']);
+      }
+
+      if (!('smtp_enable_admin_reset' in _self.sysconfigs)) {
+        _self.sysconfigs['smtp_enable_admin_reset'] = { value: false };
+      } else {
+        _self.sysconfigs['smtp_enable_admin_reset']['value'] = /true/i.test(_self.sysconfigs['smtp_enable_admin_reset']['value']);
+      }
+
+      // Initialize Speed Test configurations
+      if (!('speedtest_servers' in _self.sysconfigs) || !_self.sysconfigs['speedtest_servers']) {
+        _self.sysconfigs['speedtest_servers'] = { value: [] };
+      } else {
+        try {
+          const parsed = typeof _self.sysconfigs['speedtest_servers']['value'] === 'string'
+            ? JSON.parse(_self.sysconfigs['speedtest_servers']['value'])
+            : _self.sysconfigs['speedtest_servers']['value'];
+          _self.sysconfigs['speedtest_servers']['value'] = Array.isArray(parsed) ? parsed : [];
+        } catch (e) {
+          _self.sysconfigs['speedtest_servers']['value'] = [];
+        }
+      }
+
       _self.timezones = _self.TimeZones.timezones;
       _self.filteredTimezones = _self.TimeZones.timezones;
       // Set initial timezone search display
@@ -321,6 +411,19 @@ export class SettingsComponent implements OnInit {
     });
   }
 
+  testSmtp(): void {
+    var _self = this;
+    this.data_provider.adminSendSmtpTest().then((res: any) => {
+      if (res['status'] === 'success') {
+        _self.show_toast("SMTP Test", res['message'] || "Test email sent successfully!", "success");
+      } else {
+        _self.show_toast("SMTP Test Error", res['err'] || "Failed to send test email.", "danger");
+      }
+    }).catch(err => {
+      _self.show_toast("SMTP Test Error", "Connection error with server.", "danger");
+    });
+  }
+
   initAvailbleFirms(): void {
     var _self = this;
     this.data_provider.get_downloadable_firms().then((res) => {
@@ -372,4 +475,105 @@ export class SettingsComponent implements OnInit {
       this.showTimezoneDropdown = false;
     }, 200);
   }
+
+  // OpenRouter model management
+  fetchOpenRouterModels(): void {
+    this._self_ref = this;
+    this.openrouterModelsLoading = true;
+    this.openrouterModelsError = '';
+    this.data_provider.getOpenRouterModels().then((res: any) => {
+      this.openrouterModelsLoading = false;
+      const data = res.result || res;
+      if (data && data.models) {
+        this.openrouterModels = data.models;
+        this.filteredOpenrouterModels = data.models;
+      } else if (data && data.error) {
+        this.openrouterModelsError = data.error;
+      }
+    }).catch((err: any) => {
+      this.openrouterModelsLoading = false;
+      this.openrouterModelsError = 'Failed to fetch models. Please check your API key and network.';
+    });
+  }
+
+  filterOpenrouterModels(event: any, slot: number): void {
+    const term = (event.target.value || '').toLowerCase();
+    if (slot === 0) this.openrouterModelSearch = term;
+    else if (slot === 1) this.openrouterModelSearch2 = term;
+    else this.openrouterModelSearch3 = term;
+
+    if (term.length === 0) {
+      this.filteredOpenrouterModels = this.openrouterModels;
+    } else {
+      this.filteredOpenrouterModels = this.openrouterModels.filter((m: any) =>
+        m.name.toLowerCase().includes(term) || m.id.toLowerCase().includes(term)
+      );
+    }
+    const drops = [...this.showOpenrouterDropdown];
+    drops[slot] = true;
+    this.showOpenrouterDropdown = drops;
+  }
+
+  selectOpenrouterModel(model: any, slot: number): void {
+    if (!this.sysconfigs['ai_openrouter_models']) {
+      this.sysconfigs['ai_openrouter_models'] = { value: ['', '', ''] };
+    }
+    const arr = [...(this.sysconfigs['ai_openrouter_models']['value'] || ['', '', ''])];
+    arr[slot] = model.id;
+    this.sysconfigs['ai_openrouter_models']['value'] = arr;
+
+    if (slot === 0) this.openrouterModelSearch = model.name;
+    else if (slot === 1) this.openrouterModelSearch2 = model.name;
+    else this.openrouterModelSearch3 = model.name;
+
+    const drops = [...this.showOpenrouterDropdown];
+    drops[slot] = false;
+    this.showOpenrouterDropdown = drops;
+    this.filteredOpenrouterModels = this.openrouterModels;
+  }
+
+  hideOpenrouterDropdown(slot: number): void {
+    setTimeout(() => {
+      const drops = [...this.showOpenrouterDropdown];
+      drops[slot] = false;
+      this.showOpenrouterDropdown = drops;
+    }, 220);
+  }
+
+  getOpenrouterModelName(id: string): string {
+    const m = this.openrouterModels.find((x: any) => x.id === id);
+    return m ? m.name : id;
+  }
+
+  addSpeedtestServer() {
+    if (!this.newServer.name || !this.newServer.host) {
+      this.show_toast("Speed Test Server", "Name and IP/Host are required", "warning");
+      return;
+    }
+    if (!this.sysconfigs['speedtest_servers']) {
+      this.sysconfigs['speedtest_servers'] = { value: [] };
+    }
+    const currentList = this.sysconfigs['speedtest_servers']['value'] || [];
+    currentList.push({
+      name: this.newServer.name,
+      host: this.newServer.host,
+      api_port: this.newServer.api_port || '8200',
+      btest_port: this.newServer.btest_port || '2000',
+      token: this.newServer.token || '',
+      is_local: !!this.newServer.is_local
+    });
+    this.sysconfigs['speedtest_servers']['value'] = currentList;
+    this.newServer = { name: '', host: '', api_port: '8200', btest_port: '2000', token: '', is_local: false };
+    this.show_toast("Speed Test Server", "Server added. Don't forget to click Save System Settings.", "info");
+  }
+
+  deleteSpeedtestServer(index: number) {
+    if (!this.sysconfigs['speedtest_servers'] || !this.sysconfigs['speedtest_servers']['value']) {
+      return;
+    }
+    this.sysconfigs['speedtest_servers']['value'].splice(index, 1);
+    this.show_toast("Speed Test Server", "Server removed. Don't forget to click Save System Settings.", "info");
+  }
+
+  private _self_ref: any = null;
 }

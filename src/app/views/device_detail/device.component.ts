@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, ViewEncapsulation, ViewChild } from "@angular/core";
+import { Component, OnDestroy, OnInit, ViewEncapsulation, ViewChild, ElementRef } from "@angular/core";
 import { Router, ActivatedRoute } from "@angular/router";
 import { dataProvider } from "../../providers/mikrowizard/data";
 import { loginChecker } from "../../providers/login_checker";
@@ -93,12 +93,51 @@ export class DeviceComponent implements OnInit, OnDestroy {
   
   public interfaces: Array<any> = [];
 
+  // AI Chat Helper State
+  @ViewChild('chatScrollContainer') private chatScrollContainer!: ElementRef;
+  public chatHistory: any[] = [];
+  public chatLoading: boolean = false;
+  public userPrompt: string = '';
+
+  // Floating Chat State
+  public chatVisible: boolean = false;
+  public showSessionsList: boolean = false;
+  public isDarkTheme: boolean = false;
+  public isMaximized: boolean = false;
+  public chatSessions: any[] = [];
+  public loadingSessions: boolean = false;
+  public activeSessionId: number | null = null;
+  public renameSessionId: number | null = null;
+  public renameTitle: string = '';
+
   applyFilterGlobal($event: any, stringVal: string) {
     this.dtInterfaces.filterGlobal(($event.target as HTMLInputElement).value, stringVal);
   }
   reload_dhcp_server(){
     this.get_DHCP_data();
   }
+  speedChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: true,
+        labels: { color: '#333' }
+      },
+      tooltip: { enabled: true }
+    },
+    scales: {
+      x: {
+        ticks: { color: '#333' },
+        grid: { color: 'rgba(0, 0, 0, 0.05)' }
+      },
+      y: {
+        ticks: { color: '#333' },
+        grid: { color: 'rgba(0, 0, 0, 0.05)' }
+      }
+    }
+  };
+
   Chartoptions = {
     responsive: true,
     _self :this,
@@ -226,6 +265,8 @@ export class DeviceComponent implements OnInit, OnDestroy {
   };
 
   ngOnInit(): void {
+    const savedTheme = localStorage.getItem('chat_theme');
+    this.isDarkTheme = savedTheme === 'dark';
 
     if (window.innerWidth <= 1200) {
       this.small_screen = true;
@@ -488,7 +529,9 @@ export class DeviceComponent implements OnInit, OnDestroy {
     var _self = this;
     if (this.reloading) return;
     clearInterval(this.data_interval);
-    if(_self.ispro) _self.get_DHCP_data();
+    if(_self.ispro) {
+      _self.get_DHCP_data();
+    }
     this.updateData();
     this.data_interval = setInterval(() => {
       this.reloading = true;
@@ -518,6 +561,185 @@ export class DeviceComponent implements OnInit, OnDestroy {
   strangth_at_rate_extract(data:string){
     return data ? data.split(',') : [];
   }
+
+  toggleTheme() {
+    this.isDarkTheme = !this.isDarkTheme;
+    localStorage.setItem('chat_theme', this.isDarkTheme ? 'dark' : 'light');
+  }
+
+  toggleMaximize() {
+    this.isMaximized = !this.isMaximized;
+  }
+
+  toggleChat() {
+    this.chatVisible = !this.chatVisible;
+    if (this.chatVisible && this.chatSessions.length === 0) {
+      this.loadChatSessions();
+    }
+  }
+
+  toggleSessionsList() {
+    this.showSessionsList = !this.showSessionsList;
+    if (this.showSessionsList) {
+      this.loadChatSessions();
+    }
+  }
+
+  loadChatSessions() {
+    this.loadingSessions = true;
+    this.data_provider.adminGetSelfChatSessions(this.devid).then((res: any) => {
+      this.loadingSessions = false;
+      const data = res.result || res;
+      if (Array.isArray(data)) {
+        this.chatSessions = data;
+        if (this.chatSessions.length > 0) {
+          const stillExists = this.activeSessionId && this.chatSessions.some(s => s.id === this.activeSessionId);
+          if (!stillExists) {
+            this.selectSession(this.chatSessions[0].id);
+          }
+        } else {
+          this.createNewSession();
+        }
+      } else {
+        this.chatSessions = [];
+        this.createNewSession();
+      }
+    }).catch(err => {
+      this.loadingSessions = false;
+      this.chatSessions = [];
+      console.error(err);
+    });
+  }
+
+  loadChatSessionsListOnly() {
+    this.data_provider.adminGetSelfChatSessions(this.devid).then((res: any) => {
+      const data = res.result || res;
+      if (Array.isArray(data)) {
+        this.chatSessions = data;
+      }
+    }).catch(err => console.error(err));
+  }
+
+  createNewSession() {
+    const title = "Admin Chat " + new Date().toLocaleString();
+    this.data_provider.adminCreateSelfChatSession(this.devid, title).then((res: any) => {
+      const data = res.result || res;
+      if (data && data.id) {
+        this.activeSessionId = data.id;
+        this.loadChatSessions();
+      }
+    }).catch(err => console.error(err));
+  }
+
+  createNewSessionFromUI() {
+    const title = "Admin Chat " + new Date().toLocaleString();
+    this.data_provider.adminCreateSelfChatSession(this.devid, title).then((res: any) => {
+      const data = res.result || res;
+      if (data && data.id) {
+        this.activeSessionId = data.id;
+        this.showSessionsList = false;
+        this.loadChatSessions();
+      }
+    }).catch(err => console.error(err));
+  }
+
+  selectSession(sid: number) {
+    this.activeSessionId = sid;
+    this.chatHistory = [];
+    this.chatLoading = true;
+
+    this.data_provider.adminGetSelfChatSession(sid).then((res: any) => {
+      this.chatLoading = false;
+      const data = res.result || res;
+      if (data && data.history) {
+        this.chatHistory = data.history;
+        this.scrollToBottom();
+      }
+    }).catch(err => {
+      this.chatLoading = false;
+      console.error(err);
+    });
+  }
+
+  selectSessionFromUI(sid: number) {
+    this.selectSession(sid);
+    this.showSessionsList = false;
+  }
+
+  startRenameSession(session: any, event: Event) {
+    event.stopPropagation();
+    this.renameSessionId = session.id;
+    this.renameTitle = session.title;
+  }
+
+  saveRenameSession(sid: number) {
+    if (!this.renameTitle.trim()) return;
+    this.data_provider.adminRenameSelfChatSession(sid, this.renameTitle.trim()).then(() => {
+      this.renameSessionId = null;
+      this.loadChatSessionsListOnly();
+    }).catch(err => console.error(err));
+  }
+
+  cancelRenameSession(event: Event) {
+    event.stopPropagation();
+    this.renameSessionId = null;
+  }
+
+  deleteSession(sid: number) {
+    if (!confirm("Are you sure you want to delete this chat session?")) return;
+    this.data_provider.adminDeleteSelfChatSession(sid).then(() => {
+      if (this.activeSessionId === sid) {
+        this.activeSessionId = null;
+        this.chatHistory = [];
+      }
+      this.loadChatSessions();
+    }).catch(err => console.error(err));
+  }
+
+  sendChatMessage(promptText?: string) {
+    const text = (promptText || this.userPrompt || '').trim();
+    if (!text || this.chatLoading || !this.activeSessionId) return;
+
+    this.chatHistory.push({ role: 'user', content: text });
+    if (!promptText) {
+      this.userPrompt = '';
+    }
+    this.chatLoading = true;
+    this.scrollToBottom();
+
+    this.data_provider.adminSendSelfChatMessage(this.activeSessionId, text).then((res: any) => {
+      this.chatLoading = false;
+      const data = res.result || res;
+      if (data && data.history) {
+        this.chatHistory = data.history;
+        this.scrollToBottom();
+      } else if (data && data.reply) {
+        this.chatHistory.push({ role: 'model', content: data.reply });
+        this.scrollToBottom();
+      } else {
+        this.chatHistory.push({ role: 'model', content: 'Sorry, I encountered an error processing your request.' });
+      }
+    }).catch(e => {
+      this.chatLoading = false;
+      this.chatHistory.push({ role: 'model', content: 'Connection error. Please try again.' });
+      console.error(e);
+    });
+  }
+
+  scrollToBottom() {
+    setTimeout(() => {
+      if (this.chatScrollContainer) {
+        this.chatScrollContainer.nativeElement.scrollTop = this.chatScrollContainer.nativeElement.scrollHeight;
+      }
+    }, 100);
+  }
+
+  clearChat() {
+    if (this.activeSessionId) {
+      this.deleteSession(this.activeSessionId);
+    }
+  }
+
   ngOnDestroy() {
     clearInterval(this.data_interval);
   }

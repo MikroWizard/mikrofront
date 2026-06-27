@@ -166,6 +166,21 @@ export const navItems: INavData[] = [
     icon: 'fa-solid fa-users',
   },
   {
+    name: 'Customer Tickets',
+    url: '/admin-tickets',
+    icon: 'fa-solid fa-ticket',
+  },
+  {
+    name: 'Customer Portals',
+    url: '/customer-assignments',
+    icon: 'fa-solid fa-user-tag',
+  },
+  {
+    name: 'AI Chat Audit Logs',
+    url: '/ai-chat-logs',
+    icon: 'fa-solid fa-comments',
+  },
+  {
     title: true,
     name: 'System',
     class: 'py-0'
@@ -197,5 +212,40 @@ export const navItems: INavData[] = [
     url: 'https://mikrowizard.com/pricing/',
     icon: 'fa-solid fa-money-check-dollar',
     attributes: { 'free': true, target: '_blank' }
+  }
+];
+
+export const customerNavItems: INavData[] = [
+  {
+    name: 'Customer Portal',
+    url: '/customer-portal',
+    iconComponent: { name: 'cil-speedometer' },
+  },
+  {
+    name: 'Advanced Diagnostics',
+    url: '/customer-diagnostics',
+    icon: 'fa-solid fa-gauge-high'
+  },
+  {
+    name: 'Port Forwarding',
+    url: '/customer-portforward',
+    icon: 'fa-solid fa-route'
+  },
+  {
+    name: 'Speed Test',
+    url: '/customer-speedtest',
+    icon: 'fa-solid fa-gauge'
+  },
+  {
+    name: 'Support Tickets',
+    url: '/customer-tickets',
+    icon: 'fa-solid fa-ticket'
+  },
+  {
+    name: 'Docs',
+    url: 'https://mikrowizard.com/docs',
+    iconComponent: { name: 'cil-description' },
+    attributes: { target: '_blank', class: '-text-dark' },
+    class: 'mt-auto'
   }
 ];

@@ -1,0 +1,320 @@
+<c-row class="mb-4">
+  <c-col xs="12">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+      <div>
+        <h4 class="mb-1 fw-bold text-dark">
+          <i class="fa-solid fa-route text-primary me-2"></i>Port Forwarding & Lists
+        </h4>
+        <p class="text-muted small mb-0">Manage destination NAT rules and configure Firewall IP Address Lists for traffic routing.</p>
+      </div>
+    </div>
+  </c-col>
+</c-row>
+
+<!-- Tab Navigation -->
+<c-row class="mb-4">
+  <c-col xs="12">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body p-2 d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <ul class="nav nav-pills border-0 mb-0">
+          <li class="nav-item">
+            <button class="nav-link px-4 py-2 fw-semibold d-flex align-items-center gap-2" 
+                    [ngClass]="activeTab === 'portforward' ? 'active bg-primary' : 'text-secondary bg-transparent'"
+                    (click)="activeTab = 'portforward'">
+              <i class="fa-solid fa-network-wired"></i> NAT Port Forwarding
+              <span class="badge rounded-pill bg-light text-dark ms-1" *ngIf="pfRules.length > 0">{{pfRules.length}}</span>
+            </button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link px-4 py-2 fw-semibold d-flex align-items-center gap-2" 
+                    [ngClass]="activeTab === 'addresslist' ? 'active bg-primary' : 'text-secondary bg-transparent'"
+                    (click)="activeTab = 'addresslist'">
+              <i class="fa-solid fa-list-ol"></i> Firewall Address Lists
+              <span class="badge rounded-pill bg-light text-dark ms-1" *ngIf="alEntries.length > 0">{{alEntries.length}}</span>
+            </button>
+          </li>
+        </ul>
+
+        <div>
+          <button cButton color="primary" size="sm" class="shadow-sm" *ngIf="activeTab === 'portforward'" (click)="openPfModal()">
+            <i class="fa-solid fa-plus me-1"></i> Add Port Forward
+          </button>
+          <button cButton color="primary" size="sm" class="shadow-sm" *ngIf="activeTab === 'addresslist'" (click)="openAlModal()">
+            <i class="fa-solid fa-plus me-1"></i> Add IP Address List
+          </button>
+        </div>
+      </div>
+    </div>
+  </c-col>
+</c-row>
+
+<!-- Content Area -->
+<c-row>
+  <c-col xs="12">
+    <!-- Port Forwarding Tab -->
+    <c-card class="shadow-sm border-0 mb-4" *ngIf="activeTab === 'portforward'">
+      <c-card-body class="p-0">
+        <div *ngIf="loadingPf" class="text-center py-5">
+          <c-spinner color="primary"></c-spinner>
+          <p class="text-muted small mt-2">Fetching NAT rules from router...</p>
+        </div>
+
+        <div *ngIf="!loadingPf && pfRules.length === 0" class="text-center py-5 text-muted">
+          <i class="fa-solid fa-network-wired fa-3x mb-3 text-light"></i>
+          <h4>No Port Forwarding Rules</h4>
+          <p class="px-3">Create port forwarding rules to allow external devices to access services inside your local network.</p>
+          <button cButton color="primary" size="sm" (click)="openPfModal()" class="mt-2">
+            <i class="fa-solid fa-plus me-1"></i> Create First Rule
+          </button>
+        </div>
+
+        <div *ngIf="!loadingPf && pfRules.length > 0" class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Rule Name</th>
+                <th>Source (Incoming Traffic)</th>
+                <th class="text-center">Protocol</th>
+                <th class="text-center">External Port</th>
+                <th>Internal LAN IP</th>
+                <th class="text-center">Internal Port</th>
+                <th class="text-center" style="width: 100px">Status</th>
+                <th class="text-center" style="width: 100px">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let rule of pfRules">
+                <td class="fw-bold text-dark">
+                  <i class="fa-solid fa-circle-dot text-success me-1 small" *ngIf="!rule.disabled"></i>
+                  <i class="fa-solid fa-circle-dot text-secondary me-1 small" *ngIf="rule.disabled"></i>
+                  {{rule.name}}
+                </td>
+                <td>
+                  <span *ngIf="rule.in_interface" class="badge bg-light text-dark border">
+                    <i class="fa-solid fa-ethernet me-1 text-secondary"></i> {{rule.in_interface}}
+                  </span>
+                  <span *ngIf="rule.in_interface_list" class="badge bg-light text-dark border">
+                    <i class="fa-solid fa-list me-1 text-secondary"></i> {{rule.in_interface_list}}
+                  </span>
+                  <span *ngIf="rule.dst_address_list" class="badge bg-light text-dark border">
+                    <i class="fa-solid fa-list-ol me-1 text-secondary"></i> {{rule.dst_address_list}}
+                  </span>
+                  <span *ngIf="!rule.in_interface && !rule.in_interface_list && !rule.dst_address_list" class="text-muted small">
+                    All Interfaces
+                  </span>
+                </td>
+                <td class="text-center font-monospace text-uppercase fw-semibold">{{rule.protocol}}</td>
+                <td class="text-center font-monospace">{{rule.dst_port}}</td>
+                <td class="font-monospace">{{rule.to_addresses}}</td>
+                <td class="text-center font-monospace">{{rule.to_ports}}</td>
+                <td class="text-center">
+                  <div class="form-check form-switch d-inline-block">
+                    <input class="form-check-input" type="checkbox" role="switch" [checked]="!rule.disabled" (change)="togglePf(rule)" />
+                  </div>
+                </td>
+                <td class="text-center">
+                  <button cButton color="danger" size="sm" variant="outline" (click)="deletePf(rule)" pTooltip="Delete Rule">
+                    <i class="fa-solid fa-trash-can"></i>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </c-card-body>
+    </c-card>
+
+    <!-- Address Lists Tab -->
+    <c-card class="shadow-sm border-0 mb-4" *ngIf="activeTab === 'addresslist'">
+      <c-card-body class="p-0">
+        <div *ngIf="loadingAl" class="text-center py-5">
+          <c-spinner color="primary"></c-spinner>
+          <p class="text-muted small mt-2">Fetching firewall address list entries...</p>
+        </div>
+
+        <div *ngIf="!loadingAl && alEntries.length === 0" class="text-center py-5 text-muted">
+          <i class="fa-solid fa-list-ol fa-3x mb-3 text-light"></i>
+          <h4>No Firewall Address Lists</h4>
+          <p class="px-3">Group multiple IP addresses or subnets together under named address lists to simplify firewall management.</p>
+          <button cButton color="primary" size="sm" (click)="openAlModal()" class="mt-2">
+            <i class="fa-solid fa-plus me-1"></i> Create List Entry
+          </button>
+        </div>
+
+        <div *ngIf="!loadingAl && alEntries.length > 0" class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>List Name</th>
+                <th>IP / Subnet Address</th>
+                <th>Type</th>
+                <th class="text-center" style="width: 100px">Status</th>
+                <th class="text-center" style="width: 100px">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let entry of alEntries">
+                <td class="fw-bold text-dark font-monospace">{{entry.list}}</td>
+                <td class="font-monospace text-dark fw-semibold">{{entry.address}}</td>
+                <td>
+                  <span class="badge bg-info bg-opacity-10 text-info" *ngIf="entry.managed">Managed (Customer Portal)</span>
+                  <span class="badge bg-secondary bg-opacity-10 text-secondary" *ngIf="!entry.managed">System (Read-Only)</span>
+                </td>
+                <td class="text-center">
+                  <div class="form-check form-switch d-inline-block">
+                    <input class="form-check-input" type="checkbox" role="switch" [checked]="!entry.disabled" [disabled]="!entry.managed" (change)="toggleAl(entry)" />
+                  </div>
+                </td>
+                <td class="text-center">
+                  <button cButton color="danger" size="sm" variant="outline" [disabled]="!entry.managed" (click)="deleteAl(entry)" pTooltip="Delete Entry">
+                    <i class="fa-solid fa-trash-can"></i>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </c-card-body>
+    </c-card>
+  </c-col>
+</c-row>
+
+<!-- Modal: Add Port Forwarding NAT Rule -->
+<c-modal #pfModal backdrop="static" size="lg" [(visible)]="pfModalVisible" id="pfModal">
+  <c-modal-header>
+    <h5 cModalTitle><i class="fa-solid fa-network-wired text-primary me-2"></i>Create Port Forwarding NAT Rule</h5>
+    <button [cModalToggle]="pfModal.id" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body class="p-4">
+    <!-- Presets -->
+    <div class="mb-4">
+      <span class="d-block fw-semibold text-muted small mb-2">Preset Templates</span>
+      <div class="d-flex flex-wrap gap-2">
+        <button type="button" class="btn btn-sm btn-outline-info" (click)="applyPreset('web')">
+          <i class="fa-solid fa-globe me-1"></i> Web Server (TCP 80)
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-info" (click)="applyPreset('ssh')">
+          <i class="fa-solid fa-terminal me-1"></i> SSH Server (TCP 22)
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-info" (click)="applyPreset('rdp')">
+          <i class="fa-solid fa-desktop me-1"></i> Windows RDP (TCP 3389)
+        </button>
+      </div>
+    </div>
+
+    <form [formGroup]="pfForm">
+      <c-row class="g-3">
+        <!-- Rule Name -->
+        <c-col md="6" xs="12">
+          <label for="pfName" class="form-label fw-semibold text-dark">Rule Identifier / Name</label>
+          <input id="pfName" cFormControl placeholder="e.g., MyWebServer" formControlName="name" required />
+          <div class="form-text small text-muted">Alphanumeric, dashes, and underscores only.</div>
+        </c-col>
+
+        <!-- Protocol -->
+        <c-col md="6" xs="12">
+          <label for="pfProtocol" class="form-label fw-semibold text-dark">Protocol</label>
+          <select id="pfProtocol" cSelect formControlName="protocol" class="form-select" required>
+            <option value="tcp">TCP</option>
+            <option value="udp">UDP</option>
+          </select>
+        </c-col>
+
+        <!-- Source / Incoming Selector -->
+        <c-col md="12" xs="12">
+          <label for="pfSource" class="form-label fw-semibold text-dark">Incoming Source (Optional)</label>
+          <select id="pfSource" cSelect formControlName="source_selection" class="form-select">
+            <option value="">Any Incoming Traffic (Default WAN)</option>
+            
+            <optgroup label="Interfaces (IP addresses mapped)" *ngIf="interfaceSources.interfaces.length > 0">
+              <option *ngFor="let s of interfaceSources.interfaces" [value]="getJsonString('interface', s.name)">
+                {{s.display_name}}
+              </option>
+            </optgroup>
+
+            <optgroup label="Interface Lists" *ngIf="interfaceSources.interfaceLists.length > 0">
+              <option *ngFor="let s of interfaceSources.interfaceLists" [value]="getJsonString('interface_list', s.name)">
+                {{s.display_name}}
+              </option>
+            </optgroup>
+
+            <optgroup label="Firewall Address Lists" *ngIf="interfaceSources.addressLists.length > 0">
+              <option *ngFor="let s of interfaceSources.addressLists" [value]="getJsonString('address_list', s.name)">
+                {{s.display_name}}
+              </option>
+            </optgroup>
+          </select>
+          <div class="form-text small text-muted">Restrict this NAT rule to traffic originating from a specific interface, interface list, or IP address list.</div>
+        </c-col>
+
+        <!-- External Port -->
+        <c-col md="6" xs="12">
+          <label for="pfDstPort" class="form-label fw-semibold text-dark">External Port (Router Port)</label>
+          <input id="pfDstPort" cFormControl type="number" placeholder="e.g., 8080" formControlName="dst_port" required />
+        </c-col>
+
+        <!-- Internal Address -->
+        <c-col md="6" xs="12">
+          <label for="pfToAddresses" class="form-label fw-semibold text-dark">Internal IP Address (Target LAN IP)</label>
+          <input id="pfToAddresses" cFormControl placeholder="e.g., 192.168.88.25" formControlName="to_addresses" required />
+        </c-col>
+
+        <!-- Internal Port -->
+        <c-col md="6" xs="12">
+          <label for="pfToPorts" class="form-label fw-semibold text-dark">Internal Port (Target Service Port)</label>
+          <input id="pfToPorts" cFormControl type="number" placeholder="e.g., 80" formControlName="to_ports" required />
+        </c-col>
+      </c-row>
+
+      <div class="mt-3" *ngIf="pfErrorMsg">
+        <code class="text-danger"><i class="fa-solid fa-triangle-exclamation me-1"></i>{{pfErrorMsg}}</code>
+      </div>
+    </form>
+  </c-modal-body>
+  <c-modal-footer>
+    <button cButton color="secondary" size="sm" [cModalToggle]="pfModal.id">Cancel</button>
+    <button cButton color="primary" size="sm" (click)="submitPf()" [disabled]="pfForm.invalid || addingPf">
+      <c-spinner *ngIf="addingPf" size="sm" class="me-1"></c-spinner>
+      Apply NAT Rule
+    </button>
+  </c-modal-footer>
+</c-modal>
+
+<!-- Modal: Add Address List entry -->
+<c-modal #alModal backdrop="static" [(visible)]="alModalVisible" id="alModal">
+  <c-modal-header>
+    <h5 cModalTitle><i class="fa-solid fa-list-ol text-primary me-2"></i>Create Address List Entry</h5>
+    <button [cModalToggle]="alModal.id" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body class="p-4">
+    <form [formGroup]="alForm">
+      <!-- List Name -->
+      <div class="mb-3">
+        <label for="alList" class="form-label fw-semibold text-dark">List Name</label>
+        <input id="alList" cFormControl placeholder="e.g., Blocked-IPs or Allowed-VPN" formControlName="list" required list="listSuggestions" />
+        <datalist id="listSuggestions">
+          <option *ngFor="let s of interfaceSources.addressLists" [value]="s.name"></option>
+        </datalist>
+        <div class="form-text small text-muted">Use a new name to create a list, or choose an existing list to add entries to.</div>
+      </div>
+
+      <!-- IP Address -->
+      <div class="mb-3">
+        <label for="alAddress" class="form-label fw-semibold text-dark">IP / Subnet Address</label>
+        <input id="alAddress" cFormControl placeholder="e.g., 192.168.1.100 or 192.168.10.0/24" formControlName="address" required />
+        <div class="form-text small text-muted">Can be a single IP address or an entire subnet block.</div>
+      </div>
+
+      <div class="mt-3" *ngIf="alErrorMsg">
+        <code class="text-danger"><i class="fa-solid fa-triangle-exclamation me-1"></i>{{alErrorMsg}}</code>
+      </div>
+    </form>
+  </c-modal-body>
+  <c-modal-footer>
+    <button cButton color="secondary" size="sm" [cModalToggle]="alModal.id">Cancel</button>
+    <button cButton color="primary" size="sm" (click)="submitAl()" [disabled]="alForm.invalid || addingAl">
+      <c-spinner *ngIf="addingAl" size="sm" class="me-1"></c-spinner>
+      Create List Entry
+    </button>
+  </c-modal-footer>
+</c-modal>

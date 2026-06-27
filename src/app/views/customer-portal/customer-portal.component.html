@@ -1,0 +1,463 @@
+<c-row *ngIf="loadingDevices" class="text-center py-5">
+  <c-col xs="12">
+    <c-spinner color="primary" class="mb-3"></c-spinner>
+    <h5 class="text-muted">Loading assigned routers...</h5>
+  </c-col>
+</c-row>
+
+<div *ngIf="!loadingDevices && devices.length === 0" class="text-center py-5">
+  <div class="p-5 bg-white rounded-3 shadow-sm mx-auto" style="max-width: 600px;">
+    <i class="fa-solid fa-triangle-exclamation fa-3x text-warning mb-3"></i>
+    <h3>No Routers Assigned</h3>
+    <p class="text-muted">Your ISP has not assigned any routers to your customer account yet. Please contact support if you believe this is an error.</p>
+  </div>
+</div>
+
+<div *ngIf="!loadingDevices && devices.length > 0">
+  <c-row class="mb-3 align-items-center">
+    <c-col md="6">
+      <h4 class="mb-0 fw-bold text-dark d-flex align-items-center gap-2">
+        <i class="fa-solid fa-server text-primary"></i> {{selectedDeviceName}}
+      </h4>
+    </c-col>
+    <c-col md="6" class="text-md-end mt-2 mt-md-0" *ngIf="selectedDeviceHasWebfig">
+      <button cButton color="primary" (click)="openWebfig()" class="shadow-sm">
+        <i class="fa-solid fa-arrow-up-right-from-square me-1"></i> Open WebFig Interface
+      </button>
+    </c-col>
+  </c-row>
+
+  <!-- Router Status Info -->
+  <c-row class="mb-4">
+    <c-col xs="12" md="4">
+      <c-card class="shadow-sm border-0 h-100 overflow-hidden" [ngStyle]="{'border-left': '4px solid ' + (isOnline ? '#10b981' : '#ef4444')}">
+        <c-card-body class="p-4 d-flex align-items-center">
+          <div class="rounded-circle p-3 me-3" [ngStyle]="{'background-color': isOnline ? '#e6f7f0' : '#fee2e2'}">
+            <i class="fa-solid fa-wifi fa-xl" [ngStyle]="{'color': isOnline ? '#10b981' : '#ef4444'}"></i>
+          </div>
+          <div>
+            <span class="text-muted text-uppercase d-block" style="font-size: 0.75rem; font-weight: 700; letter-spacing: 0.5px;">Status</span>
+            <h4 class="mb-0 fw-bold">{{isOnline ? 'Online' : 'Offline'}}</h4>
+            <small class="text-muted">Uptime: {{uptime || 'N/A'}}</small>
+          </div>
+        </c-card-body>
+      </c-card>
+    </c-col>
+    
+    <c-col xs="12" md="4">
+      <c-card class="shadow-sm border-0 h-100">
+        <c-card-body class="p-4 d-flex align-items-center">
+          <div class="rounded-circle p-3 bg-light me-3">
+            <i class="fa-solid fa-microchip fa-xl text-primary"></i>
+          </div>
+          <div>
+            <span class="text-muted text-uppercase d-block" style="font-size: 0.75rem; font-weight: 700; letter-spacing: 0.5px;">Firmware</span>
+            <h4 class="mb-0 fw-bold">{{firmware || 'N/A'}}</h4>
+            <small class="text-muted">Arch: {{architecture || 'N/A'}}</small>
+          </div>
+        </c-card-body>
+      </c-card>
+    </c-col>
+
+    <c-col xs="12" md="4">
+      <c-card class="shadow-sm border-0 h-100">
+        <c-card-body class="p-4 d-flex align-items-center">
+          <div class="rounded-circle p-3 bg-light me-3">
+            <i class="fa-solid fa-network-wired fa-xl text-info"></i>
+          </div>
+          <div>
+            <span class="text-muted text-uppercase d-block" style="font-size: 0.75rem; font-weight: 700; letter-spacing: 0.5px;">Network Model</span>
+            <h4 class="mb-0 fw-bold">{{model || 'N/A'}}</h4>
+            <small class="text-muted">IP Address: {{ipAddress}}</small>
+          </div>
+        </c-card-body>
+      </c-card>
+    </c-col>
+  </c-row>
+
+  <!-- Live Device Metrics & Charts Widget (Shown only if device is online and metrics are loaded) -->
+  <c-row class="mb-4" *ngIf="isOnline && devsensors">
+    <c-col xs="12">
+      <c-card class="shadow-sm border-0">
+        <c-card-header class="bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+          <h5 class="mb-0 fw-bold">
+            <i class="fa-solid fa-chart-line text-success me-2"></i>Real-time Device Metrics
+          </h5>
+          <c-button-group size="sm">
+            <button cButton color="outline-secondary" size="sm" (click)="changeDelta('5m')" [active]="delta == '5m'">5 min</button>
+            <button cButton color="outline-secondary" size="sm" (click)="changeDelta('1h')" [active]="delta == '1h'">Hourly</button>
+            <button cButton color="outline-secondary" size="sm" (click)="changeDelta('daily')" [active]="delta == 'daily'">Daily</button>
+            <button cButton color="outline-secondary" size="sm" (click)="changeDelta('live')" [active]="delta == 'live'">Live</button>
+          </c-button-group>
+        </c-card-header>
+        <c-card-body class="p-3">
+          <app-widgets-dropdown [devicedata]="devsensors"></app-widgets-dropdown>
+        </c-card-body>
+      </c-card>
+    </c-col>
+  </c-row>
+
+  <!-- Tab Content (Clients, WiFi Config, Ticket support, AI Chat) -->
+  <c-row class="mb-4">
+    <c-col lg="8">
+      <c-card class="shadow-sm border-0 mb-4">
+        <c-card-header class="bg-white border-0 py-3">
+          <div class="d-flex align-items-center justify-content-between">
+            <h5 class="mb-0 fw-bold">
+              <i class="fa-solid fa-laptop me-2 text-primary"></i>Connected Clients
+            </h5>
+            <button cButton color="light" size="sm" (click)="loadClients()" [disabled]="loadingClients" pTooltip="Refresh client list">
+              <i class="fa-solid fa-rotate" [class.fa-spin]="loadingClients"></i>
+            </button>
+          </div>
+        </c-card-header>
+        <c-card-body class="p-0">
+          <div *ngIf="loadingClients" class="text-center py-5">
+            <c-spinner color="primary"></c-spinner>
+          </div>
+          <div *ngIf="!loadingClients && clients.length === 0" class="text-center py-5 text-muted">
+            <i class="fa-solid fa-network-wired fa-2x mb-2"></i>
+            <p>No active clients connected to the router.</p>
+          </div>
+          <div *ngIf="!loadingClients && clients.length > 0" class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Device / Hostname</th>
+                  <th>IP Address</th>
+                  <th>MAC Address</th>
+                  <th>Type</th>
+                  <th>Interface</th>
+                  <th>Signal</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let client of clients">
+                  <td>
+                    <div class="fw-semibold">{{client.hostname || 'Unknown Device'}}</div>
+                  </td>
+                  <td><code class="text-dark">{{client.ip || 'N/A'}}</code></td>
+                  <td><small class="text-muted font-monospace">{{client.mac}}</small></td>
+                  <td>
+                    <span class="badge" [ngClass]="client.type === 'wifi_client' ? 'bg-primary' : 'bg-secondary'">
+                      {{client.type === 'wifi_client' ? 'Wi-Fi' : 'Wired'}}
+                    </span>
+                  </td>
+                  <td><small class="text-muted">{{client.interface || 'ether1'}}</small></td>
+                  <td>
+                    <div *ngIf="client.type === 'wifi_client' && client.signal" class="d-flex align-items-center gap-2">
+                      <div class="progress w-100" style="height: 6px; max-width: 60px;">
+                        <div class="progress-bar" role="progressbar" 
+                             [ngStyle]="{'width': getSignalPercentage(client.signal) + '%', 'background-color': getSignalColor(client.signal)}"></div>
+                      </div>
+                      <small class="text-muted fw-bold">{{client.signal}}</small>
+                    </div>
+                    <span *ngIf="client.type !== 'wifi_client'" class="text-muted">—</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </c-card-body>
+      </c-card>
+    </c-col>
+
+    <c-col lg="4">
+      <!-- Router Tools Card -->
+      <c-card class="shadow-sm border-0 mb-4 overflow-hidden">
+        <c-card-header class="bg-white border-0 py-3">
+          <h5 class="mb-0 fw-bold">
+            <i class="fa-solid fa-screwdriver-wrench me-2 text-warning"></i>Router Tools
+          </h5>
+        </c-card-header>
+        <c-card-body class="p-3 pt-1">
+          <!-- Navigation Pills for Tools -->
+          <div class="nav nav-pills nav-fill mb-3" style="background: #f8f9fa; border-radius: 6px; padding: 4px;">
+            <div class="nav-item">
+              <a class="nav-link cursor-pointer py-1" [class.active]="activeToolTab === 'wifi'" (click)="activeToolTab = 'wifi'" style="font-size: 0.85rem; font-weight: 600;">Wi-Fi Config</a>
+            </div>
+            <div class="nav-item">
+              <a class="nav-link cursor-pointer py-1" [class.active]="activeToolTab === 'ping'" (click)="activeToolTab = 'ping'" style="font-size: 0.85rem; font-weight: 600;">Ping Test</a>
+            </div>
+            <div class="nav-item">
+              <a class="nav-link cursor-pointer py-1" [class.active]="activeToolTab === 'power'" (click)="activeToolTab = 'power'" style="font-size: 0.85rem; font-weight: 600;">Power</a>
+            </div>
+          </div>
+
+          <!-- Tool Panel: Wi-Fi -->
+          <div *ngIf="activeToolTab === 'wifi'">
+            <div *ngIf="loadingWifiInterfaces" class="text-center py-4">
+              <c-spinner color="warning"></c-spinner>
+            </div>
+            <div *ngIf="!loadingWifiInterfaces && wifiInterfaces.length === 0" class="text-center py-3 text-muted">
+              <i class="fa-solid fa-triangle-exclamation mb-2 text-warning"></i>
+              <p style="font-size: 0.85rem;">No wireless interfaces detected on this router.</p>
+            </div>
+            <div *ngIf="!loadingWifiInterfaces && wifiInterfaces.length > 0">
+              <form [formGroup]="wifiForm">
+                <div class="mb-2">
+                  <label for="wifiInterfaceSelect" class="form-label fw-semibold mb-1" style="font-size: 0.85rem;">Select SSID Interface</label>
+                  <select id="wifiInterfaceSelect" cSelect class="form-select form-select-sm" (change)="selectWifiInterface(wifiInterfaces[wifiInterfaceSelect.selectedIndex])" #wifiInterfaceSelect>
+                    <option *ngFor="let iface of wifiInterfaces; let i = index" [value]="i" [selected]="selectedWifiInterface?.name === iface.name">
+                      {{iface.name}} (SSID: {{iface.ssid}})
+                    </option>
+                  </select>
+                </div>
+                <div class="mb-2">
+                  <label for="wifiSsid" class="form-label fw-semibold mb-1" style="font-size: 0.85rem;">Wi-Fi Name (SSID)</label>
+                  <input id="wifiSsid" cFormControl size="sm" placeholder="SSID Network Name" formControlName="ssid" autocomplete="off" />
+                </div>
+                <div class="mb-3">
+                  <label for="wifiPassword" class="form-label fw-semibold mb-1" style="font-size: 0.85rem;">Password (Passphrase)</label>
+                  <input id="wifiPassword" cFormControl size="sm" placeholder="Leave blank to keep unchanged" type="password" formControlName="password" autocomplete="new-password" />
+                </div>
+
+                <div class="mb-3">
+                  <div *ngIf="wifiSuccessMsg" class="text-success"><i class="fa-solid fa-circle-check"></i><small>  {{wifiSuccessMsg}}</small></div>
+                  <code *ngIf="wifiErrorMsg"><i class="fa-solid fa-triangle-exclamation"></i><small>  {{wifiErrorMsg}}</small></code>
+                </div>
+
+                <button cButton color="primary" size="sm" class="w-100 shadow-sm" (click)="updateWifi()" [disabled]="wifiForm.invalid || updatingWifi">
+                  <c-spinner *ngIf="updatingWifi" size="sm" class="me-1"></c-spinner>
+                  <i *ngIf="!updatingWifi" class="fa-solid fa-save me-1"></i> Update Wi-Fi
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <!-- Tool Panel: Ping -->
+          <div *ngIf="activeToolTab === 'ping'">
+            <p class="text-muted" style="font-size: 0.8rem; margin-bottom: 12px;">Run a ping check directly from your router to test its internet reachability.</p>
+            <div class="mb-2">
+              <label for="pingTarget" class="form-label fw-semibold mb-1" style="font-size: 0.85rem;">Target IP / Hostname</label>
+              <input id="pingTarget" cFormControl size="sm" placeholder="e.g. 8.8.8.8 or google.com" [(ngModel)]="pingTarget" />
+            </div>
+            <div class="mb-3">
+              <label for="pingCount" class="form-label fw-semibold mb-1" style="font-size: 0.85rem;">Packets Count</label>
+              <select id="pingCount" cSelect class="form-select form-select-sm" [(ngModel)]="pingCount">
+                <option [value]="2">2 Packets</option>
+                <option [value]="4">4 Packets</option>
+                <option [value]="8">8 Packets</option>
+              </select>
+            </div>
+
+            <div class="mb-2" *ngIf="pingSuccessMsg || pingErrorMsg">
+              <div *ngIf="pingSuccessMsg" class="text-success"><small><i class="fa-solid fa-circle-check"></i> {{pingSuccessMsg}}</small></div>
+              <code *ngIf="pingErrorMsg"><i class="fa-solid fa-triangle-exclamation"></i><small>  {{pingErrorMsg}}</small></code>
+            </div>
+
+            <button cButton color="info" size="sm" class="w-100 shadow-sm mb-3" (click)="runPing()" [disabled]="!pingTarget || pinging">
+              <c-spinner *ngIf="pinging" size="sm" class="me-1"></c-spinner>
+              <i *ngIf="!pinging" class="fa-solid fa-circle-play me-1"></i> Start Ping Test
+            </button>
+
+            <!-- Ping Results Display -->
+            <div *ngIf="pingResults.length > 0" class="border rounded bg-light p-2 font-monospace" style="font-size: 0.75rem; max-height: 150px; overflow-y: auto;">
+              <table class="table table-sm table-borderless mb-0">
+                <thead>
+                  <tr style="border-bottom: 1px solid #ddd;">
+                    <th>Seq</th>
+                    <th>Host</th>
+                    <th>RTT</th>
+                    <th>Loss</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let p of pingResults; let i = index">
+                    <td>#{{i+1}}</td>
+                    <td>{{p.host}}</td>
+                    <td>{{p.time || p.min_rtt || 'timeout'}}</td>
+                    <td>{{p.packet_loss || '0%'}}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Tool Panel: Power / Reboot -->
+          <div *ngIf="activeToolTab === 'power'" class="py-2">
+            <p class="text-muted" style="font-size: 0.8rem; margin-bottom: 16px;">Perform troubleshooting tasks. A router reboot resolves most common connectivity problems.</p>
+            
+            <div class="mb-3" *ngIf="rebootSuccessMsg || rebootErrorMsg">
+              <div *ngIf="rebootSuccessMsg" class="text-success"><small><i class="fa-solid fa-circle-check"></i> {{rebootSuccessMsg}}</small></div>
+              <code *ngIf="rebootErrorMsg"><i class="fa-solid fa-triangle-exclamation"></i><small>  {{rebootErrorMsg}}</small></code>
+            </div>
+
+            <button cButton color="danger" size="sm" class="w-100 shadow-sm" (click)="openRebootModal()">
+              <i class="fa-solid fa-power-off me-1"></i> Reboot Router
+            </button>
+          </div>
+        </c-card-body>
+      </c-card>
+    </c-col>
+  </c-row>
+</div>
+
+
+
+<!-- Modal: Reboot Confirmation -->
+<c-modal #rebootConfirmModal backdrop="static" [(visible)]="rebootConfirmVisible" id="rebootConfirmModal">
+  <c-modal-header>
+    <h5 cModalTitle class="text-danger"><i class="fa-solid fa-triangle-exclamation me-2"></i>Confirm Router Reboot</h5>
+    <button [cModalToggle]="rebootConfirmModal.id" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body class="p-4">
+    <p class="mb-0">Are you sure you want to reboot your router? This will temporarily disconnect all connected wired and wireless devices from the internet for about 1-2 minutes.</p>
+  </c-modal-body>
+  <c-modal-footer>
+    <button cButton color="secondary" size="sm" [cModalToggle]="rebootConfirmModal.id">Cancel</button>
+    <button cButton color="danger" size="sm" (click)="executeReboot()" [disabled]="rebooting">
+      <c-spinner *ngIf="rebooting" size="sm" class="me-1"></c-spinner>
+      Reboot Now
+    </button>
+  </c-modal-footer>
+</c-modal>
+
+<!-- Floating Chat Button (FAB) -->
+<button class="chat-fab shadow-lg" (click)="toggleChat()" [class.chat-open]="chatVisible" title="Open AI Support">
+  <img *ngIf="!chatVisible" src="assets/images/chat-agent.png" style="width: 32px; height: 32px; object-fit: contain;" />
+  <i *ngIf="chatVisible" class="fa-solid fa-xmark" style="font-size: 1.4rem;"></i>
+</button>
+
+<!-- Floating AI Chat Panel -->
+<div class="floating-chat-container shadow-lg" [class.show]="chatVisible" [class.theme-dark]="isDarkTheme" [class.theme-light]="!isDarkTheme" [class.maximized]="isMaximized">
+  <div class="chat-header d-flex align-items-center justify-content-between p-3 border-bottom">
+    <div class="d-flex align-items-center">
+      <div class="rounded-circle p-1 me-2">
+        <img src="assets/images/chat-agent.png" style="width: 32px; height: 32px; object-fit: contain;" />
+      </div>
+      <div>
+        <h6 class="mb-0 fw-bold chat-header-title" style="font-size: 0.9rem;">AI Virtual Support</h6>
+        <!-- Current Device Context -->
+        <span class="text-success" style="font-size: 0.72rem; display: block;" *ngIf="selectedDeviceName">
+          <span class="spinner-grow spinner-grow-sm text-success me-1" style="width: 6px; height: 6px; display: inline-block;"></span>
+          Agent for: <strong>{{selectedDeviceName}}</strong>
+        </span>
+        <span class="text-success" style="font-size: 0.72rem; display: block;" *ngIf="!selectedDeviceName">
+          <span class="spinner-grow spinner-grow-sm text-success me-1" style="width: 6px; height: 6px; display: inline-block;"></span>
+          Online Assistant
+        </span>
+      </div>
+    </div>
+    <div class="d-flex gap-2 align-items-center">
+      <!-- Theme toggle -->
+      <button cButton color="dark" size="sm" class="py-0 px-2 btn-icon" (click)="toggleTheme()" [title]="isDarkTheme ? 'Switch to Light Theme' : 'Switch to Dark Theme'" style="background: transparent; border: none;">
+        <i class="fa-solid" [class.fa-sun]="isDarkTheme" [class.fa-moon]="!isDarkTheme" [class.text-warning]="isDarkTheme" [class.text-secondary]="!isDarkTheme"></i>
+      </button>
+      <!-- Maximize toggle -->
+      <button cButton color="dark" size="sm" class="py-0 px-2 btn-icon" (click)="toggleMaximize()" [title]="isMaximized ? 'Minimize Chat' : 'Maximize Chat'" style="background: transparent; border: none;">
+        <i class="fa-solid" [class.fa-compress]="isMaximized" [class.fa-expand]="!isMaximized" [class.text-white-50]="isDarkTheme" [class.text-secondary]="!isDarkTheme"></i>
+      </button>
+      <!-- History toggle -->
+      <button cButton color="dark" size="sm" class="py-0 px-2 btn-icon" (click)="toggleSessionsList()" [title]="showSessionsList ? 'Show Chat' : 'Chat History / Sessions'" style="background: transparent; border: none;">
+        <i class="fa-solid" [class.fa-comments]="showSessionsList" [class.fa-clock-rotate-left]="!showSessionsList" [class.text-info]="showSessionsList" [class.text-white-50]="!showSessionsList && isDarkTheme" [class.text-secondary]="!showSessionsList && !isDarkTheme"></i>
+      </button>
+      <!-- Minimize/Close widget -->
+      <button cButton color="dark" size="sm" class="py-0 px-2 btn-icon" (click)="toggleChat()" style="background: transparent; border: none;">
+        <i class="fa-solid fa-chevron-down" [class.text-white-50]="isDarkTheme" [class.text-secondary]="!isDarkTheme"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Messages List View -->
+  <div *ngIf="!showSessionsList" class="chat-messages p-3" style="overflow-y: auto;" #chatScrollContainer>
+    <div class="d-flex flex-column gap-3">
+      <ng-container *ngFor="let msg of chatHistory">
+        <div *ngIf="['user', 'assistant', 'model'].includes(msg.role) && (msg.role === 'user' || (msg.content && !msg.content.startsWith('[SYSTEM')))" class="d-flex" [class.justify-content-end]="msg.role === 'user'">
+          <div *ngIf="['assistant', 'model'].includes(msg.role)" class="d-flex gap-2" style="max-width: 85%;">
+            <div class="rounded-circle bg-success bg-opacity-10 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; flex-shrink: 0;">
+              <i class="fa-solid fa-robot text-success" style="font-size: 0.85rem;"></i>
+            </div>
+            <div class="p-2 rounded-3 assistant-bubble" style="font-size: 0.85rem; line-height: 1.4; white-space: pre-wrap;">
+              {{msg.content}}
+            </div>
+          </div>
+          <div *ngIf="msg.role === 'user'" class="d-flex gap-2 justify-content-end" style="max-width: 85%;">
+            <div class="p-2 rounded-3 user-bubble text-white" style="font-size: 0.85rem; line-height: 1.4;">
+              {{msg.content}}
+            </div>
+            <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; flex-shrink: 0;">
+              <i class="fa-solid fa-user text-primary" style="font-size: 0.85rem;"></i>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+      <div *ngIf="sendingChat" class="d-flex gap-2">
+        <div class="rounded-circle bg-success bg-opacity-10 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+          <i class="fa-solid fa-robot text-success" style="font-size: 0.85rem;"></i>
+        </div>
+        <div class="p-2 rounded-3 assistant-bubble d-flex align-items-center" style="font-size: 0.85rem;">
+          <span class="spinner-border spinner-border-sm me-2 text-success" role="status"></span>
+          Typing response...
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sessions List View -->
+  <div *ngIf="showSessionsList" class="chat-messages p-3" style="overflow-y: auto;">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h6 class="mb-0 sessions-header-title" style="font-size: 0.85rem;"><i class="fa-solid fa-clock-rotate-left me-1"></i> Sessions</h6>
+      <button cButton color="primary" size="sm" class="py-0.5 px-2" (click)="createNewSessionFromUI()" style="font-size: 0.75rem;">
+        <i class="fa-solid fa-plus me-1"></i> New Session
+      </button>
+    </div>
+
+    <div *ngIf="loadingSessions" class="text-center py-4">
+      <c-spinner color="info" size="sm"></c-spinner>
+    </div>
+
+    <div *ngIf="!loadingSessions && chatSessions.length === 0" class="text-center py-4 text-muted" style="font-size: 0.8rem;">
+      No saved sessions found.
+    </div>
+
+    <div *ngIf="!loadingSessions && chatSessions.length > 0" class="d-flex flex-column gap-2">
+      <div *ngFor="let s of chatSessions" 
+           class="p-2 rounded-3 d-flex align-items-center justify-content-between cursor-pointer session-item"
+           [class.active]="activeSessionId === s.id"
+           (click)="selectSessionFromUI(s.id)">
+        
+        <div class="d-flex flex-column flex-grow-1 overflow-hidden me-2">
+          <!-- Rename input if editing -->
+          <div *ngIf="renameSessionId === s.id" class="d-flex align-items-center gap-1 w-100" (click)="$event.stopPropagation()">
+            <input cFormControl size="sm" class="bg-dark text-white border-secondary py-0 px-2" style="font-size: 0.8rem; height: 24px;" [(ngModel)]="renameTitle" (keyup.enter)="saveRenameSession(s.id)" autofocus />
+            <button cButton color="success" size="sm" class="py-0 px-1" (click)="saveRenameSession(s.id)" style="height: 24px;"><i class="fa-solid fa-check" style="font-size: 0.75rem;"></i></button>
+            <button cButton color="secondary" size="sm" class="py-0 px-1" (click)="cancelRenameSession($event)" style="height: 24px;"><i class="fa-solid fa-xmark" style="font-size: 0.75rem;"></i></button>
+          </div>
+          <!-- Title text if not editing -->
+          <div *ngIf="renameSessionId !== s.id" class="text-truncate fw-semibold session-title" style="font-size: 0.85rem; max-width: 210px;">
+            {{s.title}}
+          </div>
+          <small class="text-muted" style="font-size: 0.68rem; margin-top: 2px;">
+            {{s.modified | date:'short'}}
+          </small>
+        </div>
+
+        <!-- Action buttons -->
+        <div class="d-flex gap-1" (click)="$event.stopPropagation()">
+          <button *ngIf="renameSessionId !== s.id" cButton color="dark" size="sm" class="py-0 px-1 text-muted btn-icon" (click)="startRenameSession(s, $event)" title="Rename" style="background: transparent; border: none;">
+            <i class="fa-solid fa-pen" style="font-size: 0.75rem;"></i>
+          </button>
+          <button cButton color="dark" size="sm" class="py-0 px-1 text-danger btn-icon" (click)="deleteSession(s.id)" title="Delete" style="background: transparent; border: none;">
+            <i class="fa-solid fa-trash" style="font-size: 0.75rem;"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Message Input Area -->
+  <div *ngIf="!showSessionsList" class="chat-input-area p-3" style="border-top: 1px solid rgba(0,0,0,0.08);">
+    <!-- Dummy inputs to capture Firefox credential autofill -->
+    <input type="text" name="fake_username" style="display: none;" aria-hidden="true" autocomplete="off" />
+    <input type="password" name="fake_password" style="display: none;" aria-hidden="true" autocomplete="off" />
+
+    <div class="input-group">
+      <input type="search" name="search" cFormControl class="chat-input" [class.text-white]="isDarkTheme" [class.text-dark]="!isDarkTheme" placeholder="Ask anything about your router..." 
+             [(ngModel)]="chatInput" (keyup.enter)="sendChatMessage()" [disabled]="sendingChat" style="font-size: 0.85rem;" autocomplete="new-password" />
+      <button cButton [color]="isDarkTheme ? 'primary' : 'primary'" (click)="sendChatMessage()" [disabled]="!chatInput.trim() || sendingChat">
+        <i class="fa-solid fa-paper-plane"></i>
+      </button>
+    </div>
+  </div>
+</div>

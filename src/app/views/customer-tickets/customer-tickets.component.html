@@ -1,0 +1,141 @@
+<c-row>
+  <c-col xs="12">
+    <c-card class="shadow-sm border-0 mb-4">
+      <c-card-header class="bg-white border-0 py-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <h5 class="mb-0 fw-bold d-flex align-items-center gap-2">
+          <i class="fa-solid fa-ticket text-info"></i> Support Tickets Helpdesk
+        </h5>
+        <button cButton color="primary" size="sm" (click)="openCreateTicketModal()" class="shadow-sm">
+          <i class="fa-solid fa-plus me-1"></i> Open New Ticket
+        </button>
+      </c-card-header>
+      <c-card-body class="p-0">
+        <div *ngIf="loadingTickets" class="text-center py-5">
+          <c-spinner color="info"></c-spinner>
+          <p class="text-muted small mt-2">Loading ticket history...</p>
+        </div>
+        <div *ngIf="!loadingTickets && tickets.length === 0" class="text-center py-5 text-muted">
+          <i class="fa-solid fa-ticket-simple fa-3x mb-3 text-light"></i>
+          <h4>No Support Tickets</h4>
+          <p>If you're facing any connection issues or need config support, feel free to open a ticket.</p>
+        </div>
+        <div *ngIf="!loadingTickets && tickets.length > 0" class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Ticket Subject</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th>Last Update</th>
+                <th style="width: 120px" class="text-center">Conversation</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let ticket of tickets">
+                <td>
+                  <div class="fw-bold text-dark">{{ticket.title}}</div>
+                  <small class="text-muted d-block text-truncate" style="max-width: 350px;">{{ticket.description}}</small>
+                </td>
+                <td>
+                  <span class="badge px-2.5 py-1.5" [ngClass]="{
+                    'bg-danger': ticket.status === 'open',
+                    'bg-warning text-dark': ticket.status === 'in_progress',
+                    'bg-success': ticket.status === 'resolved',
+                    'bg-secondary': ticket.status === 'closed'
+                  }">{{ticket.status.replace('_', ' ') | uppercase}}</span>
+                </td>
+                <td><small class="text-muted">{{ticket.created | date:'short'}}</small></td>
+                <td><small class="text-muted">{{ticket.modified | date:'short'}}</small></td>
+                <td class="text-center">
+                  <button cButton color="info" size="sm" variant="outline" (click)="viewTicketReplies(ticket)" pTooltip="Open Conversation">
+                    <i class="fa-regular fa-comments me-1"></i> Chat
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </c-card-body>
+    </c-card>
+  </c-col>
+</c-row>
+
+<!-- Modal: Create Support Ticket -->
+<c-modal #createTicketModal backdrop="static" [(visible)]="createTicketModalVisible" id="createTicketModal">
+  <c-modal-header>
+    <h5 cModalTitle><i class="fa-solid fa-ticket-simple text-primary me-2"></i>Create Support Ticket</h5>
+    <button [cModalToggle]="createTicketModal.id" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body class="p-4">
+    <form [formGroup]="ticketForm">
+      <div class="mb-3">
+        <label for="ticketTitle" class="form-label fw-semibold">Subject / Title</label>
+        <input id="ticketTitle" cFormControl placeholder="e.g., Slow speed / intermittent connection" formControlName="title" required />
+      </div>
+      <div class="mb-3">
+        <label for="ticketDescription" class="form-label fw-semibold">Detailed Description</label>
+        <textarea id="ticketDescription" cFormControl rows="4" placeholder="Explain the problem in detail. Mention any symptoms or diagnostic results." formControlName="description" required></textarea>
+      </div>
+      <div class="mb-3" *ngIf="ticketErrorMsg">
+        <code class="text-danger"><i class="fa-solid fa-triangle-exclamation me-1"></i>{{ticketErrorMsg}}</code>
+      </div>
+    </form>
+  </c-modal-body>
+  <c-modal-footer>
+    <button cButton color="secondary" size="sm" [cModalToggle]="createTicketModal.id">Cancel</button>
+    <button cButton color="primary" size="sm" (click)="submitCreateTicket()" [disabled]="ticketForm.invalid || creatingTicket">
+      <c-spinner *ngIf="creatingTicket" size="sm" class="me-1"></c-spinner>
+      Submit Ticket
+    </button>
+  </c-modal-footer>
+</c-modal>
+
+<!-- Modal: Ticket replies dialog -->
+<c-modal #ticketRepliesModal backdrop="static" size="lg" [(visible)]="ticketRepliesModalVisible" id="ticketRepliesModal">
+  <c-modal-header *ngIf="activeTicket">
+    <h5 cModalTitle>
+      <span class="badge me-2" [ngClass]="{
+        'bg-danger': activeTicket.status === 'open',
+        'bg-warning': activeTicket.status === 'in_progress',
+        'bg-success': activeTicket.status === 'resolved',
+        'bg-secondary': activeTicket.status === 'closed'
+      }">{{activeTicket.status.replace('_', ' ') | uppercase}}</span>
+      Ticket: {{activeTicket.title}}
+    </h5>
+    <button [cModalToggle]="ticketRepliesModal.id" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body class="p-4 bg-light" *ngIf="activeTicket" style="max-height: 480px; overflow-y: auto;">
+    <div class="p-3 bg-white rounded-3 shadow-sm border mb-3">
+      <div class="fw-bold mb-2">Issue Description:</div>
+      <div class="text-dark">{{activeTicket.description}}</div>
+      <small class="text-muted mt-2 d-block text-end">Filed on: {{activeTicket.created | date:'medium'}}</small>
+    </div>
+
+    <hr class="my-3">
+
+    <!-- Replies -->
+    <div class="d-flex flex-column gap-3 mb-3">
+      <div *ngFor="let rep of ticketReplies" class="p-3 rounded-3 shadow-sm border" 
+           [ngClass]="rep.sender_role === 'customer' ? 'bg-white ms-3 ms-md-5' : 'bg-info bg-opacity-10 me-3 me-md-5'">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <span class="fw-bold text-dark">{{rep.sender_name}} ({{rep.sender_role.replace('_', ' ') | titlecase}})</span>
+          <small class="text-muted">{{rep.created | date:'short'}}</small>
+        </div>
+        <div class="text-dark" style="white-space: pre-wrap;">{{rep.message}}</div>
+      </div>
+      <div *ngIf="ticketReplies.length === 0" class="text-center py-3 text-muted">
+        No conversation replies yet. Support staff will respond shortly.
+      </div>
+    </div>
+  </c-modal-body>
+  <c-modal-footer class="d-flex flex-column align-items-stretch" *ngIf="activeTicket">
+    <!-- Add reply field -->
+    <div class="input-group">
+      <input cFormControl placeholder="Type your response here..." [(ngModel)]="replyInput" (keyup.enter)="submitTicketReply()" [disabled]="replyingTicket" />
+      <button cButton color="primary" (click)="submitTicketReply()" [disabled]="!replyInput.trim() || replyingTicket">
+        <c-spinner *ngIf="replyingTicket" size="sm" class="me-1"></c-spinner>
+        Send Reply
+      </button>
+    </div>
+  </c-modal-footer>
+</c-modal>

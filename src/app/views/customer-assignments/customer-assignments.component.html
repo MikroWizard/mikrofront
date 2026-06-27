@@ -1,0 +1,262 @@
+<c-row>
+  <c-col xs="12">
+    <c-card class="mb-4 shadow-sm border-0">
+      <c-card-header class="bg-white border-0 py-3">
+        <div class="d-flex align-items-center justify-content-between">
+          <div class="d-flex align-items-center">
+            <i class="fa-solid fa-user-tag me-2 text-primary"></i>
+            <h5 class="mb-0 fw-bold">Customer Portal Assignments</h5>
+          </div>
+          <button cButton color="light" size="sm" (click)="loadAssignments()" [disabled]="loading" pTooltip="Refresh customer assignments">
+            <i class="fa-solid fa-rotate" [class.fa-spin]="loading"></i>
+          </button>
+        </div>
+      </c-card-header>
+      <c-card-body class="p-0">
+        <div class="table-action-header justify-end">
+          <div class="modern-search-container">
+            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+            <input type="text" placeholder="Search customers..." (input)="applyFilterGlobal($event, 'contains')" />
+          </div>
+        </div>
+
+        <p-table #dt [value]="customers" [paginator]="true" [rows]="10" [showCurrentPageReport]="true"
+          [rowsPerPageOptions]="[10, 25, 50]" [resizableColumns]="true" columnResizeMode="expand" [showGridlines]="true"
+          [stripedRows]="true" styleClass="p-datatable-sm p-datatable-gridlines p-datatable-striped"
+          [globalFilterFields]="['username', 'first_name', 'last_name', 'email', 'role']" [loading]="loading">
+
+          <ng-template pTemplate="header">
+            <tr>
+              <th pSortableColumn="username">Username</th>
+              <th pSortableColumn="first_name">Customer Details</th>
+              <th pSortableColumn="role" style="width: 140px;">Status</th>
+              <th>Assigned Device Portals & Policies</th>
+              <th style="width: 150px;" class="text-center">Manage Access</th>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="body" let-customer>
+            <tr>
+              <td><code>{{customer.username}}</code></td>
+              <td>
+                <div class="fw-semibold">{{customer.first_name}} {{customer.last_name}}</div>
+                <small class="text-muted d-block">{{customer.email || 'No email configured'}}</small>
+              </td>
+              <td>
+                <span class="badge" [ngClass]="customer.role === 'customer' ? 'bg-success' : 'bg-warning'">
+                  {{customer.role === 'customer' ? 'Active' : 'Pending Activation'}}
+                </span>
+              </td>
+              <td>
+                <div class="d-flex flex-wrap gap-2">
+                  <span *ngFor="let item of customer.assignments" class="badge bg-light text-dark border d-flex align-items-center gap-1 py-2 px-3">
+                    <i class="fa-solid fa-server text-primary"></i>
+                    <strong>{{item.group_name}}</strong>
+                    <span class="text-muted">|</span>
+                    <i class="fa-solid fa-key text-warning"></i>
+                    <span>{{item.perm_name}}</span>
+                    
+                    <span class="text-muted">|</span>
+                    <span class="d-flex gap-1 align-items-center">
+                      <i class="fa-solid fa-arrow-up-right-from-square" [class.text-success]="item.portal_perms?.allow_webfig" [class.text-muted]="!item.portal_perms?.allow_webfig" title="WebFig Access" [style.opacity]="item.portal_perms?.allow_webfig ? '1' : '0.4'" style="font-size: 0.8rem;"></i>
+                      <i class="fa-solid fa-user-lock" [class.text-success]="item.portal_perms?.allow_log_auth" [class.text-muted]="!item.portal_perms?.allow_log_auth" title="Auth Logs" [style.opacity]="item.portal_perms?.allow_log_auth ? '1' : '0.4'" style="font-size: 0.8rem;"></i>
+                      <i class="fa-solid fa-list-check" [class.text-success]="item.portal_perms?.allow_log_acc" [class.text-muted]="!item.portal_perms?.allow_log_acc" title="Accounting Logs" [style.opacity]="item.portal_perms?.allow_log_acc ? '1' : '0.4'" style="font-size: 0.8rem;"></i>
+                      <i class="fa-solid fa-receipt" [class.text-success]="item.portal_perms?.allow_log_dev" [class.text-muted]="!item.portal_perms?.allow_log_dev" title="Device Logs" [style.opacity]="item.portal_perms?.allow_log_dev ? '1' : '0.4'" style="font-size: 0.8rem;"></i>
+                    </span>
+                    
+                    <button type="button" class="btn btn-link p-0 ms-2 text-primary d-flex align-items-center" style="border: none; background: none;" (click)="openEditModal(customer, item)" title="Edit assignment">
+                      <i class="fa-solid fa-pen" style="font-size: 0.75rem;"></i>
+                    </button>
+                    <button type="button" class="btn-close ms-1" style="font-size: 0.65rem;" (click)="removeAssignment(item.id)" title="Remove access"></button>
+                  </span>
+                  <span *ngIf="customer.assignments.length === 0" class="text-muted" style="font-size: 0.85rem; font-style: italic;">
+                    No device groups assigned. Customer cannot see any routers.
+                  </span>
+                </div>
+              </td>
+              <td class="text-center">
+                <button cButton color="primary" size="sm" (click)="openAssignModal(customer)" pTooltip="Assign device group and permissions">
+                  <i class="fa-solid fa-plus me-1"></i> Grant Access
+                </button>
+              </td>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="5" class="text-center p-4">No customer users found in database. Create them in User Manager first.</td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </c-card-body>
+    </c-card>
+  </c-col>
+</c-row>
+
+<!-- Modal: Grant Device Access -->
+<c-modal #assignModal backdrop="static" [(visible)]="assignModalVisible" id="assignModal">
+  <c-modal-header *ngIf="selectedCustomer">
+    <h5 cModalTitle>
+      <i class="fa-solid fa-shield-halved text-primary me-2"></i>
+      Grant Device Access: {{selectedCustomer.first_name}} {{selectedCustomer.last_name}}
+    </h5>
+    <button [cModalToggle]="assignModal.id" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body class="p-4" *ngIf="selectedCustomer">
+    <form [formGroup]="assignForm">
+      <!-- Assignment Type Toggle -->
+      <div class="mb-4 d-flex justify-content-center">
+        <div class="btn-group" role="group" aria-label="Assignment type">
+          <button type="button" class="btn btn-outline-primary"
+                  [class.active]="assignForm.get('assignment_type')?.value === 'group'"
+                  (click)="assignForm.get('assignment_type')?.setValue('group')">
+            <i class="fa-solid fa-folder me-1"></i> Device Group
+          </button>
+          <button type="button" class="btn btn-outline-primary"
+                  [class.active]="assignForm.get('assignment_type')?.value === 'devices'"
+                  (click)="assignForm.get('assignment_type')?.setValue('devices')">
+            <i class="fa-solid fa-server me-1"></i> Specific Devices
+          </button>
+        </div>
+      </div>
+
+      <!-- Option A: Select Device Group -->
+      <div class="mb-3" *ngIf="assignForm.get('assignment_type')?.value === 'group'">
+        <label for="deviceGroupSelect" class="form-label fw-semibold">Select Device Group</label>
+        <select id="deviceGroupSelect" cSelect formControlName="group_id" class="form-select">
+          <option [value]="null">Choose device group...</option>
+          <!-- Filter out 'All Devices' for customers (id=1 represents all devices, which is reserved for admins) -->
+          <ng-container *ngFor="let g of groupList">
+            <option *ngIf="g.id !== 1" [value]="g.id">{{g.name}}</option>
+          </ng-container>
+        </select>
+        <small class="text-muted mt-1 d-block">Customers will only be allowed to view and manage routers belonging to this group.</small>
+      </div>
+
+      <!-- Option B: Select Specific Devices -->
+      <div class="mb-3" *ngIf="assignForm.get('assignment_type')?.value === 'devices'">
+        <label class="form-label fw-semibold d-block">Select Devices</label>
+        <button cButton color="outline-primary" size="sm" type="button" (click)="openDeviceSelectModal()">
+          <i class="fa-solid fa-server me-1"></i> Choose Devices... ({{selectedDevices.length}} selected)
+        </button>
+        
+        <!-- Selection Summary -->
+        <div class="mt-2 d-flex flex-wrap gap-1" *ngIf="selectedDevices.length > 0" style="max-height: 120px; overflow-y: auto;">
+          <span *ngFor="let dev of selectedDevices" class="badge bg-secondary">
+            {{dev.name}}
+          </span>
+        </div>
+        <small class="text-muted mt-1 d-block">Select one or more specific routers to grant this customer access to.</small>
+      </div>
+
+      <div class="mb-3">
+        <label for="permProfileSelect" class="form-label fw-semibold">Select Permission Profile</label>
+        <select id="permProfileSelect" cSelect formControlName="perm_id" class="form-select" required>
+          <option [value]="null">Choose permission profile...</option>
+          <option *ngFor="let p of permList" [value]="p.id">
+            {{p.name}} ({{ p.perms?.join ? p.perms.join(', ') : (p.perms || '') }})
+          </option>
+        </select>
+        <small class="text-muted mt-1 d-block">Defines the RouterOS privilege policy that maps to the Radius proxy session.</small>
+      </div>
+
+      <!-- Access Controls -->
+      <div class="mb-3 border rounded p-3 bg-light">
+        <label class="form-label fw-semibold d-block mb-2">Access & Feature Permissions</label>
+        
+        <div class="form-check mb-2">
+          <input class="form-check-input" type="checkbox" id="allowWebfigCheck" formControlName="allow_webfig">
+          <label class="form-check-label" for="allowWebfigCheck">
+            <strong>Allow WebFig Access</strong> (Enables direct router admin page proxy)
+          </label>
+        </div>
+
+        <div class="form-check mb-2">
+          <input class="form-check-input" type="checkbox" id="allowLogAuthCheck" formControlName="allow_log_auth">
+          <label class="form-check-label" for="allowLogAuthCheck">
+            <strong>Allow Authentication Logs</strong> (View connection status/attempts)
+          </label>
+        </div>
+
+        <div class="form-check mb-2">
+          <input class="form-check-input" type="checkbox" id="allowLogAccCheck" formControlName="allow_log_acc">
+          <label class="form-check-label" for="allowLogAccCheck">
+            <strong>Allow Accounting Logs</strong> (View configuration changes)
+          </label>
+        </div>
+
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" id="allowLogDevCheck" formControlName="allow_log_dev">
+          <label class="form-check-label" for="allowLogDevCheck">
+            <strong>Allow Device Logs</strong> (View router events & health logs)
+          </label>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <code *ngIf="assignErrorMsg"><i class="fa-solid fa-triangle-exclamation"></i><small>  {{assignErrorMsg}}</small></code>
+      </div>
+    </form>
+  </c-modal-body>
+  <c-modal-footer *ngIf="selectedCustomer">
+    <button cButton color="secondary" size="sm" [cModalToggle]="assignModal.id">Cancel</button>
+    <button cButton color="primary" size="sm" (click)="submitAssignment()" [disabled]="assignForm.invalid || assigning">
+      <c-spinner *ngIf="assigning" size="sm" class="me-1"></c-spinner>
+      Grant Access
+    </button>
+  </c-modal-footer>
+</c-modal>
+
+<!-- Modal: Device Selection Grid -->
+<c-modal #deviceSelectModal backdrop="static" size="lg" [(visible)]="deviceSelectModalVisible" id="deviceSelectModal" style="z-index: 1070; backdrop-filter: blur(2px);">
+  <c-modal-header class="bg-primary text-white">
+    <h5 cModalTitle><i class="fa-solid fa-server me-2"></i>Select Devices</h5>
+    <button (click)="deviceSelectModalVisible=false" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body class="p-4">
+    <div class="mb-3 d-flex justify-content-between align-items-center">
+      <div>
+        <strong *ngIf="selectedDevices.length > 0">{{selectedDevices.length}} device(s) selected</strong>
+        <span *ngIf="selectedDevices.length === 0" class="text-muted">No devices selected</span>
+      </div>
+      <span class="p-input-icon-left table-search-input">
+        <i class="pi pi-search"></i>
+        <input type="text" pInputText placeholder="Search available..."
+          (input)="applyFilterDevices($event, 'contains')" class="form-control form-control-sm" style="width: 200px;" />
+      </span>
+    </div>
+
+    <p-table #dtDevices [value]="deviceList" [paginator]="true" [rows]="10" [resizableColumns]="true"
+      columnResizeMode="expand" [showGridlines]="true" [stripedRows]="true"
+      styleClass="p-datatable-sm p-datatable-gridlines p-datatable-striped" [(selection)]="selectedDevices"
+      [globalFilterFields]="['name', 'ip', 'mac']">
+      <ng-template pTemplate="header">
+        <tr>
+          <th style="width: 4rem" pResizableColumn><p-tableHeaderCheckbox></p-tableHeaderCheckbox></th>
+          <th pSortableColumn="name" pResizableColumn>Device Name <p-sortIcon field="name"></p-sortIcon></th>
+          <th pSortableColumn="ip" pResizableColumn>IP Address <p-sortIcon field="ip"></p-sortIcon></th>
+          <th pSortableColumn="mac" pResizableColumn>MAC Address <p-sortIcon field="mac"></p-sortIcon></th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-item>
+        <tr>
+          <td><p-tableCheckbox [value]="item"></p-tableCheckbox></td>
+          <td>
+            <div class="d-flex align-items-center">
+              <i class="fa-solid fa-server me-2 text-primary"></i>
+              <strong>{{item.name}}</strong>
+            </div>
+          </td>
+          <td><span class="badge bg-secondary">{{item.ip || item.host || 'No IP'}}</span></td>
+          <td><small class="text-muted">{{item.mac || 'N/A'}}</small></td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </c-modal-body>
+
+  <c-modal-footer>
+    <button (click)="deviceSelectModalVisible=false" cButton color="primary">
+      Confirm Selection
+    </button>
+  </c-modal-footer>
+</c-modal>

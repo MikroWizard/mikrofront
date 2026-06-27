@@ -30,6 +30,9 @@ export class DefaultHeaderComponent extends HeaderComponent {
   public tasks : any = [];
   public timer : any;
 
+  public selectedDeviceId: number | null = null;
+  public devices: any[] = [];
+
   constructor(
     private classToggler: ClassToggleService,
     private router: Router,
@@ -65,12 +68,49 @@ export class DefaultHeaderComponent extends HeaderComponent {
     })
   }
 
+  loadCustomerDevices() {
+    this.data_provider.customerGetDevices().then((res: any) => {
+      const data = res.result || res || [];
+      if (Array.isArray(data) && data.length > 0) {
+        this.devices = data;
+        const cached = localStorage.getItem('customer_selected_device_id');
+        if (cached && this.devices.some(d => +d.id === +cached)) {
+          this.selectedDeviceId = +cached;
+        } else {
+          this.selectedDeviceId = +this.devices[0].id;
+          localStorage.setItem('customer_selected_device_id', this.selectedDeviceId.toString());
+        }
+        setTimeout(() => {
+          this.emitDeviceChange();
+        }, 150);
+      }
+    });
+  }
+
+  onDeviceChange() {
+    if (this.selectedDeviceId) {
+      localStorage.setItem('customer_selected_device_id', this.selectedDeviceId.toString());
+      this.emitDeviceChange();
+    }
+  }
+
+  emitDeviceChange() {
+    const event = new CustomEvent('customerDeviceChanged', { detail: this.selectedDeviceId });
+    window.dispatchEvent(event);
+  }
+
   ngOnInit(): void {
     var _self = this;
     console.log('DefaultHeaderComponent');
     this.get_user_info();
+    if (this.current_user && this.current_user.role === 'customer') {
+      this.loadCustomerDevices();
+      return;
+    }
     this.data_provider.get_running_tasks().then(res => {
-      _self.tasks = res['tasks'].filter((x:any) => x.status);
+      if (res && res['tasks']) {
+        _self.tasks = res['tasks'].filter((x:any) => x.status);
+      }
     })
     // get running tasks every 5 seconds
     this.timer=setInterval(function(){
@@ -80,8 +120,13 @@ export class DefaultHeaderComponent extends HeaderComponent {
   
   get_running_tasks(){
     var _self = this;
+    if (this.current_user && this.current_user.role === 'customer') {
+      return;
+    }
     this.data_provider.get_running_tasks().then(res => {
-      _self.tasks = res['tasks'].filter((x:any) => x.status);
+      if (res && res['tasks']) {
+        _self.tasks = res['tasks'].filter((x:any) => x.status);
+      }
     })
   }
   ngOnDestroy(): void {

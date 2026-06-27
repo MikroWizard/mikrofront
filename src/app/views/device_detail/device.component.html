@@ -15,7 +15,8 @@
   <c-col xs style="border: 1px solid #ddd; border-radius: 4px; padding: 0;width: 100%;">
     <div class="nav nav-underline" style="background: #fff; border-bottom: 2px solid #2c3e50;width: 100%;">
       <div class="nav-item" (click)="actice_tab_index = 0">
-        <a class="nav-link" [active]="true" [cTabContent]="tabContent" [tabPaneIdx]="0" style="display: inline-block;padding-right: 0;">Device Details</a>
+        <a class="nav-link" [active]="true" [cTabContent]="tabContent" [tabPaneIdx]="0"
+          style="display: inline-block;padding-right: 0;">Device Details</a>
         <a class="nav-link" style="display: inline-block;" *ngIf="actice_tab_index==0" (click)="reload_device()">
           <i class="fa-solid fa-arrows-rotate" style="color: #74C0FC;" *ngIf="!reloading"></i>
           <i class="fa-solid fa-arrows-rotate fa-spin" *ngIf="reloading" style="color: #74C0FC;"></i>
@@ -24,11 +25,13 @@
       <div class="nav-item" [ngStyle]="{ display: !is_radio ? 'none' : 'block' }" (click)="actice_tab_index = 1">
         <a class="nav-link" [active]="false" [cTabContent]="tabContent" [tabPaneIdx]="1">Radio Info</a>
       </div>
-      <div class="nav-item" [ngStyle]="{ display: !dhcp_server_available ? 'none' : 'block' }" (click)="actice_tab_index = 2">
-        <a class="nav-link" [active]="false" [cTabContent]="tabContent" [tabPaneIdx]="2" style="display: inline-block;padding-right: 0;">DHCP server</a>
+      <div class="nav-item" [ngStyle]="{ display: !dhcp_server_available ? 'none' : 'block' }"
+        (click)="actice_tab_index = 2">
+        <a class="nav-link" [active]="false" [cTabContent]="tabContent" [tabPaneIdx]="2"
+          style="display: inline-block;padding-right: 0;">DHCP server</a>
         <a class="nav-link" style="display: inline-block;" *ngIf="actice_tab_index==2" (click)="reload_dhcp_server()">
           <i class="fa-solid fa-arrows-rotate" style="color: #74C0FC;" *ngIf="!reloading"></i>
-          <i class="fa-solid fa-arrows-rotate fa-spin"  *ngIf="reloading" style="color: #74C0FC;"></i>
+          <i class="fa-solid fa-arrows-rotate fa-spin" *ngIf="reloading" style="color: #74C0FC;"></i>
         </a>
       </div>
       <div class="nav-item" (click)="actice_tab_index = 3">
@@ -43,10 +46,18 @@
         <a class="nav-link" [active]="false" (click)="show_acc_logs = true" [cTabContent]="tabContent"
           [tabPaneIdx]="5">Accounting</a>
       </div>
+      <div class="nav-item" (click)="actice_tab_index = 6" [ngStyle]="{ display: !ispro ? 'none' : 'block' }">
+        <a class="nav-link" [active]="false" [cTabContent]="tabContent" [tabPaneIdx]="6">Speed Test</a>
+      </div>
+      <div class="nav-item" (click)="actice_tab_index = 7"
+        [ngStyle]="{ display: !ispro ? 'none' : 'block' }">
+        <a class="nav-link" [active]="false" [cTabContent]="tabContent" [tabPaneIdx]="7">AI Chatbot Audit Logs</a>
+      </div>
     </div>
 
     <c-tab-content class="command-sections" style="width: 100%;" #tabContent="cTabContent">
-      <h5 *ngIf="loading" style="text-align: center;height: 100vh;line-height: 33vh;"><c-spinner color="info" variant="grow"></c-spinner>Loading...</h5>
+      <h5 *ngIf="loading" style="text-align: center;height: 100vh;line-height: 33vh;"><c-spinner color="info"
+          variant="grow"></c-spinner>Loading...</h5>
       <c-tab-pane *ngIf="!loading">
         <c-card class="mb-1">
           <c-card-body>
@@ -104,97 +115,97 @@
             <c-card class="mb-1">
               <c-card-body>
                 <c-row style="flex-direction: row">
-                <div class="mb-3 d-flex justify-content-end w-100">
-                  <span class="p-input-icon-left">
-                    <i class="pi pi-search"></i>
-                    <input type="text" pInputText placeholder="Search interfaces..." (input)="applyFilterGlobal($event, 'contains')"
-                      class="form-control-sm" />
-                  </span>
-                </div>
+                  <div class="mb-3 d-flex justify-content-end w-100">
+                    <span class="p-input-icon-left">
+                      <i class="pi pi-search"></i>
+                      <input type="text" pInputText placeholder="Search interfaces..."
+                        (input)="applyFilterGlobal($event, 'contains')" class="form-control-sm" />
+                    </span>
+                  </div>
 
-                <p-table #dtInterfaces [value]="interfaces" [paginator]="true" [rows]="10"
-                  [showGridlines]="true" [stripedRows]="true" 
-                  [resizableColumns]="true" columnResizeMode="expand"
-                  styleClass="p-datatable-sm p-datatable-gridlines p-datatable-striped"
-                  [globalFilterFields]="['name', 'default-name', 'mac-address']">
-                  <ng-template pTemplate="header">
-                    <tr>
-                      <th pSortableColumn="name" pResizableColumn>
-                        <div class="justify-between">
-                          <span>Name</span>
-                          <span>
-                            <p-sortIcon field="name"></p-sortIcon>
-                            <p-columnFilter type="text" field="name" display="menu" class="ms-auto" />
-                          </span>
-                        </div>
-                      </th>
-                      <th pSortableColumn="mac-address" pResizableColumn>
-                        <div class="justify-between">
-                          <span>MAC</span>
-                          <span>
-                            <p-sortIcon field="mac-address"></p-sortIcon>
-                            <p-columnFilter type="text" field="mac-address" display="menu" class="ms-auto" />
-                          </span>
-                        </div>
-                      </th>
-                      <th pSortableColumn="rx-byte" pResizableColumn>
-                        <div class="justify-between">
-                          <span>RX</span>
-                          <span>
-                            <p-sortIcon field="rx-byte"></p-sortIcon>
-                            <p-columnFilter type="numeric" field="rx-byte" display="menu" class="ms-auto" />
-                          </span>
-                        </div>
-                      </th>
-                      <th pSortableColumn="tx-byte" pResizableColumn>
-                        <div class="justify-between">
-                          <span>TX</span>
-                          <span>
-                            <p-sortIcon field="tx-byte"></p-sortIcon>
-                            <p-columnFilter type="numeric" field="tx-byte" display="menu" class="ms-auto" />
-                          </span>
-                        </div>
-                      </th>
-                      <th pSortableColumn="l2mtu" pResizableColumn>
-                        <div class="justify-between">
-                          <span>L2MTU</span>
-                          <span>
-                            <p-sortIcon field="l2mtu"></p-sortIcon>
-                            <p-columnFilter type="numeric" field="l2mtu" display="menu" class="ms-auto" />
-                          </span>
-                        </div>
-                      </th>
-                      <th pSortableColumn="last-link-up-time" pResizableColumn>
-                        <div class="justify-between">
-                          <span>Last Up</span>
-                          <span>
-                            <p-sortIcon field="last-link-up-time"></p-sortIcon>
-                            <p-columnFilter type="text" field="last-link-up-time" display="menu" class="ms-auto" />
-                          </span>
-                        </div>
-                      </th>
-                      <th style="width: 60px" class="text-center" pResizableColumn>Actions</th>
-                    </tr>
-                  </ng-template>
-                  <ng-template pTemplate="body" let-iface>
-                    <tr>
-                      <td>{{iface.name}} <small class="text-muted">({{iface['default-name']}})</small></td>
-                      <td><small class="font-monospace">{{iface['mac-address']}}</small></td>
-                      <td>{{convert_bw_human(iface['rx-byte'], 'rx')}}</td>
-                      <td>{{convert_bw_human(iface['tx-byte'], 'tx')}}</td>
-                      <td>
-                        <small>curr: {{iface.l2mtu}}</small><br/>
-                        <small>max: {{iface['max-l2mtu']}}</small>
-                      </td>
-                      <td><small>{{iface['last-link-up-time']}}</small></td>
-                      <td class="text-center">
-                        <button cButton color="info" size="sm" (click)="show_interface_rate(iface['default-name'])" pTooltip="Interface Chart">
-                          <i class="fa-solid fa-chart-line"></i>
-                        </button>
-                      </td>
-                    </tr>
-                  </ng-template>
-                </p-table>
+                  <p-table #dtInterfaces [value]="interfaces" [paginator]="true" [rows]="10" [showGridlines]="true"
+                    [stripedRows]="true" [resizableColumns]="true" columnResizeMode="expand"
+                    styleClass="p-datatable-sm p-datatable-gridlines p-datatable-striped"
+                    [globalFilterFields]="['name', 'default-name', 'mac-address']">
+                    <ng-template pTemplate="header">
+                      <tr>
+                        <th pSortableColumn="name" pResizableColumn>
+                          <div class="justify-between">
+                            <span>Name</span>
+                            <span>
+                              <p-sortIcon field="name"></p-sortIcon>
+                              <p-columnFilter type="text" field="name" display="menu" class="ms-auto" />
+                            </span>
+                          </div>
+                        </th>
+                        <th pSortableColumn="mac-address" pResizableColumn>
+                          <div class="justify-between">
+                            <span>MAC</span>
+                            <span>
+                              <p-sortIcon field="mac-address"></p-sortIcon>
+                              <p-columnFilter type="text" field="mac-address" display="menu" class="ms-auto" />
+                            </span>
+                          </div>
+                        </th>
+                        <th pSortableColumn="rx-byte" pResizableColumn>
+                          <div class="justify-between">
+                            <span>RX</span>
+                            <span>
+                              <p-sortIcon field="rx-byte"></p-sortIcon>
+                              <p-columnFilter type="numeric" field="rx-byte" display="menu" class="ms-auto" />
+                            </span>
+                          </div>
+                        </th>
+                        <th pSortableColumn="tx-byte" pResizableColumn>
+                          <div class="justify-between">
+                            <span>TX</span>
+                            <span>
+                              <p-sortIcon field="tx-byte"></p-sortIcon>
+                              <p-columnFilter type="numeric" field="tx-byte" display="menu" class="ms-auto" />
+                            </span>
+                          </div>
+                        </th>
+                        <th pSortableColumn="l2mtu" pResizableColumn>
+                          <div class="justify-between">
+                            <span>L2MTU</span>
+                            <span>
+                              <p-sortIcon field="l2mtu"></p-sortIcon>
+                              <p-columnFilter type="numeric" field="l2mtu" display="menu" class="ms-auto" />
+                            </span>
+                          </div>
+                        </th>
+                        <th pSortableColumn="last-link-up-time" pResizableColumn>
+                          <div class="justify-between">
+                            <span>Last Up</span>
+                            <span>
+                              <p-sortIcon field="last-link-up-time"></p-sortIcon>
+                              <p-columnFilter type="text" field="last-link-up-time" display="menu" class="ms-auto" />
+                            </span>
+                          </div>
+                        </th>
+                        <th style="width: 60px" class="text-center" pResizableColumn>Actions</th>
+                      </tr>
+                    </ng-template>
+                    <ng-template pTemplate="body" let-iface>
+                      <tr>
+                        <td>{{iface.name}} <small class="text-muted">({{iface['default-name']}})</small></td>
+                        <td><small class="font-monospace">{{iface['mac-address']}}</small></td>
+                        <td>{{convert_bw_human(iface['rx-byte'], 'rx')}}</td>
+                        <td>{{convert_bw_human(iface['tx-byte'], 'tx')}}</td>
+                        <td>
+                          <small>curr: {{iface.l2mtu}}</small><br />
+                          <small>max: {{iface['max-l2mtu']}}</small>
+                        </td>
+                        <td><small>{{iface['last-link-up-time']}}</small></td>
+                        <td class="text-center">
+                          <button cButton color="info" size="sm" (click)="show_interface_rate(iface['default-name'])"
+                            pTooltip="Interface Chart">
+                            <i class="fa-solid fa-chart-line"></i>
+                          </button>
+                        </td>
+                      </tr>
+                    </ng-template>
+                  </p-table>
                 </c-row>
               </c-card-body>
             </c-card>
@@ -332,6 +343,16 @@
       <c-tab-pane style="width: 100%;padding-top: 10px;background-color: #fff;">
         <app-acclogs style="width: 100%" [component_devid]="devid"></app-acclogs>
       </c-tab-pane>
+
+      <!-- Speed Test Tab Pane (Index 6) -->
+      <c-tab-pane style="width: 100%; padding-top: 15px;">
+        <app-speed-test [devid]="devid" [ispro]="ispro"></app-speed-test>
+      </c-tab-pane>
+
+      <!-- AI Chatbot Audit Logs Tab Pane (Index 7) -->
+      <c-tab-pane style="width: 100%; padding-top: 15px;">
+        <app-ai-chat-logs-tab [devid]="devid" [ispro]="ispro"></app-ai-chat-logs-tab>
+      </c-tab-pane>
     </c-tab-content>
   </c-col>
 </c-row>
@@ -350,3 +371,209 @@
     </button>
   </c-modal-footer>
 </c-modal>
+
+
+
+<!-- Floating Chat Button (FAB) for Admins -->
+<button class="chat-fab shadow-lg" (click)="toggleChat()" [class.chat-open]="chatVisible" title="AI agent"
+  *ngIf="ispro">
+  <img *ngIf="!chatVisible" src="assets/images/chat-agent.png"
+    style="width: 32px; height: 32px; object-fit: contain;" />
+  <i *ngIf="chatVisible" class="fa-solid fa-xmark" style="font-size: 1.4rem;"></i>
+</button>
+
+<!-- Floating AI Chat Panel for Admins -->
+<div class="floating-chat-container shadow-lg" [class.show]="chatVisible" [class.theme-dark]="isDarkTheme"
+  [class.theme-light]="!isDarkTheme" [class.maximized]="isMaximized" *ngIf="ispro">
+  <div class="chat-header d-flex align-items-center justify-content-between p-3 border-bottom">
+    <div class="d-flex align-items-center">
+      <div class="rounded-circle p-1 me-2">
+        <img src="assets/images/chat-agent.png" style="width: 32px; height: 32px; object-fit: contain;" />
+      </div>
+      <div>
+        <h6 class="mb-0 fw-bold chat-header-title" style="font-size: 0.9rem;">AI Admin Assistant</h6>
+        <span class="text-success" style="font-size: 0.72rem; display: block;">
+          <span class="spinner-grow spinner-grow-sm text-success me-1"
+            style="width: 6px; height: 6px; display: inline-block;"></span>
+          Device Context: <strong>{{devdata?.name || devdata?.ip || 'This Device'}}</strong>
+        </span>
+      </div>
+    </div>
+    <div class="d-flex gap-2 align-items-center">
+      <!-- Theme toggle -->
+      <button cButton color="dark" size="sm" class="py-0 px-2 btn-icon" (click)="toggleTheme()"
+        [title]="isDarkTheme ? 'Switch to Light Theme' : 'Switch to Dark Theme'"
+        style="background: transparent; border: none;">
+        <i class="fa-solid" [class.fa-sun]="isDarkTheme" [class.fa-moon]="!isDarkTheme"
+          [class.text-warning]="isDarkTheme" [class.text-secondary]="!isDarkTheme"></i>
+      </button>
+      <!-- Maximize toggle -->
+      <button cButton color="dark" size="sm" class="py-0 px-2 btn-icon" (click)="toggleMaximize()"
+        [title]="isMaximized ? 'Minimize Chat' : 'Maximize Chat'" style="background: transparent; border: none;">
+        <i class="fa-solid" [class.fa-compress]="isMaximized" [class.fa-expand]="!isMaximized"
+          [class.text-white-50]="isDarkTheme" [class.text-secondary]="!isDarkTheme"></i>
+      </button>
+      <!-- History toggle -->
+      <button cButton color="dark" size="sm" class="py-0 px-2 btn-icon" (click)="toggleSessionsList()"
+        [title]="showSessionsList ? 'Show Chat' : 'Chat History / Sessions'"
+        style="background: transparent; border: none;">
+        <i class="fa-solid" [class.fa-comments]="showSessionsList" [class.fa-clock-rotate-left]="!showSessionsList"
+          [class.text-info]="showSessionsList" [class.text-white-50]="!showSessionsList && isDarkTheme"
+          [class.text-secondary]="!showSessionsList && !isDarkTheme"></i>
+      </button>
+      <!-- Minimize/Close widget -->
+      <button cButton color="dark" size="sm" class="py-0 px-2 btn-icon" (click)="toggleChat()"
+        style="background: transparent; border: none;">
+        <i class="fa-solid fa-chevron-down" [class.text-white-50]="isDarkTheme"
+          [class.text-secondary]="!isDarkTheme"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Messages List View -->
+  <div *ngIf="!showSessionsList" class="chat-messages p-3" style="overflow-y: auto;" #chatScrollContainer>
+    <div class="d-flex flex-column gap-3">
+      <ng-container *ngFor="let msg of chatHistory">
+        <div
+          *ngIf="['user', 'assistant', 'model'].includes(msg.role) && (msg.role === 'user' || (msg.content && !msg.content.startsWith('[SYSTEM')))"
+          class="d-flex" [class.justify-content-end]="msg.role === 'user'">
+          <div *ngIf="['assistant', 'model'].includes(msg.role)" class="d-flex gap-2" style="max-width: 85%;">
+            <div class="rounded-circle bg-success bg-opacity-10 d-flex align-items-center justify-content-center"
+              style="width: 32px; height: 32px; flex-shrink: 0;">
+              <i class="fa-solid fa-robot text-success" style="font-size: 0.85rem;"></i>
+            </div>
+            <div class="p-2 rounded-3 assistant-bubble"
+              style="font-size: 0.85rem; line-height: 1.4; white-space: pre-wrap;">
+              {{msg.content}}
+            </div>
+          </div>
+          <div *ngIf="msg.role === 'user'" class="d-flex gap-2 justify-content-end" style="max-width: 85%;">
+            <div class="p-2 rounded-3 user-bubble text-white" style="font-size: 0.85rem; line-height: 1.4;">
+              {{msg.content}}
+            </div>
+            <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center"
+              style="width: 32px; height: 32px; flex-shrink: 0;">
+              <i class="fa-solid fa-user-gear text-primary" style="font-size: 0.85rem;"></i>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+      <div *ngIf="chatLoading" class="d-flex gap-2">
+        <div class="rounded-circle bg-success bg-opacity-10 d-flex align-items-center justify-content-center"
+          style="width: 32px; height: 32px;">
+          <i class="fa-solid fa-robot text-success" style="font-size: 0.85rem;"></i>
+        </div>
+        <div class="p-2 rounded-3 assistant-bubble d-flex align-items-center" style="font-size: 0.85rem;">
+          <span class="spinner-border spinner-border-sm me-2 text-success" role="status"></span>
+          Thinking...
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sessions List View -->
+  <div *ngIf="showSessionsList" class="chat-messages p-3" style="overflow-y: auto;">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h6 class="mb-0 sessions-header-title" style="font-size: 0.85rem;"><i
+          class="fa-solid fa-clock-rotate-left me-1"></i> Sessions</h6>
+      <button cButton color="success" size="sm" class="py-0.5 px-2 text-white fw-semibold"
+        (click)="createNewSessionFromUI()" style="font-size: 0.75rem;">
+        <i class="fa-solid fa-plus me-1"></i> New Session
+      </button>
+    </div>
+
+    <div *ngIf="loadingSessions" class="text-center py-4">
+      <c-spinner color="info" size="sm"></c-spinner>
+    </div>
+
+    <div *ngIf="!loadingSessions && chatSessions.length === 0" class="text-center py-4 text-muted"
+      style="font-size: 0.8rem;">
+      No saved sessions found.
+    </div>
+
+    <div *ngIf="!loadingSessions && chatSessions.length > 0" class="d-flex flex-column gap-2">
+      <div *ngFor="let s of chatSessions"
+        class="p-2 rounded-3 d-flex align-items-center justify-content-between cursor-pointer session-item"
+        [class.active]="activeSessionId === s.id" (click)="selectSessionFromUI(s.id)">
+
+        <div class="d-flex flex-column flex-grow-1 overflow-hidden me-2">
+          <!-- Rename input if editing -->
+          <div *ngIf="renameSessionId === s.id" class="d-flex align-items-center gap-1 w-100"
+            (click)="$event.stopPropagation()">
+            <input cFormControl size="sm" class="bg-dark text-white border-secondary py-0 px-2"
+              style="font-size: 0.8rem; height: 24px;" [(ngModel)]="renameTitle" (keyup.enter)="saveRenameSession(s.id)"
+              autofocus />
+            <button cButton color="success" size="sm" class="py-0 px-1" (click)="saveRenameSession(s.id)"
+              style="height: 24px;"><i class="fa-solid fa-check" style="font-size: 0.75rem;"></i></button>
+            <button cButton color="secondary" size="sm" class="py-0 px-1" (click)="cancelRenameSession($event)"
+              style="height: 24px;"><i class="fa-solid fa-xmark" style="font-size: 0.75rem;"></i></button>
+          </div>
+          <!-- Title text if not editing -->
+          <div *ngIf="renameSessionId !== s.id" class="text-truncate fw-semibold session-title"
+            style="font-size: 0.85rem; max-width: 210px;">
+            {{s.title}}
+          </div>
+          <small class="text-muted" style="font-size: 0.68rem; margin-top: 2px;">
+            {{s.modified | date:'short'}}
+          </small>
+        </div>
+
+        <!-- Action buttons -->
+        <div class="d-flex gap-1" (click)="$event.stopPropagation()">
+          <button *ngIf="renameSessionId !== s.id" cButton color="dark" size="sm" class="py-0 px-1 text-muted btn-icon"
+            (click)="startRenameSession(s, $event)" title="Rename" style="background: transparent; border: none;">
+            <i class="fa-solid fa-pen" style="font-size: 0.75rem;"></i>
+          </button>
+          <button cButton color="dark" size="sm" class="py-0 px-1 text-danger btn-icon" (click)="deleteSession(s.id)"
+            title="Delete" style="background: transparent; border: none;">
+            <i class="fa-solid fa-trash" style="font-size: 0.75rem;"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Actions for Admins inside chat input area -->
+  <div *ngIf="!showSessionsList"
+    class="quick-actions-area p-2 d-flex flex-wrap gap-1.5 justify-content-center border-top"
+    style="font-size: 0.75rem;">
+    <button cButton [color]="isDarkTheme ? 'outline-light' : 'outline-dark'" class="py-0.5 px-2 border-secondary"
+      size="sm" (click)="sendChatMessage('Check router health')" [disabled]="chatLoading || !activeSessionId"
+      style="font-size: 0.75rem;">
+      🩺 Health
+    </button>
+    <button cButton [color]="isDarkTheme ? 'outline-light' : 'outline-dark'" class="py-0.5 px-2 border-secondary"
+      size="sm" (click)="sendChatMessage('Analyze connected clients')" [disabled]="chatLoading || !activeSessionId"
+      style="font-size: 0.75rem;">
+      👥 Clients
+    </button>
+    <button cButton [color]="isDarkTheme ? 'outline-light' : 'outline-dark'" class="py-0.5 px-2 border-secondary"
+      size="sm" (click)="sendChatMessage('Diagnose slow interfaces')" [disabled]="chatLoading || !activeSessionId"
+      style="font-size: 0.75rem;">
+      🔌 Interfaces
+    </button>
+    <button cButton [color]="isDarkTheme ? 'outline-light' : 'outline-dark'" class="py-0.5 px-2 border-secondary"
+      size="sm" (click)="sendChatMessage('Show CPU and memory resource usages')"
+      [disabled]="chatLoading || !activeSessionId" style="font-size: 0.75rem;">
+      📊 Resources
+    </button>
+  </div>
+
+  <!-- Message Input Area -->
+  <div *ngIf="!showSessionsList" class="chat-input-area p-3" style="border-top: 1px solid rgba(0,0,0,0.08);">
+    <!-- Dummy inputs to capture Firefox credential autofill -->
+    <input type="text" name="fake_username" style="display: none;" aria-hidden="true" autocomplete="off" />
+    <input type="password" name="fake_password" style="display: none;" aria-hidden="true" autocomplete="off" />
+
+    <div class="input-group">
+      <input type="search" name="search" cFormControl class="chat-input" [class.text-white]="isDarkTheme"
+        [class.text-dark]="!isDarkTheme" placeholder="Ask AI to troubleshoot router..." [(ngModel)]="userPrompt"
+        (keyup.enter)="sendChatMessage()" [disabled]="chatLoading || !activeSessionId" style="font-size: 0.85rem;"
+        autocomplete="new-password" />
+      <button cButton color="success" (click)="sendChatMessage()"
+        [disabled]="!userPrompt.trim() || chatLoading || !activeSessionId">
+        <i class="fa-solid fa-paper-plane"></i>
+      </button>
+    </div>
+  </div>
+</div>

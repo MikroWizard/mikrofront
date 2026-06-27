@@ -1,3 +1,4 @@
+<ng-container *ngIf="isAllowed; else disabledBlock">
 <c-row>
   <c-col xs>
     <c-card class="mb-4" [ngStyle]="component_devid && {'border-top': 'none'}">
@@ -6,7 +7,7 @@
           <c-col xs [lg]="11" style="display: flex;flex-direction: column;align-items: flex-start;">
             <h5>Accounting Logs
               <a style="cursor: pointer;" (click)="reinitgrid('none','none')"><i
-                  *ngIf="devid!=0 && component_devid && !reloading" class="fa-solid fa-arrows-rotate"
+                   *ngIf="devid!=0 && component_devid && !reloading" class="fa-solid fa-arrows-rotate"
                   style="color: #74C0FC;"></i>
                 <i *ngIf="devid!=0 && component_devid && reloading" class="fa-solid fa-arrows-rotate fa-spin"
                   style="color: #74C0FC;"></i>
@@ -216,3 +217,14 @@
     </c-card>
   </c-col>
 </c-row>
+</ng-container>
+
+<ng-template #disabledBlock>
+  <div class="text-center py-5">
+    <div class="p-5 bg-white rounded-3 shadow-sm mx-auto border" style="max-width: 600px;">
+      <i class="fa-solid fa-ban fa-3x text-danger mb-3"></i>
+      <h3>Logs View Disabled</h3>
+      <p class="text-muted">Your ISP has disabled the viewing of Accounting Logs for the selected router. Please switch to another router or contact support.</p>
+    </div>
+  </div>
+</ng-template>

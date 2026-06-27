@@ -629,3 +629,36 @@
   color: #721c24;
   border: 1px solid #f5c6cb;
 }
+
+/* ===== OpenRouter Model Dropdown ===== */
+.or-model-dropdown {
+  animation: fadeIn 0.15s ease-out;
+}
+
+.or-model-item {
+  transition: background-color 0.12s ease;
+  color: #e8ecf3 !important;
+
+  &:hover {
+    background: rgba(99, 102, 241, 0.25) !important;
+  }
+
+  &:last-child {
+    border-bottom: none !important;
+  }
+
+  .fw-semibold {
+    color: #ffffff !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  small {
+    color: #9ba3c4 !important;
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}

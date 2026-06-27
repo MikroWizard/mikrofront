@@ -10,6 +10,7 @@ import {
   GridModule,
   ModalModule,
   ToastModule,
+  AlertModule,
 } from "@coreui/angular";
 import { MatSelectModule } from "@angular/material/select";
 import { NgxMatSelectSearchModule } from "ngx-mat-select-search";
@@ -37,6 +38,7 @@ import { TooltipModule } from 'primeng/tooltip';
     ModalModule,
     FormsModule,
     ToastModule,
+    AlertModule,
   ],
   declarations: [UserManagerComponent],
 })

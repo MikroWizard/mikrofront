@@ -44,11 +44,15 @@
                   />
                 </c-input-group>
                 <code *ngIf="error_msg"><i class="fa-solid fa-triangle-exclamation"></i><small>  {{error_msg}}</small></code>
-                <c-row>
-                  <c-col mb-3 xs="6">
+                <c-row class="mt-3">
+                  <c-col xs="6">
                     <button type="submit" cButton (click)="onClickSubmit()" class="px-4" color="primary">
                       Login
                     </button>
+                  </c-col>
+                  <c-col xs="6" class="text-right d-flex flex-column align-items-end justify-content-center">
+                    <a [routerLink]="['/forgot-password']" style="font-size: 0.85rem; cursor: pointer;" class="text-decoration-none text-muted mb-1">Forgot password?</a>
+                    <a [routerLink]="['/register']" style="font-size: 0.85rem; cursor: pointer;" class="text-decoration-none text-muted">Register account</a>
                   </c-col>
                 </c-row>
               </form>

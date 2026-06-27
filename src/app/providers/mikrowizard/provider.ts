@@ -130,6 +130,22 @@ export class MikroWizardProvider {
 			.then(this.handleRequestErrors)
 			.catch(this.handleHttpErrors);
 	}
+
+	public sendHttpPutRequest(url: string, params: Object) {
+		return this.http.put(url, params,
+			{headers:this.headers,withCredentials:true}
+		).toPromise()
+			.then(this.handleRequestErrors)
+			.catch(this.handleHttpErrors);
+	}
+
+	public sendHttpDeleteRequest(url: string) {
+		return this.http.delete(url,
+			{headers:this.headers,withCredentials:true}
+		).toPromise()
+			.then(this.handleRequestErrors)
+			.catch(this.handleHttpErrors);
+	}
 	
 	public sendHttpRequest(url: string, params: any) {
 		let headers = {

@@ -693,6 +693,210 @@ export class dataProvider {
         return this.MikroWizardRPC.sendJsonRequest("/api/devgroup/firmware_action", data);
     }
 
+    // Customer Portal & Activation & Reset password
+    customerRegister(data: any) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/customer/register_pro", data);
+    }
+    customerActivate(token: string) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/customer/activate_pro", { token });
+    }
+    customerForgotPassword(email: string) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/customer/forgot_password_pro", { email });
+    }
+    customerResetPassword(data: any) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/customer/reset_password_pro", data);
+    }
+    customerGetDiagnostics(devid: number) {
+        return this.MikroWizardRPC.sendHttpGetRequest(`/api/customer/devices/${devid}/diagnostics`);
+    }
+    customerRunTraceroute(devid: number, target: string) {
+        return this.MikroWizardRPC.sendJsonRequest(`/api/customer/devices/${devid}/traceroute`, { target });
+    }
+    customerGetInterfaceSources(devid: number) {
+        return this.MikroWizardRPC.sendHttpGetRequest(`/api/customer/devices/${devid}/interface-sources`);
+    }
+    customerGetPortforwards(devid: number) {
+        return this.MikroWizardRPC.sendHttpGetRequest(`/api/customer/devices/${devid}/portforwards`);
+    }
+    customerAddPortforward(devid: number, payload: any) {
+        return this.MikroWizardRPC.sendJsonRequest(`/api/customer/devices/${devid}/portforwards/add`, payload);
+    }
+    customerDeletePortforward(devid: number, rule_id: string) {
+        return this.MikroWizardRPC.sendJsonRequest(`/api/customer/devices/${devid}/portforwards/delete`, { rule_id });
+    }
+    customerTogglePortforward(devid: number, rule_id: string, disabled: boolean) {
+        return this.MikroWizardRPC.sendJsonRequest(`/api/customer/devices/${devid}/portforwards/toggle`, { rule_id, disabled });
+    }
+    customerGetAddressLists(devid: number) {
+        return this.MikroWizardRPC.sendHttpGetRequest(`/api/customer/devices/${devid}/address-lists`);
+    }
+    customerAddAddressList(devid: number, payload: any) {
+        return this.MikroWizardRPC.sendJsonRequest(`/api/customer/devices/${devid}/address-lists/add`, payload);
+    }
+    customerDeleteAddressList(devid: number, rule_id: string) {
+        return this.MikroWizardRPC.sendJsonRequest(`/api/customer/devices/${devid}/address-lists/delete`, { rule_id });
+    }
+    customerToggleAddressList(devid: number, rule_id: string, disabled: boolean) {
+        return this.MikroWizardRPC.sendJsonRequest(`/api/customer/devices/${devid}/address-lists/toggle`, { rule_id, disabled });
+    }
+    customerGetSpeedtestHistory(devid: number) {
+        return this.MikroWizardRPC.sendHttpGetRequest(`/api/customer/speedtest/history?devid=${devid}`);
+    }
+    customerSaveSpeedtest(payload: any) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/customer/speedtest/save", payload);
+    }
+    customerRunRouterSpeedtest(devid: number, payload: any) {
+        return this.MikroWizardRPC.sendJsonRequest(`/api/customer/devices/${devid}/router-speedtest`, payload);
+    }
+    customerGetDevices() {
+        return this.MikroWizardRPC.sendHttpGetRequest("/api/customer/devices");
+    }
+    customerGetAuthLogs(payload: any) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/customer/logs/auth", payload);
+    }
+    customerGetAccountingLogs(payload: any) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/customer/logs/accounting", payload);
+    }
+    customerGetDeviceLogs(payload: any) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/customer/logs/device", payload);
+    }
+    customerGetConnectedClients(devid: number) {
+        return this.MikroWizardRPC.sendHttpGetRequest("/api/customer/connected-clients?devid=" + devid);
+    }
+    customerGetTickets() {
+        return this.MikroWizardRPC.sendHttpGetRequest("/api/customer/tickets");
+    }
+    customerCreateTicket(title: string, description: string) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/customer/tickets", { title, description });
+    }
+    customerGetTicketReplies(ticketId: number) {
+        return this.MikroWizardRPC.sendHttpGetRequest(`/api/customer/tickets/${ticketId}/replies`);
+    }
+    customerReplyTicket(ticketId: number, message: string) {
+        return this.MikroWizardRPC.sendJsonRequest(`/api/customer/tickets/${ticketId}/replies`, { message });
+    }
+    customerChat(history: any[], devid?: number) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/customer/chat", { history, devid });
+    }
+    customerGetDeviceStatus(devid: number) {
+        return this.MikroWizardRPC.sendHttpGetRequest(`/api/customer/devices/${devid}/status`);
+    }
+    customerGetWifiInterfaces(devid: number) {
+        return this.MikroWizardRPC.sendHttpGetRequest(`/api/customer/devices/${devid}/wifi-interfaces`);
+    }
+    customerUpdateWifi(devid: number, payload: any) {
+        return this.MikroWizardRPC.sendJsonRequest(`/api/customer/devices/${devid}/wifi/update`, payload);
+    }
+    customerPingDevice(devid: number, target: string, count: number) {
+        return this.MikroWizardRPC.sendJsonRequest(`/api/customer/devices/${devid}/ping`, { target, count });
+    }
+    customerRebootDevice(devid: number) {
+        return this.MikroWizardRPC.sendJsonRequest(`/api/customer/devices/${devid}/reboot`, {});
+    }
+
+    customerGetChatSessions(devid?: number) {
+        let url = "/api/customer/chat/sessions";
+        if (devid) {
+            url += "?devid=" + devid;
+        }
+        return this.MikroWizardRPC.sendHttpGetRequest(url);
+    }
+    customerCreateChatSession(devid?: number, title?: string) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/customer/chat/sessions", { devid, title });
+    }
+    customerGetChatSession(sid: number) {
+        return this.MikroWizardRPC.sendHttpGetRequest(`/api/customer/chat/sessions/${sid}`);
+    }
+    customerRenameChatSession(sid: number, title: string) {
+        return this.MikroWizardRPC.sendHttpPutRequest(`/api/customer/chat/sessions/${sid}`, { title });
+    }
+    customerDeleteChatSession(sid: number) {
+        return this.MikroWizardRPC.sendHttpDeleteRequest(`/api/customer/chat/sessions/${sid}`);
+    }
+    customerSendChatMessage(sid: number, message: string) {
+        return this.MikroWizardRPC.sendJsonRequest(`/api/customer/chat/sessions/${sid}/message`, { message });
+    }
+
+    // Admin Ticketing & Assignments & AI Chat Sessions
+    adminGetChatSessions(devid?: number) {
+        let url = "/api/admin/chat/sessions";
+        if (devid) {
+            url += `?devid=${devid}`;
+        }
+        return this.MikroWizardRPC.sendHttpGetRequest(url);
+    }
+    adminGetChatSession(sid: number) {
+        return this.MikroWizardRPC.sendHttpGetRequest(`/api/admin/chat/sessions/${sid}`);
+    }
+    adminGetSelfChatSessions(devid?: number) {
+        let url = "/api/admin/chat/self-sessions";
+        if (devid) {
+            url += `?devid=${devid}`;
+        }
+        return this.MikroWizardRPC.sendHttpGetRequest(url);
+    }
+    adminCreateSelfChatSession(devid?: number, title?: string) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/admin/chat/self-sessions", { devid, title });
+    }
+    adminGetSelfChatSession(sid: number) {
+        return this.MikroWizardRPC.sendHttpGetRequest(`/api/admin/chat/self-sessions/${sid}`);
+    }
+    adminRenameSelfChatSession(sid: number, title: string) {
+        return this.MikroWizardRPC.sendHttpPutRequest(`/api/admin/chat/self-sessions/${sid}`, { title });
+    }
+    adminDeleteSelfChatSession(sid: number) {
+        return this.MikroWizardRPC.sendHttpDeleteRequest(`/api/admin/chat/self-sessions/${sid}`);
+    }
+    adminSendSelfChatMessage(sid: number, message: string) {
+        return this.MikroWizardRPC.sendJsonRequest(`/api/admin/chat/self-sessions/${sid}/message`, { message });
+    }
+    getOpenRouterModels() {
+        return this.MikroWizardRPC.sendHttpGetRequest('/api/admin/ai/openrouter-models');
+    }
+
+    adminGetTickets() {
+        return this.MikroWizardRPC.sendHttpGetRequest("/api/admin/tickets");
+    }
+    adminAssignTicket(ticketId: number, assignedAdminId: string) {
+        return this.MikroWizardRPC.sendJsonRequest(`/api/admin/tickets/${ticketId}/assign`, { assigned_admin_id: assignedAdminId });
+    }
+    adminUpdateTicketStatus(ticketId: number, status: string) {
+        return this.MikroWizardRPC.sendJsonRequest(`/api/admin/tickets/${ticketId}/status`, { status });
+    }
+    adminGetTicketReplies(ticketId: number) {
+        return this.MikroWizardRPC.sendHttpGetRequest(`/api/admin/tickets/${ticketId}/replies`);
+    }
+    adminReplyTicket(ticketId: number, message: string) {
+        return this.MikroWizardRPC.sendJsonRequest(`/api/admin/tickets/${ticketId}/replies`, { message });
+    }
+    adminAssignCustomer(data: any) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/admin/customer/assign_pro", data);
+    }
+    adminGetCustomerAssignments() {
+        return this.MikroWizardRPC.sendHttpGetRequest("/api/admin/customer/assignments_pro");
+    }
+    adminUnassignCustomer(id: number) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/admin/customer/unassign_pro", { id });
+    }
+    adminSendSmtpTest() {
+        return this.MikroWizardRPC.sendJsonRequest("/api/admin/smtp_test_pro", {});
+    }
+
+    getSpeedtestServers() {
+        return this.MikroWizardRPC.sendHttpGetRequest("/api/customer/speedtest/servers");
+    }
+
+    adminGetSpeedtestHistory(devid: number) {
+        return this.MikroWizardRPC.sendHttpGetRequest(`/api/admin/devices/${devid}/speedtest/history`);
+    }
+
+    adminRunRouterSpeedtest(devid: number, payload: any) {
+        return this.MikroWizardRPC.sendJsonRequest(`/api/admin/devices/${devid}/router-speedtest`, payload);
+    }
+
+    adminSendChat(payload: any) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/admin/chat", payload);
+    }
 
     ////
     //// End api funcs

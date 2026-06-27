@@ -1,0 +1,62 @@
+<div class="bg-light min-vh-100 d-flex flex-row align-items-center">
+  <c-container>
+    <c-row class="justify-content-center">
+      <c-col md="6">
+        <c-card class="mx-4">
+          <c-card-body class="p-4">
+            <form cForm [formGroup]="registerForm">
+              <h1>Register</h1>
+              <p class="text-medium-emphasis">Create your customer account</p>
+              
+              <c-input-group class="mb-3">
+                <span cInputGroupText><svg cIcon name="cilUser"></svg></span>
+                <input cFormControl placeholder="Username" formControlName="username" required />
+              </c-input-group>
+
+              <c-input-group class="mb-3">
+                <span cInputGroupText>&#64;</span>
+                <input cFormControl placeholder="Email" formControlName="email" type="email" required />
+              </c-input-group>
+
+              <c-input-group class="mb-3">
+                <span cInputGroupText><svg cIcon name="cilLockLocked"></svg></span>
+                <input cFormControl placeholder="Password" type="password" formControlName="password" required />
+              </c-input-group>
+
+              <c-input-group class="mb-3">
+                <span cInputGroupText><i class="fa-solid fa-address-card"></i></span>
+                <input cFormControl placeholder="First Name" formControlName="first_name" required />
+              </c-input-group>
+
+              <c-input-group class="mb-3">
+                <span cInputGroupText><i class="fa-solid fa-address-card"></i></span>
+                <input cFormControl placeholder="Last Name" formControlName="last_name" required />
+              </c-input-group>
+
+              <c-input-group class="mb-4">
+                <span cInputGroupText><i class="fa-solid fa-building"></i></span>
+                <input cFormControl placeholder="Company (Optional)" formControlName="company" />
+              </c-input-group>
+
+              <div class="mb-3">
+                <code *ngIf="error_msg"><i class="fa-solid fa-triangle-exclamation"></i><small>  {{error_msg}}</small></code>
+                <div *ngIf="success_msg" class="text-success"><i class="fa-solid fa-circle-check"></i><small>  {{success_msg}}</small></div>
+              </div>
+
+              <div class="d-grid mb-3">
+                <button type="submit" cButton (click)="onClickSubmit()" color="success" [disabled]="submitted">
+                  Create Account
+                </button>
+              </div>
+
+              <div class="text-center">
+                <span class="text-muted" style="font-size: 0.9rem;">Already have an account? </span>
+                <a [routerLink]="['/login']" style="font-size: 0.9rem; font-weight: 600;" class="text-decoration-none">Login</a>
+              </div>
+            </form>
+          </c-card-body>
+        </c-card>
+      </c-col>
+    </c-row>
+  </c-container>
+</div>

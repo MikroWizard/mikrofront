@@ -1,0 +1,202 @@
+<ng-container *ngIf="ispro">
+  <c-card class="mb-4 shadow-sm border-0">
+    <c-card-header class="bg-light py-3 border-bottom">
+      <div class="d-flex align-items-center">
+        <i class="fa-solid fa-gauge-high me-2 text-success" style="font-size: 1.1rem;"></i>
+        <h6 class="mb-0 fw-bold">Router Bandwidth Test (BTest)</h6>
+      </div>
+    </c-card-header>
+    <c-card-body>
+      <!-- Server Missing Alert Box -->
+      <div class="alert alert-info border-0 shadow-sm p-4 text-center mb-0" *ngIf="speedtestServers.length === 0">
+        <div class="mb-3">
+          <i class="fa-solid fa-server fa-3x text-info"></i>
+        </div>
+        <h5 class="fw-bold text-dark">No Speed Test Servers Configured</h5>
+        <p class="text-muted mx-auto mb-3" style="max-width: 500px;">
+          To enable the bandwidth testing feature, you must install the MikroSpeed local server or add remote speed test servers in the settings.
+        </p>
+        <div class="d-flex justify-content-center gap-2">
+          <a [routerLink]="['/settings']" class="btn btn-primary fw-semibold text-white px-3">
+            <i class="fa-solid fa-gear me-1"></i> Go to Settings
+          </a>
+          <a href="https://example.com/speedtest-tutorial" target="_blank" class="btn btn-outline-info fw-semibold px-3">
+            <i class="fa-solid fa-book me-1"></i> Installation Tutorial
+          </a>
+        </div>
+      </div>
+
+      <c-row class="g-3" *ngIf="speedtestServers.length > 0">
+        <!-- Controls -->
+        <c-col md="4">
+          <div class="mb-3">
+            <label class="form-label small fw-semibold text-dark">
+              <i class="fa-solid fa-circle-question text-secondary me-1" pTooltip="Select the destination Bandwidth Test (BTest) server. The router will measure the download and upload speed to this target server. Choosing 'Auto-detect' will ping all available servers and select the one with the lowest latency."></i>Target Speed Test Server
+            </label>
+            <select cSelect [(ngModel)]="selectedSpeedServer" class="form-select">
+              <option value="auto">🌟 Auto-detect / Lowest Latency</option>
+              <option *ngFor="let s of speedtestServers" [value]="s.name">{{s.name}} ({{s.host}})</option>
+            </select>
+          </div>
+        </c-col>
+        <c-col md="4">
+          <div class="mb-3">
+            <label class="form-label small fw-semibold text-dark">
+              <i class="fa-solid fa-circle-question text-secondary me-1" pTooltip="Specifies how long the active bandwidth transmission test runs. Shorter durations (5s or 10s) are recommended to avoid overloading the router CPU, while longer tests provide more stable and accurate speed results."></i>Test Duration
+            </label>
+            <select cSelect [(ngModel)]="testDuration" class="form-select">
+              <option value="5s">5 Seconds</option>
+              <option value="10s">10 Seconds</option>
+              <option value="20s">20 Seconds</option>
+              <option value="30s">30 Seconds</option>
+            </select>
+          </div>
+        </c-col>
+        <c-col md="4" class="d-flex align-items-end">
+          <div class="mb-3 w-100">
+            <button cButton color="success" class="w-100 py-2 fw-semibold text-white" (click)="runRouterSpeedtest()" [disabled]="testRunning">
+              <c-spinner *ngIf="testRunning" size="sm" class="me-2"></c-spinner>
+              <i class="fa-solid fa-play me-2" *ngIf="!testRunning"></i>
+              {{ testRunning ? 'Running Test...' : 'Start Speed Test' }}
+            </button>
+          </div>
+        </c-col>
+      </c-row>
+
+      <!-- Test Progress & Results -->
+      <div class="mt-4 p-3 rounded bg-light border" *ngIf="testRunning || testProgress || testResults">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <div class="d-flex align-items-center">
+            <c-spinner color="success" size="sm" class="me-2" *ngIf="testRunning"></c-spinner>
+            <span class="fw-semibold text-dark">{{ testProgress }}</span>
+          </div>
+          <button cButton color="outline-secondary" size="sm" *ngIf="testResults && testResults.raw_data" (click)="showRawData(testResults.raw_data)">
+            <i class="fa-solid fa-code me-1"></i> View Raw Data
+          </button>
+        </div>
+
+        <!-- Metrics -->
+        <c-row class="g-3" *ngIf="testResults">
+          <c-col md="3" sm="6">
+            <div class="p-3 rounded text-center border h-100 d-flex flex-column justify-content-center" style="background: rgba(65, 184, 131, 0.1); border-color: rgba(65, 184, 131, 0.2) !important;">
+              <div class="text-muted small uppercase fw-bold mb-1">Download</div>
+              <h4 class="text-success mb-1 fw-bold">{{ testResults.download }}</h4>
+              <div class="text-muted small font-monospace" style="font-size: 0.75rem;" *ngIf="testResults.download_cpu">
+                {{ testResults.download_cpu }}
+              </div>
+            </div>
+          </c-col>
+          <c-col md="3" sm="6">
+            <div class="p-3 rounded text-center border h-100 d-flex flex-column justify-content-center" style="background: rgba(0, 120, 255, 0.08); border-color: rgba(0, 120, 255, 0.15) !important;">
+              <div class="text-muted small uppercase fw-bold mb-1">Upload</div>
+              <h4 class="text-primary mb-1 fw-bold">{{ testResults.upload }}</h4>
+              <div class="text-muted small font-monospace" style="font-size: 0.75rem;" *ngIf="testResults.upload_cpu">
+                {{ testResults.upload_cpu }}
+              </div>
+            </div>
+          </c-col>
+          <c-col md="3" sm="6">
+            <div class="p-3 rounded text-center border h-100 d-flex flex-column justify-content-center" style="background: rgba(0, 0, 0, 0.02); border-color: rgba(0, 0, 0, 0.05) !important;">
+              <div class="text-muted small uppercase fw-bold mb-1">Ping</div>
+              <h4 class="text-dark mb-0 fw-bold">{{ testResults.ping }}</h4>
+            </div>
+          </c-col>
+          <c-col md="3" sm="6">
+            <div class="p-3 rounded text-center border h-100 d-flex flex-column justify-content-center" style="background: rgba(0, 0, 0, 0.02); border-color: rgba(0, 0, 0, 0.05) !important;">
+              <div class="text-muted small uppercase fw-bold mb-1">Jitter</div>
+              <h4 class="text-dark mb-0 fw-bold">{{ testResults.jitter }}</h4>
+            </div>
+          </c-col>
+        </c-row>
+      </div>
+    </c-card-body>
+  </c-card>
+
+  <!-- Charts Row -->
+  <c-row class="mb-4" *ngIf="routerChartData || browserChartData">
+    <c-col md="6" *ngIf="routerChartData">
+      <c-card class="shadow-sm border-0">
+        <c-card-header class="bg-light">
+          <h6 class="mb-0 fw-bold">Router Speed History Chart</h6>
+        </c-card-header>
+        <c-card-body style="height: 250px;">
+          <c-chart [data]="routerChartData" [options]="speedChartOptions" type="line" height="220"></c-chart>
+        </c-card-body>
+      </c-card>
+    </c-col>
+    <c-col md="6" *ngIf="browserChartData">
+      <c-card class="shadow-sm border-0">
+        <c-card-header class="bg-light">
+          <h6 class="mb-0 fw-bold">Browser Speed History Chart</h6>
+        </c-card-header>
+        <c-card-body style="height: 250px;">
+          <c-chart [data]="browserChartData" [options]="speedChartOptions" type="line" height="220"></c-chart>
+        </c-card-body>
+      </c-card>
+    </c-col>
+  </c-row>
+
+  <!-- History Table -->
+  <c-card class="shadow-sm border-0">
+    <c-card-header class="bg-light">
+      <div class="d-flex align-items-center justify-content-between">
+        <h6 class="mb-0 fw-bold">All Speed Test Records</h6>
+        <c-spinner size="sm" *ngIf="historyLoading" color="info"></c-spinner>
+      </div>
+    </c-card-header>
+    <c-card-body>
+      <div class="table-responsive">
+        <table class="table table-hover table-striped align-middle border">
+          <thead>
+            <tr class="table-light">
+              <th class="py-2 px-3">Type</th>
+              <th class="py-2 px-3">Date</th>
+              <th class="py-2 px-3">Download</th>
+              <th class="py-2 px-3">Upload</th>
+              <th class="py-2 px-3">Ping</th>
+              <th class="py-2 px-3">Jitter</th>
+              <th class="py-2 px-3 text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let h of speedHistory" class="border-bottom">
+              <td class="px-3">
+                <c-badge color="success" *ngIf="h.test_type === 'router'">Router</c-badge>
+                <c-badge color="info" *ngIf="h.test_type === 'browser' || !h.test_type">Browser</c-badge>
+              </td>
+              <td class="px-3 text-dark">{{ h.created | date:'short' }}</td>
+              <td class="px-3 fw-semibold text-success">{{ h.download }} Mbps</td>
+              <td class="px-3 fw-semibold text-primary">{{ h.upload }} Mbps</td>
+              <td class="px-3 text-dark">{{ h.ping }} ms</td>
+              <td class="px-3 text-dark">{{ h.jitter }} ms</td>
+              <td class="px-3 text-end">
+                <button cButton color="outline-primary" size="sm" *ngIf="h.raw_data" (click)="showRawData(h.raw_data)" pTooltip="View Raw Data">
+                  <i class="fa-solid fa-code"></i>
+                </button>
+                <span *ngIf="!h.raw_data" class="text-muted small">-</span>
+              </td>
+            </tr>
+            <tr *ngIf="speedHistory.length === 0 && !historyLoading">
+              <td colspan="7" class="text-center py-4 text-muted">No speed tests run yet.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </c-card-body>
+  </c-card>
+</ng-container>
+
+<!-- Raw Test Results Modal -->
+<c-modal #rawResultsModal backdrop="static" size="lg" [visible]="rawResultsModalVisible" (visibleChange)="rawResultsModalVisible = $event" id="rawResultsModal">
+  <c-modal-header>
+    <h5 cModalTitle>
+      <i class="fa-solid fa-code me-2 text-primary"></i>Raw Speed Test Data
+    </h5>
+    <button (click)="rawResultsModalVisible = false" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body>
+    <div class="bg-dark text-light p-3 rounded font-monospace" style="max-height: 500px; overflow: auto; font-size: 0.85rem;">
+      <pre class="mb-0"><code>{{ rawResultsJson | json }}</code></pre>
+    </div>
+  </c-modal-body>
+</c-modal>

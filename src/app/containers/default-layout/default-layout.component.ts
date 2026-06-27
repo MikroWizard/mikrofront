@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { Router, NavigationEnd } from "@angular/router";
 import { loginChecker } from '../../providers/login_checker';
 import { User } from '../../providers/mikrowizard/user';
-import { navItems } from './_nav';
+import { navItems, customerNavItems } from './_nav';
 import { dataProvider } from '../../providers/mikrowizard/data';
 import { arch } from 'os';
 import { DomSanitizer } from '@angular/platform-browser';
@@ -207,27 +207,104 @@ export class DefaultLayoutComponent implements OnInit {
   ngOnInit(): void {
     var _self = this;
     this.get_user_info();
-    this.data_provider.getSessionInfo().then((res) => {
-      _self.ispro=res['ISPRO']
-      _self.navItems=_self.navItems.filter((item:any) => {
-        if (item.attributes){
-          if('free' in item.attributes && _self.ispro){
-            return ;
+    if (this.current_user && this.current_user.role === 'customer') {
+      this.data_provider.customerGetDevices().then((res: any) => {
+        const devs = res.result || res || [];
+        const showAuth = devs.some((d: any) => d.allow_log_auth === true);
+        const showAcc = devs.some((d: any) => d.allow_log_acc === true);
+        const showDev = devs.some((d: any) => d.allow_log_dev === true);
+
+        let dynamicNavs: any[] = [
+          {
+            name: 'Customer Portal',
+            url: '/customer-portal',
+            iconComponent: { name: 'cil-speedometer' },
+          },
+          {
+            name: 'Advanced Diagnostics',
+            url: '/customer-diagnostics',
+            icon: 'fa-solid fa-gauge-high'
+          },
+          {
+            name: 'Port Forwarding',
+            url: '/customer-portforward',
+            icon: 'fa-solid fa-route'
+          },
+          {
+            name: 'Speed Test',
+            url: '/customer-speedtest',
+            icon: 'fa-solid fa-gauge'
+          },
+          {
+            name: 'Support Tickets',
+            url: '/customer-tickets',
+            icon: 'fa-solid fa-ticket'
           }
-          else if('pro' in item.attributes && _self.ispro){
-            return item;
-          }
-          else if('pro' in item.attributes && !_self.ispro){
-            return ;
-          }
-          else
-            return item;
-      }
-      else{
-          return item;
-      }
+        ];
+
+        if (showAuth) {
+          dynamicNavs.push({
+            name: 'Authentication Logs',
+            url: '/authlog',
+            icon: 'fa-solid fa-check-to-slot'
+          } as any);
+        }
+        if (showAcc) {
+          dynamicNavs.push({
+            name: 'Accounting Logs',
+            url: '/accountlog',
+            icon: 'fa-solid fa-list-check'
+          } as any);
+        }
+        if (showDev) {
+          dynamicNavs.push({
+            name: 'Device Logs',
+            url: '/devlogs',
+            icon: 'fa-regular fa-rectangle-list'
+          } as any);
+        }
+
+        dynamicNavs.push({
+          name: 'Docs',
+          url: 'https://mikrowizard.com/docs',
+          iconComponent: { name: 'cil-description' },
+          attributes: { target: '_blank', class: '-text-dark' },
+          class: 'mt-auto'
+        });
+
+        this.navItems = dynamicNavs;
+      }).catch(() => {
+        this.navItems = customerNavItems;
       });
-    });
+
+      if (this.router.url === '/' || this.router.url === '/dashboard') {
+        setTimeout(() => {
+          this.router.navigate(['customer-portal']);
+        }, 100);
+      }
+    } else {
+      this.data_provider.getSessionInfo().then((res) => {
+        _self.ispro=res['ISPRO']
+        _self.navItems=_self.navItems.filter((item:any) => {
+          if (item.attributes){
+            if('free' in item.attributes && _self.ispro){
+              return ;
+            }
+            else if('pro' in item.attributes && _self.ispro){
+              return item;
+            }
+            else if('pro' in item.attributes && !_self.ispro){
+              return ;
+            }
+            else
+              return item;
+          }
+          else{
+              return item;
+          }
+        });
+      });
+    }
     // check first time after 10 seconds
     setTimeout(function(){
       _self.data_provider.get_front_version().then((res:any) => {

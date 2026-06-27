@@ -5,6 +5,10 @@ import { DefaultLayoutComponent } from './containers';
 import { Page404Component } from './views/pages/page404/page404.component';
 import { Page500Component } from './views/pages/page500/page500.component';
 import { LoginComponent } from './views/pages/login/login.component';
+import { RegisterComponent } from './views/pages/register/register.component';
+import { ActivateComponent } from './views/pages/activate/activate.component';
+import { ForgotPasswordComponent } from './views/pages/forgot-password/forgot-password.component';
+import { ResetPasswordComponent } from './views/pages/reset-password/reset-password.component';
 
 const routes: Routes = [
   {
@@ -125,6 +129,46 @@ const routes: Routes = [
           import('./views/vpn/vpn.module').then((m) => m.VpnModule)
       },
       {
+        path: 'customer-portal',
+        loadChildren: () =>
+          import('./views/customer-portal/customer-portal.module').then((m) => m.CustomerPortalModule)
+      },
+      {
+        path: 'customer-tickets',
+        loadChildren: () =>
+          import('./views/customer-tickets/customer-tickets.module').then((m) => m.CustomerTicketsModule)
+      },
+      {
+        path: 'customer-diagnostics',
+        loadChildren: () =>
+          import('./views/customer-diagnostics/customer-diagnostics.module').then((m) => m.CustomerDiagnosticsModule)
+      },
+      {
+        path: 'customer-portforward',
+        loadChildren: () =>
+          import('./views/customer-portforward/customer-portforward.module').then((m) => m.CustomerPortForwardModule)
+      },
+      {
+        path: 'customer-speedtest',
+        loadChildren: () =>
+          import('./views/customer-speedtest/customer-speedtest.module').then((m) => m.CustomerSpeedTestModule)
+      },
+      {
+        path: 'admin-tickets',
+        loadChildren: () =>
+          import('./views/admin-tickets/admin-tickets.module').then((m) => m.AdminTicketsModule)
+      },
+      {
+        path: 'customer-assignments',
+        loadChildren: () =>
+          import('./views/customer-assignments/customer-assignments.module').then((m) => m.CustomerAssignmentsModule)
+      },
+      {
+        path: 'ai-chat-logs',
+        loadChildren: () =>
+          import('./views/ai-chat-logs/ai-chat-logs.module').then((m) => m.AIChatLogsModule)
+      },
+      {
         path: 'pages',
         loadChildren: () =>
           import('./views/pages/pages.module').then((m) => m.PagesModule)
@@ -150,6 +194,34 @@ const routes: Routes = [
     component: LoginComponent,
     data: {
       title: 'Login Page'
+    }
+  },
+  {
+    path: 'register',
+    component: RegisterComponent,
+    data: {
+      title: 'Register Page'
+    }
+  },
+  {
+    path: 'activate',
+    component: ActivateComponent,
+    data: {
+      title: 'Activate Account'
+    }
+  },
+  {
+    path: 'forgot-password',
+    component: ForgotPasswordComponent,
+    data: {
+      title: 'Forgot Password'
+    }
+  },
+  {
+    path: 'reset-password',
+    component: ResetPasswordComponent,
+    data: {
+      title: 'Reset Password'
     }
   },
   { path: '**', redirectTo: 'dashboard' }

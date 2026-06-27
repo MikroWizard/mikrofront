@@ -1,0 +1,142 @@
+<c-row>
+  <c-col xs="12">
+    <c-card class="mb-4 shadow-sm border-0">
+      <c-card-header class="bg-white border-0 py-3">
+        <div class="d-flex align-items-center justify-content-between">
+          <div class="d-flex align-items-center">
+            <i class="fa-solid fa-ticket me-2 text-primary"></i>
+            <h5 class="mb-0 fw-bold">Customer Support Tickets</h5>
+          </div>
+          <button cButton color="light" size="sm" (click)="loadTickets()" [disabled]="loading" pTooltip="Refresh tickets list">
+            <i class="fa-solid fa-rotate" [class.fa-spin]="loading"></i>
+          </button>
+        </div>
+      </c-card-header>
+      <c-card-body class="p-0">
+        <div class="table-action-header justify-end">
+          <div class="modern-search-container">
+            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+            <input type="text" placeholder="Search tickets..." (input)="applyFilterGlobal($event, 'contains')" />
+          </div>
+        </div>
+
+        <p-table #dt [value]="tickets" [paginator]="true" [rows]="10" [showCurrentPageReport]="true"
+          [rowsPerPageOptions]="[10, 25, 50]" [resizableColumns]="true" columnResizeMode="expand" [showGridlines]="true"
+          [stripedRows]="true" styleClass="p-datatable-sm p-datatable-gridlines p-datatable-striped"
+          [globalFilterFields]="['title', 'customer_name', 'customer_email', 'status']" [loading]="loading">
+
+          <ng-template pTemplate="header">
+            <tr>
+              <th pSortableColumn="id" style="width: 80px;">ID</th>
+              <th pSortableColumn="customer_name">Customer</th>
+              <th pSortableColumn="title">Subject</th>
+              <th pSortableColumn="status" style="width: 140px;">Status</th>
+              <th pSortableColumn="assigned_admin_name" style="width: 180px;">Assigned Staff</th>
+              <th pSortableColumn="modified" style="width: 150px;">Last Active</th>
+              <th style="width: 160px;" class="text-center">Actions</th>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="body" let-ticket>
+            <tr>
+              <td><code>#{{ticket.id}}</code></td>
+              <td>
+                <div class="fw-semibold">{{ticket.customer_name}}</div>
+                <small class="text-muted">{{ticket.customer_email}}</small>
+              </td>
+              <td>
+                <div class="fw-bold">{{ticket.title}}</div>
+                <small class="text-muted text-truncate d-block" style="max-width: 300px;">{{ticket.description}}</small>
+              </td>
+              <td>
+                <span class="badge" [ngClass]="{
+                  'bg-danger': ticket.status === 'open',
+                  'bg-warning': ticket.status === 'in_progress',
+                  'bg-success': ticket.status === 'resolved',
+                  'bg-secondary': ticket.status === 'closed'
+                }">{{ticket.status.replace('_', ' ')}}</span>
+              </td>
+              <td>
+                <select cSelect size="sm" [(ngModel)]="ticket.assigned_admin_id" (change)="assignTicket(ticket)" class="form-select form-select-sm">
+                  <option [value]="null">Unassigned</option>
+                  <option *ngFor="let staff of staffList" [value]="staff.id">{{staff.first_name}} {{staff.last_name}}</option>
+                </select>
+              </td>
+              <td><small class="text-muted">{{ticket.modified | date:'short'}}</small></td>
+              <td class="text-center">
+                <div class="d-flex gap-1 justify-content-center">
+                  <button cButton color="info" size="sm" (click)="viewTicketReplies(ticket)" pTooltip="View replies and respond">
+                    <i class="fa-regular fa-comments"></i>
+                  </button>
+                  <select cSelect size="sm" [(ngModel)]="ticket.status" (change)="updateTicketStatus(ticket)" class="form-select form-select-sm w-auto" style="padding: 2px 8px; font-size: 0.75rem;">
+                    <option value="open">Open</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="resolved">Resolved</option>
+                    <option value="closed">Closed</option>
+                  </select>
+                </div>
+              </td>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="7" class="text-center p-4">No support tickets found.</td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </c-card-body>
+    </c-card>
+  </c-col>
+</c-row>
+
+<!-- Modal: Conversation replies thread -->
+<c-modal #ticketRepliesModal backdrop="static" size="lg" [(visible)]="ticketRepliesModalVisible" id="ticketRepliesModal">
+  <c-modal-header *ngIf="activeTicket">
+    <h5 cModalTitle>
+      <span class="badge me-2" [ngClass]="{
+        'bg-danger': activeTicket.status === 'open',
+        'bg-warning': activeTicket.status === 'in_progress',
+        'bg-success': activeTicket.status === 'resolved',
+        'bg-secondary': activeTicket.status === 'closed'
+      }">{{activeTicket.status.replace('_', ' ')}}</span>
+      Ticket #{{activeTicket.id}} replies: {{activeTicket.title}}
+    </h5>
+    <button [cModalToggle]="ticketRepliesModal.id" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body class="p-4 bg-light" *ngIf="activeTicket" style="max-height: 450px; overflow-y: auto;">
+    <!-- Customer Ticket details card -->
+    <div class="p-3 bg-white rounded-3 shadow-sm border mb-3">
+      <div class="fw-bold mb-1 text-primary">{{activeTicket.customer_name}} (Customer):</div>
+      <div class="text-dark">{{activeTicket.description}}</div>
+      <small class="text-muted mt-2 d-block text-end">Filed on: {{activeTicket.created | date:'medium'}}</small>
+    </div>
+
+    <hr class="my-4">
+
+    <!-- Replies -->
+    <div class="d-flex flex-column gap-3 mb-3">
+      <div *ngFor="let rep of ticketReplies" class="p-3 rounded-3 shadow-sm border" 
+           [ngClass]="rep.sender_role === 'customer' ? 'bg-info bg-opacity-10 me-5' : 'bg-white ms-5'">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <span class="fw-bold text-dark">{{rep.sender_name}} ({{rep.sender_role.replace('_', ' ')}})</span>
+          <small class="text-muted">{{rep.created | date:'short'}}</small>
+        </div>
+        <div class="text-dark" style="white-space: pre-wrap;">{{rep.message}}</div>
+      </div>
+      <div *ngIf="ticketReplies.length === 0" class="text-center py-3 text-muted">
+        No conversation replies yet. Respond to the customer below.
+      </div>
+    </div>
+  </c-modal-body>
+  <c-modal-footer class="d-flex flex-column align-items-stretch" *ngIf="activeTicket">
+    <!-- Add reply field -->
+    <div class="input-group">
+      <input cFormControl placeholder="Type your response to the customer..." [(ngModel)]="replyInput" (keyup.enter)="submitTicketReply()" [disabled]="replying" />
+      <button cButton color="primary" (click)="submitTicketReply()" [disabled]="!replyInput.trim() || replying">
+        <c-spinner *ngIf="replying" size="sm" class="me-1"></c-spinner>
+        Send Response
+      </button>
+    </div>
+  </c-modal-footer>
+</c-modal>

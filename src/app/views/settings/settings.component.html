@@ -19,6 +19,15 @@
           <button class="tab-link" [class.active]="activeTab === 'system'" (click)="activeTab = 'system'">
             <i class="fa-solid fa-server me-2"></i>System Configuration
           </button>
+          <button class="tab-link" [class.active]="activeTab === 'email'" (click)="activeTab = 'email'">
+            <i class="fa-solid fa-envelope me-2"></i>Email Settings
+          </button>
+          <button class="tab-link" [class.active]="activeTab === 'ai'" (click)="activeTab = 'ai'">
+            <i class="fa-solid fa-robot me-2"></i>AI Assistant
+          </button>
+          <button class="tab-link" [class.active]="activeTab === 'speedtest'" (click)="activeTab = 'speedtest'">
+            <i class="fa-solid fa-gauge-high me-2"></i>Speed Test Servers
+          </button>
         </div>
 
         <!-- Firmware Tab -->
@@ -543,6 +552,450 @@
               </div>
             </div>
           </div>
+          <div class="save-section mt-4">
+            <button cButton color="primary" size="lg" (click)="saveSysSetting()">
+              <i class="fa-solid fa-save me-2"></i>Save System Settings
+            </button>
+          </div>
+        </c-card-body>
+
+        <!-- Email Tab -->
+        <c-card-body *ngIf="activeTab === 'email' && !SysConfigloading" class="tab-content">
+          <!-- SMTP Email Settings -->
+          <div class="config-section mb-4">
+            <h5 class="section-title mb-3">
+              <i class="fa-solid fa-envelope me-2 text-info"></i>SMTP Email Settings
+              <c-badge color="warning" class="ms-2">PRO</c-badge>
+              <i class="fa-solid fa-info-circle ms-2 text-info help-icon"
+                [cTooltip]="'Configure the outgoing SMTP mail server to send account activation, verification, and password reset emails to customers.'"
+                cTooltipPlacement="top"></i>
+            </h5>
+            <div class="info-banner mb-3">
+              <i class="fa-solid fa-lightbulb me-2"></i>
+              <span>Configure your company's mail server details. Activation and password recovery links rely on these settings.</span>
+            </div>
+
+            <c-row class="g-3">
+              <c-col md="6">
+                <div class="setting-group">
+                  <label class="setting-label">SMTP Host</label>
+                  <input cFormControl [(ngModel)]="sysconfigs['smtp_host']['value']" placeholder="smtp.gmail.com" class="form-control" />
+                </div>
+              </c-col>
+              <c-col md="3">
+                <div class="setting-group">
+                  <label class="setting-label">SMTP Port</label>
+                  <input cFormControl [(ngModel)]="sysconfigs['smtp_port']['value']" placeholder="587" class="form-control" />
+                </div>
+              </c-col>
+              <c-col md="3" class="d-flex align-items-center mt-4">
+                <c-form-check [switch]="true" sizing="lg">
+                  <input cFormCheckInput [(ngModel)]="sysconfigs['smtp_use_tls']['value']" type="checkbox" />
+                  <label cFormCheckLabel>Use SSL/TLS</label>
+                </c-form-check>
+              </c-col>
+              <c-col md="6">
+                <div class="setting-group">
+                  <label class="setting-label">SMTP Username / Email</label>
+                  <input cFormControl [(ngModel)]="sysconfigs['smtp_user']['value']" placeholder="yourname@gmail.com" class="form-control" />
+                </div>
+              </c-col>
+              <c-col md="6">
+                <div class="setting-group">
+                  <label class="setting-label">SMTP Password</label>
+                  <input cFormControl [(ngModel)]="sysconfigs['smtp_password']['value']" placeholder="SMTP Password (hidden)" class="form-control" type="password" />
+                </div>
+              </c-col>
+              <c-col md="6">
+                <div class="setting-group">
+                  <label class="setting-label">Sender Email Address (From)</label>
+                  <input cFormControl [(ngModel)]="sysconfigs['smtp_from']['value']" placeholder="noreply@yourdomain.com" class="form-control" />
+                </div>
+              </c-col>
+              <c-col md="6" class="d-flex align-items-center mt-4">
+                <c-form-check [switch]="true" sizing="lg">
+                  <input cFormCheckInput [(ngModel)]="sysconfigs['smtp_enable_admin_reset']['value']" type="checkbox" />
+                  <label cFormCheckLabel>Enable Password Reset for Admin/Staff Users</label>
+                </c-form-check>
+              </c-col>
+            </c-row>
+            <div class="mt-3">
+              <button cButton color="info" size="sm" (click)="testSmtp()" [disabled]="!sysconfigs['smtp_host']['value']">
+                <i class="fa-solid fa-paper-plane me-1"></i>Send Test Email
+              </button>
+            </div>
+          </div>
+          <div class="save-section mt-4">
+            <button cButton color="primary" size="lg" (click)="saveSysSetting()">
+              <i class="fa-solid fa-save me-2"></i>Save System Settings
+            </button>
+          </div>
+        </c-card-body>
+
+        <!-- AI Assistant Tab -->
+        <c-card-body *ngIf="activeTab === 'ai' && !SysConfigloading" class="tab-content">
+          <!-- AI Support Chatbot Settings -->
+          <div class="config-section mb-4">
+            <h5 class="section-title mb-3">
+              <i class="fa-solid fa-robot me-2 text-success"></i>AI Support Chatbot Configuration
+              <c-badge color="warning" class="ms-2">PRO</c-badge>
+              <i class="fa-solid fa-info-circle ms-2 text-info help-icon"
+                [cTooltip]="'Configure AI API settings to enable the interactive support assistant inside customer portals.'"
+                cTooltipPlacement="top"></i>
+            </h5>
+            <div class="info-banner mb-3">
+              <i class="fa-solid fa-robot me-2"></i>
+              <span>Select your preferred LLM provider. OpenRouter gives access to 400+ models with Fusion and Auto routing.</span>
+            </div>
+
+            <c-row class="g-3">
+              <!-- Provider Selection -->
+              <c-col md="4">
+                <div class="setting-group">
+                  <label class="setting-label">AI Provider</label>
+                  <select cSelect [(ngModel)]="sysconfigs['ai_provider']['value']" class="form-select" id="aiProviderSelect">
+                    <option value="gemini">🤖 Google Gemini</option>
+                    <option value="openai">🧠 OpenAI (GPT-4 etc.)</option>
+                    <option value="anthropic">🎭 Anthropic Claude</option>
+                    <option value="deepseek">⚡ DeepSeek AI</option>
+                    <option value="openrouter">🌐 OpenRouter (400+ Models)</option>
+                    <option value="mock">🧪 Mock (Local Testing)</option>
+                  </select>
+                </div>
+              </c-col>
+
+              <!-- API Key (always shown) -->
+              <c-col md="4">
+                <div class="setting-group">
+                  <label class="setting-label">API Key</label>
+                  <input cFormControl [(ngModel)]="sysconfigs['ai_api_key']['value']" placeholder="Enter API Key (hidden)" class="form-control" type="password" id="aiApiKeyInput" />
+                </div>
+              </c-col>
+
+              <!-- Model Name (non-OpenRouter providers) -->
+              <c-col md="4" *ngIf="sysconfigs['ai_provider']['value'] !== 'openrouter'">
+                <div class="setting-group">
+                  <label class="setting-label">Model Name <small class="text-muted">(Optional Override)</small></label>
+                  <input cFormControl [(ngModel)]="sysconfigs['ai_model']['value']" placeholder="e.g. gemini-2.5-flash" class="form-control" id="aiModelInput" />
+                </div>
+              </c-col>
+            </c-row>
+
+            <!-- ======================== OpenRouter Section ======================== -->
+            <div *ngIf="sysconfigs['ai_provider']['value'] === 'openrouter'" class="mt-4 p-3 rounded" style="background: rgba(99,102,241,0.08); border: 1px solid rgba(99,102,241,0.25);">
+              <div class="d-flex align-items-center justify-content-between mb-3">
+                <h6 class="mb-0 fw-semibold">
+                  <i class="fa-solid fa-network-wired me-2 text-indigo"></i>
+                  OpenRouter Routing Mode
+                </h6>
+                <button cButton color="outline-primary" size="sm"
+                  (click)="fetchOpenRouterModels()"
+                  [disabled]="openrouterModelsLoading">
+                  <c-spinner *ngIf="openrouterModelsLoading" size="sm" class="me-1"></c-spinner>
+                  <i *ngIf="!openrouterModelsLoading" class="fa-solid fa-rotate me-1"></i>
+                  {{ openrouterModelsLoading ? 'Fetching...' : 'Fetch Models' }}
+                </button>
+              </div>
+
+              <!-- Error message -->
+              <div *ngIf="openrouterModelsError" class="alert alert-danger py-2 mb-3 small">
+                <i class="fa-solid fa-triangle-exclamation me-1"></i>{{ openrouterModelsError }}
+              </div>
+
+              <!-- Mode selector as radio-style cards -->
+              <c-row class="g-2 mb-3">
+                <c-col md="3">
+                  <div class="mode-card" [class.active]="sysconfigs['ai_openrouter_mode']['value']==='auto'"
+                    (click)="sysconfigs['ai_openrouter_mode']['value']='auto'" style="cursor:pointer; padding:12px; border-radius:8px; border: 2px solid; transition: all .2s;"
+                    [style.border-color]="sysconfigs['ai_openrouter_mode']['value']==='auto' ? '#6366f1' : 'rgba(255,255,255,0.1)'"
+                    [style.background]="sysconfigs['ai_openrouter_mode']['value']==='auto' ? 'rgba(99,102,241,0.15)' : 'rgba(255,255,255,0.03)'">
+                    <div class="fw-semibold" style="font-size:.9rem;">⚡ Auto</div>
+                    <small class="text-muted">OpenRouter picks best model</small>
+                  </div>
+                </c-col>
+                <c-col md="3">
+                  <div class="mode-card" [class.active]="sysconfigs['ai_openrouter_mode']['value']==='fusion'"
+                    (click)="sysconfigs['ai_openrouter_mode']['value']='fusion'" style="cursor:pointer; padding:12px; border-radius:8px; border: 2px solid; transition: all .2s;"
+                    [style.border-color]="sysconfigs['ai_openrouter_mode']['value']==='fusion' ? '#8b5cf6' : 'rgba(255,255,255,0.1)'"
+                    [style.background]="sysconfigs['ai_openrouter_mode']['value']==='fusion' ? 'rgba(139,92,246,0.15)' : 'rgba(255,255,255,0.03)'">
+                    <div class="fw-semibold" style="font-size:.9rem;">🔮 Fusion</div>
+                    <small class="text-muted">Expert panel deliberates</small>
+                  </div>
+                </c-col>
+                <c-col md="3">
+                  <div class="mode-card" [class.active]="sysconfigs['ai_openrouter_mode']['value']==='single'"
+                    (click)="sysconfigs['ai_openrouter_mode']['value']='single'" style="cursor:pointer; padding:12px; border-radius:8px; border: 2px solid; transition: all .2s;"
+                    [style.border-color]="sysconfigs['ai_openrouter_mode']['value']==='single' ? '#10b981' : 'rgba(255,255,255,0.1)'"
+                    [style.background]="sysconfigs['ai_openrouter_mode']['value']==='single' ? 'rgba(16,185,129,0.12)' : 'rgba(255,255,255,0.03)'">
+                    <div class="fw-semibold" style="font-size:.9rem;">🎯 Single Model</div>
+                    <small class="text-muted">Use one specific model</small>
+                  </div>
+                </c-col>
+                <c-col md="3">
+                  <div class="mode-card" [class.active]="sysconfigs['ai_openrouter_mode']['value']==='multi'"
+                    (click)="sysconfigs['ai_openrouter_mode']['value']='multi'" style="cursor:pointer; padding:12px; border-radius:8px; border: 2px solid; transition: all .2s;"
+                    [style.border-color]="sysconfigs['ai_openrouter_mode']['value']==='multi' ? '#f59e0b' : 'rgba(255,255,255,0.1)'"
+                    [style.background]="sysconfigs['ai_openrouter_mode']['value']==='multi' ? 'rgba(245,158,11,0.12)' : 'rgba(255,255,255,0.03)'">
+                    <div class="fw-semibold" style="font-size:.9rem;">🔀 Multi-Model</div>
+                    <small class="text-muted">Pick up to 3 models</small>
+                  </div>
+                </c-col>
+              </c-row>
+
+              <!-- Auto mode info -->
+              <div *ngIf="sysconfigs['ai_openrouter_mode']['value']==='auto'" class="alert py-2 mb-0" style="background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.3);font-size:.85rem;">
+                <i class="fa-solid fa-circle-info me-2 text-info"></i>
+                OpenRouter will automatically choose the best-performing model for each request. No model selection needed.
+              </div>
+
+              <!-- Fusion mode: optional model selection -->
+              <div *ngIf="sysconfigs['ai_openrouter_mode']['value']==='fusion'">
+                <div class="alert py-2 mb-3" style="background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.3);font-size:.83rem;">
+                  <i class="fa-solid fa-wand-magic-sparkles me-2" style="color:#8b5cf6;"></i>
+                  <strong>Fusion</strong> sends your prompt to a panel of expert models in parallel (with web search enabled). Each model provides its answer, then a synthesis model combines them into the best response.
+                  <br><span class="text-muted mt-1 d-block">You can optionally pin which models participate — or leave all blank to let OpenRouter choose the default expert panel.</span>
+                </div>
+
+                <div *ngIf="openrouterModels.length === 0" class="text-muted small mb-3">
+                  Click <strong>Fetch Models</strong> above to load available models (optional).
+                </div>
+
+                <!-- Fusion Model slot 1 -->
+                <div class="mb-3">
+                  <label class="setting-label mb-1"><c-badge color="primary" class="me-2">1</c-badge>Fusion Model 1 <small class="text-muted">(Optional)</small></label>
+                  <div class="position-relative">
+                    <input type="text" class="form-control" [(ngModel)]="openrouterModelSearch"
+                      (input)="filterOpenrouterModels($event, 0)"
+                      (focus)="showOpenrouterDropdown[0]=true"
+                      (blur)="hideOpenrouterDropdown(0)"
+                      placeholder="Leave blank for default panel, or search model..."
+                      id="fusionModel0" />
+                    <div *ngIf="showOpenrouterDropdown[0] && filteredOpenrouterModels.length > 0"
+                      class="or-model-dropdown position-absolute w-100 rounded shadow"
+                      style="z-index:1050;max-height:220px;overflow-y:auto;top:100%;background:#2d3451;border:1px solid rgba(139,92,246,0.5);">
+                      <div *ngFor="let m of filteredOpenrouterModels" class="or-model-item px-3 py-2"
+                        style="cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.08);font-size:.82rem;color:#e8ecf3;"
+                        [style.background]="(sysconfigs['ai_openrouter_models']['value'][0]===m.id)?'rgba(139,92,246,0.3)':'transparent'"
+                        (mousedown)="selectOpenrouterModel(m, 0)">
+                        <div class="fw-semibold" style="color:#ffffff;">{{m.name}}</div>
+                        <small style="color:#9ba3c4;">{{m.id}}
+                          <span *ngIf="m.price_per_1m_input !== null && m.price_per_1m_input !== 'variable' && m.price_per_1m_input !== 'free'" style="color:#34d399;margin-left:6px;">${{m.price_per_1m_input}}/1M</span>
+                          <span *ngIf="m.price_per_1m_input === 'free'" style="color:#67e8f9;margin-left:6px;">free</span>
+                          <span *ngIf="m.price_per_1m_input === 'variable'" style="color:#fbbf24;margin-left:6px;">variable</span>
+                        </small>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="d-flex align-items-center mt-1 gap-2" *ngIf="sysconfigs['ai_openrouter_models']['value'][0]">
+                    <code style="font-size:.78rem;">{{sysconfigs['ai_openrouter_models']['value'][0]}}</code>
+                    <button type="button" class="btn btn-link btn-sm p-0 text-danger" style="font-size:.75rem;" (click)="selectOpenrouterModel({id:'',name:''},0);openrouterModelSearch=''">✕ clear</button>
+                  </div>
+                </div>
+
+                <!-- Fusion Model slot 2 -->
+                <div class="mb-3">
+                  <label class="setting-label mb-1"><c-badge color="secondary" class="me-2">2</c-badge>Fusion Model 2 <small class="text-muted">(Optional)</small></label>
+                  <div class="position-relative">
+                    <input type="text" class="form-control" [(ngModel)]="openrouterModelSearch2"
+                      (input)="filterOpenrouterModels($event, 1)"
+                      (focus)="showOpenrouterDropdown[1]=true"
+                      (blur)="hideOpenrouterDropdown(1)"
+                      placeholder="Leave blank or search for a second model..."
+                      id="fusionModel1" />
+                    <div *ngIf="showOpenrouterDropdown[1] && filteredOpenrouterModels.length > 0"
+                      class="or-model-dropdown position-absolute w-100 rounded shadow"
+                      style="z-index:1049;max-height:220px;overflow-y:auto;top:100%;background:#2d3451;border:1px solid rgba(139,92,246,0.5);">
+                      <div *ngFor="let m of filteredOpenrouterModels" class="or-model-item px-3 py-2"
+                        style="cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.08);font-size:.82rem;color:#e8ecf3;"
+                        [style.background]="(sysconfigs['ai_openrouter_models']['value'][1]===m.id)?'rgba(139,92,246,0.3)':'transparent'"
+                        (mousedown)="selectOpenrouterModel(m, 1)">
+                        <div class="fw-semibold" style="color:#ffffff;">{{m.name}}</div>
+                        <small style="color:#9ba3c4;">{{m.id}}</small>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="d-flex align-items-center mt-1 gap-2" *ngIf="sysconfigs['ai_openrouter_models']['value'][1]">
+                    <code style="font-size:.78rem;">{{sysconfigs['ai_openrouter_models']['value'][1]}}</code>
+                    <button type="button" class="btn btn-link btn-sm p-0 text-danger" style="font-size:.75rem;" (click)="selectOpenrouterModel({id:'',name:''},1);openrouterModelSearch2=''">✕ clear</button>
+                  </div>
+                </div>
+
+                <!-- Fusion Model slot 3 -->
+                <div class="mb-1">
+                  <label class="setting-label mb-1"><c-badge color="secondary" class="me-2">3</c-badge>Fusion Model 3 <small class="text-muted">(Optional)</small></label>
+                  <div class="position-relative">
+                    <input type="text" class="form-control" [(ngModel)]="openrouterModelSearch3"
+                      (input)="filterOpenrouterModels($event, 2)"
+                      (focus)="showOpenrouterDropdown[2]=true"
+                      (blur)="hideOpenrouterDropdown(2)"
+                      placeholder="Leave blank or search for a third model..."
+                      id="fusionModel2" />
+                    <div *ngIf="showOpenrouterDropdown[2] && filteredOpenrouterModels.length > 0"
+                      class="or-model-dropdown position-absolute w-100 rounded shadow"
+                      style="z-index:1048;max-height:220px;overflow-y:auto;top:100%;background:#2d3451;border:1px solid rgba(139,92,246,0.5);">
+                      <div *ngFor="let m of filteredOpenrouterModels" class="or-model-item px-3 py-2"
+                        style="cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.08);font-size:.82rem;color:#e8ecf3;"
+                        [style.background]="(sysconfigs['ai_openrouter_models']['value'][2]===m.id)?'rgba(139,92,246,0.3)':'transparent'"
+                        (mousedown)="selectOpenrouterModel(m, 2)">
+                        <div class="fw-semibold" style="color:#ffffff;">{{m.name}}</div>
+                        <small style="color:#9ba3c4;">{{m.id}}</small>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="d-flex align-items-center mt-1 gap-2" *ngIf="sysconfigs['ai_openrouter_models']['value'][2]">
+                    <code style="font-size:.78rem;">{{sysconfigs['ai_openrouter_models']['value'][2]}}</code>
+                    <button type="button" class="btn btn-link btn-sm p-0 text-danger" style="font-size:.75rem;" (click)="selectOpenrouterModel({id:'',name:''},2);openrouterModelSearch3=''">✕ clear</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Single model selector -->
+              <div *ngIf="sysconfigs['ai_openrouter_mode']['value']==='single'">
+                <label class="setting-label mb-2">Select Model</label>
+                <div *ngIf="openrouterModels.length === 0" class="text-muted small mb-2">
+                  Click <strong>Fetch Models</strong> above to load available models.
+                </div>
+                <div class="position-relative">
+                  <input type="text" class="form-control" [(ngModel)]="openrouterModelSearch"
+                    (input)="filterOpenrouterModels($event, 0)"
+                    (focus)="showOpenrouterDropdown[0]=true"
+                    (blur)="hideOpenrouterDropdown(0)"
+                    placeholder="Search model by name or ID..."
+                    id="orModel0Search" />
+                  <div *ngIf="showOpenrouterDropdown[0] && filteredOpenrouterModels.length > 0"
+                    class="or-model-dropdown position-absolute w-100 rounded shadow"
+                    style="z-index:1050;max-height:260px;overflow-y:auto;top:100%;background:#2d3451;border:1px solid rgba(99,102,241,0.5);">
+                    <div *ngFor="let m of filteredOpenrouterModels" class="or-model-item px-3 py-2"
+                      style="cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.08);font-size:.82rem;color:#e8ecf3;"
+                      [style.background]="(sysconfigs['ai_openrouter_models']['value'][0]===m.id)?'rgba(99,102,241,0.3)':'transparent'"
+                      (mousedown)="selectOpenrouterModel(m, 0)">
+                      <div class="fw-semibold" style="color:#ffffff;">{{m.name}}</div>
+                      <small style="color:#9ba3c4;">{{m.id}}
+                        <span *ngIf="m.price_per_1m_input !== null && m.price_per_1m_input !== 'variable' && m.price_per_1m_input !== 'free'" style="color:#34d399;margin-left:6px;">${{m.price_per_1m_input}}/1M tokens</span>
+                        <span *ngIf="m.price_per_1m_input === 'free'" style="color:#67e8f9;margin-left:6px;">free</span>
+                        <span *ngIf="m.price_per_1m_input === 'variable'" style="color:#fbbf24;margin-left:6px;">variable</span>
+                      </small>
+                    </div>
+                  </div>
+                </div>
+                <div class="d-flex align-items-center mt-1 gap-2" *ngIf="sysconfigs['ai_openrouter_models']['value'][0]">
+                  Selected: <code style="font-size:.78rem;">{{sysconfigs['ai_openrouter_models']['value'][0]}}</code>
+                  <button type="button" class="btn btn-link btn-sm p-0 text-danger" style="font-size:.75rem;" (click)="selectOpenrouterModel({id:'',name:''},0);openrouterModelSearch=''">✕ clear</button>
+                </div>
+              </div>
+
+              <!-- Multi-model selector (up to 3) -->
+              <div *ngIf="sysconfigs['ai_openrouter_mode']['value']==='multi'">
+                <div class="alert py-2 mb-3" style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);font-size:.83rem;">
+                  <i class="fa-solid fa-shuffle me-2" style="color:#f59e0b;"></i>
+                  OpenRouter will route each request to one of the selected models based on availability and load. Add 2–3 models for redundancy.
+                </div>
+
+                <div *ngIf="openrouterModels.length === 0" class="text-muted small mb-3">
+                  Click <strong>Fetch Models</strong> above to load available models.
+                </div>
+
+                <!-- Model slot 1 -->
+                <div class="mb-3">
+                  <label class="setting-label mb-1"><c-badge color="primary" class="me-2">1</c-badge>Primary Model</label>
+                  <div class="position-relative">
+                    <input type="text" class="form-control" [(ngModel)]="openrouterModelSearch"
+                      (input)="filterOpenrouterModels($event, 0)"
+                      (focus)="showOpenrouterDropdown[0]=true"
+                      (blur)="hideOpenrouterDropdown(0)"
+                      placeholder="Search for primary model..."
+                      id="orModel0" />
+                    <div *ngIf="showOpenrouterDropdown[0] && filteredOpenrouterModels.length > 0"
+                      class="or-model-dropdown position-absolute w-100 rounded shadow"
+                      style="z-index:1050;max-height:200px;overflow-y:auto;top:100%;background:#2d3451;border:1px solid rgba(99,102,241,0.5);">
+                      <div *ngFor="let m of filteredOpenrouterModels" class="or-model-item px-3 py-2"
+                        style="cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.08);font-size:.82rem;color:#e8ecf3;"
+                        [style.background]="(sysconfigs['ai_openrouter_models']['value'][0]===m.id)?'rgba(99,102,241,0.3)':'transparent'"
+                        (mousedown)="selectOpenrouterModel(m, 0)">
+                        <div class="fw-semibold" style="color:#ffffff;">{{m.name}}</div>
+                        <small style="color:#9ba3c4;">{{m.id}}
+                          <span *ngIf="m.price_per_1m_input !== null && m.price_per_1m_input !== 'variable' && m.price_per_1m_input !== 'free'" style="color:#34d399;margin-left:6px;">${{m.price_per_1m_input}}/1M</span>
+                          <span *ngIf="m.price_per_1m_input === 'free'" style="color:#67e8f9;margin-left:6px;">free</span>
+                        </small>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="d-flex align-items-center mt-1 gap-2" *ngIf="sysconfigs['ai_openrouter_models']['value'][0]">
+                    <code style="font-size:.78rem;">{{sysconfigs['ai_openrouter_models']['value'][0]}}</code>
+                    <button type="button" class="btn btn-link btn-sm p-0 text-danger" style="font-size:.75rem;" (click)="selectOpenrouterModel({id:'',name:''},0);openrouterModelSearch=''">✕ clear</button>
+                  </div>
+                </div>
+
+                <!-- Model slot 2 -->
+                <div class="mb-3">
+                  <label class="setting-label mb-1"><c-badge color="secondary" class="me-2">2</c-badge>Fallback Model</label>
+                  <div class="position-relative">
+                    <input type="text" class="form-control" [(ngModel)]="openrouterModelSearch2"
+                      (input)="filterOpenrouterModels($event, 1)"
+                      (focus)="showOpenrouterDropdown[1]=true"
+                      (blur)="hideOpenrouterDropdown(1)"
+                      placeholder="Search for fallback model..."
+                      id="orModel1" />
+                    <div *ngIf="showOpenrouterDropdown[1] && filteredOpenrouterModels.length > 0"
+                      class="or-model-dropdown position-absolute w-100 rounded shadow"
+                      style="z-index:1049;max-height:200px;overflow-y:auto;top:100%;background:#2d3451;border:1px solid rgba(99,102,241,0.5);">
+                      <div *ngFor="let m of filteredOpenrouterModels" class="or-model-item px-3 py-2"
+                        style="cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.08);font-size:.82rem;color:#e8ecf3;"
+                        [style.background]="(sysconfigs['ai_openrouter_models']['value'][1]===m.id)?'rgba(99,102,241,0.3)':'transparent'"
+                        (mousedown)="selectOpenrouterModel(m, 1)">
+                        <div class="fw-semibold" style="color:#ffffff;">{{m.name}}</div>
+                        <small style="color:#9ba3c4;">{{m.id}}</small>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="d-flex align-items-center mt-1 gap-2" *ngIf="sysconfigs['ai_openrouter_models']['value'][1]">
+                    <code style="font-size:.78rem;">{{sysconfigs['ai_openrouter_models']['value'][1]}}</code>
+                    <button type="button" class="btn btn-link btn-sm p-0 text-danger" style="font-size:.75rem;" (click)="selectOpenrouterModel({id:'',name:''},1);openrouterModelSearch2=''">✕ clear</button>
+                  </div>
+                </div>
+
+                <!-- Model slot 3 -->
+                <div class="mb-1">
+                  <label class="setting-label mb-1"><c-badge color="secondary" class="me-2">3</c-badge>Second Fallback <small class="text-muted">(Optional)</small></label>
+                  <div class="position-relative">
+                    <input type="text" class="form-control" [(ngModel)]="openrouterModelSearch3"
+                      (input)="filterOpenrouterModels($event, 2)"
+                      (focus)="showOpenrouterDropdown[2]=true"
+                      (blur)="hideOpenrouterDropdown(2)"
+                      placeholder="Search for third model (optional)..."
+                      id="orModel2" />
+                    <div *ngIf="showOpenrouterDropdown[2] && filteredOpenrouterModels.length > 0"
+                      class="or-model-dropdown position-absolute w-100 rounded shadow"
+                      style="z-index:1048;max-height:200px;overflow-y:auto;top:100%;background:#2d3451;border:1px solid rgba(99,102,241,0.5);">
+                      <div *ngFor="let m of filteredOpenrouterModels" class="or-model-item px-3 py-2"
+                        style="cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.08);font-size:.82rem;color:#e8ecf3;"
+                        [style.background]="(sysconfigs['ai_openrouter_models']['value'][2]===m.id)?'rgba(99,102,241,0.3)':'transparent'"
+                        (mousedown)="selectOpenrouterModel(m, 2)">
+                        <div class="fw-semibold" style="color:#ffffff;">{{m.name}}</div>
+                        <small style="color:#9ba3c4;">{{m.id}}</small>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="d-flex align-items-center mt-1 gap-2" *ngIf="sysconfigs['ai_openrouter_models']['value'][2]">
+                    <code style="font-size:.78rem;">{{sysconfigs['ai_openrouter_models']['value'][2]}}</code>
+                    <button type="button" class="btn btn-link btn-sm p-0 text-danger" style="font-size:.75rem;" (click)="selectOpenrouterModel({id:'',name:''},2);openrouterModelSearch3=''">✕ clear</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ======================== END OpenRouter Section ======================== -->
+
+            <c-row class="g-3 mt-2">
+              <c-col md="12">
+                <div class="setting-group">
+                  <label class="setting-label">System Instructions / Prompts</label>
+                  <textarea cFormControl [(ngModel)]="sysconfigs['ai_system_instruction']['value']" rows="6" placeholder="Leave blank to use the built-in default instruction. Custom example: 'You are an expert ISP support agent for Acme Networks. Always use query_routeros_api to fetch live router stats. For CPU/memory use /system/resource/print. For routing use /ip/route/print.'" class="form-control"></textarea>
+                  <small class="text-muted">Leave blank to use the built-in default instruction (recommended). Custom instructions override it completely.</small>
+                </div>
+              </c-col>
+            </c-row>
+          </div>
 
           <div class="save-section">
             <button cButton color="primary" size="lg" (click)="saveSysSetting()">
@@ -551,8 +1004,127 @@
           </div>
         </c-card-body>
 
+        <!-- Speed Test Tab -->
+        <c-card-body *ngIf="activeTab === 'speedtest' && !SysConfigloading" class="tab-content">
+          <div class="config-section mb-4">
+            <h5 class="section-title mb-3">
+              <i class="fa-solid fa-gauge-high me-2 text-primary"></i>Speed Test Servers
+              <c-badge color="warning" class="ms-2">PRO</c-badge>
+              <i class="fa-solid fa-info-circle ms-2 text-info help-icon"
+                [cTooltip]="'Configure remote or local speed test servers. If empty, the local speedtest addon will be used automatically.'"
+                cTooltipPlacement="top"></i>
+            </h5>
+            <div class="info-banner mb-3">
+              <i class="fa-solid fa-lightbulb me-2"></i>
+              <span>Define one or more Bandwidth Test servers. Administrators can specify dedicated endpoints for speed tests, and the system can auto-detect the best server for each router based on latency.</span>
+            </div>
+
+            <!-- Existing Servers Table -->
+            <div class="mb-4">
+              <h6 class="fw-semibold mb-3 text-white">Configured Servers</h6>
+              <div class="table-responsive">
+                <table class="table align-middle" style="background: rgba(255,255,255,0.02); border-radius: 8px; overflow: hidden; border: 1px solid rgba(255,255,255,0.08);">
+                  <thead>
+                    <tr style="background: rgba(255,255,255,0.05); color: #fff;">
+                      <th class="py-3 px-3">Name</th>
+                      <th class="py-3 px-3">Host/IP</th>
+                      <th class="py-3 px-3">API Port</th>
+                      <th class="py-3 px-3">BTest Port</th>
+                      <th class="py-3 px-3">Token</th>
+                      <th class="py-3 px-3 text-center">Type</th>
+                      <th class="py-3 px-3 text-center" style="width: 100px;">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let s of sysconfigs['speedtest_servers']?.value; let i = index" style="border-bottom: 1px solid rgba(255,255,255,0.05); color: #c2c9d6;">
+                      <td class="px-3 fw-semibold text-white">{{s.name}}</td>
+                      <td class="px-3">{{s.host}}</td>
+                      <td class="px-3">{{s.api_port}}</td>
+                      <td class="px-3">{{s.btest_port}}</td>
+                      <td class="px-3">
+                        <small class="text-muted font-monospace" *ngIf="s.token">
+                          {{s.token.substring(0, 4)}}...{{s.token.substring(s.token.length - 4)}}
+                        </small>
+                        <small class="text-muted" *ngIf="!s.token">None</small>
+                      </td>
+                      <td class="px-3 text-center">
+                        <c-badge color="success" *ngIf="s.is_local">Local Addon</c-badge>
+                        <c-badge color="info" *ngIf="!s.is_local">Remote Server</c-badge>
+                      </td>
+                      <td class="px-3 text-center">
+                        <button cButton color="danger" size="sm" variant="outline" (click)="deleteSpeedtestServer(i)">
+                          <i class="fa-solid fa-trash"></i>
+                        </button>
+                      </td>
+                    </tr>
+                    <tr *ngIf="!sysconfigs['speedtest_servers'] || !sysconfigs['speedtest_servers']['value'] || sysconfigs['speedtest_servers']['value'].length === 0">
+                      <td colspan="7" class="text-center py-4 text-muted">
+                        No custom speed test servers configured. Local addon configured in server-conf.json will be used as fallback.
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Add New Server Form -->
+            <div class="p-3 rounded" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);">
+              <h6 class="fw-semibold mb-3 text-white">Add Speed Test Server</h6>
+              <c-row class="g-3">
+                <c-col md="4">
+                  <div class="setting-group">
+                    <label class="setting-label">Server Name</label>
+                    <input cFormControl [(ngModel)]="newServer.name" placeholder="e.g. London Server" class="form-control" />
+                  </div>
+                </c-col>
+                <c-col md="4">
+                  <div class="setting-group">
+                    <label class="setting-label">Host/IP Address</label>
+                    <input cFormControl [(ngModel)]="newServer.host" placeholder="e.g. 192.168.1.150 or london.speed.com" class="form-control" />
+                  </div>
+                </c-col>
+                <c-col md="2">
+                  <div class="setting-group">
+                    <label class="setting-label">API Port</label>
+                    <input cFormControl [(ngModel)]="newServer.api_port" placeholder="8200" class="form-control" />
+                  </div>
+                </c-col>
+                <c-col md="2">
+                  <div class="setting-group">
+                    <label class="setting-label">BTest Port</label>
+                    <input cFormControl [(ngModel)]="newServer.btest_port" placeholder="2000" class="form-control" />
+                  </div>
+                </c-col>
+                <c-col md="6">
+                  <div class="setting-group">
+                    <label class="setting-label">Authentication Token (API Key)</label>
+                    <input cFormControl [(ngModel)]="newServer.token" placeholder="Optional token for authentication" class="form-control" type="password" />
+                  </div>
+                </c-col>
+                <c-col md="3" class="d-flex align-items-center mt-4">
+                  <c-form-check [switch]="true" sizing="lg">
+                    <input cFormCheckInput [(ngModel)]="newServer.is_local" type="checkbox" />
+                    <label cFormCheckLabel class="text-white">Is Local Addon</label>
+                  </c-form-check>
+                </c-col>
+                <c-col md="3" class="d-flex align-items-end">
+                  <button cButton color="success" class="w-100" (click)="addSpeedtestServer()">
+                    <i class="fa-solid fa-plus me-1"></i>Add Server
+                  </button>
+                </c-col>
+              </c-row>
+            </div>
+          </div>
+
+          <div class="save-section mt-4">
+            <button cButton color="primary" size="lg" (click)="saveSysSetting()">
+              <i class="fa-solid fa-save me-2"></i>Save System Settings
+            </button>
+          </div>
+        </c-card-body>
+
         <!-- Loading State -->
-        <c-card-body *ngIf="activeTab === 'system' && SysConfigloading" class="text-center py-5">
+        <c-card-body *ngIf="['system', 'email', 'ai', 'speedtest'].includes(activeTab) && SysConfigloading" class="text-center py-5">
           <c-spinner size="sm" class="mb-3"></c-spinner>
           <h5 class="text-muted">Loading system configuration...</h5>
         </c-card-body>

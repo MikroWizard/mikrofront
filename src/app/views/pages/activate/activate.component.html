@@ -1,0 +1,41 @@
+<div class="bg-light min-vh-100 d-flex flex-row align-items-center">
+  <c-container>
+    <c-row class="justify-content-center">
+      <c-col md="6">
+        <c-card class="mx-4 p-4 text-center">
+          <c-card-body>
+            <div *ngIf="loading">
+              <h2 class="mb-3 text-primary">Activating your account...</h2>
+              <p class="text-medium-emphasis">Please wait while we verify your activation link.</p>
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+            </div>
+            
+            <div *ngIf="!loading && success">
+              <h2 class="mb-3 text-success">
+                <i class="fa-solid fa-circle-check fa-2x mb-3 d-block text-success"></i>
+                Account Activated!
+              </h2>
+              <p class="text-medium-emphasis">{{message}}</p>
+              <div class="d-grid mt-4">
+                <a cButton color="primary" [routerLink]="['/login']">Go to Login</a>
+              </div>
+            </div>
+
+            <div *ngIf="!loading && !success">
+              <h2 class="mb-3 text-danger">
+                <i class="fa-solid fa-circle-xmark fa-2x mb-3 d-block text-danger"></i>
+                Activation Failed
+              </h2>
+              <p class="text-medium-emphasis">{{error_msg}}</p>
+              <div class="d-grid mt-4">
+                <a cButton color="secondary" [routerLink]="['/login']">Back to Login</a>
+              </div>
+            </div>
+          </c-card-body>
+        </c-card>
+      </c-col>
+    </c-row>
+  </c-container>
+</div>

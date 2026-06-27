@@ -13,15 +13,33 @@
         </c-row>
       </c-card-header>
       <c-card-body>
-        <div class="mb-3 d-flex justify-content-end">
-          <span class="p-input-icon-left">
+        <div class="mb-3 d-flex justify-content-between align-items-center flex-wrap gap-3">
+          <ul class="nav nav-pills user-role-nav-pills">
+            <li class="nav-item">
+              <a class="nav-link cursor-pointer" [class.active]="selectedRoleFilter === 'all'" (click)="setRoleFilter('all')" style="cursor: pointer; font-weight: 500;">
+                <i class="fa-solid fa-users me-1"></i> All Users
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link cursor-pointer" [class.active]="selectedRoleFilter === 'staff'" (click)="setRoleFilter('staff')" style="cursor: pointer; font-weight: 500;">
+                <i class="fa-solid fa-user-shield me-1"></i> Staff
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link cursor-pointer" [class.active]="selectedRoleFilter === 'customers'" (click)="setRoleFilter('customers')" style="cursor: pointer; font-weight: 500;">
+                <i class="fa-solid fa-user-tag me-1"></i> Customers
+              </a>
+            </li>
+          </ul>
+
+          <span class="p-input-icon-left ms-auto">
             <i class="pi pi-search"></i>
             <input type="text" pInputText placeholder="Search users..." (input)="applyFilterGlobal($event, 'contains')"
               class="form-control-sm" />
           </span>
         </div>
 
-        <p-table #dt [value]="source" [paginator]="true" [rows]="10" [showCurrentPageReport]="true"
+        <p-table #dt [value]="getFilteredUsers()" [paginator]="true" [rows]="10" [showCurrentPageReport]="true"
           [rowsPerPageOptions]="[10, 25, 50]" [resizableColumns]="true" columnResizeMode="expand" [showGridlines]="true"
           [stripedRows]="true" styleClass="p-datatable-sm p-datatable-gridlines p-datatable-striped"
           [globalFilterFields]="['username', 'first_name', 'last_name', 'role']" [loading]="loading">
@@ -136,14 +154,36 @@
               class="form-input" title="User's last name" />
           </c-col>
           <c-col xs="12" md="4">
+            <select cSelect [(ngModel)]="SelectedUser['role']" class="form-select" title="User Role">
+              <option value="admin">Admin</option>
+              <option value="customer">Customer</option>
+              <option value="customer_inactive" *ngIf="SelectedUser['role'] === 'customer_inactive'">Customer Inactive</option>
+              <option value="disabled" *ngIf="SelectedUser['role'] === 'disabled'">Disabled</option>
+            </select>
+          </c-col>
+          <c-col xs="12" md="12">
             <input type="password" cFormControl placeholder="Password (min 6 characters)"
               [(ngModel)]="SelectedUser['password']" class="form-input" title="Secure password for user login" />
+          </c-col>
+        </c-row>
+        
+        <c-row class="mt-3" *ngIf="SelectedUser['role'] === 'customer'">
+          <c-col xs="12">
+            <c-alert color="info" class="d-flex align-items-center mb-0 py-2">
+              <i class="fa-solid fa-circle-info me-2 text-info"></i>
+              <div *ngIf="SelectedUser['email'] && SelectedUser['email'].trim()">
+                Customer has email configured. An activation link will be sent to <strong>{{SelectedUser['email']}}</strong>. The account will be created as <em>inactive</em> until verified.
+              </div>
+              <div *ngIf="!SelectedUser['email'] || !SelectedUser['email'].trim()">
+                No email configured. The customer account will be activated automatically upon saving.
+              </div>
+            </c-alert>
           </c-col>
         </c-row>
       </div>
 
       <!-- System Permissions -->
-      <div class="permissions-section mb-4">
+      <div class="permissions-section mb-4" *ngIf="SelectedUser['role'] !== 'customer' && SelectedUser['role'] !== 'customer_inactive'">
         <div class="section-header mb-3">
           <h6 class="section-title mb-1"><i class="fa-solid fa-shield-halved me-2"></i>System Access Levels</h6>
           <small class="text-muted">Control what system features this user can access and modify</small>
@@ -172,7 +212,7 @@
       </div>
 
       <!-- Device Permissions -->
-      <div class="device-permissions-section">
+      <div class="device-permissions-section" *ngIf="SelectedUser['role'] !== 'customer' && SelectedUser['role'] !== 'customer_inactive'">
         <div class="section-header mb-3">
           <h6 class="section-title mb-1"><i class="fa-solid fa-network-wired me-2"></i>Device Access Control</h6>
           <small class="text-muted">Grant access to specific device groups with defined permission levels</small>
@@ -281,7 +321,7 @@
           color="danger" size="sm">
           <i class="fa-solid fa-user-slash me-1"></i><span class="d-none d-sm-inline">Deactivate</span>
         </button>
-        <button *ngIf="SelectedUser['role']=='disabled'" (click)="SelectedUser['role']='admin'" cButton color="success"
+        <button *ngIf="SelectedUser['role']=='disabled'" (click)="SelectedUser['role']=SelectedUser['previous_role'] || 'admin'" cButton color="success"
           size="sm">
           <i class="fa-solid fa-user-check me-1"></i><span class="d-none d-sm-inline">Activate</span>
         </button>

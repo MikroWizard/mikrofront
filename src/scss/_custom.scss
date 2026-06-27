@@ -161,5 +161,65 @@ td.hljs-ln-code {
 }
 
 p-table {
-  width: 100%
+  width: 100%;
+}
+
+// Clean table action header replacing the gray bg-light panel
+.table-action-header {
+  padding: 1rem 1.25rem;
+  background-color: #fff;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  
+  &.justify-end {
+    justify-content: flex-end;
+  }
+  
+  &.justify-between {
+    justify-content: space-between;
+  }
+}
+
+// Sleek modern search input
+.modern-search-container {
+  position: relative;
+  display: inline-block;
+  
+  i.search-icon {
+    position: absolute;
+    top: 50%;
+    left: 0.85rem;
+    transform: translateY(-50%);
+    color: #8a93a2;
+    font-size: 0.875rem;
+    pointer-events: none;
+    z-index: 4;
+  }
+  
+  input {
+    padding-left: 2.25rem !important;
+    padding-right: 1rem !important;
+    border-radius: 50px !important;
+    border: 1px solid #dee2e6 !important;
+    background-color: #f8f9fa !important;
+    height: 34px !important;
+    font-size: 0.875rem !important;
+    color: #4f5d73 !important;
+    transition: all 0.2s ease-in-out !important;
+    width: 240px;
+    
+    &:focus {
+      background-color: #fff !important;
+      border-color: var(--cui-primary, #5856d6) !important;
+      box-shadow: 0 0 0 0.2rem rgba(88, 86, 214, 0.15) !important;
+      outline: 0;
+    }
+    
+    &::placeholder {
+      color: #9da5b1;
+      font-size: 0.85rem;
+    }
+  }
 }

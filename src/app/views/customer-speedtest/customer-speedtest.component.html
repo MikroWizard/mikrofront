@@ -1,0 +1,330 @@
+<c-row class="mb-4">
+  <c-col xs="12">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+      <div>
+        <h4 class="mb-1 fw-bold text-dark">
+          <i class="fa-solid fa-gauge-high text-primary me-2"></i>Speed Test Tool
+        </h4>
+        <p class="text-muted small mb-0">Measure your local connection speed (Download, Upload, Ping, and Jitter) directly to the server.</p>
+      </div>
+    </div>
+  </c-col>
+</c-row>
+
+<c-row class="g-4">
+  <!-- Left Side: Real-time Speedometer & Results -->
+  <c-col lg="5" md="12">
+    <c-card class="shadow-sm border-0 h-100">
+      <c-card-body class="p-4 d-flex flex-column justify-content-between">
+        
+        <!-- Speed Test Mode Switcher -->
+        <div class="d-flex justify-content-center mb-4" *ngIf="speedtestServers.length > 0">
+          <div class="btn-group w-100" role="group" aria-label="Speed test mode">
+            <button type="button" class="btn fw-semibold py-2" 
+                    [class.btn-primary]="speedTestMode === 'browser'" 
+                    [class.btn-outline-primary]="speedTestMode !== 'browser'"
+                    (click)="speedTestMode = 'browser'">
+              <i class="fa-solid fa-laptop me-1"></i> Browser Test
+            </button>
+            <button type="button" class="btn fw-semibold py-2" 
+                    [class.btn-primary]="speedTestMode === 'router'" 
+                    [class.btn-outline-primary]="speedTestMode !== 'router'"
+                    (click)="speedTestMode = 'router'">
+              <i class="fa-solid fa-server me-1"></i> Router Test
+            </button>
+          </div>
+        </div>
+
+        <!-- Mode 1: Browser Speed Test -->
+        <div *ngIf="speedTestMode === 'browser'" class="d-flex flex-column align-items-center w-100">
+          <!-- Speedometer SVG Gauge -->
+          <div class="speedometer-container position-relative mb-4">
+            <svg class="speedometer" viewBox="0 0 200 200" width="220" height="220">
+              <defs>
+                <linearGradient id="speedGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#0d6efd" />
+                  <stop offset="50%" stop-color="#6f42c1" />
+                  <stop offset="100%" stop-color="#d63384" />
+                </linearGradient>
+                <linearGradient id="pingGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#20c997" />
+                  <stop offset="100%" stop-color="#0dcaf0" />
+                </linearGradient>
+              </defs>
+              
+              <!-- Background track (270 degrees) -->
+              <path class="gauge-track" d="M 40 160 A 80 80 0 1 1 160 160" fill="none" stroke="rgba(0,0,0,0.08)" stroke-width="12" stroke-linecap="round" />
+              
+              <!-- Active Fill -->
+              <path class="gauge-fill" d="M 40 160 A 80 80 0 1 1 160 160" fill="none" 
+                    [attr.stroke]="testState === 'ping' ? 'url(#pingGrad)' : 'url(#speedGrad)'" stroke-width="12" stroke-linecap="round"
+                    [style.strokeDasharray]="gaugeCircumference"
+                    [style.strokeDashoffset]="getGaugeOffset()" />
+              
+              <!-- Value Readout -->
+              <text x="100" y="80" text-anchor="middle" class="gauge-phase text-uppercase fw-bold" fill="#6c757d" font-size="9" letter-spacing="1">
+                {{ testState === 'idle' ? 'Ready' : (testState === 'completed' ? 'Finished' : testState) }}
+              </text>
+              <text x="100" y="120" text-anchor="middle" class="gauge-value font-monospace fw-bold" fill="#212529" font-size="28">
+                {{ currentValue | number:'1.1-1' }}
+              </text>
+              <text x="100" y="142" text-anchor="middle" class="gauge-unit fw-bold" fill="#495057" font-size="10" letter-spacing="0.5">
+                {{ currentUnit }}
+              </text>
+            </svg>
+            
+            <!-- Pulsing dot animation during active tests -->
+            <div class="pulse-ring" *ngIf="testing"></div>
+          </div>
+
+          <!-- Metric Indicator Cards Grid -->
+          <div class="w-100 mb-4">
+            <c-row class="g-2">
+              <!-- Ping -->
+              <c-col xs="6">
+                <div class="p-3 border rounded-3 bg-light text-center h-100">
+                  <div class="small text-muted fw-semibold mb-1"><i class="fa-solid fa-arrow-right-to-bracket text-info me-1"></i> Ping</div>
+                  <div class="h4 mb-0 font-monospace fw-bold text-dark">{{ pingResult ? pingResult + ' ms' : '--' }}</div>
+                </div>
+              </c-col>
+              <!-- Jitter -->
+              <c-col xs="6">
+                <div class="p-3 border rounded-3 bg-light text-center h-100">
+                  <div class="small text-muted fw-semibold mb-1"><i class="fa-solid fa-wave-square text-info me-1"></i> Jitter</div>
+                  <div class="h4 mb-0 font-monospace fw-bold text-dark">{{ jitterResult ? jitterResult + ' ms' : '--' }}</div>
+                </div>
+              </c-col>
+              <!-- Download -->
+              <c-col xs="6">
+                <div class="p-3 border rounded-3 bg-light text-center h-100" [class.border-primary]="testState === 'download'">
+                  <div class="small text-muted fw-semibold mb-1"><i class="fa-solid fa-cloud-arrow-down text-primary me-1"></i> Download</div>
+                  <div class="h4 mb-0 font-monospace fw-bold text-primary">{{ downloadResult ? downloadResult + ' Mbps' : '--' }}</div>
+                </div>
+              </c-col>
+              <!-- Upload -->
+              <c-col xs="6">
+                <div class="p-3 border rounded-3 bg-light text-center h-100" [class.border-purple]="testState === 'upload'">
+                  <div class="small text-muted fw-semibold mb-1"><i class="fa-solid fa-cloud-arrow-up text-purple me-1"></i> Upload</div>
+                  <div class="h4 mb-0 font-monospace fw-bold text-purple">{{ uploadResult ? uploadResult + ' Mbps' : '--' }}</div>
+                </div>
+              </c-col>
+            </c-row>
+          </div>
+
+          <!-- Action Button -->
+          <div class="w-100 d-grid">
+            <button cButton color="primary" size="lg" class="fw-bold py-2 text-white shadow-sm" *ngIf="!testing" (click)="runSpeedTest()">
+              <i class="fa-solid fa-circle-play me-2"></i> Start Connection Test
+            </button>
+            <button cButton color="danger" size="lg" class="fw-bold py-2 text-white shadow-sm" *ngIf="testing" (click)="cancelTest()">
+              <i class="fa-solid fa-circle-stop me-2"></i> Cancel Test
+            </button>
+          </div>
+        </div>
+
+        <!-- Mode 2: Router Speed Test -->
+        <div *ngIf="speedtestServers.length > 0 && speedTestMode === 'router'" class="w-100">
+          <div *ngIf="!selectedDeviceId" class="alert alert-warning border-0 shadow-sm mb-0" role="alert">
+            <i class="fa-solid fa-triangle-exclamation me-2"></i>
+            Please select a router first to run the speed test from the router.
+          </div>
+
+          <div *ngIf="selectedDeviceId">
+            <p class="text-muted small mb-3">
+              This test runs directly from the selected MikroTik router to a remote Bandwidth Test (btest) server.
+            </p>
+
+            <!-- Target BTest Server -->
+            <div class="mb-3">
+              <label for="routerTestTarget" class="form-label fw-semibold text-dark small mb-1">
+                <i class="fa-solid fa-circle-question text-secondary me-1" pTooltip="Select the destination Bandwidth Test (BTest) server. The router will measure the download and upload speed to this target server."></i>Bandwidth Test Server Target
+              </label>
+              <div class="input-group">
+                <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-network-wired text-muted"></i></span>
+                <input type="text" id="routerTestTarget" class="form-control border-start-0" 
+                       placeholder="e.g. btest.mikrotik.com" [(ngModel)]="routerTestTarget" [disabled]="runningRouterTest">
+              </div>
+              <div class="d-flex flex-wrap gap-1 mt-2">
+                <button *ngFor="let sug of routerTargetSuggestions" type="button" class="btn btn-sm btn-outline-secondary py-1 px-2 text-start"
+                        (click)="routerTestTarget = sug.value" [disabled]="runningRouterTest" style="font-size: 0.75rem;">
+                  <i class="fa-solid fa-server me-1"></i> {{ sug.label }}
+                </button>
+              </div>
+            </div>
+
+            <!-- Duration Select -->
+            <div class="mb-3">
+              <label for="routerTestDuration" class="form-label fw-semibold text-dark small mb-1">
+                <i class="fa-solid fa-circle-question text-secondary me-1" pTooltip="Specifies how long the active bandwidth transmission test runs. Shorter durations (5s or 10s) are recommended to avoid overloading the router CPU, while longer tests provide more stable and accurate speed results."></i>Test Duration
+              </label>
+              <select id="routerTestDuration" class="form-select" [(ngModel)]="routerTestDuration" [disabled]="runningRouterTest">
+                <option value="3s">3 Seconds (Recommended)</option>
+                <option value="5s">5 Seconds</option>
+                <option value="10s">10 Seconds</option>
+              </select>
+              <div class="form-text text-muted small mt-1" style="font-size: 0.7rem;">
+                Note: Bandwidth testing uses Router CPU. Short duration is recommended.
+              </div>
+            </div>
+
+            <!-- Action Button -->
+            <div class="d-grid mb-3">
+              <button cButton color="primary" size="lg" class="fw-bold py-2 text-white shadow-sm"
+                      [disabled]="runningRouterTest || !routerTestTarget" (click)="runRouterSpeedTest()">
+                <c-spinner *ngIf="runningRouterTest" size="sm" class="me-2"></c-spinner>
+                <i class="fa-solid fa-circle-play me-2" *ngIf="!runningRouterTest"></i>
+                {{ runningRouterTest ? 'Testing Bandwidth...' : 'Start Router Test' }}
+              </button>
+            </div>
+
+            <!-- Error Message -->
+            <div *ngIf="routerTestError" class="alert alert-danger border-0 shadow-sm mb-3" role="alert">
+              <i class="fa-solid fa-circle-exclamation me-2"></i>
+              {{ routerTestError }}
+            </div>
+
+            <!-- Router Speed Test Results -->
+            <div *ngIf="routerResults" class="w-100 border rounded-3 p-3 bg-light">
+              <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
+                <span class="fw-bold text-dark small"><i class="fa-solid fa-square-poll-vertical text-info me-1"></i> Test Results</span>
+                <span class="badge bg-success rounded-pill px-2 py-1" style="font-size: 0.7rem;">
+                  {{ routerResults.status || 'Done' }}
+                </span>
+              </div>
+
+              <c-row class="g-2">
+                <!-- Ping / Latency -->
+                <c-col xs="6" *ngIf="routerResults.ping">
+                  <div class="p-2 border rounded bg-white text-center h-100">
+                    <div class="small text-muted fw-semibold mb-1" style="font-size: 0.75rem;"><i class="fa-solid fa-arrow-right-to-bracket text-info me-1"></i> Ping</div>
+                    <div class="h6 mb-0 font-monospace fw-bold text-dark">{{ routerResults.ping }}</div>
+                  </div>
+                </c-col>
+                <!-- Jitter -->
+                <c-col xs="6" *ngIf="routerResults.jitter">
+                  <div class="p-2 border rounded bg-white text-center h-100">
+                    <div class="small text-muted fw-semibold mb-1" style="font-size: 0.75rem;"><i class="fa-solid fa-wave-square text-info me-1"></i> Jitter</div>
+                    <div class="h6 mb-0 font-monospace fw-bold text-dark">{{ routerResults.jitter }}</div>
+                  </div>
+                </c-col>
+                <!-- TCP Download -->
+                <c-col xs="6">
+                  <div class="p-2 border rounded bg-white text-center h-100 d-flex flex-column justify-content-between">
+                    <div>
+                      <div class="small text-muted fw-semibold mb-1" style="font-size: 0.75rem;"><i class="fa-solid fa-cloud-arrow-down text-primary me-1"></i> TCP Download</div>
+                      <div class="h6 mb-0 font-monospace fw-bold text-primary">{{ routerResults.tcp_download }}</div>
+                    </div>
+                    <div class="text-muted small mt-1 font-monospace" style="font-size: 0.65rem;" *ngIf="routerResults.tcp_download_cpu">
+                      {{ routerResults.tcp_download_cpu }}
+                    </div>
+                  </div>
+                </c-col>
+                <!-- TCP Upload -->
+                <c-col xs="6">
+                  <div class="p-2 border rounded bg-white text-center h-100 d-flex flex-column justify-content-between">
+                    <div>
+                      <div class="small text-muted fw-semibold mb-1" style="font-size: 0.75rem;"><i class="fa-solid fa-cloud-arrow-up text-purple me-1"></i> TCP Upload</div>
+                      <div class="h6 mb-0 font-monospace fw-bold text-purple">{{ routerResults.tcp_upload }}</div>
+                    </div>
+                    <div class="text-muted small mt-1 font-monospace" style="font-size: 0.65rem;" *ngIf="routerResults.tcp_upload_cpu">
+                      {{ routerResults.tcp_upload_cpu }}
+                    </div>
+                  </div>
+                </c-col>
+                <!-- UDP Download -->
+                <c-col xs="6">
+                  <div class="p-2 border rounded bg-white text-center h-100 d-flex flex-column justify-content-between">
+                    <div>
+                      <div class="small text-muted fw-semibold mb-1" style="font-size: 0.75rem;"><i class="fa-solid fa-cloud-arrow-down text-info me-1"></i> UDP Download</div>
+                      <div class="h6 mb-0 font-monospace fw-bold text-info">{{ routerResults.udp_download }}</div>
+                    </div>
+                    <div class="text-muted small mt-1 font-monospace" style="font-size: 0.65rem;" *ngIf="routerResults.udp_download_cpu">
+                      {{ routerResults.udp_download_cpu }}
+                    </div>
+                  </div>
+                </c-col>
+                <!-- UDP Upload -->
+                <c-col xs="6">
+                  <div class="p-2 border rounded bg-white text-center h-100 d-flex flex-column justify-content-between">
+                    <div>
+                      <div class="small text-muted fw-semibold mb-1" style="font-size: 0.75rem;"><i class="fa-solid fa-cloud-arrow-up text-warning me-1"></i> UDP Upload</div>
+                      <div class="h6 mb-0 font-monospace fw-bold text-warning">{{ routerResults.udp_upload }}</div>
+                    </div>
+                    <div class="text-muted small mt-1 font-monospace" style="font-size: 0.65rem;" *ngIf="routerResults.udp_upload_cpu">
+                      {{ routerResults.udp_upload_cpu }}
+                    </div>
+                  </div>
+                </c-col>
+              </c-row>
+            </div>
+          </div>
+        </div>
+
+      </c-card-body>
+    </c-card>
+  </c-col>
+
+  <!-- Right Side: History Graph & Previous Results -->
+  <c-col lg="7" md="12">
+    <c-row class="g-4">
+      <!-- Chart -->
+      <c-col xs="12">
+        <c-card class="shadow-sm border-0">
+          <c-card-header class="bg-white border-0 py-3">
+            <h5 class="mb-0 fw-bold text-dark"><i class="fa-solid fa-chart-line text-info me-2"></i>Speed History Chart</h5>
+          </c-card-header>
+          <c-card-body>
+            <div *ngIf="loadingHistory" class="text-center py-5">
+              <c-spinner color="info"></c-spinner>
+            </div>
+            <div *ngIf="!loadingHistory && historyList.length === 0" class="text-center py-5 text-muted">
+              No historical data available. Run tests to populate graph.
+            </div>
+            <div *ngIf="!loadingHistory && historyList.length > 0" style="position: relative; height: 240px;">
+              <c-chart [data]="chartData" [options]="chartOptions" [height]="240" type="line"></c-chart>
+            </div>
+          </c-card-body>
+        </c-card>
+      </c-col>
+
+      <!-- Table History -->
+      <c-col xs="12">
+        <c-card class="shadow-sm border-0">
+          <c-card-header class="bg-white border-0 py-3">
+            <h5 class="mb-0 fw-bold text-dark"><i class="fa-solid fa-clock-rotate-left text-secondary me-2"></i>Recent Speed Tests</h5>
+          </c-card-header>
+          <c-card-body class="p-0">
+            <div *ngIf="loadingHistory" class="text-center py-3">
+              <c-spinner color="secondary" size="sm"></c-spinner>
+            </div>
+            <div *ngIf="!loadingHistory && historyList.length === 0" class="text-center py-4 text-muted small">
+              No recent test records.
+            </div>
+            <div *ngIf="!loadingHistory && historyList.length > 0" class="table-responsive" style="max-height: 220px; overflow-y: auto;">
+              <table class="table table-hover align-middle mb-0">
+                <thead class="table-light sticky-top">
+                  <tr>
+                    <th>Date & Time</th>
+                    <th class="text-center">Ping (ms)</th>
+                    <th class="text-center">Jitter (ms)</th>
+                    <th class="text-end">Download</th>
+                    <th class="text-end">Upload</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let h of historyList">
+                    <td><small class="text-dark fw-semibold">{{ h.created | date:'medium' }}</small></td>
+                    <td class="text-center font-monospace">{{ h.ping }}</td>
+                    <td class="text-center font-monospace">{{ h.jitter }}</td>
+                    <td class="text-end font-monospace text-primary fw-bold">{{ h.download }} Mbps</td>
+                    <td class="text-end font-monospace text-purple fw-bold">{{ h.upload }} Mbps</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </c-card-body>
+        </c-card>
+      </c-col>
+    </c-row>
+  </c-col>
+</c-row>

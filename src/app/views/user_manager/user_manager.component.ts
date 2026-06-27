@@ -59,6 +59,22 @@ export class UserManagerComponent implements OnInit {
   public rows: any = [];
   public SelectedUser: any = {};
   public SelectedUserItems: string = "";
+  public selectedRoleFilter: string = 'all';
+
+  setRoleFilter(filter: string): void {
+    this.selectedRoleFilter = filter;
+  }
+
+  getFilteredUsers(): Array<any> {
+    if (this.selectedRoleFilter === 'all') {
+      return this.source;
+    } else if (this.selectedRoleFilter === 'staff') {
+      return this.source.filter((u: any) => u.role !== 'customer' && u.role !== 'customer_inactive');
+    } else if (this.selectedRoleFilter === 'customers') {
+      return this.source.filter((u: any) => u.role === 'customer' || u.role === 'customer_inactive');
+    }
+    return this.source;
+  }
   public EditTaskModalVisible: boolean = false;
   public DeleteConfirmModalVisible: boolean = false;
   public RestrictionsTaskModalVisible: boolean = false;
@@ -280,7 +296,10 @@ export class UserManagerComponent implements OnInit {
       return;
     }
     this.SelectedUser = { ...item };
-    if (this.SelectedUser["adminperms"].length > 0) {
+    if (this.SelectedUser.role && this.SelectedUser.role !== 'disabled') {
+      this.SelectedUser['previous_role'] = this.SelectedUser.role;
+    }
+    if (this.SelectedUser["adminperms"] && this.SelectedUser["adminperms"].length > 0) {
       this.adminperms = JSON.parse(this.SelectedUser["adminperms"]);
     } else this.adminperms = { ...this.defadminperms };
     _self.SelectedUser["action"] = "edit";

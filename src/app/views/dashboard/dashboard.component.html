@@ -195,49 +195,56 @@
 
           <!-- License Info Banner -->
           <div class="p-2 mb-2 rounded-3 position-relative" [ngClass]="{
-                 'bg-success bg-opacity-10 border-start border-4 border-success': stats?.license_info?.status === 'Pro' || stats?.license_info?.status === 'Free',
-                 'bg-danger bg-opacity-10 border-start border-4 border-danger': stats?.license_info?.status === 'expired' || stats?.license_info?.status === 'connection_error',
-                 'bg-warning bg-opacity-10 border-start border-4 border-warning': stats?.license_info?.action_required === 'set_username'
+                 'bg-success bg-opacity-10 border-start border-4 border-success': (stats?.license_info?.status === 'Pro' || stats?.license_info?.status === 'Free') && stats?.license !== false,
+                 'bg-danger bg-opacity-10 border-start border-4 border-danger': stats?.license_info?.status === 'expired' || stats?.license_info?.status === 'connection_error' || stats?.license === false,
+                 'bg-warning bg-opacity-10 border-start border-4 border-warning': stats?.license_info?.action_required === 'set_username' && stats?.license !== false
                }" style="box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
-
+               
             <div class="d-flex justify-content-between align-items-center">
-              <strong class="mb-0 text-dark d-flex align-items-center" style="font-size: 0.9rem;">
-                <i class="fa-solid flex-shrink-0 me-2" [ngClass]="{
-                   'fa-crown text-warning': stats?.license_info?.status === 'Pro',
-                   'fa-leaf text-success': stats?.license_info?.status === 'Free',
-                   'fa-circle-xmark text-danger': stats?.license_info?.status === 'expired',
+               <strong class="mb-0 text-dark d-flex align-items-center" style="font-size: 0.9rem;">
+                 <i class="fa-solid flex-shrink-0 me-2" [ngClass]="{
+                   'fa-crown text-warning': stats?.license_info?.status === 'Pro' && stats?.license !== false,
+                   'fa-leaf text-success': stats?.license_info?.status === 'Free' && stats?.license !== false,
                    'fa-triangle-exclamation text-danger': stats?.license_info?.status === 'connection_error',
-                   'fa-user-xmark text-warning': stats?.license_info?.status === 'no_username'
+                   'fa-circle-xmark text-danger': stats?.license_info?.status === 'expired',
+                   'fa-user-xmark text-warning': stats?.license_info?.action_required === 'set_username' && stats?.license !== false,
+                   'fa-id-card text-danger': stats?.license === false
                  }"></i>
-                <span *ngIf="stats?.license_info?.status === 'Pro'">Pro License Active</span>
-                <span *ngIf="stats?.license_info?.status === 'Free'">Free License Active</span>
-                <span *ngIf="stats?.license_info?.status === 'expired'">License Expired</span>
-                <span *ngIf="stats?.license_info?.status === 'connection_error'">Connection Error</span>
-                <span *ngIf="stats?.license_info?.status === 'no_username'">Registration Required</span>
-              </strong>
-              <span *ngIf="stats?.license_info?.status === 'Pro' || stats?.license_info?.status === 'Free'"
-                class="badge fw-bold shadow-sm"
-                [ngClass]="stats?.license_info?.status === 'Pro' ? 'bg-warning text-dark' : 'bg-secondary'">
-                {{ stats?.license_info?.status | uppercase }}
-              </span>
+                 <span *ngIf="stats?.license === false">Serial Registration Required</span>
+                 <ng-container *ngIf="stats?.license !== false">
+                    <span *ngIf="stats?.license_info?.status === 'Pro'">Pro License Active</span>
+                    <span *ngIf="stats?.license_info?.status === 'Free'">Free License Active</span>
+                    <span *ngIf="stats?.license_info?.status === 'expired'">License Expired</span>
+                    <span *ngIf="stats?.license_info?.status === 'connection_error'">Connection Error</span>
+                    <span *ngIf="stats?.license_info?.status === 'no_username'">No Username</span>
+                 </ng-container>
+               </strong>
+               <span *ngIf="stats?.license !== false && (stats?.license_info?.status === 'Pro' || stats?.license_info?.status === 'Free')" class="badge fw-bold shadow-sm" [ngClass]="stats?.license_info?.status === 'Pro' ? 'bg-warning text-dark' : 'bg-secondary'">
+                 {{ stats?.license_info?.status | uppercase }}
+               </span>
+               <span *ngIf="stats?.license === false" class="badge bg-danger fw-bold shadow-sm">UNREGISTERED</span>
             </div>
 
             <div class="d-flex justify-content-between align-items-center mt-1">
               <p class="mb-0 text-dark opacity-100" style="font-size: 0.75rem; line-height: 1.2; font-weight: 500;">
-                {{ stats?.license_info?.message || (stats?.license_info?.status === 'connection_error' ? 'Cannot connect
-                to server to verify license and updates.' : 'License information unavailable.') }}
+                <ng-container *ngIf="stats?.license === false">
+                  {{ stats?.username === 'admin' || !stats?.username ? 'License Username is not set in settings.' : 'Serial number not submitted or validated.' }} Please register your device.
+                </ng-container>
+                <ng-container *ngIf="stats?.license !== false">
+                  {{ stats?.license_info?.message || (stats?.license_info?.status === 'connection_error' ? 'Cannot connect to server to verify license.' : 'License details unavailable.') }}
+                </ng-container>
               </p>
-
-              <div
-                *ngIf="stats?.license_info?.action_required !== 'none' && stats?.license_info?.status !== 'connection_error'">
-                <a *ngIf="stats?.license_info?.action_required === 'set_username'"
-                  href="https://mikrowizard.com/docs/register-serial-number/" target="_blank"
-                  class="btn btn-sm btn-warning text-dark py-0 px-2 rounded-pill fw-semibold shadow-sm"
-                  style="font-size: 0.7rem;"><i class="fa-solid fa-arrow-up-right-from-square me-1"></i> Setup</a>
-                <a *ngIf="stats?.license_info?.action_required === 'renew_license'"
-                  href="https://mikrowizard.com/register-new-mikrowizard/" target="_blank"
-                  class="btn btn-sm btn-danger py-0 px-2 rounded-pill fw-semibold shadow-sm"
-                  style="font-size: 0.7rem;"><i class="fa-solid fa-cart-shopping me-1"></i> Renew</a>
+              
+              <div class="d-flex gap-1" *ngIf="stats?.license_info?.status !== 'connection_error'">
+                <a *ngIf="stats?.license === false || stats?.license_info?.action_required === 'set_username'" 
+                   href="https://mikrowizard.com/register-new-mikrowizard/" target="_blank" 
+                   class="btn btn-sm btn-danger py-0 px-2 rounded-pill fw-semibold shadow-sm animate-pulse" 
+                   style="font-size: 0.7rem;"><i class="fa-solid fa-id-card me-1"></i> Register Serial</a>
+                
+                <a *ngIf="stats?.license !== false && stats?.license_info?.action_required === 'renew_license'" 
+                   href="https://mikrowizard.com/register-new-mikrowizard/" target="_blank" 
+                   class="btn btn-sm btn-danger py-0 px-2 rounded-pill fw-semibold shadow-sm" 
+                   style="font-size: 0.7rem;"><i class="fa-solid fa-cart-shopping me-1"></i> Renew</a>
               </div>
             </div>
           </div>
