@@ -1,0 +1,288 @@
+<c-row>
+  <c-col xs>
+<div *ngIf="ispro">
+  <c-card class="mb-4">
+    <c-card-header>
+      <c-row class="align-items-center">
+        <c-col xs>
+          <strong><i class="fas fa-server me-2 text-info"></i>Non-MikroTik Devices</strong>
+        </c-col>
+        <c-col xs="auto">
+          <button cButton color="success" size="sm" (click)="openAddModal()">
+            <i class="fas fa-plus me-1"></i>Add Device
+          </button>
+        </c-col>
+      </c-row>
+    </c-card-header>
+    <c-card-body>
+      <p class="text-muted small">Manage generic network devices, servers, and other brands.</p>
+
+      <div class="mb-1 d-flex justify-content-end">
+        <span class="p-input-icon-left table-search-input">
+          <i class="pi pi-search"></i>
+          <input type="text" pInputText placeholder="Search..." (input)="dtNonMikrotik.filterGlobal($any($event.target).value, 'contains')" class="form-control-sm" />
+        </span>
+      </div>
+
+      <p-table #dtNonMikrotik [value]="filteredDevices" [paginator]="true" [rows]="10"
+        [showGridlines]="true" [stripedRows]="true" [resizableColumns]="true" columnResizeMode="expand"
+        styleClass="p-datatable-sm p-datatable-gridlines p-datatable-striped" [loading]="loading"
+        [globalFilterFields]="['name', 'ip', 'mac', 'device_type', 'device_model']">
+        <ng-template pTemplate="header">
+          <tr>
+            <th pSortableColumn="name" pResizableColumn>Name <p-sortIcon field="name"></p-sortIcon></th>
+            <th pSortableColumn="ip" pResizableColumn>IP <p-sortIcon field="ip"></p-sortIcon></th>
+            <th pSortableColumn="device_type" pResizableColumn>Brand <p-sortIcon field="device_type"></p-sortIcon></th>
+            <th pSortableColumn="device_model" pResizableColumn>Model <p-sortIcon field="device_model"></p-sortIcon></th>
+            <th pSortableColumn="mac" pResizableColumn>MAC <p-sortIcon field="mac"></p-sortIcon></th>
+            <th style="width: 160px" class="text-center">Actions</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-item>
+          <tr>
+            <td><i class="fas fa-server me-2 text-primary"></i><strong>{{item.name}}</strong></td>
+            <td><small>{{item.ip}}</small></td>
+            <td><c-badge color="info">{{item.device_type || 'generic'}}</c-badge></td>
+            <td><small class="text-muted">{{item.device_model || '-'}}</small></td>
+            <td><small class="text-muted">{{item.mac || '-'}}</small></td>
+            <td class="text-center">
+              <button color="primary" shape="rounded-0" variant="ghost" style="padding: 4px 7px;"
+                [matMenuTriggerFor]="menu" cButton>
+                <i class="fa-solid fa-bars"></i>
+              </button>
+              <mat-menu #menu="matMenu">
+                <div cListGroup>
+                  <li cListGroupItem [active]="false" color="dark">Actions Menu</li>
+                  <button size="sm" (click)="openEditModal(item)" style="padding: 4px 7px;"
+                    cListGroupItem><i class="fas fa-edit text-primary"></i><small>
+                      Edit Device</small></button>
+                  <button size="sm" (click)="connectDevice(item)" style="padding: 4px 7px;"
+                    cListGroupItem><i class="fas fa-terminal text-success"></i><small>
+                      Connect</small></button>
+                  <button size="sm" (click)="emitAction('recordings', item)" style="padding: 4px 7px;"
+                    cListGroupItem><i class="text-warning fas fa-video"></i><small>
+                      View Recordings</small></button>
+                  <button size="sm" (click)="emitAction('command-logs', item)" style="padding: 4px 7px;"
+                    cListGroupItem><i class="text-secondary fas fa-keyboard"></i><small>
+                      Command History</small></button>
+                  <button size="sm" (click)="deleteDevice(item.id)" style="padding: 4px 7px;"
+                    cListGroupItem><i class="text-danger fa-solid fa-trash"></i><small>
+                      Delete Device</small></button>
+                </div>
+              </mat-menu>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </c-card-body>
+  </c-card>
+
+  <!-- Add Device Modal -->
+  <c-modal #addModal backdrop="static" size="lg" [(visible)]="addModalVisible" id="addModal">
+    <c-modal-header>
+      <h6 cModalTitle><i class="fas fa-plus me-2 text-success"></i>Add Non-MikroTik Device</h6>
+      <button (click)="addModalVisible=false" cButtonClose></button>
+    </c-modal-header>
+    <c-modal-body>
+      <c-row class="g-3">
+        <c-col xs="12" md="6">
+          <label class="form-label small">Device Name</label>
+          <input cFormControl size="sm" placeholder="My Switch" [(ngModel)]="addData.name" />
+        </c-col>
+        <c-col xs="12" md="6">
+          <label class="form-label small">IP Address *</label>
+          <input cFormControl size="sm" placeholder="192.168.1.1" [(ngModel)]="addData.ip" />
+        </c-col>
+        <c-col xs="12" md="6">
+          <label class="form-label small">Brand / Device Type</label>
+          <select cSelect size="sm" [(ngModel)]="addData.device_type" (change)="onBrandChangeAdd()">
+            <option value="">Select brand...</option>
+            <option *ngFor="let b of brands" [value]="b.brand || b.id">{{b.display_name || b.name || b.brand}}</option>
+            <option value="generic">Generic</option>
+          </select>
+        </c-col>
+        <c-col xs="12" md="6">
+          <label class="form-label small">Device Model</label>
+          <input cFormControl size="sm" placeholder="e.g. WS-C2960" [(ngModel)]="addData.device_model" />
+        </c-col>
+        <c-col xs="12" md="6">
+          <label class="form-label small">Connection Template</label>
+          <select cSelect size="sm" [(ngModel)]="addData.template_id" required>
+            <option *ngFor="let t of brandTemplates" [value]="t.id">{{t.display_name}}</option>
+          </select>
+        </c-col>
+        <c-col xs="12" md="6">
+          <label class="form-label small">Username</label>
+          <input cFormControl size="sm" [(ngModel)]="addData.username" />
+        </c-col>
+        <c-col xs="12" md="6">
+          <label class="form-label small">{{addData.ssh_auth_mode === 'key' ? 'SSH Private Key' : 'Password'}}</label>
+          <input *ngIf="addData.ssh_auth_mode !== 'key'" cFormControl size="sm" type="password" [(ngModel)]="addData.password" />
+          <textarea *ngIf="addData.ssh_auth_mode === 'key'" cFormControl size="sm" rows="3" [(ngModel)]="addData.password" placeholder="-----BEGIN PRIVATE KEY-----..."></textarea>
+        </c-col>
+        <c-col xs="12" md="6">
+          <label class="form-label small">Enable Password</label>
+          <input cFormControl size="sm" type="password" [(ngModel)]="addData.enable_password" />
+        </c-col>
+        <c-col xs="12" md="6">
+          <label class="form-label small">Connection Protocol</label>
+          <div class="d-flex gap-3">
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" [(ngModel)]="addData.protocol" value="ssh" name="addProtocol" id="add_proto_ssh" />
+              <label class="form-check-label small" for="add_proto_ssh">SSH</label>
+            </div>
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" [(ngModel)]="addData.protocol" value="telnet" name="addProtocol" id="add_proto_telnet" />
+              <label class="form-check-label small" for="add_proto_telnet">Telnet</label>
+            </div>
+          </div>
+        </c-col>
+        <c-col xs="12" md="6">
+          <label class="form-label small">Port</label>
+          <input cFormControl size="sm" type="number" placeholder="22" [(ngModel)]="addData.port" />
+        </c-col>
+        <c-col xs="12" *ngIf="addData.protocol === 'ssh'">
+          <label class="form-label small">SSH Login Mode</label>
+          <select cSelect size="sm" [(ngModel)]="addData.ssh_auth_mode">
+            <option value="credential">Password</option>
+            <option value="key">SSH Key</option>
+          </select>
+        </c-col>
+        <c-col xs="12" *ngIf="ispro && addData.protocol === 'ssh'">
+          <label class="form-label small">
+            Agent Mode Override
+            <i class="fas fa-circle-question text-muted ms-1" style="cursor:help;font-size:0.8rem;"
+               pTooltip="<b>Agent Override</b><br/>Per-device agent enforcement mode (overrides policy default).<br/><br/><b>Strict:</b> kernel on Linux, interpreter on macOS/FreeBSD.<br/><b>Strict + Compatible:</b> kernel on Linux, hook on macOS/FreeBSD."></i>
+          </label>
+          <select cSelect size="sm" [ngModel]="getAgentModeDisplay(addData)" (ngModelChange)="setAgentModeOverride($event, addData)">
+            <option value="default">Policy Default</option>
+            <option value="none">No Agent</option>
+            <option value="strict">Strict Mode</option>
+            <option value="strict_compat">Strict + Compatible</option>
+          </select>
+        </c-col>
+        <c-col xs="12" *ngIf="groups.length > 0">
+          <label class="form-label small">Assign to Groups</label>
+          <select cSelect size="sm" multiple [(ngModel)]="addData.group_ids">
+            <option *ngFor="let g of groups" [value]="g.id">{{g.name}}</option>
+          </select>
+          <small class="text-muted">Hold Ctrl/Cmd to select multiple groups</small>
+        </c-col>
+      </c-row>
+    </c-modal-body>
+    <c-modal-footer>
+      <button cButton color="primary" (click)="addDevice()" [disabled]="!addData.ip">
+        <i class="fas fa-save me-1"></i>Add Device
+      </button>
+      <button (click)="addModalVisible=!addModalVisible" cButton color="secondary">Cancel</button>
+    </c-modal-footer>
+  </c-modal>
+
+  <!-- Edit Device Modal -->
+  <c-modal #editModal backdrop="static" size="lg" [(visible)]="editModalVisible" id="editModal">
+    <c-modal-header>
+      <h6 cModalTitle><i class="fas fa-edit me-2 text-primary"></i>Edit Device</h6>
+      <button (click)="editModalVisible=!editModalVisible" cButtonClose></button>
+    </c-modal-header>
+    <c-modal-body>
+      <c-row class="g-3">
+        <c-col xs="12" md="6">
+          <label class="form-label small">Device Name</label>
+          <input cFormControl size="sm" [(ngModel)]="editData.name" />
+        </c-col>
+        <c-col xs="12" md="6">
+          <label class="form-label small">IP Address</label>
+          <input cFormControl size="sm" [(ngModel)]="editData.ip" />
+        </c-col>
+        <c-col xs="12" md="6">
+          <label class="form-label small">Brand / Device Type</label>
+          <select cSelect size="sm" [(ngModel)]="editData.device_type" (change)="onBrandChange()">
+            <option value="">Select brand...</option>
+            <option *ngFor="let b of brands" [value]="b.brand || b.id">{{b.display_name || b.name || b.brand}}</option>
+          </select>
+        </c-col>
+        <c-col xs="12" md="6">
+          <label class="form-label small">Device Model</label>
+          <input cFormControl size="sm" [(ngModel)]="editData.device_model" />
+        </c-col>
+        <c-col xs="12" md="6">
+          <label class="form-label small">Connection Template</label>
+          <select cSelect size="sm" [(ngModel)]="editData.template_id" required>
+            <option *ngFor="let t of brandTemplates" [value]="t.id">{{t.display_name}}</option>
+          </select>
+        </c-col>
+        <c-col xs="12" md="6">
+          <label class="form-label small">Username</label>
+          <input cFormControl size="sm" [(ngModel)]="editData.username" />
+        </c-col>
+        <c-col xs="12" md="6">
+          <label class="form-label small">{{editData.ssh_auth_mode === 'key' ? 'SSH Private Key' : 'Password'}}</label>
+          <c-input-group size="sm" *ngIf="editData.ssh_auth_mode !== 'key'">
+            <input cFormControl [type]="show_pass ? 'text' : 'password'" [(ngModel)]="editData.password" placeholder="Leave blank to keep current" />
+            <button cButton *ngIf="!ispro" (click)="show_pass = !show_pass" color="secondary" variant="outline">
+              <i *ngIf="show_pass" class="fa-solid fa-eye"></i>
+              <i *ngIf="!show_pass" class="fa-solid fa-eye-slash"></i>
+            </button>
+            <button cButton *ngIf="ispro" (click)="get_device_pass()" color="secondary" variant="outline">
+              <i *ngIf="show_pass" class="fa-solid fa-eye"></i>
+              <i *ngIf="!show_pass" class="fa-solid fa-eye-slash"></i>
+            </button>
+          </c-input-group>
+          <textarea *ngIf="editData.ssh_auth_mode === 'key'" cFormControl size="sm" rows="3" [(ngModel)]="editData.password" placeholder="Leave blank to keep current. -----BEGIN PRIVATE KEY-----..."></textarea>
+        </c-col>
+        <c-col xs="12" md="6">
+          <label class="form-label small">Connection Protocol</label>
+          <div class="d-flex gap-3">
+            <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" [(ngModel)]="editData.protocol" value="ssh" name="editProtocol" id="edit_proto_ssh" (change)="onProtocolChange()" />
+            <label class="form-check-label small" for="edit_proto_ssh">SSH</label>
+            </div>
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" [(ngModel)]="editData.protocol" value="telnet" name="editProtocol" id="edit_proto_telnet" (change)="onProtocolChange()" />
+              <label class="form-check-label small" for="edit_proto_telnet">Telnet</label>
+            </div>
+          </div>
+        </c-col>
+        <c-col xs="12" md="6">
+          <label class="form-label small">Port</label>
+          <input cFormControl size="sm" type="number" placeholder="22" [(ngModel)]="editData.port" />
+        </c-col>
+        <c-col xs="12" *ngIf="editData.protocol === 'ssh'">
+          <label class="form-label small">SSH Login Mode</label>
+          <select cSelect size="sm" [(ngModel)]="editData.ssh_auth_mode">
+            <option value="credential">Password</option>
+            <option value="key">SSH Key</option>
+          </select>
+        </c-col>
+        <c-col xs="12" *ngIf="ispro && editData.protocol === 'ssh'">
+          <label class="form-label small">
+            Agent Mode Override
+            <i class="fas fa-circle-question text-muted ms-1" style="cursor:help;font-size:0.8rem;"
+               pTooltip="<b>Agent Override</b><br/>Per-device agent enforcement mode (overrides policy default).<br/><br/><b>Strict:</b> kernel on Linux, interpreter on macOS/FreeBSD.<br/><b>Strict + Compatible:</b> kernel on Linux, hook on macOS/FreeBSD."></i>
+          </label>
+          <select cSelect size="sm" [ngModel]="getAgentModeDisplay(editData)" (ngModelChange)="setAgentModeOverride($event, editData)">
+            <option value="default">Policy Default</option>
+            <option value="none">No Agent</option>
+            <option value="strict">Strict Mode</option>
+            <option value="strict_compat">Strict + Compatible</option>
+          </select>
+        </c-col>
+      </c-row>
+    </c-modal-body>
+    <c-modal-footer>
+      <button cButton color="primary" (click)="saveEdit()">
+        <i class="fas fa-save me-1"></i>Save Changes
+      </button>
+      <button (click)="editModalVisible=!editModalVisible" cButton color="secondary">Cancel</button>
+    </c-modal-footer>
+  </c-modal>
+
+  <c-toaster position="fixed" placement="top-end"></c-toaster>
+</div>
+<div *ngIf="!ispro" class="text-center py-5">
+  <i class="fas fa-lock fa-3x text-muted mb-3"></i>
+  <h5 class="text-muted">Pro Feature</h5>
+  <p class="text-muted">Non-MikroTik device management is available in the Pro version.</p>
+</div>
+  </c-col>
+</c-row>

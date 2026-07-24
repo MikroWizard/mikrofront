@@ -1,0 +1,479 @@
+<c-row>
+  <c-col xs>
+    <c-card class="mb-4">
+      <c-card-header style="padding: 0">
+        <ul class="nav nav-underline mb-0">
+          <li class="nav-item">
+            <a class="nav-link" [class.active]="activeTab === 'policies'" (click)="activeTab = 'policies'" style="cursor: pointer;"><i class="fas fa-shield-halved me-2"></i>Access Policies</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" [class.active]="activeTab === 'expansions'" (click)="activeTab = 'expansions'" style="cursor: pointer;"><i class="fas fa-magic me-2"></i>Command Expansions</a>
+          </li>
+        </ul>
+      </c-card-header>
+    </c-card>
+
+<c-card class="mb-4" *ngIf="activeTab === 'policies'">
+  <c-card-header>
+    <c-row class="align-items-center">
+      <c-col xs>
+        <strong><i class="fas fa-shield-halved me-2"></i>Terminal Access Policies</strong>
+      </c-col>
+      <c-col xs="auto">
+        <button cButton color="primary" size="sm" (click)="openCreateDialog()">
+          <i class="fas fa-plus me-1"></i>New Policy
+        </button>
+      </c-col>
+    </c-row>
+  </c-card-header>
+  <c-card-body>
+    <p class="text-muted small">Manage command filtering, whitelist/blacklist, and auto-exec policies for terminal gateway access.</p>
+
+    <div class="mb-3 d-flex justify-content-end">
+      <span class="p-input-icon-left">
+        <i class="pi pi-search"></i>
+        <input type="text" pInputText placeholder="Search policies..."
+          (input)="applyFilterGlobal($event, 'contains')" class="form-control-sm" />
+      </span>
+    </div>
+
+    <p-table #dt [value]="policies" [paginator]="true" [rows]="15" [showGridlines]="true"
+      [stripedRows]="true" [resizableColumns]="true" columnResizeMode="expand"
+      styleClass="p-datatable-sm" [loading]="loading"
+      [globalFilterFields]="['id', 'name', 'policy_type', 'matching', 'defense_level']">
+      <ng-template pTemplate="header">
+        <tr>
+          <th pSortableColumn="id" pResizableColumn style="width:60px">ID <p-sortIcon field="id"></p-sortIcon></th>
+          <th pSortableColumn="name" pResizableColumn>Name <p-sortIcon field="name"></p-sortIcon></th>
+          <th pSortableColumn="policy_type" pResizableColumn style="width:110px">Type <p-sortIcon field="policy_type"></p-sortIcon></th>
+          <th pSortableColumn="matching" pResizableColumn style="width:100px">Matching <p-sortIcon field="matching"></p-sortIcon></th>
+          <th pSortableColumn="defense_level" pResizableColumn style="width:90px">Defense <p-sortIcon field="defense_level"></p-sortIcon></th>
+          <th pSortableColumn="agent_modes" pResizableColumn style="width:70px">Agent <p-sortIcon field="agent_modes"></p-sortIcon></th>
+          <th pSortableColumn="rule_count" pResizableColumn style="width:65px">Rules <p-sortIcon field="rule_count"></p-sortIcon></th>
+          <th pResizableColumn style="width:200px">Brands Covered</th>
+          <th pResizableColumn style="width:140px">Description</th>
+          <th style="width:100px" class="text-center">Actions</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-item>
+        <tr>
+          <td><small class="text-muted">{{item.id}}</small></td>
+          <td><span class="fw-semibold small">{{item.name}}</span></td>
+          <td>
+            <c-badge [color]="item.policy_type === 'blacklist' ? 'dark' : item.policy_type === 'whitelist' ? 'warning' : 'info'">
+              {{item.policy_type}}
+            </c-badge>
+          </td>
+          <td><small>{{item.matching}}</small></td>
+          <td><c-badge [color]="getDefenseBadgeColor(item.defense_level || 'standard')" style="font-size:0.7rem;">{{item.defense_level || 'standard'}}</c-badge></td>
+          <td>
+            <c-badge [color]="(item.agent_modes?.linux !== 'none' || item.agent_modes?.darwin !== 'none' || item.agent_modes?.freebsd !== 'none') ? 'success' : 'secondary'" style="font-size:0.7rem;">
+              <i class="fas" [ngClass]="(item.agent_modes?.linux !== 'none' || item.agent_modes?.darwin !== 'none' || item.agent_modes?.freebsd !== 'none') ? 'fa-microchip' : 'fa-ban'"></i>
+              {{(item.agent_modes?.linux !== 'none' || item.agent_modes?.darwin !== 'none' || item.agent_modes?.freebsd !== 'none') ? 'On' : 'Off'}}
+            </c-badge>
+          </td>
+          <td><small>{{item.rule_count || 0}}</small></td>
+          <td>
+            <span *ngIf="hasAllBrands(item)"><c-badge color="secondary" class="me-1">All</c-badge></span>
+            <c-badge *ngFor="let b of getBrandCoverage(item)" color="primary" class="me-1" style="text-transform: capitalize;">{{b}}</c-badge>
+            <span *ngIf="getBrandCoverage(item).length === 0 && !hasAllBrands(item)" class="text-muted small">—</span>
+          </td>
+          <td><small class="text-muted">{{item.description}}</small></td>
+          <td class="text-center">
+            <button cButton size="sm" color="info" variant="outline" class="me-1"
+              (click)="openEditDialog(item)" pTooltip="Edit Policy">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button cButton size="sm" color="danger" variant="outline"
+              (click)="confirmDelete(item)" pTooltip="Delete Policy">
+              <i class="fas fa-trash"></i>
+            </button>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="10" class="text-center text-muted py-4">
+            <i class="fas fa-shield-halved fa-2x mb-2 d-block"></i>
+            No terminal policies created yet. Click "New Policy" to create one.
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </c-card-body>
+</c-card>
+
+<c-card class="mb-4" *ngIf="activeTab === 'expansions'">
+  <c-card-header>
+    <c-row class="align-items-center">
+      <c-col xs>
+        <strong><i class="fas fa-magic me-2"></i>Command Expansions</strong>
+      </c-col>
+      <c-col xs="auto">
+        <div class="d-flex gap-2">
+          <select *ngIf="brands.length > 0" cSelect [(ngModel)]="expBrandFilter" (change)="filterExpByBrand()" class="form-select-sm" style="width:150px; font-size:0.85rem;">
+            <option value="">All Brands</option>
+            <option *ngFor="let b of brands" [value]="b.brand" style="text-transform: capitalize;">{{b.display_name || b.brand}}</option>
+          </select>
+          <button cButton color="primary" size="sm" (click)="openExpCreateDialog()">
+            <i class="fas fa-plus me-1"></i>New Expansion
+          </button>
+        </div>
+      </c-col>
+    </c-row>
+  </c-card-header>
+  <c-card-body>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <p class="text-muted small mb-0">Define shorthands that auto-expand into full commands when processed by the terminal gateway.</p>
+      <span class="p-input-icon-left table-search-input">
+        <i class="pi pi-search"></i>
+        <input type="text" pInputText placeholder="Search expansions..." (input)="applyExpFilterGlobal($event, 'contains')" class="form-control-sm" />
+      </span>
+    </div>
+
+    <p-table #expDt [value]="expansions" [paginator]="true" [rows]="15" [showGridlines]="true"
+      [stripedRows]="true" [resizableColumns]="true" columnResizeMode="expand"
+      styleClass="p-datatable-sm" [loading]="loadingExpansions"
+      [globalFilterFields]="['brand', 'shorthand', 'full_command', 'expansion_type']">
+      <ng-template pTemplate="header">
+        <tr>
+          <th pSortableColumn="id" style="width:60px">ID <p-sortIcon field="id"></p-sortIcon></th>
+          <th pSortableColumn="brand" style="width:120px">Brand <p-sortIcon field="brand"></p-sortIcon></th>
+          <th pSortableColumn="expansion_type" style="width:120px">Type <p-sortIcon field="expansion_type"></p-sortIcon></th>
+          <th pSortableColumn="shorthand">Shorthand <p-sortIcon field="shorthand"></p-sortIcon></th>
+          <th pSortableColumn="full_command">Full Command <p-sortIcon field="full_command"></p-sortIcon></th>
+          <th pSortableColumn="is_default" style="width:100px">Source <p-sortIcon field="is_default"></p-sortIcon></th>
+          <th pSortableColumn="is_enabled" style="width:100px">Status <p-sortIcon field="is_enabled"></p-sortIcon></th>
+          <th style="width:100px" class="text-center">Actions</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-item>
+        <tr>
+          <td><small class="text-muted">{{item.id}}</small></td>
+          <td style="text-transform: capitalize;"><span class="fw-semibold small">{{item.brand}}</span></td>
+          <td>
+            <c-badge [color]="item.expansion_type === 'shorthand' ? 'info' : 'secondary'">
+              {{item.expansion_type === 'shorthand' ? 'Shorthand' : 'Full Cmd'}}
+            </c-badge>
+          </td>
+          <td><code>{{item.shorthand || '--'}}</code></td>
+          <td><code>{{item.full_command}}</code></td>
+          <td>
+            <c-badge [color]="item.is_default ? 'secondary' : 'primary'">{{item.is_default ? 'System' : 'Custom'}}</c-badge>
+          </td>
+          <td>
+            <c-badge [color]="item.is_enabled ? 'success' : 'danger'">{{item.is_enabled ? 'Enabled' : 'Disabled'}}</c-badge>
+          </td>
+          <td class="text-center">
+            <button cButton size="sm" color="info" variant="outline" class="me-1"
+              (click)="openExpEditDialog(item)" pTooltip="Edit">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button cButton size="sm" [color]="item.is_enabled ? 'warning' : 'success'" variant="outline" class="me-1"
+              (click)="toggleExpansionState(item)" [pTooltip]="item.is_enabled ? 'Disable' : 'Enable'">
+              <i class="fas" [ngClass]="item.is_enabled ? 'fa-ban' : 'fa-check'"></i>
+            </button>
+            <button cButton size="sm" color="danger" variant="outline"
+              (click)="deleteExpansion(item)" pTooltip="Delete" [disabled]="item.is_default">
+              <i class="fas fa-trash"></i>
+            </button>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="8" class="text-center text-muted py-4">
+            <i class="fas fa-magic fa-2x mb-2 d-block"></i>
+            No command expansions defined.
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </c-card-body>
+</c-card>
+
+  </c-col>
+</c-row>
+
+<!-- Create/Edit Policy Dialog -->
+<c-modal #policyDialog backdrop="static" [(visible)]="editDialogVisible" size="lg" id="policyEditModal">
+  <c-modal-header>
+    <h6 cModalTitle>
+      <i class="fas" [ngClass]="editMode === 'create' ? 'fa-plus-circle' : 'fa-edit'"></i>
+      {{editMode === 'create' ? 'New Terminal Policy' : 'Edit Policy'}}
+    </h6>
+    <button (click)="editDialogVisible=false" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body>
+    <c-row class="g-4">
+      <!-- General Settings Card -->
+      <c-col xs="12">
+        <div class="p-3 border rounded bg-light">
+          <h6 class="mb-3 text-primary"><i class="fas fa-sliders me-2"></i>General Settings</h6>
+          <c-row class="g-3">
+            <c-col xs="12" md="6">
+              <mat-form-field appearance="outline" class="w-100">
+                <mat-label>Policy Name</mat-label>
+                <input matInput [(ngModel)]="editPolicy.name" placeholder="e.g. Block Dangerous Commands" />
+              </mat-form-field>
+            </c-col>
+            
+            <c-col xs="12" md="6">
+              <mat-form-field appearance="outline" class="w-100">
+                <mat-label>Description</mat-label>
+                <input matInput [(ngModel)]="editPolicy.description" placeholder="Optional description" />
+              </mat-form-field>
+            </c-col>
+            
+            <c-col xs="12" md="4">
+              <mat-form-field appearance="outline" class="w-100">
+                <mat-label>Type <i class="fas fa-info-circle ms-1 text-primary" [escape]="false" pTooltip="<b>Policy Types</b><br/><br/><span style='color:#f44336;'>Blacklist:</span> Deny matching commands, allow rest.<br/><span style='color:#4caf50;'>Whitelist:</span> Allow matching commands, deny rest.<br/><span style='color:#2196f3;'>Auto-Execute:</span> Runs commands non-interactively."></i></mat-label>
+                <mat-select [(ngModel)]="editPolicy.policy_type">
+                  <mat-option value="blacklist">Blacklist</mat-option>
+                  <mat-option value="whitelist">Whitelist</mat-option>
+                  <mat-option value="auto_exec">Auto-Execute</mat-option>
+                </mat-select>
+              </mat-form-field>
+            </c-col>
+
+            <c-col xs="12" md="4" *ngIf="editPolicy.policy_type !== 'auto_exec'">
+              <mat-form-field appearance="outline" class="w-100">
+                <mat-label>Matching <i class="fas fa-info-circle ms-1 text-primary" [escape]="false" pTooltip="<b>Matching Strategy</b><br/><br/><b>Token:</b> Exact word matching (e.g., 'show version').<br/><b>Regex:</b> Powerful PCRE pattern expressions."></i></mat-label>
+                <mat-select [(ngModel)]="editPolicy.matching">
+                  <mat-option value="token">Token (Exact)</mat-option>
+                  <mat-option value="regex">Regex (Pattern)</mat-option>
+                </mat-select>
+              </mat-form-field>
+            </c-col>
+
+            <c-col xs="12" md="4" *ngIf="editPolicy.policy_type !== 'auto_exec'">
+              <mat-form-field appearance="outline" class="w-100">
+                <mat-label>Defense Level <i class="fas fa-info-circle ms-1 text-primary" [escape]="false" pTooltip="<b>Shell Bypass Protections</b><br/><br/><span style='color:#4caf50;'>Relaxed:</span> No defense.<br/><span style='color:#ff9800;'>Standard:</span> Blocks variable substitution <code>$(cmd)</code>.<br/><span style='color:#f44336;'>Strict:</span> Standard + Blocks chaining <code>&&</code> and listed binaries."></i></mat-label>
+                <mat-select [(ngModel)]="editPolicy.defense_level">
+                  <mat-option value="relaxed">Relaxed</mat-option>
+                  <mat-option value="standard">Standard</mat-option>
+                  <mat-option value="strict">Strict</mat-option>
+                  <mat-option value="custom">Custom</mat-option>
+                </mat-select>
+              </mat-form-field>
+            </c-col>
+          </c-row>
+        </div>
+      </c-col>
+
+      <!-- Security Settings Card (Only if Strict) -->
+      <c-col xs="12" *ngIf="editPolicy.defense_level === 'strict'">
+        <div class="p-3 border rounded bg-light border-danger">
+          <h6 class="mb-3 text-danger"><i class="fas fa-shield-halved me-2"></i>Strict Mode Protections</h6>
+          <mat-form-field appearance="outline" class="w-100 mb-0">
+            <mat-label>Blocked Binaries <i class="fas fa-info-circle ms-1 text-danger" [escape]="false" pTooltip="<b>Blocked Binaries</b><br/><br/>Unconditionally blocks execution of these shell binaries (e.g. <code>bash, python</code>) to prevent attackers from escaping restrictions via subshells.<br/><br/><i>Comma separated list.</i>"></i></mat-label>
+            <input matInput [(ngModel)]="editPolicy.blockedBinariesText" placeholder="bash, sh, python, python3, perl, php, node" />
+          </mat-form-field>
+        </div>
+      </c-col>
+
+      <!-- Agent Configuration Card -->
+      <c-col xs="12" *ngIf="editPolicy.policy_type !== 'auto_exec'">
+        <div class="p-3 border rounded bg-light">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="mb-0 text-primary"><i class="fas fa-microchip me-2"></i>Agent Modes</h6>
+            <i class="fas fa-circle-question text-primary" [escape]="false" pTooltip="<b>Agent Enforcement Modes</b><br/><br/>
+<span style='color:#4caf50;'><b>Kernel — Linux + Strict</b></span><br/>
+Seccomp-bpf + ptrace execve interception at the kernel level.
+Real bash/zsh shell with full PTY — tab completion, colors,
+Ctrl-C, terminal resize all work natively. Immune to all
+known shell-trap bypasses. Strongest enforcement tier.<br/><br/>
+<span style='color:#2196f3;'><b>Interpreter — macOS/FreeBSD + Strict</b></span><br/>
+Policy-filtered Go shell interpreter. NOT a sandbox — no
+filesystem/network isolation, no job control (Ctrl-Z is
+disabled). Every command passes through the policy check
+before execution. Builtins (eval, exec, source, trap) are
+blocked as defense-in-depth. Best available for this OS.<br/><br/>
+<span style='color:#ff9800;'><b>Hook — macOS/FreeBSD + Compatible</b></span><br/>
+Bash DEBUG-trap / zsh preexec with tamper detection. Provides
+native bash/zsh experience. Bypassable from a live session
+(ⓘ tamper detection catches file-level changes; gateway
+regex is the designated backstop). Best interactive
+fidelity on non-Linux when full enforcement is optional.<br/><br/>
+<span style='color:#9e9e9e;'><b>None</b></span><br/>
+No agent deployed. Gateway-level regex/pattern filtering
+only (tier: none). Bypassable by base64 encoding, subshells,
+or any command-line obfuscation."></i>
+          </div>
+          
+          <c-row class="g-3">
+            <c-col xs="12" md="4">
+              <mat-form-field appearance="outline" class="w-100 mb-0">
+                <mat-label><i class="fab fa-linux"></i> Linux</mat-label>
+                <mat-select [(ngModel)]="editPolicy.agent_modes.linux">
+                  <mat-option value="none">None</mat-option>
+                  <mat-option value="strict">Kernel (Strict)</mat-option>
+                </mat-select>
+              </mat-form-field>
+            </c-col>
+
+            <c-col xs="12" md="4">
+              <mat-form-field appearance="outline" class="w-100 mb-0">
+                <mat-label><i class="fab fa-apple"></i> macOS</mat-label>
+                <mat-select [(ngModel)]="editPolicy.agent_modes.darwin">
+                  <mat-option value="none">None</mat-option>
+                  <mat-option value="compatible">Hook (Compatible)</mat-option>
+                  <mat-option value="strict">Interpreter (Strict)</mat-option>
+                </mat-select>
+              </mat-form-field>
+            </c-col>
+
+            <c-col xs="12" md="4">
+              <mat-form-field appearance="outline" class="w-100 mb-0">
+                <mat-label><i class="fab fa-freebsd"></i> FreeBSD/BSD</mat-label>
+                <mat-select [(ngModel)]="editPolicy.agent_modes.freebsd">
+                  <mat-option value="none">None</mat-option>
+                  <mat-option value="compatible">Hook (Compatible)</mat-option>
+                  <mat-option value="strict">Interpreter (Strict)</mat-option>
+                </mat-select>
+              </mat-form-field>
+            </c-col>
+          </c-row>
+        </div>
+      </c-col>
+
+      <c-col xs="12" *ngIf="editPolicy.policy_type === 'auto_exec'">
+        <mat-form-field appearance="outline" class="w-100">
+          <mat-label>Auto-Execute Commands</mat-label>
+          <textarea matInput [(ngModel)]="editPolicy.autoExecCommands" rows="4"
+            placeholder="Enter commands to execute on session start, one per line&#10;Example:&#10;show version&#10;show ip interface brief&#10;show running-config"></textarea>
+        </mat-form-field>
+        <p class="text-muted small">These commands run automatically in sequence when a terminal session starts. The session is non-interactive — output is captured and displayed.</p>
+      </c-col>
+    </c-row>
+
+    <hr *ngIf="editPolicy.policy_type !== 'auto_exec'" />
+    <div *ngIf="editPolicy.policy_type !== 'auto_exec'" class="d-flex justify-content-between align-items-center mb-2">
+      <h6 class="mb-0"><i class="fas fa-list me-2"></i>Rules</h6>
+      <div class="d-flex gap-2 align-items-center">
+        <select *ngIf="brands.length > 0" cSelect [(ngModel)]="brandFilter" class="form-select-sm" style="width:auto; font-size:0.8rem;">
+          <option value="">All brands</option>
+          <option *ngFor="let b of brands" [value]="b.brand" style="text-transform: capitalize;">{{b.display_name || b.brand}}</option>
+        </select>
+        <button cButton size="sm" color="warning" class="me-1" (click)="openPolicyAIHelp()" style="color: #000;">
+          <i class="fas fa-robot me-1"></i>AI Help
+        </button>
+        <button cButton size="sm" color="success" (click)="addRule()">
+          <i class="fas fa-plus me-1"></i>Add Rule
+        </button>
+      </div>
+    </div>
+    <p class="text-muted small mb-2" *ngIf="editPolicy.policy_type === 'blacklist'">
+      Commands matching these rules will be <strong>blocked</strong>. Everything else is allowed.
+    </p>
+    <p class="text-muted small mb-2" *ngIf="editPolicy.policy_type === 'whitelist'">
+      Only commands matching these rules will be <strong>allowed</strong>. Everything else is blocked.
+    </p>
+
+    <div *ngIf="editPolicy.policy_type !== 'auto_exec' && (!editPolicy.rules || editPolicy.rules.length === 0)" class="text-center text-muted py-3">
+      <i class="fas fa-plus-circle fa-2x d-block mb-1"></i>
+      No rules defined. Click "Add Rule" to add one.
+    </div>
+
+    <div *ngFor="let rule of filteredEditRules(); let i = index" class="mb-2">
+      <div *ngIf="editPolicy.policy_type !== 'auto_exec'" class="input-group">
+        <span class="input-group-text bg-transparent small text-muted" pTooltip="Rule ID" style="font-size: 0.65rem; padding: 0 0.4rem;">{{rule.id ? rule.id.substring(0, 8) : '--'}}</span>
+        <select *ngIf="brands.length > 0" cSelect [(ngModel)]="rule.brand" class="form-select-sm" style="max-width: 100px; font-size:0.75rem;">
+          <option value="">All Brands</option>
+          <option *ngFor="let b of brands" [value]="b.brand" style="text-transform: capitalize;">{{b.display_name || b.brand}}</option>
+        </select>
+        <select cSelect [(ngModel)]="rule.matching" class="form-select-sm" style="max-width: 85px; font-size:0.75rem;">
+          <option value="">Policy</option>
+          <option value="token">Token</option>
+          <option value="regex">Regex</option>
+        </select>
+        <input cFormControl [(ngModel)]="rule.rule" placeholder="Enter rule (command or regex pattern)" class="form-control form-control-sm" />
+        <button cButton size="sm" color="danger" variant="outline" (click)="removeRule(i)">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+    </div>
+  </c-modal-body>
+  <c-modal-footer>
+    <button cButton color="secondary" (click)="editDialogVisible=false">Cancel</button>
+    <button cButton color="primary" (click)="savePolicy()" [disabled]="!editPolicy.name">
+      <i class="fas fa-save me-1"></i>{{editMode === 'create' ? 'Create' : 'Save'}}
+    </button>
+  </c-modal-footer>
+</c-modal>
+
+<!-- Delete Confirm Modal -->
+<c-modal #deleteConfirm backdrop="static" [(visible)]="deleteConfirmVisible" id="deleteConfirmModal">
+  <c-modal-header>
+    <h6 cModalTitle><i class="fas fa-exclamation-triangle me-2 text-warning"></i>Delete Policy</h6>
+    <button (click)="deleteConfirmVisible=false" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body>
+    <p>Are you sure you want to delete policy <strong>{{deleteTarget?.name}}</strong>?</p>
+    <p class="text-danger small mb-0">This action cannot be undone and will immediately affect any active sessions using this policy.</p>
+  </c-modal-body>
+  <c-modal-footer>
+    <button cButton color="secondary" (click)="deleteConfirmVisible=false">Cancel</button>
+    <button cButton color="danger" (click)="executeDelete()">
+      <i class="fas fa-trash me-1"></i>Delete
+    </button>
+  </c-modal-footer>
+</c-modal>
+
+<!-- Create/Edit Expansion Dialog -->
+<c-modal #expDialog backdrop="static" [(visible)]="expEditDialogVisible" size="lg" id="expEditModal">
+  <c-modal-header>
+    <h6 cModalTitle>
+      <i class="fas" [ngClass]="expEditMode === 'create' ? 'fa-plus-circle' : 'fa-edit'"></i>
+      {{expEditMode === 'create' ? 'New Command Expansion' : 'Edit Expansion'}}
+    </h6>
+    <button (click)="expEditDialogVisible=false" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body>
+    <c-row class="g-3">
+      <c-col xs="12" md="6">
+        <mat-form-field appearance="outline" class="w-100">
+          <mat-label>Brand <i class="fas fa-info-circle ms-1 text-muted" pTooltip="The device brand this rule applies to. Select 'generic' to apply everywhere."></i></mat-label>
+          <mat-select [(ngModel)]="editExpansion.brand" [disabled]="editExpansion.is_default">
+            <mat-option value="generic">Generic (All Brands)</mat-option>
+            <mat-option *ngFor="let b of brands" [value]="b.brand" style="text-transform: capitalize;">{{b.display_name || b.brand}}</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </c-col>
+      <c-col xs="12" md="6">
+        <mat-form-field appearance="outline" class="w-100">
+          <mat-label>Expansion Type</mat-label>
+          <mat-select [(ngModel)]="editExpansion.expansion_type" [disabled]="editExpansion.is_default">
+            <mat-option value="shorthand">Shorthand (Expand alias to full)</mat-option>
+            <mat-option value="full_command">Full Command (Exact matching only)</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </c-col>
+      
+      <c-col xs="12" md="6" *ngIf="editExpansion.expansion_type === 'shorthand'">
+        <mat-form-field appearance="outline" class="w-100">
+          <mat-label>Shorthand</mat-label>
+          <input matInput [(ngModel)]="editExpansion.shorthand" placeholder="e.g. sh l" [disabled]="editExpansion.is_default" />
+        </mat-form-field>
+      </c-col>
+      
+      <c-col xs="12" [ngClass]="editExpansion.expansion_type === 'shorthand' ? 'md-6' : 'md-12'">
+        <mat-form-field appearance="outline" class="w-100">
+          <mat-label>Full Command</mat-label>
+          <input matInput [(ngModel)]="editExpansion.full_command" placeholder="e.g. show lldp neighbors" [disabled]="editExpansion.is_default" />
+        </mat-form-field>
+      </c-col>
+    </c-row>
+    <p *ngIf="editExpansion.is_default" class="text-warning small mt-2">
+      <i class="fas fa-lock me-1"></i> This is a system-provided rule. You can only enable or disable it.
+    </p>
+  </c-modal-body>
+  <c-modal-footer>
+    <button cButton color="secondary" (click)="expEditDialogVisible=false">Cancel</button>
+    <button cButton color="primary" (click)="saveExpansion()" [disabled]="(editExpansion.expansion_type === 'shorthand' && !editExpansion.shorthand) || !editExpansion.full_command">
+      <i class="fas fa-save me-1"></i>{{expEditMode === 'create' ? 'Create' : 'Save'}}
+    </button>
+  </c-modal-footer>
+</c-modal>
+
+<c-toaster position="fixed" placement="top-end"></c-toaster>
