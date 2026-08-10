@@ -67,3 +67,13 @@
   top: 0;
   z-index: 1020;
 }
+
+.pulse-text {
+  animation: pulse-text-anim 1.5s infinite;
+}
+
+@keyframes pulse-text-anim {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}

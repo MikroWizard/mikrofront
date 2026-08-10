@@ -1,0 +1,271 @@
+<div class="fade-in">
+  
+  <c-card class="mb-4">
+    <c-card-header>
+      <strong>🛡 Simple Firewall</strong>
+    </c-card-header>
+    <c-card-body>
+      <p class="text-medium-emphasis">
+        Protect your network with predefined rules or create custom block lists for specific devices.
+      </p>
+
+      <c-nav variant="tabs">
+        <a [active]="true" [cTabContent]="tabContent" [routerLink] [tabPaneIdx]="0" (click)="loadPresets()" cNavLink>Predefined Rules</a>
+        <a [cTabContent]="tabContent" [routerLink] [tabPaneIdx]="1" (click)="loadCustomRules()" cNavLink>Custom Block List</a>
+        <a [cTabContent]="tabContent" [routerLink] [tabPaneIdx]="2" (click)="loadAddressLists()" cNavLink>Preset IP Lists</a>
+      </c-nav>
+      
+      <c-tab-content #tabContent="cTabContent">
+        
+        <!-- Tab 1: Predefined Rules -->
+        <c-tab-pane class="p-3">
+          
+          <div *ngIf="loadingPresets" class="text-center py-5">
+            <c-spinner></c-spinner>
+          </div>
+          
+          <c-row *ngIf="!loadingPresets">
+            <c-col sm="12" md="6" lg="4" xl="3" *ngFor="let preset of presetsList" class="mb-4">
+              <c-card class="firewall-preset-card" [ngClass]="{'is-enabled': presetStatus[preset.key] === 'enabled'}">
+                <c-card-body>
+                  <div class="d-flex justify-content-between align-items-start">
+                    <div class="preset-icon text-primary">
+                      <i [class]="preset.icon"></i>
+                    </div>
+                    <div class="form-check form-switch form-switch-xl">
+                      <input class="form-check-input" type="checkbox" role="switch"
+                             [checked]="presetStatus[preset.key] === 'enabled'"
+                             (change)="togglePreset(preset.key, $event)"
+                             [disabled]="togglingPreset !== null">
+                    </div>
+                  </div>
+                  
+                  <h5 class="card-title mt-2">
+                    {{ preset.title }}
+                    <i class="fa-solid fa-circle-info ms-1 text-muted fs-6" [cTooltip]="preset.tooltip" cTooltipPlacement="top"></i>
+                  </h5>
+                  <p class="card-text text-medium-emphasis small">{{ preset.desc }}</p>
+                  
+                  <c-badge *ngIf="presetStatus[preset.key] === 'enabled'" color="success">Active</c-badge>
+                  <c-badge *ngIf="presetStatus[preset.key] === 'partial'" color="warning">Partially Active</c-badge>
+                </c-card-body>
+                
+                <div class="preset-overlay" *ngIf="togglingPreset === preset.key">
+                  <c-spinner color="primary"></c-spinner>
+                  <span class="ms-2">Applying...</span>
+                </div>
+              </c-card>
+            </c-col>
+          </c-row>
+          
+        </c-tab-pane>
+
+        <!-- Tab 2: Custom Block List -->
+        <c-tab-pane class="p-3">
+          
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="m-0">Blocked Devices & IPs</h5>
+            <button cButton color="primary" size="sm" (click)="openCustomModal()">
+              <i class="fa-solid fa-plus me-1"></i> Block IP/MAC
+            </button>
+          </div>
+          
+          <div *ngIf="loadingCustom" class="text-center py-4">
+            <c-spinner></c-spinner>
+          </div>
+          
+          <div class="table-responsive" *ngIf="!loadingCustom">
+            <table class="table table-hover table-bordered align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th style="width: 80px;">Order</th>
+                  <th>Label</th>
+                  <th>Type</th>
+                  <th>Value</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let rule of customRules; let i = index" class="rule-row">
+                  <td class="text-center">
+                    <button cButton color="secondary" variant="ghost" size="sm" (click)="moveRule(rule.id, -1, i)" [disabled]="i === 0">
+                      <i class="fa-solid fa-arrow-up"></i>
+                    </button>
+                    <button cButton color="secondary" variant="ghost" size="sm" (click)="moveRule(rule.id, 1, i)" [disabled]="i === customRules.length - 1">
+                      <i class="fa-solid fa-arrow-down"></i>
+                    </button>
+                  </td>
+                  <td><strong>{{ getCustomLabel(rule.comment) }}</strong></td>
+                  <td>
+                    <c-badge *ngIf="rule.src_address" color="info">IP Address</c-badge>
+                    <c-badge *ngIf="rule.src_mac_address" color="dark">MAC Address</c-badge>
+                  </td>
+                  <td class="font-monospace">
+                    {{ rule.src_address || rule.src_mac_address }}
+                  </td>
+                  <td>
+                    <div class="form-check form-switch">
+                      <input class="form-check-input" type="checkbox" role="switch"
+                             [checked]="!rule.disabled"
+                             (change)="toggleCustomRule(rule, $event)">
+                      <label class="form-check-label">{{ rule.disabled ? 'Disabled' : 'Active' }}</label>
+                    </div>
+                  </td>
+                  <td>
+                    <button cButton color="danger" variant="ghost" size="sm" (click)="deleteCustomRule(rule.id)" pTooltip="Delete Rule">
+                      <i class="fa-solid fa-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+                <tr *ngIf="customRules.length === 0">
+                  <td colspan="6" class="text-center text-medium-emphasis py-4">
+                    No custom block rules found.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
+        </c-tab-pane>
+
+        <!-- Tab 3: Address Lists -->
+        <c-tab-pane class="p-3">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="m-0">Preset IP Block Lists</h5>
+            <button cButton color="primary" size="sm" (click)="openAlModal()" [disabled]="availableAddressLists.length === 0">
+              <i class="fa-solid fa-plus me-1"></i> Add IP to Preset
+            </button>
+          </div>
+          <p class="text-medium-emphasis small" *ngIf="availableAddressLists.length === 0">
+            Enable a Predefined Rule that uses an Address List (like Block Online Games) to add custom IPs to it.
+          </p>
+
+          <div *ngIf="loadingAl" class="text-center py-4">
+            <c-spinner></c-spinner>
+          </div>
+
+          <div class="table-responsive" *ngIf="!loadingAl">
+            <table class="table table-hover table-bordered align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th>Target Preset</th>
+                  <th>IP / Subnet Address</th>
+                  <th>Origin</th>
+                  <th class="text-center">Status</th>
+                  <th class="text-center">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let entry of alEntries">
+                  <td class="fw-bold font-monospace">{{entry.list}}</td>
+                  <td class="font-monospace">{{entry.address}}</td>
+                  <td>
+                    <c-badge *ngIf="isCustomerCreated(entry)" color="info">Custom Entry</c-badge>
+                    <c-badge *ngIf="!isCustomerCreated(entry)" color="secondary">Preset Default</c-badge>
+                  </td>
+                  <td class="text-center">
+                    <div class="form-check form-switch d-inline-block">
+                      <input class="form-check-input" type="checkbox" role="switch" [checked]="!entry.disabled" (change)="toggleAl(entry)">
+                    </div>
+                  </td>
+                  <td class="text-center">
+                    <button cButton color="danger" variant="ghost" size="sm" (click)="deleteAl(entry)" [disabled]="!isCustomerCreated(entry)" pTooltip="Delete Entry">
+                      <i class="fa-solid fa-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+                <tr *ngIf="alEntries.length === 0">
+                  <td colspan="5" class="text-center text-medium-emphasis py-4">
+                    No active preset address lists found.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </c-tab-pane>
+      </c-tab-content>
+      
+    </c-card-body>
+  </c-card>
+</div>
+
+<!-- Add Custom Block Modal -->
+<c-modal id="addCustomModal" [visible]="customModalVisible" (visibleChange)="customModalVisible = $event">
+  <c-modal-header>
+    <h5 cModalTitle>Block IP / MAC</h5>
+    <button cButtonClose (click)="closeCustomModal()"></button>
+  </c-modal-header>
+  
+  <form [formGroup]="customForm" (ngSubmit)="submitCustomForm()">
+    <c-modal-body>
+      
+      <div *ngIf="customErrorMsg" class="alert alert-danger">{{ customErrorMsg }}</div>
+      
+      <div class="mb-3">
+        <label cLabel>Type</label>
+        <select cSelect formControlName="type">
+          <option value="ip">IP Address</option>
+          <option value="mac">MAC Address</option>
+        </select>
+      </div>
+      
+      <div class="mb-3">
+        <label cLabel>Value</label>
+        <input cFormControl formControlName="value" [placeholder]="customForm.get('type')?.value === 'ip' ? '192.168.88.50' : 'AA:BB:CC:DD:EE:FF'" />
+        <div class="form-text">
+          The {{ customForm.get('type')?.value === 'ip' ? 'IP' : 'MAC' }} address you want to block from accessing the internet.
+        </div>
+      </div>
+      
+      <div class="mb-3">
+        <label cLabel>Label (Optional)</label>
+        <input cFormControl formControlName="label" placeholder="e.g. Kids Tablet" />
+      </div>
+      
+    </c-modal-body>
+    <c-modal-footer>
+      <button cButton color="secondary" type="button" (click)="closeCustomModal()">Cancel</button>
+      <button cButton color="primary" type="submit" [disabled]="customForm.invalid || addingCustom">
+        <c-spinner *ngIf="addingCustom" size="sm"></c-spinner> 
+        Add Rule
+      </button>
+    </c-modal-footer>
+  </form>
+</c-modal>
+
+<!-- Add Address List Modal -->
+<c-modal id="alModal" [visible]="alModalVisible" (visibleChange)="alModalVisible = $event">
+  <c-modal-header>
+    <h5 cModalTitle>Add IP to Preset</h5>
+    <button cButtonClose (click)="closeAlModal()"></button>
+  </c-modal-header>
+  
+  <form [formGroup]="alForm" (ngSubmit)="submitAl()">
+    <c-modal-body>
+      <div *ngIf="alErrorMsg" class="alert alert-danger">{{ alErrorMsg }}</div>
+      
+      <div class="mb-3">
+        <label cLabel>Target Preset</label>
+        <select cSelect formControlName="list">
+          <option value="" disabled>Select an active preset...</option>
+          <option *ngFor="let list of availableAddressLists" [value]="list">{{ list }}</option>
+        </select>
+        <div class="form-text">Only currently active presets that use IP blocking are available.</div>
+      </div>
+      
+      <div class="mb-3">
+        <label cLabel>IP Address / Subnet</label>
+        <input cFormControl formControlName="address" placeholder="e.g. 10.0.0.0/24 or 192.168.1.5" />
+      </div>
+      
+    </c-modal-body>
+    <c-modal-footer>
+      <button cButton color="secondary" type="button" (click)="closeAlModal()">Cancel</button>
+      <button cButton color="primary" type="submit" [disabled]="alForm.invalid || addingAl">
+        <c-spinner *ngIf="addingAl" size="sm"></c-spinner> 
+        Add to List
+      </button>
+    </c-modal-footer>
+  </form>
+</c-modal>

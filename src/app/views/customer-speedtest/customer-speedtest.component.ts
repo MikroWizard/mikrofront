@@ -40,8 +40,11 @@ export class CustomerSpeedTestComponent implements OnInit, OnDestroy {
   // Router-initiated speed test properties
   public speedTestMode: 'browser' | 'router' = 'browser';
   public routerTestTarget = 'mikrowizard-server';
-  public routerTestDuration = '3s';
+  public routerTestDuration = '5s';
   public runningRouterTest = false;
+  public routerTestProgress = 0;
+  public routerTestStage = '';
+  private routerTestInterval: any;
   public routerResults: any = null;
   public routerTestError = "";
   public speedtestServers: any[] = [];
@@ -123,8 +126,33 @@ export class CustomerSpeedTestComponent implements OnInit, OnDestroy {
       this.loadingHistory = false;
       const data = res.result || res;
       if (Array.isArray(data)) {
-        this.historyList = data;
-        this.buildChart(data);
+        let history = data.map((h: any) => {
+          if (h.raw_data && h.test_type === 'router') {
+            try {
+              const raw = typeof h.raw_data === 'string' ? JSON.parse(h.raw_data) : h.raw_data;
+              if (Array.isArray(raw)) {
+                for (const r of raw) {
+                  const status = (r.status || '').toLowerCase().replace('-', ' ').trim();
+                  if (status === 'udp download') {
+                    const val = r['udp-download'] || r['udp-rx'] || r['rx-speed'] || r['download'];
+                    if (val) h.udp_download = this.parseSpeedResult(val).speed;
+                  } else if (status === 'udp upload') {
+                    const val = r['udp-upload'] || r['udp-tx'] || r['tx-speed'] || r['upload'];
+                    if (val) h.udp_upload = this.parseSpeedResult(val).speed;
+                  }
+                }
+              } else if (typeof raw === 'object' && raw !== null) {
+                if (raw.udp_download) h.udp_download = this.parseSpeedResult(raw.udp_download).speed;
+                if (raw.udp_upload) h.udp_upload = this.parseSpeedResult(raw.udp_upload).speed;
+              }
+            } catch (e) {
+              console.error('Error parsing raw_data', e);
+            }
+          }
+          return h;
+        });
+        this.historyList = history;
+        this.buildChart(history);
       }
     }).catch(err => {
       this.loadingHistory = false;
@@ -422,12 +450,43 @@ export class CustomerSpeedTestComponent implements OnInit, OnDestroy {
     this.runningRouterTest = true;
     this.routerTestError = "";
     this.routerResults = null;
+    this.routerTestProgress = 0;
+    this.routerTestStage = 'Connecting to server...';
+
+    const durMatch = this.routerTestDuration.match(/(\d+)/);
+    const stageDurationSec = durMatch ? parseInt(durMatch[1], 10) : 5;
+    const totalExpectedSec = (stageDurationSec * 5) + 5;
+
+    let elapsed = 0;
+    this.routerTestInterval = setInterval(() => {
+      elapsed += 0.5;
+      let p = (elapsed / totalExpectedSec) * 100;
+      if (p > 95) p = 95;
+      this.routerTestProgress = p;
+
+      const stageLen = stageDurationSec + 1;
+      if (elapsed < stageLen) {
+        this.routerTestStage = 'Measuring Latency & Jitter...';
+      } else if (elapsed < stageLen * 2) {
+        this.routerTestStage = 'Testing TCP Download Speed...';
+      } else if (elapsed < stageLen * 3) {
+        this.routerTestStage = 'Testing TCP Upload Speed...';
+      } else if (elapsed < stageLen * 4) {
+        this.routerTestStage = 'Testing UDP Download Speed...';
+      } else {
+        this.routerTestStage = 'Testing UDP Upload Speed...';
+      }
+    }, 500);
 
     this.data_provider.customerRunRouterSpeedtest(this.selectedDeviceId, {
       target: this.routerTestTarget.trim(),
       duration: this.routerTestDuration
     }).then((res: any) => {
+      clearInterval(this.routerTestInterval);
       this.runningRouterTest = false;
+      this.routerTestProgress = 100;
+      this.routerTestStage = 'Test Complete';
+      
       const data = res.result || res;
       if (data && data.status === 'success' && data.results) {
         const results = data.results;
@@ -452,7 +511,10 @@ export class CustomerSpeedTestComponent implements OnInit, OnDestroy {
         this.routerTestError = data.err || "Router failed to execute the speed test. Ensure the remote Bandwidth Server is active and accessible.";
       }
     }).catch(err => {
+      clearInterval(this.routerTestInterval);
       this.runningRouterTest = false;
+      this.routerTestProgress = 0;
+      this.routerTestStage = '';
       this.routerTestError = "Connection error with backend server.";
     });
   }

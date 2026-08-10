@@ -6,7 +6,9 @@ import {
   CardModule,
   ButtonModule,
   GridModule,
-  SpinnerModule
+  SpinnerModule,
+  ProgressModule,
+  BadgeModule
 } from '@coreui/angular';
 import { ChartjsModule } from '@coreui/angular-chartjs';
 import { TooltipModule } from 'primeng/tooltip';
@@ -22,6 +24,8 @@ import { CustomerSpeedTestComponent } from './customer-speedtest.component';
     ButtonModule,
     GridModule,
     SpinnerModule,
+    ProgressModule,
+    BadgeModule,
     ChartjsModule,
     TooltipModule,
     CustomerSpeedTestRoutingModule

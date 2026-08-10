@@ -1,0 +1,38 @@
+.firewall-preset-card {
+  height: 100%;
+  position: relative;
+  transition: all 0.3s ease;
+  
+  &.is-enabled {
+    border-color: var(--cui-success);
+    box-shadow: 0 0 10px rgba(var(--cui-success-rgb), 0.2);
+  }
+}
+
+.preset-overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(255,255,255,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  border-radius: inherit;
+}
+
+[data-coreui-theme='dark'] .preset-overlay {
+  background: rgba(0,0,0,0.7);
+}
+
+.preset-icon {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+}
+
+.rule-row {
+  transition: background-color 0.2s;
+  
+  &:hover {
+    background-color: var(--cui-tertiary-bg);
+  }
+}

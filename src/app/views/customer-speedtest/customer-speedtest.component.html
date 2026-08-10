@@ -155,13 +155,18 @@
             <!-- Duration Select -->
             <div class="mb-3">
               <label for="routerTestDuration" class="form-label fw-semibold text-dark small mb-1">
-                <i class="fa-solid fa-circle-question text-secondary me-1" pTooltip="Specifies how long the active bandwidth transmission test runs. Shorter durations (5s or 10s) are recommended to avoid overloading the router CPU, while longer tests provide more stable and accurate speed results."></i>Test Duration
+                <i class="fa-solid fa-circle-question text-secondary me-1" pTooltip="Specifies how long the active bandwidth transmission test runs. Shorter durations are recommended to avoid overloading the router CPU, while longer tests provide more stable and accurate speed results."></i>Test Duration
               </label>
-              <select id="routerTestDuration" class="form-select" [(ngModel)]="routerTestDuration" [disabled]="runningRouterTest">
-                <option value="3s">3 Seconds (Recommended)</option>
-                <option value="5s">5 Seconds</option>
-                <option value="10s">10 Seconds</option>
-              </select>
+              <div class="input-group">
+                <span class="input-group-text bg-light text-muted border-end-0">
+                  <i class="fa-solid fa-stopwatch"></i>
+                </span>
+                <select id="routerTestDuration" class="form-select border-start-0" [(ngModel)]="routerTestDuration" [disabled]="runningRouterTest">
+                  <option value="5s">5 Seconds (Recommended)</option>
+                  <option value="10s">10 Seconds</option>
+                  <option value="20s">20 Seconds</option>
+                </select>
+              </div>
               <div class="form-text text-muted small mt-1" style="font-size: 0.7rem;">
                 Note: Bandwidth testing uses Router CPU. Short duration is recommended.
               </div>
@@ -175,6 +180,18 @@
                 <i class="fa-solid fa-circle-play me-2" *ngIf="!runningRouterTest"></i>
                 {{ runningRouterTest ? 'Testing Bandwidth...' : 'Start Router Test' }}
               </button>
+            </div>
+
+            <!-- Animated Progress Bar -->
+            <div *ngIf="runningRouterTest" class="mb-4 border rounded p-3 bg-white shadow-sm">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="small fw-bold text-primary"><i class="fa-solid fa-satellite-dish me-2 pulse-text"></i>{{ routerTestStage }}</span>
+                <span class="small font-monospace text-muted fw-bold">{{ routerTestProgress | number:'1.0-0' }}%</span>
+              </div>
+              <c-progress class="mb-1" style="height: 8px;">
+                <c-progress-bar [value]="routerTestProgress" color="primary" [animated]="true"></c-progress-bar>
+              </c-progress>
+              <div class="text-muted" style="font-size: 0.65rem;">Please wait while the test completes. This may take up to 20 seconds.</div>
             </div>
 
             <!-- Error Message -->
@@ -305,19 +322,28 @@
                 <thead class="table-light sticky-top">
                   <tr>
                     <th>Date & Time</th>
+                    <th>Type</th>
                     <th class="text-center">Ping (ms)</th>
                     <th class="text-center">Jitter (ms)</th>
-                    <th class="text-end">Download</th>
-                    <th class="text-end">Upload</th>
+                    <th class="text-end">TCP Down</th>
+                    <th class="text-end">TCP Up</th>
+                    <th class="text-end">UDP Down</th>
+                    <th class="text-end">UDP Up</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr *ngFor="let h of historyList">
-                    <td><small class="text-dark fw-semibold">{{ h.created | date:'medium' }}</small></td>
+                    <td><small class="text-dark fw-semibold">{{ h.created | date:'short' }}</small></td>
+                    <td>
+                      <c-badge color="success" *ngIf="h.test_type === 'router'">Router</c-badge>
+                      <c-badge color="info" *ngIf="h.test_type === 'browser' || !h.test_type">Browser</c-badge>
+                    </td>
                     <td class="text-center font-monospace">{{ h.ping }}</td>
                     <td class="text-center font-monospace">{{ h.jitter }}</td>
                     <td class="text-end font-monospace text-primary fw-bold">{{ h.download }} Mbps</td>
                     <td class="text-end font-monospace text-purple fw-bold">{{ h.upload }} Mbps</td>
+                    <td class="text-end font-monospace text-info fw-bold">{{ h.udp_download ? h.udp_download + ' Mbps' : '-' }}</td>
+                    <td class="text-end font-monospace text-warning fw-bold">{{ h.udp_upload ? h.udp_upload + ' Mbps' : '-' }}</td>
                   </tr>
                 </tbody>
               </table>

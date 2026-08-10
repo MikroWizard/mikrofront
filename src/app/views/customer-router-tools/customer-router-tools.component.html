@@ -1,0 +1,435 @@
+<c-row>
+  <c-col xs>
+    <c-card class="mb-4">
+      <c-card-header>
+        <c-row class="align-items-center">
+          <c-col xs [lg]="6">
+            <strong><i class="fa-solid fa-server text-primary me-2"></i>Router Tools & Connected Devices</strong>
+          </c-col>
+          <c-col xs [lg]="6" class="text-end">
+          </c-col>
+        </c-row>
+      </c-card-header>
+    </c-card>
+
+    <!-- Connected Clients -->
+    <c-card class="mb-4">
+      <c-card-header>
+        <c-row class="align-items-center">
+          <c-col xs [lg]="6">
+            <strong><i class="fa-solid fa-laptop me-2 text-primary"></i>Connected Clients</strong>
+          </c-col>
+          <c-col xs [lg]="6" class="text-end">
+            <button cButton size="sm" color="primary" variant="outline" (click)="loadClients()" [disabled]="loadingClients">
+              <i class="fa-solid fa-rotate" [class.fa-spin]="loadingClients"></i> Refresh
+            </button>
+          </c-col>
+        </c-row>
+      </c-card-header>
+      <c-card-body>
+          <div *ngIf="loadingClients" class="text-center py-5">
+            <c-spinner color="primary"></c-spinner>
+          </div>
+          <div *ngIf="!loadingClients && clients.length === 0" class="text-center py-5 text-muted">
+            <i class="fa-solid fa-network-wired fa-2x mb-2"></i>
+            <p>No active clients connected to the router.</p>
+          </div>
+
+          <div *ngIf="!loadingClients && clients.length > 0" class="p-3">
+            <!-- Tabs Navigation -->
+            <ul class="nav nav-underline mb-3">
+              <ng-container *ngFor="let tab of clientTabs">
+                <li class="nav-item" *ngIf="!isAdminView || tab.id !== 'dhcp'">
+                  <a class="nav-link cursor-pointer fw-semibold" 
+                     [class.active]="activeClientTab === tab.id"
+                     (click)="setActiveClientTab(tab.id)">
+                    {{ tab.label }} <span class="badge bg-secondary ms-1">{{ clientsBySource[tab.id].length || 0 }}</span>
+                  </a>
+                </li>
+              </ng-container>
+            </ul>
+
+            <!-- Search and Pagination Controls -->
+            <div class="d-flex flex-wrap align-items-center justify-content-between mb-3 gap-2">
+              <span class="p-input-icon-left table-search-input">
+                <i class="pi pi-search"></i>
+                <input type="text" pInputText placeholder="Search records..." [(ngModel)]="searchQuery" class="form-control-sm" />
+              </span>
+              
+              <div class="d-flex align-items-center gap-2">
+                <select class="form-select form-select-sm" style="width: auto;" (change)="changePageSize($event)">
+                  <option value="5" [selected]="pageSize === 5">5 per page</option>
+                  <option value="10" [selected]="pageSize === 10">10 per page</option>
+                  <option value="25" [selected]="pageSize === 25">25 per page</option>
+                  <option value="50" [selected]="pageSize === 50">50 per page</option>
+                  <option value="100" [selected]="pageSize === 100">100 per page</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Table Container -->
+            <div class="table-responsive">
+              <!-- DHCP Table -->
+              <table *ngIf="activeClientTab === 'dhcp'" class="table table-hover table-bordered table-striped align-middle mb-0">
+                      <thead class="table-light">
+                        <tr>
+                          <th>Hostname</th>
+                          <th>IP Address</th>
+                          <th>MAC Address</th>
+                          <th>Status</th>
+                        </tr>
+                      </thead>
+                <tbody>
+                  <tr *ngFor="let client of paginatedClients">
+                    <td>
+                      <div class="fw-semibold">{{client.hostname || 'Unknown'}}</div>
+                    </td>
+                    <td><code class="text-dark">{{client.ip}}</code></td>
+                    <td><small class="text-muted font-monospace">{{client.mac}}</small></td>
+                    <td><span class="badge bg-secondary">{{client.status}}</span></td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <!-- Wi-Fi Legacy Table -->
+              <table *ngIf="activeClientTab === 'wifi_legacy'" class="table table-hover table-bordered table-striped align-middle mb-0">
+                      <thead class="table-light">
+                        <tr>
+                          <th>MAC Address</th>
+                          <th>Interface</th>
+                          <th>Uptime</th>
+                          <th>Signal</th>
+                        </tr>
+                      </thead>
+                <tbody>
+                  <tr *ngFor="let client of paginatedClients">
+                    <td>
+                      <div class="fw-semibold font-monospace">{{client.mac}}</div>
+                    </td>
+                    <td><small class="text-muted">{{client.interface}}</small></td>
+                    <td><small class="text-muted">{{client.uptime}}</small></td>
+                    <td>
+                      <div class="d-flex align-items-center gap-2">
+                        <div class="progress w-100" style="height: 6px; max-width: 60px;">
+                          <div class="progress-bar" role="progressbar"
+                            [ngStyle]="{'width': getSignalPercentage(client.signal) + '%', 'background-color': getSignalColor(client.signal)}">
+                          </div>
+                        </div>
+                        <small class="text-muted fw-bold">{{client.signal}}</small>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <!-- Wi-Fi v7 Table -->
+              <table *ngIf="activeClientTab === 'wifi_v7'" class="table table-hover table-bordered table-striped align-middle mb-0">
+                      <thead class="table-light">
+                        <tr>
+                          <th>MAC Address</th>
+                          <th>Interface</th>
+                          <th>Uptime</th>
+                          <th>Signal</th>
+                        </tr>
+                      </thead>
+                <tbody>
+                  <tr *ngFor="let client of paginatedClients">
+                    <td>
+                      <div class="fw-semibold font-monospace">{{client.mac}}</div>
+                    </td>
+                    <td><small class="text-muted">{{client.interface}}</small></td>
+                    <td><small class="text-muted">{{client.uptime}}</small></td>
+                    <td>
+                      <div class="d-flex align-items-center gap-2">
+                        <div class="progress w-100" style="height: 6px; max-width: 60px;">
+                          <div class="progress-bar" role="progressbar"
+                            [ngStyle]="{'width': getSignalPercentage(client.signal) + '%', 'background-color': getSignalColor(client.signal)}">
+                          </div>
+                        </div>
+                        <small class="text-muted fw-bold">{{client.signal}}</small>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <!-- ARP Table -->
+              <table *ngIf="activeClientTab === 'arp'" class="table table-hover table-bordered table-striped align-middle mb-0">
+                      <thead class="table-light">
+                        <tr>
+                          <th>IP Address</th>
+                          <th>MAC Address</th>
+                          <th>Interface</th>
+                          <th>Dynamic</th>
+                        </tr>
+                      </thead>
+                <tbody>
+                  <tr *ngFor="let client of paginatedClients">
+                    <td><code class="text-dark">{{client.ip}}</code></td>
+                    <td>
+                      <div class="fw-semibold font-monospace">{{client.mac}}</div>
+                    </td>
+                    <td><small class="text-muted">{{client.interface}}</small></td>
+                    <td><span class="badge"
+                        [ngClass]="client.dynamic === 'true' ? 'bg-info' : 'bg-secondary'">{{client.dynamic ===
+                        'true' ? 'Yes' : 'No'}}</span></td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <!-- PPP Sessions Table -->
+              <table *ngIf="activeClientTab === 'ppp'" class="table table-hover table-bordered table-striped align-middle mb-0">
+                      <thead class="table-light">
+                        <tr>
+                          <th>User / Name</th>
+                          <th>IP Address</th>
+                          <th>Service</th>
+                          <th>Uptime</th>
+                        </tr>
+                      </thead>
+                <tbody>
+                  <tr *ngFor="let client of paginatedClients">
+                    <td>
+                      <div class="fw-semibold">{{client.name}}</div>
+                    </td>
+                    <td><code class="text-dark">{{client.address}}</code></td>
+                    <td><span class="badge bg-primary">{{client.service}}</span></td>
+                    <td><small class="text-muted">{{client.uptime}}</small></td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <!-- Hotspot Table -->
+              <table *ngIf="activeClientTab === 'hotspot'" class="table table-hover table-bordered table-striped align-middle mb-0">
+                      <thead class="table-light">
+                        <tr>
+                          <th>User</th>
+                          <th>IP Address</th>
+                          <th>MAC Address</th>
+                          <th>Uptime</th>
+                        </tr>
+                      </thead>
+                <tbody>
+                  <tr *ngFor="let client of paginatedClients">
+                    <td>
+                      <div class="fw-semibold">{{client.user}}</div>
+                    </td>
+                    <td><code class="text-dark">{{client.address}}</code></td>
+                    <td><small class="text-muted font-monospace">{{client.mac}}</small></td>
+                    <td><small class="text-muted">{{client.uptime}}</small></td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <div *ngIf="filteredClients.length === 0" class="text-center py-4 text-muted">
+                <i class="fa-solid fa-search fa-2x mb-2 opacity-50"></i>
+                <p>No records found matching your search.</p>
+              </div>
+            </div>
+
+            <!-- Pagination Footer -->
+            <div class="d-flex align-items-center justify-content-between mt-3" *ngIf="filteredClients.length > 0">
+              <small class="text-muted">
+                Showing {{ (currentPage - 1) * pageSize + 1 }} to {{ (currentPage * pageSize) > filteredClients.length ? filteredClients.length : (currentPage * pageSize) }} of {{ filteredClients.length }} entries
+              </small>
+              <div class="btn-group btn-group-sm shadow-sm">
+                <button cButton color="light" [disabled]="currentPage === 1" (click)="prevPage()"><i class="fa-solid fa-chevron-left"></i></button>
+                <button cButton color="light" disabled class="fw-semibold bg-white text-dark border-start-0 border-end-0">Page {{ currentPage }} / {{ totalPages }}</button>
+                <button cButton color="light" [disabled]="currentPage >= totalPages" (click)="nextPage()"><i class="fa-solid fa-chevron-right"></i></button>
+              </div>
+            </div>
+          </div>
+        </c-card-body>
+      </c-card>
+    </c-col>
+  </c-row>
+
+<c-row>
+  <c-col xs>
+    <c-card class="mb-4">
+      <c-card-header>
+        <strong><i class="fa-solid fa-screwdriver-wrench me-2 text-warning"></i>Router Tools</strong>
+      </c-card-header>
+      <c-card-body>
+          <!-- Navigation Pills for Tools -->
+          <ul class="nav nav-underline mb-3">
+            <li class="nav-item" [class.active]="activeToolTab === 'wifi'">
+              <a class="nav-link cursor-pointer py-1" [class.active]="activeToolTab === 'wifi'"
+                (click)="activeToolTab = 'wifi'">Wi-Fi Config</a>
+            </li>
+            <li class="nav-item" [class.active]="activeToolTab === 'ping'">
+              <a class="nav-link cursor-pointer py-1" [class.active]="activeToolTab === 'ping'"
+                (click)="activeToolTab = 'ping'">Ping Test</a>
+            </li>
+            <li class="nav-item" [class.active]="activeToolTab === 'power'">
+              <a class="nav-link cursor-pointer py-1" [class.active]="activeToolTab === 'power'"
+                (click)="activeToolTab = 'power'">Power</a>
+            </li>
+          </ul>
+
+          <!-- Tool Panel: Wi-Fi -->
+          <div *ngIf="activeToolTab === 'wifi'">
+            <div *ngIf="loadingWifiInterfaces" class="text-center py-4">
+              <c-spinner color="warning"></c-spinner>
+            </div>
+            <div *ngIf="!loadingWifiInterfaces && wifiInterfaces.length === 0" class="text-center py-3 text-muted">
+              <i class="fa-solid fa-triangle-exclamation mb-2 text-warning"></i>
+              <p style="font-size: 0.85rem;">No wireless interfaces detected on this router.</p>
+            </div>
+            <div *ngIf="!loadingWifiInterfaces && wifiInterfaces.length > 0">
+              <form [formGroup]="wifiForm">
+                <div class="mb-2">
+                  <label for="wifiInterfaceSelect" class="form-label fw-semibold mb-1"
+                    style="font-size: 0.85rem;">Select SSID Interface</label>
+                  <select id="wifiInterfaceSelect" cSelect class="form-select form-select-sm"
+                    (change)="selectWifiInterface(wifiInterfaces[wifiInterfaceSelect.selectedIndex])"
+                    #wifiInterfaceSelect>
+                    <option *ngFor="let iface of wifiInterfaces; let i = index" [value]="i"
+                      [selected]="selectedWifiInterface?.name === iface.name">
+                      {{iface.name}} (SSID: {{iface.ssid}}) {{iface.readonly ? ' - [Read-Only]' : ''}}
+                    </option>
+                  </select>
+                </div>
+                <div class="mb-2">
+                  <label for="wifiSsid" class="form-label fw-semibold mb-1" style="font-size: 0.85rem;">Wi-Fi Name
+                    (SSID)</label>
+                  <input id="wifiSsid" cFormControl size="sm" placeholder="SSID Network Name" formControlName="ssid"
+                    autocomplete="off" [readOnly]="selectedWifiInterface?.readonly" />
+                </div>
+                <div class="mb-3">
+                  <label for="wifiPassword" class="form-label fw-semibold mb-1" style="font-size: 0.85rem;">Password
+                    (Passphrase)</label>
+                  <input id="wifiPassword" cFormControl size="sm" placeholder="Leave blank to keep unchanged"
+                    type="password" formControlName="password" autocomplete="new-password"
+                    [readOnly]="selectedWifiInterface?.readonly" />
+                </div>
+
+                <div class="mb-3" *ngIf="selectedWifiInterface?.readonly">
+                  <c-alert color="warning" class="py-2 px-3 mb-0" style="font-size: 0.8rem;">
+                    <i class="fa-solid fa-lock me-1"></i> <strong>Read-Only Interface:</strong> Cannot be modified here
+                    ({{selectedWifiInterface?.readonly_reason || 'P2P Link or Managed'}}).
+                  </c-alert>
+                </div>
+
+                <div class="mb-3">
+                  <div *ngIf="wifiSuccessMsg" class="text-success"><i class="fa-solid fa-circle-check"></i><small>
+                      {{wifiSuccessMsg}}</small></div>
+                  <code
+                    *ngIf="wifiErrorMsg"><i class="fa-solid fa-triangle-exclamation"></i><small>  {{wifiErrorMsg}}</small></code>
+                </div>
+
+                <button cButton color="primary" size="sm" class="w-100 shadow-sm" (click)="updateWifi()"
+                  [disabled]="wifiForm.invalid || updatingWifi || selectedWifiInterface?.readonly">
+                  <c-spinner *ngIf="updatingWifi" size="sm" class="me-1"></c-spinner>
+                  <i *ngIf="!updatingWifi" class="fa-solid fa-save me-1"></i> Update Wi-Fi
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <!-- Tool Panel: Ping -->
+          <div *ngIf="activeToolTab === 'ping'">
+            <p class="text-muted" style="font-size: 0.8rem; margin-bottom: 12px;">Run a ping check directly from your
+              router to test its internet reachability.</p>
+            <div class="mb-2">
+              <label for="pingTarget" class="form-label fw-semibold mb-1" style="font-size: 0.85rem;">Target IP /
+                Hostname</label>
+              <input id="pingTarget" cFormControl size="sm" placeholder="e.g. 8.8.8.8 or google.com"
+                [(ngModel)]="pingTarget" />
+            </div>
+            <div class="mb-3">
+              <label for="pingCount" class="form-label fw-semibold mb-1" style="font-size: 0.85rem;">Packets
+                Count</label>
+              <select id="pingCount" cSelect class="form-select form-select-sm" [(ngModel)]="pingCount">
+                <option [value]="2">2 Packets</option>
+                <option [value]="4">4 Packets</option>
+                <option [value]="8">8 Packets</option>
+              </select>
+            </div>
+
+            <div class="mb-2" *ngIf="pingSuccessMsg || pingErrorMsg">
+              <div *ngIf="pingSuccessMsg" class="text-success"><small><i class="fa-solid fa-circle-check"></i>
+                  {{pingSuccessMsg}}</small></div>
+              <code
+                *ngIf="pingErrorMsg"><i class="fa-solid fa-triangle-exclamation"></i><small>  {{pingErrorMsg}}</small></code>
+            </div>
+
+            <button cButton color="info" size="sm" class="w-100 shadow-sm mb-3" (click)="runPing()"
+              [disabled]="!pingTarget || pinging">
+              <c-spinner *ngIf="pinging" size="sm" class="me-1"></c-spinner>
+              <i *ngIf="!pinging" class="fa-solid fa-play me-1"></i> Run Ping
+            </button>
+
+            <div class="ping-results mt-2" *ngIf="pingResults.length > 0">
+              <div class="table-responsive">
+                <table class="table table-sm table-bordered text-center" style="font-size: 0.75rem;">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Seq</th>
+                      <th>Host</th>
+                      <th>Time</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let r of pingResults; let i = index">
+                      <td>{{i+1}}</td>
+                      <td>{{r.host}}</td>
+                      <td>{{r.time || '-'}}</td>
+                      <td>
+                        <span class="badge"
+                          [ngClass]="r.status === 'timeout' ? 'bg-danger' : (r.time ? 'bg-success' : 'bg-secondary')">
+                          {{r.status || 'ok'}}
+                        </span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tool Panel: Power -->
+          <div *ngIf="activeToolTab === 'power'">
+            <div class="text-center py-3">
+              <i class="fa-solid fa-power-off fa-3x text-danger mb-3"></i>
+              <h6 class="fw-bold">Restart Router</h6>
+              <p class="text-muted small px-2">Restarting your router will temporarily disconnect all your devices from
+                the internet. This usually takes 1-3 minutes.</p>
+
+              <div *ngIf="rebootSuccessMsg || rebootErrorMsg" class="mb-3 text-start px-2">
+                <c-alert *ngIf="rebootSuccessMsg" color="success" class="py-2" style="font-size: 0.8rem;">
+                  <i class="fa-solid fa-circle-check me-1"></i> {{rebootSuccessMsg}}
+                </c-alert>
+                <c-alert *ngIf="rebootErrorMsg" color="danger" class="py-2" style="font-size: 0.8rem;">
+                  <i class="fa-solid fa-triangle-exclamation me-1"></i> {{rebootErrorMsg}}
+                </c-alert>
+              </div>
+
+              <button cButton color="danger" class="w-100 shadow-sm text-white" (click)="openRebootModal()"
+                [disabled]="rebooting">
+                <c-spinner *ngIf="rebooting" size="sm" class="me-1"></c-spinner>
+                <i *ngIf="!rebooting" class="fa-solid fa-rotate-right me-1"></i> Restart Now
+              </button>
+            </div>
+          </div>
+
+        </c-card-body>
+      </c-card>
+    </c-col>
+  </c-row>
+
+<!-- Reboot Confirmation Modal -->
+<c-modal [visible]="rebootConfirmVisible" (visibleChange)="rebootConfirmVisible = $event" alignment="center">
+  <c-modal-header>
+    <h5 cModalTitle>Confirm Restart</h5>
+    <button cButtonClose (click)="rebootConfirmVisible = false"></button>
+  </c-modal-header>
+  <c-modal-body>
+    Are you sure you want to restart your router? You will lose internet connection for a few minutes.
+  </c-modal-body>
+  <c-modal-footer>
+    <button cButton color="secondary" (click)="rebootConfirmVisible = false">Cancel</button>
+    <button cButton color="danger" class="text-white" (click)="executeReboot()">Yes, Restart</button>
+  </c-modal-footer>
+</c-modal>

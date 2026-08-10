@@ -14,6 +14,9 @@ export class CustomerAssignmentsComponent implements OnInit {
 
   public customers: any[] = [];
   public groupList: any[] = [];
+  public groupSearch: string = '';
+  public filteredGroups: any[] = [];
+  public showGroupDropdown: boolean = false;
   public permList: any[] = [];
   public deviceList: any[] = [];
   public loading = false;
@@ -221,5 +224,28 @@ export class CustomerAssignmentsComponent implements OnInit {
 
   applyFilterGlobal($event: any, stringVal: string) {
     this.table.filterGlobal(($event.target as HTMLInputElement).value, stringVal);
+  }
+
+  filterGroupsSearch(event: any): void {
+    const query = event.target.value.toLowerCase();
+    this.filteredGroups = this.groupList.filter((g: any) =>
+      g.id !== 1 && g.name.toLowerCase().includes(query)
+    );
+  }
+
+  selectGroupSearch(group: any): void {
+    this.assignForm.get('group_id')?.setValue(group.id);
+    this.groupSearch = group.name;
+    this.showGroupDropdown = false;
+  }
+
+  clearGroupSelection(): void {
+    this.assignForm.get('group_id')?.setValue(null);
+    this.groupSearch = '';
+    this.filteredGroups = [];
+  }
+
+  hideGroupSearchDropdown(): void {
+    setTimeout(() => this.showGroupDropdown = false, 200);
   }
 }

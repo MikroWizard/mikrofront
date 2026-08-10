@@ -122,14 +122,28 @@
 
       <!-- Option A: Select Device Group -->
       <div class="mb-3" *ngIf="assignForm.get('assignment_type')?.value === 'group'">
-        <label for="deviceGroupSelect" class="form-label fw-semibold">Select Device Group</label>
-        <select id="deviceGroupSelect" cSelect formControlName="group_id" class="form-select">
-          <option [value]="null">Choose device group...</option>
-          <!-- Filter out 'All Devices' for customers (id=1 represents all devices, which is reserved for admins) -->
-          <ng-container *ngFor="let g of groupList">
-            <option *ngIf="g.id !== 1" [value]="g.id">{{g.name}}</option>
-          </ng-container>
-        </select>
+        <label class="form-label fw-semibold">Select Device Group</label>
+        <div class="search-select-wrapper">
+          <div class="input-group input-group-sm">
+            <input class="form-control" [(ngModel)]="groupSearch" (input)="filterGroupsSearch($event)"
+              (focus)="showGroupDropdown = true" (blur)="hideGroupSearchDropdown()"
+              placeholder="Search device group..." autocomplete="off"
+              [ngModelOptions]="{standalone: true}" />
+            <button class="btn btn-outline-secondary" type="button" *ngIf="groupSearch"
+              (click)="clearGroupSelection()">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <div class="search-dropdown" *ngIf="showGroupDropdown && filteredGroups.length > 0">
+            <div class="search-option" *ngFor="let g of filteredGroups"
+              (mousedown)="selectGroupSearch(g)">
+              {{g.name}}
+            </div>
+          </div>
+          <div class="search-no-results" *ngIf="showGroupDropdown && filteredGroups.length === 0 && groupSearch">
+            No groups found
+          </div>
+        </div>
         <small class="text-muted mt-1 d-block">Customers will only be allowed to view and manage routers belonging to this group.</small>
       </div>
 
