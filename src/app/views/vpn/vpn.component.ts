@@ -35,6 +35,20 @@ export class VpnComponent implements OnInit, OnDestroy {
     public liveSpeedTx: number = 0;
     public isCommunicationError: boolean = false;
 
+    public exportModalVisible: boolean = false;
+    public exportColumns = [
+        { field: 'name', label: 'Peer Name', selected: true },
+        { field: 'assigned_ip', label: 'Assigned IP', selected: true },
+        { field: 'public_key', label: 'Public Key', selected: true },
+        { field: 'status', label: 'Status', selected: true },
+        { field: 'description', label: 'Description', selected: true },
+        { field: 'is_enabled', label: 'Enabled', selected: true }
+    ];
+
+    openExportModal() {
+        this.exportModalVisible = true;
+    }
+
     formatBytes(bytes: number, decimals: number = 2): string {
         if (!+bytes) return '0 B';
         const k = 1024;

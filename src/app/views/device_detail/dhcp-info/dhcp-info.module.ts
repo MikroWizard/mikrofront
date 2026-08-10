@@ -27,6 +27,8 @@ import { TableModule as PTableModule } from 'primeng/table';
 import { InputTextModule as PInputTextModule } from 'primeng/inputtext';
 import { TooltipModule as PTooltipModule } from 'primeng/tooltip';
 
+import { SharedModule } from '../../../shared/shared.module';
+
 @NgModule({
   declarations: [
     DhcpInfoComponent,
@@ -52,6 +54,7 @@ import { TooltipModule as PTooltipModule } from 'primeng/tooltip';
       BadgeModule,
       NavModule, 
       TabsModule,
+      SharedModule
   ],
   exports: [
     DhcpInfoComponent,

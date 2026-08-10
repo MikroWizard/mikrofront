@@ -1,4 +1,5 @@
 <div style="position: relative;">
+<c-toaster [placement]="toasterForm.placement" position="absolute"></c-toaster>
 <c-row>
     <c-col xs>
         <c-card class="mb-4">
@@ -450,10 +451,10 @@
                                                 </td>
                                                 <td class="text-center">
                                                     <span class="badge w-75 py-2 fw-bold" [ngClass]="{
-                                                            'bg-info': simulatedDbRow.level?.toLowerCase() === 'info',
-                                                            'bg-warning text-dark': simulatedDbRow.level?.toLowerCase() === 'warning' || simulatedDbRow.level?.toLowerCase() === 'config',
-                                                            'bg-danger': simulatedDbRow.level?.toLowerCase() === 'critical' || simulatedDbRow.level?.toLowerCase() === 'error',
-                                                            'bg-success': simulatedDbRow.level?.toLowerCase() === 'health' || simulatedDbRow.level?.toLowerCase() === 'state'
+                                                            'bg-info': simulatedDbRow.level.toLowerCase() === 'info',
+                                                            'bg-warning text-dark': simulatedDbRow.level.toLowerCase() === 'warning' || simulatedDbRow.level.toLowerCase() === 'config',
+                                                            'bg-danger': simulatedDbRow.level.toLowerCase() === 'critical' || simulatedDbRow.level.toLowerCase() === 'error',
+                                                            'bg-success': simulatedDbRow.level.toLowerCase() === 'health' || simulatedDbRow.level.toLowerCase() === 'state'
                                                         }">{{simulatedDbRow.level || 'null'}}</span>
                                                 </td>
                                                 <td class="text-wrap text-muted font-monospace bg-light ps-2 fs-6">

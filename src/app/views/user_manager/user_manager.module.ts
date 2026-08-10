@@ -3,6 +3,7 @@ import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 
 import {
+  BadgeModule,
   ButtonGroupModule,
   ButtonModule,
   CardModule,
@@ -20,6 +21,8 @@ import { UserManagerComponent } from "./user_manager.component";
 import { TableModule } from 'primeng/table';
 import { InputTextModule } from 'primeng/inputtext';
 import { TooltipModule } from 'primeng/tooltip';
+
+import { SharedModule } from "../../shared/shared.module";
 
 @NgModule({
   imports: [
@@ -39,6 +42,8 @@ import { TooltipModule } from 'primeng/tooltip';
     FormsModule,
     ToastModule,
     AlertModule,
+    BadgeModule,
+    SharedModule
   ],
   declarations: [UserManagerComponent],
 })

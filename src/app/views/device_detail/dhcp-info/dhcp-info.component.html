@@ -77,12 +77,15 @@
     <c-col xl="9" sm="12">
       <c-card class="mb-1 h-100">
         <c-card-body>
-          <div class="mb-3 d-flex justify-content-end">
-            <span class="p-input-icon-left table-search-input">
+          <div class="mb-3 d-flex justify-content-end align-items-center">
+            <span class="p-input-icon-left table-search-input me-2">
               <i class="pi pi-search"></i>
               <input type="text" pInputText placeholder="Search leases..."
                 (input)="applyFilterGlobalLeases($event, 'contains')" class="form-control-sm" />
             </span>
+            <button cButton color="primary" size="sm" (click)="openLeasesExportModal()">
+              <i class="fa-solid fa-file-export me-1"></i> Export
+            </button>
           </div>
 
           <p-table #dtLeases [value]="item['lease_table']" [paginator]="true" [rows]="10" [showGridlines]="true"
@@ -186,12 +189,15 @@
     <button [cModalToggle]="DhcpHistoryModal.id" cButtonClose></button>
   </c-modal-header>
   <c-modal-body style="overflow-x: auto;">
-    <div class="mb-3 d-flex justify-content-end">
-      <span class="p-input-icon-left">
+    <div class="mb-3 d-flex justify-content-end align-items-center">
+      <span class="p-input-icon-left me-2">
         <i class="pi pi-search"></i>
         <input type="text" pInputText placeholder="Search history..."
           (input)="applyFilterGlobalHistory($event, 'contains')" class="form-control-sm" />
       </span>
+      <button cButton color="primary" size="sm" (click)="openHistoryExportModal()">
+        <i class="fa-solid fa-file-export me-1"></i> Export
+      </button>
     </div>
 
     <p-table #dtHistory [value]="dhcp_history" [paginator]="true" [rows]="10" [showGridlines]="true"
@@ -240,3 +246,24 @@
     </button>
   </c-modal-footer>
 </c-modal>
+
+<ng-container *ngFor="let item of dhcp_server_data">
+  <app-export-modal
+    [(visible)]="leasesExportModalVisible"
+    title="Export DHCP Leases Report"
+    [allData]="item['lease_table'] || []"
+    [filteredData]="dtLeases?.filteredValue || item['lease_table']"
+    [customColumns]="leaseExportColumns"
+    defaultFileName="dhcp_leases_report">
+  </app-export-modal>
+</ng-container>
+
+<app-export-modal
+  [(visible)]="historyExportModalVisible"
+  title="Export DHCP History Report"
+  [allData]="dhcp_history || []"
+  [filteredData]="dtHistory?.filteredValue || dhcp_history"
+  [customColumns]="historyExportColumns"
+  dateField="eventtime"
+  defaultFileName="dhcp_history_report">
+</app-export-modal>

@@ -15,6 +15,7 @@ import {
   UtilitiesModule,
   BadgeModule,
   SpinnerModule,
+  PaginationModule,
 } from '@coreui/angular';
 import { ChartjsModule } from '@coreui/angular-chartjs';
 
@@ -40,6 +41,7 @@ import { SpeedTestComponent } from './speed-test.component';
     UtilitiesModule,
     BadgeModule,
     SpinnerModule,
+    PaginationModule,
     ChartjsModule
   ],
   exports: [

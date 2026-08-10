@@ -21,6 +21,8 @@ import { TooltipModule as PTooltipModule } from 'primeng/tooltip';
 
 import { NgxSuperSelectModule} from "ngx-super-select";
 
+import { SharedModule } from "../../shared/shared.module";
+
 @NgModule({
   imports: [
     UserTasksRoutingModule,
@@ -40,6 +42,7 @@ import { NgxSuperSelectModule} from "ngx-super-select";
     ReactiveFormsModule,
     FormsModule,
     NgxSuperSelectModule,
+    SharedModule
   ],
   declarations: [UserTasksComponent],
 })

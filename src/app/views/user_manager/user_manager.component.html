@@ -32,11 +32,16 @@
             </li>
           </ul>
 
-          <span class="p-input-icon-left ms-auto">
-            <i class="pi pi-search"></i>
-            <input type="text" pInputText placeholder="Search users..." (input)="applyFilterGlobal($event, 'contains')"
-              class="form-control-sm" />
-          </span>
+          <div class="ms-auto d-flex align-items-center gap-2">
+            <span class="p-input-icon-left">
+              <i class="pi pi-search"></i>
+              <input type="text" pInputText placeholder="Search users..." (input)="applyFilterGlobal($event, 'contains')"
+                class="form-control-sm" />
+            </span>
+            <button cButton color="primary" size="sm" (click)="openExportModal()">
+              <i class="fa-solid fa-file-export me-1"></i> Export Report
+            </button>
+          </div>
         </div>
 
         <p-table #dt [value]="getFilteredUsers()" [paginator]="true" [rows]="10" [showCurrentPageReport]="true"
@@ -222,10 +227,10 @@
         <div class="add-permission-card mb-3">
           <div class="add-header">
             <i class="fa-solid fa-plus-circle text-primary me-2"></i>
-            <span class="fw-semibold">Add Device Permission</span>
+            <span class="fw-semibold">Add Device Access</span>
           </div>
           <c-row class="g-2 mt-2">
-            <c-col xs="12" md="5">
+            <c-col xs="12" md="4">
               <div class="search-select-wrapper">
                 <label class="search-label">Device Group</label>
                 <input cFormControl [(ngModel)]="devgroupSearch" (input)="filterDevGroups($event)"
@@ -244,7 +249,7 @@
                 </div>
               </div>
             </c-col>
-            <c-col xs="12" md="5">
+            <c-col xs="12" md="3">
               <div class="search-select-wrapper">
                 <label class="search-label">Permission Level</label>
                 <input cFormControl [(ngModel)]="permissionSearch" (input)="filterPermissions($event)"
@@ -261,6 +266,21 @@
                   class="search-no-results">
                   No permissions found
                 </div>
+              </div>
+            </c-col>
+            <c-col xs="12" md="3" *ngIf="ispro && SelectedUser['action']=='edit'">
+              <div class="search-select-wrapper">
+                <label class="search-label">Terminal Policy</label>
+                <input cFormControl [(ngModel)]="policySearch" (input)="filterPolicies($event)"
+                  (focus)="showPolicyDropdown = true" (blur)="hidePolicyDropdown()"
+                  placeholder="Search policy..." class="search-input compact-select" autocomplete="off" />
+                <div *ngIf="showPolicyDropdown && filteredPolicies.length > 0" class="search-dropdown">
+                  <div *ngFor="let p of filteredPolicies" class="search-option" (mousedown)="selectPolicy(p)">
+                    {{p.name}}
+                  </div>
+                </div>
+                <div *ngIf="showPolicyDropdown && filteredPolicies.length === 0 && policySearch"
+                  class="search-no-results">No policies found</div>
               </div>
             </c-col>
             <c-col xs="12" md="2" class="d-flex align-items-end">
@@ -286,18 +306,37 @@
           <div *ngIf="userperms.length>0" class="permissions-list mt-2">
             <div *ngFor="let perm of userperms; let i = index" class="permission-item">
               <div class="perm-number">{{i + 1}}</div>
-              <div class="perm-info">
+              <div class="perm-info" style="flex:1">
                 <div class="perm-main">
                   <i class="fa-solid fa-server me-1 text-primary"></i>
                   <span class="group-name">{{perm.group_name}}</span>
                 </div>
-                <div class="perm-detail">
-                  <i class="fa-solid fa-key me-1 text-warning"></i>
-                  <span class="perm-name">{{perm.perm_name}}</span>
+                <div class="perm-detail" style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                  <span><i class="fa-solid fa-key me-1 text-warning"></i>{{perm.perm_name}}</span>
+                  <button *ngIf="SelectedUser['action']=='edit'" cButton color="warning" size="sm" variant="outline"
+                    class="p-0 border-0" style="width:20px;height:20px;" (click)="editUserPerm(perm)"
+                    title="Change Permission">
+                    <i class="fa-solid fa-edit" style="font-size:0.7rem;"></i>
+                  </button>
+                  <span *ngIf="ispro && SelectedUser['action']=='edit'" class="text-muted mx-1">|</span>
+                  <span *ngIf="ispro && SelectedUser['action']=='edit'" style="display:flex;align-items:center;gap:4px;">
+                    <span *ngIf="getGroupPolicy(perm.group_id)" class="text-info small">
+                      <i class="fa-solid fa-shield-halved me-1"></i>{{getGroupPolicyName(perm.group_id)}}
+                    </span>
+                    <span *ngIf="getGroupPolicyBrandCoverage(perm.group_id).length > 0" class="d-inline-flex gap-1">
+                      <c-badge *ngFor="let c of getGroupPolicyBrandCoverage(perm.group_id)" color="primary" style="text-transform: capitalize; font-size:0.6rem;">{{c.brand}}: {{c.policy_name}}</c-badge>
+                    </span>
+                    <span *ngIf="!getGroupPolicy(perm.group_id)" class="text-muted small">— Terminal: None —</span>
+                    <button cButton color="warning" size="sm" variant="outline"
+                      class="p-0 border-0" style="width:20px;height:20px;" (click)="editUserPolicy(perm)"
+                      title="Change Terminal Policy">
+                      <i class="fa-solid fa-edit" style="font-size:0.7rem;"></i>
+                    </button>
+                  </span>
                 </div>
               </div>
-              <button cButton color="danger" size="sm" variant="outline" (click)="confirm_delete_perm(perm)"
-                title="Remove this permission" class="remove-btn">
+              <button *ngIf="SelectedUser['action']=='edit'" cButton color="danger" size="sm" variant="outline"
+                (click)="confirm_delete_perm(perm)" title="Remove this permission" class="remove-btn">
                 <i class="fa-solid fa-trash-can"></i>
               </button>
             </div>
@@ -314,6 +353,7 @@
           </div>
         </div>
       </div>
+
     </c-modal-body>
     <c-modal-footer class="d-flex justify-content-between flex-wrap gap-2 p-2">
       <div>
@@ -521,4 +561,79 @@
   </c-modal>
 
 
-  <c-toaster position="fixed" placement="top-end"></c-toaster>
+  <c-modal #EditPermModal backdrop="static" [(visible)]="EditPermModalVisible" id="EditPermModal">
+    <c-modal-header>
+      <h5 cModalTitle>Change Permission for {{editingPerm?.group_name}}</h5>
+      <button [cModalToggle]="EditPermModal.id" cButtonClose></button>
+    </c-modal-header>
+    <c-modal-body>
+      <div class="mb-3">
+        <label class="form-label">Current Permission: <c-badge color="info">{{editingPerm?.perm_name}}</c-badge></label>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">New Permission Level</label>
+        <select cSelect [(ngModel)]="newPermId" class="form-select">
+          <option value="">Select Permission...</option>
+          <option *ngFor="let perm of allPerms" [value]="perm.id">{{perm.name}}</option>
+        </select>
+      </div>
+    </c-modal-body>
+    <c-modal-footer>
+      <button cButton color="primary" (click)="updateUserPerm()" [disabled]="!newPermId">
+        <i class="fa-solid fa-save me-1"></i>Update
+      </button>
+      <button [cModalToggle]="EditPermModal.id" cButton color="secondary">Cancel</button>
+    </c-modal-footer>
+  </c-modal>
+
+  <c-modal #EditPolicyModal backdrop="static" [(visible)]="EditPolicyModalVisible" id="EditPolicyModal" size="lg">
+    <c-modal-header>
+      <h5 cModalTitle>Terminal Policy for {{editingPolicyPerm?.group_name}}</h5>
+      <button [cModalToggle]="EditPolicyModal.id" cButtonClose></button>
+    </c-modal-header>
+    <c-modal-body>
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Default Policy (applies when no brand-specific policy is set)</label>
+        <select cSelect [(ngModel)]="newEditPolicyId" class="form-select">
+          <option value="">— None (no terminal access) —</option>
+          <option *ngFor="let p of allPolicies" [value]="p.id">{{p.name}}</option>
+        </select>
+      </div>
+      <hr *ngIf="allBrands.length > 0" />
+      <div *ngIf="allBrands.length > 0" class="mb-3">
+        <label class="form-label fw-semibold">Per-Brand Policy Overrides</label>
+        <p class="text-muted small mb-2">Optionally assign different policies for specific device brands.</p>
+        <table class="table table-sm table-borderless">
+          <tr *ngFor="let b of allBrands">
+            <td style="width: 140px; vertical-align: middle;">
+              <c-badge color="primary" style="text-transform: capitalize;">{{b.display_name || b.brand}}</c-badge>
+            </td>
+            <td>
+              <select cSelect [(ngModel)]="editPolicyBrandMap[b.brand]" (ngModelChange)="setBrandPolicy(b.brand, $event)" class="form-select-sm" style="width:100%;">
+                <option value="">— Use default —</option>
+                <option *ngFor="let p of allPolicies" [value]="p.id">{{p.name}}</option>
+              </select>
+            </td>
+          </tr>
+        </table>
+      </div>
+    </c-modal-body>
+    <c-modal-footer>
+      <button cButton color="primary" (click)="updateUserPolicy()">
+        <i class="fa-solid fa-save me-1"></i>Update
+      </button>
+      <button [cModalToggle]="EditPolicyModal.id" cButton color="secondary">Cancel</button>
+    </c-modal-footer>
+  </c-modal>
+
+  <app-export-modal
+  [(visible)]="exportModalVisible"
+  title="Export Users Report"
+  [allData]="source"
+  [filteredData]="dt?.filteredValue || getFilteredUsers()"
+  [customColumns]="exportColumns"
+  dateField="created_at"
+  defaultFileName="users_report">
+</app-export-modal>
+
+<c-toaster position="fixed" placement="top-end"></c-toaster>

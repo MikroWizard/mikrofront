@@ -1,9 +1,9 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild, ViewChildren, QueryList } from '@angular/core';
 import { Table } from 'primeng/table';
 import { dataProvider } from "../../providers/mikrowizard/data";
 import { NgxSuperSelectOptions } from "ngx-super-select";
-import { ToastComponent } from '@coreui/angular';
-
+import { ToasterComponent } from '@coreui/angular';
+import { AppToastComponent } from "../toast-simple/toast.component";
 interface RegexSegment {
     type: 'static' | 'dynamic';
     value: string;         // Used for static text
@@ -18,6 +18,12 @@ interface RegexSegment {
 })
 export class SyslogRegexComponent implements OnInit {
     @ViewChild('dt') dt: Table | undefined;
+    @ViewChildren(ToasterComponent) viewChildren!: QueryList<ToasterComponent>;
+
+    toasterForm = {
+        placement: "top-end",
+        delay: 5000,
+    };
 
     public syslogRegexes: any[] = [];
 
@@ -171,18 +177,39 @@ export class SyslogRegexComponent implements OnInit {
         this.EditRegexModalVisible = true;
     }
 
+    show_toast(title: string, body: string, color: string) {
+        const { ...props } = { ...this.toasterForm, color, title, body };
+        if (this.viewChildren && this.viewChildren.first) {
+            this.viewChildren.first.addToast(AppToastComponent, props, {});
+        }
+    }
+
     save_regex() {
+        if (!this.current_regex.name) {
+            this.show_toast("Validation Error", "Regex Name is required.", "danger");
+            return;
+        }
+
         if (this.inputMode === 'builder') {
             this.current_regex.regex_pattern = this.generatedRegex;
+        }
+
+        if (!this.current_regex.regex_pattern) {
+            this.show_toast("Validation Error", "Regex Pattern is required.", "danger");
+            return;
         }
 
         // Final validation check
         this.validateRawRegex();
         if (this.rawRegexError && this.inputMode === 'raw') {
+            this.show_toast("Validation Error", this.rawRegexError, "danger");
             return; // Prevent save if invalid
         }
         if (!this.isTestValid && this.inputMode === 'builder') {
-            if (!this.generatedRegex) return;
+            if (!this.generatedRegex) {
+                this.show_toast("Validation Error", "Regex Builder cannot be empty.", "danger");
+                return;
+            }
         }
 
         let payload = { ...this.current_regex };
@@ -198,7 +225,7 @@ export class SyslogRegexComponent implements OnInit {
             } else {
                 payload.global_alert = false;
                 if (!payload.match_string) {
-                    alert("Please provide a Match String for conditional alert storage.");
+                    this.show_toast("Validation Error", "Please provide a Match String for conditional alert storage.", "danger");
                     return;
                 }
             }
@@ -210,13 +237,16 @@ export class SyslogRegexComponent implements OnInit {
 
         // Ensure alert_id is mandatory for save (as per v3.2)
         if (payload.alert_enabled && !payload.alert_id) {
-            alert("Please select an Alert Definition.");
+            this.show_toast("Validation Error", "Please select an Alert Definition.", "danger");
             return;
         }
 
         this.MikroWizardRPC.save_syslog_regex(payload).then(() => {
             this.EditRegexModalVisible = false;
+            this.show_toast("Success", "Regex saved successfully.", "success");
             this.loadRegexes();
+        }).catch((e: any) => {
+            this.show_toast("Error", "Failed to save regex.", "danger");
         });
     }
 
@@ -241,10 +271,18 @@ export class SyslogRegexComponent implements OnInit {
     }
 
     saveAlert() {
+        if (!this.editingAlert.name) {
+            this.show_toast("Validation Error", "Alert Name is required.", "danger");
+            return;
+        }
+        
         this.MikroWizardRPC.save_alert(this.editingAlert).then(() => {
+            this.show_toast("Success", "Alert saved successfully.", "success");
             this.loadAlerts();
             this.editingAlert = { id: 0, name: '', level: 'Info', description: '' };
             this.loadRegexes();
+        }).catch((e: any) => {
+            this.show_toast("Error", "Failed to save alert.", "danger");
         });
     }
 
@@ -444,7 +482,8 @@ Please provide the completed Python regex for my sample log.`;
         }
 
         try {
-            new RegExp(this.current_regex.regex_pattern);
+            let jsPattern = this.current_regex.regex_pattern.replace(/\(\?P</g, '(?<');
+            new RegExp(jsPattern);
             if (!/\(.*\)/.test(this.current_regex.regex_pattern)) {
                 this.rawRegexError = 'Must contain at least one capturing group ().';
             }

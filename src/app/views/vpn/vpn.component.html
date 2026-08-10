@@ -143,12 +143,15 @@
             </c-row>
           </c-card-header>
           <c-card-body>
-            <div class="mb-3 d-flex justify-content-end">
+            <div class="mb-3 d-flex justify-content-end align-items-center gap-2">
               <span class="p-input-icon-left">
                 <i class="pi pi-search"></i>
                 <input type="text" pInputText placeholder="Search peers..."
                   (input)="applyFilterGlobal($event, 'contains')" class="form-control-sm" />
               </span>
+              <button cButton color="primary" size="sm" (click)="openExportModal()">
+                <i class="fa-solid fa-file-export me-1"></i> Export Report
+              </button>
             </div>
 
             <p-table #dt [value]="source" [paginator]="true" [rows]="10" [showCurrentPageReport]="true"
@@ -660,4 +663,13 @@
   </div>
   <app-license-expired-overlay></app-license-expired-overlay>
 </div>
+<app-export-modal
+  [(visible)]="exportModalVisible"
+  title="Export VPN Peers Report"
+  [allData]="source"
+  [filteredData]="dt?.filteredValue || source"
+  [customColumns]="exportColumns"
+  defaultFileName="vpn_peers_report">
+</app-export-modal>
+
 <c-toaster position="fixed" placement="top-end"></c-toaster>

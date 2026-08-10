@@ -98,12 +98,15 @@
           </div>
 
         </c-row>
-        <div class="mb-3 d-flex justify-content-end gap-2">
+        <div class="mb-3 d-flex justify-content-end align-items-center gap-2">
           <span class="p-input-icon-left table-search-input">
             <i class="pi pi-search"></i>
             <input type="text" pInputText placeholder="Search logs..." (input)="applyFilterGlobal($event, 'contains')"
               class="form-control-sm" />
           </span>
+          <button cButton color="primary" size="sm" (click)="openExportModal()">
+            <i class="fa-solid fa-file-export me-1"></i> Export Report
+          </button>
         </div>
 
         <p-table #dt [value]="source" [paginator]="true" [rows]="10" [showCurrentPageReport]="true"
@@ -206,8 +209,19 @@
               <td>{{item.by}}</td>
               <td>{{item.ip}}</td>
               <td>
-                <span *ngIf="item.ltype!='failed'">{{item.duration}}</span>
+                <span *ngIf="item.ltype!='failed'">
+                  <c-badge color="success" *ngIf="item.duration==='live'" variant="outline" class="me-1">Live</c-badge>
+                  <span *ngIf="item.duration!='live'">{{item.duration}}</span>
+                </span>
                 <span *ngIf="item.ltype=='failed'" class="text-muted small">{{item.message}}</span>
+                <button *ngIf="item.duration==='live' && (item.by==='Web-Proxy' || item.by==='proxy')" cButton size="sm" color="danger" variant="outline" class="ms-1 py-0 px-2"
+                  pTooltip="Watch Live WebFig Session (Monitor Mode)" (click)="openLiveMonitorModal(item, $event)">
+                  <i class="fas fa-eye me-1"></i>Watch Live
+                </button>
+                <button *ngIf="item.recording_path || (item.by==='Web-Proxy' && item.sessionid)" cButton size="sm" color="info" variant="outline" class="ms-2 py-0 px-2"
+                  pTooltip="Play Session Recording" (click)="openRecordingModal(item, $event)">
+                  <i class="fas fa-play me-1"></i>Play
+                </button>
               </td>
               <td class="text-center">
                 <c-badge color="success" *ngIf="item.ltype=='loggedin'"> Logged In</c-badge>
@@ -224,6 +238,17 @@
             </tr>
           </ng-template>
         </p-table>
+
+        <!-- Session Recording Player Modal -->
+        <c-modal #recordingModal backdrop="static" [(visible)]="recordingModalVisible" size="lg" id="recordingModal">
+          <c-modal-header>
+            <h6 cModalTitle><i class="fas fa-video me-2 text-info"></i>WebFig Session Playback</h6>
+            <button (click)="recordingModalVisible=false" cButtonClose></button>
+          </c-modal-header>
+          <c-modal-body class="p-0">
+            <iframe *ngIf="recordingUrl" [src]="recordingUrl" style="width:100%;height:600px;border:0;border-radius:4px;"></iframe>
+          </c-modal-body>
+        </c-modal>
 
         <!-- Details Drawer -->
         <p-drawer [(visible)]="detailsVisible" position="right" [style]="{width: '450px'}" header="Auth Log Details">
@@ -264,6 +289,12 @@
               <div class="col-8 small">{{selectedLog.created}}</div>
             </div>
 
+            <div *ngIf="selectedLog.recording_path || (selectedLog.by==='Web-Proxy' && selectedLog.sessionid)" class="mt-4">
+              <button cButton color="info" class="w-100 text-white" (click)="openRecordingModal(selectedLog, $event)">
+                <i class="fas fa-play me-2"></i>Play Session Recording
+              </button>
+            </div>
+
             <div *ngIf="selectedLog.message" class="mt-4">
               <h5 class="border-bottom pb-2 mb-3"><i class="pi pi-envelope me-2 text-primary"></i>System Message</h5>
               <div class="bg-light p-2 rounded small border text-break">
@@ -287,3 +318,14 @@
     </div>
   </div>
 </ng-template>
+
+<app-export-modal
+  [(visible)]="exportModalVisible"
+  title="Export Auth Logs Report"
+  [allData]="source"
+  [filteredData]="table ? table.filteredValue : source"
+  [customColumns]="exportColumns"
+  [fetchFn]="fetchExportData"
+  dateField="created"
+  defaultFileName="auth_logs_report">
+</app-export-modal>

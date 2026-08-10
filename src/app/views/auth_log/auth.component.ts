@@ -3,6 +3,7 @@ import { dataProvider } from "../../providers/mikrowizard/data";
 import { Router, ActivatedRoute } from "@angular/router";
 import { loginChecker } from "../../providers/login_checker";
 import { Table } from 'primeng/table';
+import { DomSanitizer, SafeResourceUrl } from "@angular/platform-browser";
 import { formatInTimeZone } from "date-fns-tz";
 
 interface IUser {
@@ -37,6 +38,48 @@ export class AuthComponent implements OnInit, OnDestroy {
   public isAllowed: boolean = true;
   private deviceChangeSub: any;
   
+  public recordingModalVisible: boolean = false;
+  public recordingUrl: SafeResourceUrl | null = null;
+  public selectedSessionId: string = "";
+
+  public exportModalVisible: boolean = false;
+  public exportColumns = [
+    { field: 'id', label: 'ID', selected: true },
+    { field: 'created', label: 'Event Time', selected: true },
+    { field: 'username', label: 'User Name', selected: true },
+    { field: 'ip', label: 'User IP', selected: true },
+    { field: 'devip', label: 'Router IP', selected: true },
+    { field: 'name', label: 'Router Name', selected: true },
+    { field: 'message', label: 'Status / Reply', selected: true },
+    { field: 'ltype', label: 'Connection Type', selected: true },
+    { field: 'by', label: 'Server / By', selected: false },
+    { field: 'started', label: 'Session Started', selected: false },
+    { field: 'ended', label: 'Session Ended', selected: false }
+  ];
+
+  openExportModal() {
+    this.exportModalVisible = true;
+  }
+
+  fetchExportData = async (params: { startDate?: string; endDate?: string; scope?: string }) => {
+    const filterCopy = { ...this.filters };
+    if (params.startDate) {
+      filterCopy['start_time'] = `${params.startDate}T00:00:00.000Z`;
+    } else {
+      filterCopy['start_time'] = '1970-01-01T00:00:00.000Z';
+    }
+    if (params.endDate) {
+      filterCopy['end_time'] = `${params.endDate}T23:59:59.000Z`;
+    } else {
+      const today = new Date().toISOString().slice(0, 10);
+      filterCopy['end_time'] = `${today}T23:59:59.000Z`;
+    }
+    const res = this.role === 'customer'
+      ? await this.data_provider.customerGetAuthLogs(filterCopy)
+      : await this.data_provider.get_auth_logs(filterCopy);
+    return res.result || res || [];
+  };
+
   @ViewChild('dt') table!: Table;
   public devid: number = 0;
   public reloading: boolean = false;
@@ -58,7 +101,8 @@ export class AuthComponent implements OnInit, OnDestroy {
     private data_provider: dataProvider,
     private router: Router,
     private login_checker: loginChecker,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private sanitizer: DomSanitizer
   ) {
     var _self = this;
     if (!this.login_checker.isLoggedIn()) {
@@ -245,18 +289,21 @@ export class AuthComponent implements OnInit, OnDestroy {
           d.stype = "local";
           d.duration = "Local Access";
         } else {
-          d.stype = "radius";
-          if (d.ended != 0) {
-            d.duration = _self.secondsToString(d.ended - d.started);
-          } else {
+          d.stype = d.by === 'Web-Proxy' || d.by === 'proxy' ? 'web-proxy' : 'radius';
+          if (!d.ended || d.ended === 0) {
             d.duration = "live";
+          } else {
+            const diff = d.ended - d.started;
+            d.duration = diff > 0 ? _self.secondsToString(diff) : "0s";
           }
         }
-        d.created = formatInTimeZone(
-          d.created.split(".")[0] + ".000Z",
-          _self.tz,
-          "yyyy-MM-dd HH:mm:ss XXX"
-        );
+        if (d.created && typeof d.created === 'string') {
+          d.created = formatInTimeZone(
+            d.created.split(".")[0] + ".000Z",
+            _self.tz,
+            "yyyy-MM-dd HH:mm:ss XXX"
+          );
+        }
         index += 1;
         return d;
       });
@@ -267,5 +314,29 @@ export class AuthComponent implements OnInit, OnDestroy {
       this.reloading = false;
       this.source = [];
     });
+  }
+
+  openRecordingModal(item: any, event: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    const sessionId = item.sessionid || item.id;
+    this.selectedSessionId = sessionId;
+    const url = item.by === 'Web-Proxy' || item.by === 'proxy'
+      ? this.data_provider.getWebfigRecordingStreamUrl(sessionId)
+      : '/api/terminal/recording/stream/' + sessionId;
+    this.recordingUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
+    this.recordingModalVisible = true;
+  }
+
+  openLiveMonitorModal(item: any, event: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    const sessionId = item.sessionid || item.id;
+    this.selectedSessionId = sessionId;
+    const url = this.data_provider.getWebfigLiveStreamUrl(sessionId);
+    this.recordingUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
+    this.recordingModalVisible = true;
   }
 }

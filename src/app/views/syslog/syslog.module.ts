@@ -22,6 +22,8 @@ import { FormsModule } from "@angular/forms";
 
 import { MatSelectModule } from "@angular/material/select";
 
+import { SharedModule } from "../../shared/shared.module";
+
 @NgModule({
   imports: [
     SyslogRoutingModule,
@@ -41,6 +43,7 @@ import { MatSelectModule } from "@angular/material/select";
     NgxMatSelectSearchModule,
     MatDatepickerModule,
     AlertModule,
+    SharedModule
   ],
   declarations: [SyslogComponent],
 })

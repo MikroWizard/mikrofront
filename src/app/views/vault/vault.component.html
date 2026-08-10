@@ -35,7 +35,7 @@
     <c-card class="mb-4" *ngIf="settings" style="border: none;">
       <c-card-body>
         <!-- Settings Tab Header -->
-        <div class="tab-info-header mb-4">
+        <div class="tab-info-header mb-3">
           <div class="d-flex align-items-center">
             <i class="fas fa-cog text-primary me-2 fs-4"></i>
             <div>
@@ -45,6 +45,13 @@
             </div>
           </div>
         </div>
+
+        <c-alert color="warning" class="d-flex align-items-center mb-4">
+          <i class="fas fa-exclamation-triangle me-2 fs-5"></i>
+          <div>
+            <strong>MikroTik Only Feature:</strong> Password Vault is currently supported only for MikroTik RouterOS devices. Password rotation will not execute on non-MikroTik (Other Brands) devices.
+          </div>
+        </c-alert>
 
         <!-- Password Vault Configuration -->
         <div class="mb-4 pb-4 border-bottom">
@@ -231,9 +238,9 @@
                 <td><small>{{item.started}}</small></td>
                 <td><small>{{item.ended}}</small></td>
                 <td class="text-center">
-                  <button (click)="exportToCsv(item.result)" color="primary" size="sm" cButton variant="outline"
-                    pTooltip="Download CSV">
-                    <i class="fas fa-download"></i>
+                  <button (click)="openVaultExportModal(item.result, 'Export Vault Task Result')" color="primary" size="sm" cButton variant="outline"
+                    pTooltip="Export Report">
+                    <i class="fa-solid fa-file-export"></i>
                   </button>
                 </td>
               </tr>
@@ -247,7 +254,7 @@
     <c-card class="mb-4">
       <c-card-body>
         <!-- Passwords Tab Header -->
-        <div class="tab-info-header mb-4">
+        <div class="tab-info-header mb-3">
           <div class="d-flex align-items-center">
             <i class="fas fa-key text-warning me-2 fs-4"></i>
             <div>
@@ -257,6 +264,13 @@
             </div>
           </div>
         </div>
+
+        <c-alert color="warning" class="d-flex align-items-center mb-4">
+          <i class="fas fa-exclamation-triangle me-2 fs-5"></i>
+          <div>
+            <strong>MikroTik Only Feature:</strong> Password Vault applies to MikroTik RouterOS devices only. Passwords for non-MikroTik devices are not managed by this feature.
+          </div>
+        </c-alert>
 
         <!-- Filters -->
         <div class="mb-4 pb-4 border-bottom" [visible]="filters_visible" cCollapse>
@@ -374,6 +388,8 @@
     <div class="alert alert-warning">
       <strong>Warning:</strong> This will execute the password vault job and change passwords on all configured device
       groups.
+      <br><br>
+      <i class="fas fa-exclamation-triangle me-1"></i><strong>Note:</strong> Password Vault is only supported for <strong>MikroTik RouterOS</strong> devices. Non-MikroTik devices will be skipped.
     </div>
     <p>Are you sure you want to proceed with the password vault execution?</p>
   </c-modal-body>
@@ -467,5 +483,12 @@
   <strong>Pre-defined:</strong><br>
   Use passwords from your custom list.
 </ng-template>
+
+<app-export-modal
+  [(visible)]="exportModalVisible"
+  [title]="exportTitle"
+  [allData]="exportDataPayload"
+  defaultFileName="vault_report">
+</app-export-modal>
 
 <c-toaster position="fixed" placement="top-end"></c-toaster>

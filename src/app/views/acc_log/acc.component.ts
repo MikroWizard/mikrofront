@@ -41,6 +41,44 @@ export class AccComponent implements OnInit, OnDestroy {
   public event_action: any = [];
   public event_section: any = [];
 
+  public exportModalVisible: boolean = false;
+  public exportColumns = [
+    { field: 'id', label: 'ID', selected: true },
+    { field: 'created', label: 'Event Time', selected: true },
+    { field: 'username', label: 'User Name', selected: true },
+    { field: 'address', label: 'User IP', selected: true },
+    { field: 'devip', label: 'Router IP', selected: true },
+    { field: 'name', label: 'Router Name', selected: true },
+    { field: 'action', label: 'Action', selected: true },
+    { field: 'section', label: 'Section', selected: true },
+    { field: 'ctype', label: 'Connection Type', selected: true },
+    { field: 'message', label: 'Message / Detail', selected: false },
+    { field: 'config', label: 'Config', selected: false }
+  ];
+
+  openExportModal() {
+    this.exportModalVisible = true;
+  }
+
+  fetchExportData = async (params: { startDate?: string; endDate?: string; scope?: string }) => {
+    const filterCopy = { ...this.filters };
+    if (params.startDate) {
+      filterCopy['start_time'] = `${params.startDate}T00:00:00.000Z`;
+    } else {
+      filterCopy['start_time'] = '1970-01-01T00:00:00.000Z';
+    }
+    if (params.endDate) {
+      filterCopy['end_time'] = `${params.endDate}T23:59:59.000Z`;
+    } else {
+      const today = new Date().toISOString().slice(0, 10);
+      filterCopy['end_time'] = `${today}T23:59:59.000Z`;
+    }
+    const res = this.role === 'customer'
+      ? await this.data_provider.customerGetAccountingLogs(filterCopy)
+      : await this.data_provider.get_account_logs(filterCopy);
+    return res.result || res || [];
+  };
+
   constructor(
     private data_provider: dataProvider,
     private router: Router,

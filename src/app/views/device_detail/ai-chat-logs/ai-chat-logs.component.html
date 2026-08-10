@@ -6,9 +6,14 @@
           <i class="fa-solid fa-comments me-2 text-primary"></i>
           <h6 class="mb-0 fw-bold">AI Chatbot Audit Logs for this Device</h6>
         </div>
-        <button cButton color="light" size="sm" (click)="loadAuditSessions()" [disabled]="auditLoading">
-          <i class="fa-solid fa-rotate" [class.fa-spin]="auditLoading"></i>
-        </button>
+        <div class="d-flex gap-2">
+          <button cButton color="light" size="sm" (click)="loadAuditSessions()" [disabled]="auditLoading">
+            <i class="fa-solid fa-rotate" [class.fa-spin]="auditLoading"></i>
+          </button>
+          <button cButton color="primary" size="sm" (click)="openExportModal()">
+            <i class="fa-solid fa-file-export me-1"></i> Export
+          </button>
+        </div>
       </div>
     </c-card-header>
     <c-card-body class="p-0">
@@ -163,3 +168,12 @@
     <button cButton color="secondary" size="sm" (click)="auditDetailsModalVisible = false">Close Audit</button>
   </c-modal-footer>
 </c-modal>
+
+<app-export-modal
+  [(visible)]="exportModalVisible"
+  title="Export AI Chat Logs Report"
+  [allData]="auditSessions"
+  [customColumns]="exportColumns"
+  dateField="modified"
+  defaultFileName="ai_chat_logs_report">
+</app-export-modal>

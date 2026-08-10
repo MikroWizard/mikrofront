@@ -14,12 +14,15 @@
         </c-row>
       </c-card-header>
       <c-card-body>
-        <div class="mb-3 d-flex justify-content-end">
+        <div class="mb-3 d-flex justify-content-end align-items-center gap-2">
           <span class="p-input-icon-left table-search-input">
             <i class="pi pi-search"></i>
             <input type="text" pInputText placeholder="Search tasks..." (input)="applyFilterGlobal($event, 'contains')"
               class="form-control-sm" />
           </span>
+          <button cButton color="primary" size="sm" (click)="openExportModal()">
+            <i class="fa-solid fa-file-export me-1"></i> Export Report
+          </button>
         </div>
 
         <p-table #dt [value]="source" [paginator]="true" [rows]="10" [showCurrentPageReport]="true"
@@ -71,7 +74,9 @@
             <tr>
               <td>
                 <i *ngIf="item.task_type=='snippet'" class="fa-solid fa-code me-1"></i>
+                <i *ngIf="item.task_type=='command_exec'" class="fa-solid fa-terminal me-1"></i>
                 <i *ngIf="item.task_type=='backup'" class="fa-solid fa-database me-1"></i>
+                <i *ngIf="item.task_type=='config_backup'" class="fa-solid fa-rotate-left me-1"></i>
                 <i *ngIf="item.task_type=='firmware'" class="fa-solid fa-upload me-1"></i>
                 <i *ngIf="item.task_type=='sequence'" class="fa-solid fa-code-branch me-1"></i>
                 <strong>{{item.name}}</strong>
@@ -130,7 +135,9 @@
             title="Select task type">
             <option value="">Choose Task Type...</option>
             <option value="backup">📁 Backup Configuration</option>
+            <option value="config_backup">💾 Multi-Brand Config Backup</option>
             <option value="snippet">📝 Execute Script/Snippet</option>
+            <option value="command_exec">⌨️ Command Execution</option>
             <option value="firmware" *ngIf="ispro">🔄 Firmware Update</option>
             <option value="sequence" *ngIf="ispro">⛓️ Alert Sequence</option>
           </select>
@@ -596,5 +603,14 @@
     </button>
   </c-modal-footer>
 </c-modal>
+
+<app-export-modal
+  [(visible)]="exportModalVisible"
+  title="Export User Tasks Report"
+  [allData]="source"
+  [filteredData]="dt?.filteredValue || source"
+  [customColumns]="exportColumns"
+  defaultFileName="user_tasks_report">
+</app-export-modal>
 
 <c-toaster position="fixed" placement="top-end"></c-toaster>

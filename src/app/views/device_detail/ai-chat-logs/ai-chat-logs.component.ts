@@ -19,6 +19,20 @@ export class AIChatLogsComponent implements OnInit, OnChanges {
   public auditDetailsModalVisible: boolean = false;
   public auditLoadingDetail: boolean = false;
 
+  public exportModalVisible: boolean = false;
+  public exportColumns = [
+    { field: 'id', label: 'Session ID', selected: true },
+    { field: 'customer_name', label: 'User Name', selected: true },
+    { field: 'customer_role', label: 'Role', selected: true },
+    { field: 'title', label: 'Session Title', selected: true },
+    { field: 'history_len', label: 'Messages Count', selected: true },
+    { field: 'modified', label: 'Last Modified', selected: true }
+  ];
+
+  openExportModal() {
+    this.exportModalVisible = true;
+  }
+
   constructor(private data_provider: dataProvider) {}
 
   ngOnInit(): void {

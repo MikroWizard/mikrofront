@@ -58,6 +58,24 @@ export class UserManagerComponent implements OnInit {
   public loading: boolean = false;
   public rows: any = [];
   public SelectedUser: any = {};
+
+  public exportModalVisible: boolean = false;
+  public exportColumns = [
+    { field: 'id', label: 'ID', selected: true },
+    { field: 'username', label: 'Username', selected: true },
+    { field: 'email', label: 'Email', selected: true },
+    { field: 'role', label: 'Role', selected: true },
+    { field: 'first_name', label: 'First Name', selected: true },
+    { field: 'last_name', label: 'Last Name', selected: true },
+    { field: 'status', label: 'Status', selected: true },
+    { field: 'is_active', label: 'Active', selected: true },
+    { field: 'last_login', label: 'Last Login', selected: false },
+    { field: 'created_at', label: 'Created At', selected: false }
+  ];
+
+  openExportModal() {
+    this.exportModalVisible = true;
+  }
   public SelectedUserItems: string = "";
   public selectedRoleFilter: string = 'all';
 
@@ -91,8 +109,22 @@ export class UserManagerComponent implements OnInit {
   public showDevGroupDropdown: boolean = false;
   public showPermissionDropdown: boolean = false;
   public DeletePermConfirmModalVisible: boolean = false;
+  public EditPermModalVisible: boolean = false;
+  public editingPerm: any = null;
+  public newPermId: string = '';
+  public EditPolicyModalVisible: boolean = false;
+  public editingPolicyPerm: any = null;
+  public newEditPolicyId: string = '';
   public userperms: any = {};
   public userresttrictions: any = false;
+  public policyGrants: any[] = [];
+  public allPolicies: any[] = [];
+  public allBrands: any[] = [];
+  public selectedPolicy: any = {};
+  public policySearch: string = '';
+  public filteredPolicies: any[] = [];
+  public showPolicyDropdown: boolean = false;
+  public editPolicyBrandMap: any = {};
   public ipaddress: string = "";
   public adminperms: { [index: string]: string } = {};
   public defadminperms: { [index: string]: string } = {
@@ -188,11 +220,11 @@ export class UserManagerComponent implements OnInit {
     if (action == "add") {
       if (_self.SelectedUser["role"] == "admin") {
         _self.adminperms = { ..._self.defadminperms };
-        if (_self.userperms.length > 0) {
-          _self.SelectedUser["userperms"] = _self.userperms;
-        } else {
-          _self.SelectedUser["userperms"] = [];
-        }
+      }
+      if (_self.userperms.length > 0) {
+        _self.SelectedUser["userperms"] = _self.userperms;
+      } else {
+        _self.SelectedUser["userperms"] = [];
       }
       _self.SelectedUser["adminperms"] = _self.adminperms;
       this.data_provider.create_user(_self.SelectedUser).then((res) => {
@@ -304,6 +336,11 @@ export class UserManagerComponent implements OnInit {
     } else this.adminperms = { ...this.defadminperms };
     _self.SelectedUser["action"] = "edit";
     _self.get_user_perms(_self.SelectedUser["id"]);
+    if (_self.ispro) {
+      _self.loadPolicies();
+      _self.loadPolicyGrants();
+      _self.loadBrands();
+    }
     _self.devgroup = {};
     _self.permission = {};
     _self.devgroupSearch = '';
@@ -387,9 +424,18 @@ export class UserManagerComponent implements OnInit {
           );
         }
         else {
+          if (_self.ispro && _self.selectedPolicy && _self.selectedPolicy.id) {
+            _self.data_provider.createPolicyGrant({
+              user_id: _self.SelectedUser.id,
+              group_id: _self.devgroup.id,
+              policy_id: _self.selectedPolicy.id,
+            }).then(() => _self.loadPolicyGrants());
+          }
           _self.get_user_perms(_self.SelectedUser["id"]);
           _self.permission = 0;
           _self.devgroup = 0;
+          _self.selectedPolicy = {};
+          _self.policySearch = '';
         }
       });
   }
@@ -404,6 +450,150 @@ export class UserManagerComponent implements OnInit {
       perm_name: this.permission["name"],
     });
     this.userperms = userperms;
+  }
+
+  // ---- Terminal Policy Grants (PRO) ----
+
+  loadPolicies() {
+    const _self = this;
+    _self.data_provider.listPolicies().then((res: any) => {
+      if (res.status === 'success') {
+        _self.allPolicies = (res.data || []).map((p: any) => ({ id: p.id, name: p.name }));
+        _self.filteredPolicies = [..._self.allPolicies];
+      }
+    });
+  }
+
+  loadBrands() {
+    const _self = this;
+    _self.data_provider.getDeviceBrands().then((res: any) => {
+      if (Array.isArray(res)) {
+        _self.allBrands = res.filter((b: any) => b.is_active !== false);
+      } else if (res && Array.isArray(res.data)) {
+        _self.allBrands = res.data.filter((b: any) => b.is_active !== false);
+      }
+    });
+  }
+
+  getGroupPolicy(groupId: number): any {
+    return this.policyGrants.find((g: any) => g.group_id === groupId);
+  }
+
+  getGroupPolicyId(groupId: number): string {
+    const grant = this.getGroupPolicy(groupId);
+    return grant ? grant.policy_id : '';
+  }
+
+  getGroupPolicyName(groupId: number): string {
+    const grant = this.getGroupPolicy(groupId);
+    if (!grant) return '— None —';
+    if (grant.brand_map && Object.keys(grant.brand_map).length > 0 && !grant.policy_id) return 'Per-brand';
+    return grant.policy_name || '— None —';
+  }
+
+  getGroupPolicyBrandCoverage(groupId: number): {brand: string, policy_name: string}[] {
+    const grant = this.getGroupPolicy(groupId);
+    const coverage: {brand: string, policy_name: string}[] = [];
+    if (grant && grant.brand_map) {
+      for (const [brand, pid] of Object.entries(grant.brand_map)) {
+        if (pid) {
+          const p = this.allPolicies.find((p: any) => p.id === pid);
+          coverage.push({ brand, policy_name: p ? p.name : '—' });
+        }
+      }
+    }
+    return coverage;
+  }
+
+  editUserPerm(perm: any): void {
+    this.editingPerm = { ...perm };
+    this.newPermId = String(perm.perm_id);
+    this.EditPermModalVisible = true;
+  }
+
+  updateUserPerm(): void {
+    if (!this.editingPerm || !this.newPermId) return;
+    const _self = this;
+    this.data_provider.Delete_user_perm(this.editingPerm.id).then(() => {
+      _self.data_provider.Add_user_perm(
+        _self.SelectedUser.id,
+        +_self.newPermId,
+        _self.editingPerm.group_id
+      ).then(() => {
+        _self.EditPermModalVisible = false;
+        _self.get_user_perms(_self.SelectedUser.id);
+      });
+    });
+  }
+
+  editUserPolicy(perm: any): void {
+    this.editingPolicyPerm = { ...perm };
+    this.newEditPolicyId = this.getGroupPolicyId(perm.group_id);
+    const grant = this.getGroupPolicy(perm.group_id);
+    this.editPolicyBrandMap = grant && grant.brand_map ? { ...grant.brand_map } : {};
+    this.EditPolicyModalVisible = true;
+  }
+
+  updateUserPolicy(): void {
+    if (!this.editingPolicyPerm) return;
+    const groupId = this.editingPolicyPerm.group_id;
+    const brandMap = {} as any;
+    let hasBrandPolicies = false;
+    for (const b of this.allBrands) {
+      const pid = this.editPolicyBrandMap[b.brand];
+      if (pid) {
+        brandMap[b.brand] = pid;
+        hasBrandPolicies = true;
+      }
+    }
+    const payload: any = {
+      user_id: this.SelectedUser.id,
+      group_id: groupId,
+      policy_id: this.newEditPolicyId || (hasBrandPolicies ? null : ''),
+    };
+    if (hasBrandPolicies) {
+      payload.brand_map = brandMap;
+    }
+    this.data_provider.createPolicyGrant(payload).then((res: any) => {
+      if (res.status === 'success') {
+        this.EditPolicyModalVisible = false;
+        this.loadPolicyGrants();
+      }
+    });
+  }
+
+  setBrandPolicy(brand: string, policyId: string): void {
+    if (policyId) {
+      this.editPolicyBrandMap[brand] = policyId;
+    } else {
+      delete this.editPolicyBrandMap[brand];
+    }
+  }
+
+  loadPolicyGrants() {
+    const _self = this;
+    _self.data_provider.listPolicyGrants({ user_id: _self.SelectedUser.id }).then((res: any) => {
+      if (res.status === 'success') {
+        _self.policyGrants = res.data || [];
+      }
+    });
+  }
+
+  filterPolicies(event: any): void {
+    const query = event.target.value.toLowerCase();
+    this.filteredPolicies = this.allPolicies.filter((p: any) =>
+      p.name.toLowerCase().includes(query)
+    );
+  }
+
+  selectPolicy(policy: any): void {
+    this.selectedPolicy = policy;
+    this.policySearch = policy.name;
+    this.showPolicyDropdown = false;
+  }
+
+  hidePolicyDropdown(): void {
+    setTimeout(() => this.showPolicyDropdown = false, 200);
   }
 
   confirm_delete(item: any = "", del: boolean = false) {
@@ -450,6 +640,12 @@ export class UserManagerComponent implements OnInit {
         );
       }
       else {
+        if (_self.ispro && item.group_id) {
+          _self.data_provider.deletePolicyGrant({
+            user_id: _self.SelectedUser.id,
+            group_id: item.group_id,
+          }).then(() => _self.loadPolicyGrants());
+        }
         this.get_user_perms(this.SelectedUser["id"]);
       }
     });

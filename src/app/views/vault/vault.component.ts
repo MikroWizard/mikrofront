@@ -262,6 +262,16 @@ export class VaultComponent implements OnInit {
     });
   }
   
+  public exportModalVisible: boolean = false;
+  public exportDataPayload: any[] = [];
+  public exportTitle: string = "Export Vault Report";
+
+  openVaultExportModal(data: any[], title: string = "Export Vault Report") {
+    this.exportDataPayload = data || [];
+    this.exportTitle = title;
+    this.exportModalVisible = true;
+  }
+
   sanitizeString(desc:string) {
     var itemDesc:string='';
     if (desc) {

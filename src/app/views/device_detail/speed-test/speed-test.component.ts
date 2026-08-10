@@ -14,8 +14,10 @@ export class SpeedTestComponent implements OnInit, OnChanges {
   // Speed Test State
   public speedtestServers: any[] = [];
   public selectedSpeedServer: string = 'auto';
-  public testDuration: string = '10s';
+  public testDuration: string = '5s';
   public testRunning: boolean = false;
+  public testRemainingSec: number = 0;
+  private testInterval: any;
   public testProgress: string = '';
   public testResults: any = null;
   public speedHistory: any[] = [];
@@ -24,6 +26,10 @@ export class SpeedTestComponent implements OnInit, OnChanges {
   public browserChartData: any = null;
   public rawResultsModalVisible: boolean = false;
   public rawResultsJson: any = null;
+
+  // Pagination
+  public currentPage: number = 1;
+  public pageSize: number = 10;
 
   public speedChartOptions = {
     responsive: true,
@@ -58,7 +64,34 @@ export class SpeedTestComponent implements OnInit, OnChanges {
     this.historyLoading = true;
     this.data_provider.adminGetSpeedtestHistory(this.devid).then((res: any) => {
       const data = res.result || res;
-      this.speedHistory = Array.isArray(data) ? data : [];
+      let history = Array.isArray(data) ? data : [];
+      history = history.map(h => {
+        if (h.raw_data && h.test_type === 'router') {
+          try {
+            const raw = typeof h.raw_data === 'string' ? JSON.parse(h.raw_data) : h.raw_data;
+            if (Array.isArray(raw)) {
+              for (const r of raw) {
+                const status = (r.status || '').toLowerCase().replace('-', ' ').trim();
+                if (status === 'udp download') {
+                  const val = r['udp-download'] || r['udp-rx'] || r['rx-speed'] || r['download'];
+                  if (val) h.udp_download = this.parseSpeedResult(val).speed;
+                } else if (status === 'udp upload') {
+                  const val = r['udp-upload'] || r['udp-tx'] || r['tx-speed'] || r['upload'];
+                  if (val) h.udp_upload = this.parseSpeedResult(val).speed;
+                }
+              }
+            } else if (typeof raw === 'object' && raw !== null) {
+              if (raw.udp_download) h.udp_download = this.parseSpeedResult(raw.udp_download).speed;
+              if (raw.udp_upload) h.udp_upload = this.parseSpeedResult(raw.udp_upload).speed;
+            }
+          } catch (e) {
+            console.error('Error parsing raw_data', e);
+          }
+        }
+        return h;
+      });
+      this.speedHistory = history;
+      this.currentPage = 1; // reset page on load
       this.prepareCharts();
       this.historyLoading = false;
     }).catch(e => {
@@ -142,6 +175,25 @@ export class SpeedTestComponent implements OnInit, OnChanges {
     return { speed, cpu };
   }
 
+  get paginatedHistory() {
+    const startIndex = (this.currentPage - 1) * this.pageSize;
+    return this.speedHistory.slice(startIndex, startIndex + this.pageSize);
+  }
+
+  get totalPages() {
+    return Math.ceil(this.speedHistory.length / this.pageSize) || 1;
+  }
+
+  getPagesArray(): number[] {
+    return Array.from({ length: this.totalPages }, (_, i) => i + 1);
+  }
+
+  onPageChange(page: number) {
+    if (page >= 1 && page <= this.totalPages) {
+      this.currentPage = page;
+    }
+  }
+
   showRawData(rawData: any) {
     if (!rawData) {
       this.rawResultsJson = { error: 'No raw data available' };
@@ -163,6 +215,16 @@ export class SpeedTestComponent implements OnInit, OnChanges {
     this.testProgress = 'Initializing speed test...';
     this.testResults = null;
 
+    const durMatch = this.testDuration.match(/(\d+)/);
+    const stageDurationSec = durMatch ? parseInt(durMatch[1], 10) : 5;
+    this.testRemainingSec = (stageDurationSec * 5) + 5;
+
+    this.testInterval = setInterval(() => {
+      if (this.testRemainingSec > 0) {
+        this.testRemainingSec--;
+      }
+    }, 1000);
+
     const payload = {
       target: 'mikrowizard-server',
       duration: this.testDuration,
@@ -170,17 +232,25 @@ export class SpeedTestComponent implements OnInit, OnChanges {
     };
 
     this.data_provider.adminRunRouterSpeedtest(this.devid, payload).then((res: any) => {
+      clearInterval(this.testInterval);
+      this.testRemainingSec = 0;
       this.testRunning = false;
       const data = res.result || res;
       if (data && data.status === 'success') {
         const results = data.results || {};
         const dlParsed = this.parseSpeedResult(results.tcp_download);
         const ulParsed = this.parseSpeedResult(results.tcp_upload);
+        const dlUdp = this.parseSpeedResult(results.udp_download);
+        const ulUdp = this.parseSpeedResult(results.udp_upload);
         this.testResults = {
-          download: dlParsed.speed,
-          download_cpu: dlParsed.cpu,
-          upload: ulParsed.speed,
-          upload_cpu: ulParsed.cpu,
+          tcp_download: dlParsed.speed,
+          tcp_download_cpu: dlParsed.cpu,
+          tcp_upload: ulParsed.speed,
+          tcp_upload_cpu: ulParsed.cpu,
+          udp_download: dlUdp.speed,
+          udp_download_cpu: dlUdp.cpu,
+          udp_upload: ulUdp.speed,
+          udp_upload_cpu: ulUdp.cpu,
           ping: results.ping || 'N/A',
           jitter: results.jitter || 'N/A',
           status: results.status || 'completed',
@@ -192,6 +262,8 @@ export class SpeedTestComponent implements OnInit, OnChanges {
       }
       this.loadSpeedtestData();
     }).catch(e => {
+      clearInterval(this.testInterval);
+      this.testRemainingSec = 0;
       this.testRunning = false;
       this.testProgress = 'Connection error running speed test.';
       console.error(e);

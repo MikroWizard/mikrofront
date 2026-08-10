@@ -76,12 +76,15 @@
             </c-col>
           </div>
         </c-row>
-        <div class="mb-3 d-flex justify-content-end">
+        <div class="mb-3 d-flex justify-content-end align-items-center gap-2">
           <span class="p-input-icon-left table-search-input">
             <i class="pi pi-search"></i>
             <input type="text" pInputText placeholder="Search commands/users..."
               (input)="applyFilterGlobal($event, 'contains')" class="form-control-sm" />
           </span>
+          <button cButton color="primary" size="sm" (click)="openExportModal()">
+            <i class="fa-solid fa-file-export me-1"></i> Export Report
+          </button>
         </div>
 
         <p-table #dt [value]="source" [paginator]="true" [rows]="10" [showCurrentPageReport]="true"
@@ -228,3 +231,14 @@
     </div>
   </div>
 </ng-template>
+
+<app-export-modal
+  [(visible)]="exportModalVisible"
+  title="Export Accounting Logs Report"
+  [allData]="source"
+  [filteredData]="table ? table.filteredValue : source"
+  [customColumns]="exportColumns"
+  [fetchFn]="fetchExportData"
+  dateField="created"
+  defaultFileName="accounting_logs_report">
+</app-export-modal>

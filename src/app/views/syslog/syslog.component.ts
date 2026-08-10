@@ -29,6 +29,39 @@ export class SyslogComponent implements OnInit {
   public filters_visible: boolean = false;
   public detailsVisible: boolean = false;
   public selectedLog: any = null;
+
+  public exportModalVisible: boolean = false;
+  public exportColumns = [
+    { field: 'id', label: 'ID', selected: true },
+    { field: 'created', label: 'Timestamp', selected: true },
+    { field: 'username', label: 'User Name', selected: true },
+    { field: 'ip', label: 'User IP', selected: true },
+    { field: 'section', label: 'Section', selected: true },
+    { field: 'action', label: 'Action', selected: true },
+    { field: 'data', label: 'Details / Data', selected: true },
+    { field: 'agent', label: 'User Agent', selected: false }
+  ];
+
+  openExportModal() {
+    this.exportModalVisible = true;
+  }
+
+  fetchExportData = async (params: { startDate?: string; endDate?: string; scope?: string }) => {
+    const filterCopy = { ...this.filters };
+    if (params.startDate) {
+      filterCopy['start_time'] = `${params.startDate}T00:00:00.000Z`;
+    } else {
+      filterCopy['start_time'] = '1970-01-01T00:00:00.000Z';
+    }
+    if (params.endDate) {
+      filterCopy['end_time'] = `${params.endDate}T23:59:59.000Z`;
+    } else {
+      const today = new Date().toISOString().slice(0, 10);
+      filterCopy['end_time'] = `${today}T23:59:59.000Z`;
+    }
+    const res = await this.data_provider.get_syslog(filterCopy);
+    return res.result || res || [];
+  };
   
   @ViewChild('dt') table!: Table;
   constructor(

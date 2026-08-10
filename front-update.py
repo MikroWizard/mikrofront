@@ -14,6 +14,7 @@ import hashlib
 import zipfile
 import subprocess
 import json
+import shutil
 from cryptography.fernet import Fernet 
 import psutil
 import sys
@@ -26,6 +27,7 @@ log.setLevel(logging.INFO)
 API_URL="http://host.docker.internal:8181"
 Config_File="/conf/server-conf.json"
 Version_File="/usr/share/nginx/html/version.json"
+SCRIPT_VERSION="2.0"
 # Example usage
 def check_sha256(filename, expect):
     """Check if the file with the name "filename" matches the SHA-256 sum
@@ -69,16 +71,36 @@ def extract_zip_reload(filename,dst):
     "dst". Then reload the updated modules."""
     with zipfile.ZipFile(filename, 'r') as zip_ref:
         zip_ref.extractall(dst)
-    # run db migrate
-    # dir ="/usr/share/nginx/html/"
-    # cmd = "cd {}; PYTHONPATH={}py PYSRV_CONFIG_PATH={} python3 scripts/dbmigrate.py".format(dir, dir, "/conf/server-conf.json")
-    # p = subprocess.Popen(cmd, shell=True)
-    # (output, err) = p.communicate()  
-    #This makes the wait possible
-    # p_status = p.wait()
-    #touch server reload file /app/reload
+    
+    # Check for nginx.conf update
+    nginx_conf_src = os.path.join(dst, "nginx.conf")
+    if os.path.exists(nginx_conf_src):
+        log.info("Updating nginx.conf and reloading nginx...")
+        shutil.move(nginx_conf_src, "/etc/nginx/conf.d/default.conf")
+        subprocess.run(["nginx", "-s", "reload"], check=False)
+        
+    # Optional post-update script for future flexibility
+    post_update_src = os.path.join(dst, "post_update.sh")
+    if os.path.exists(post_update_src):
+        log.info("Running post_update.sh...")
+        subprocess.run(["bash", post_update_src], check=False)
+        if os.path.exists(post_update_src):
+            os.remove(post_update_src)
+        
+    # Check for front-update.py update
+    front_update_src = os.path.join(dst, "front-update.py")
+    should_restart = False
+    if os.path.exists(front_update_src):
+        log.info("Updating front-update.py...")
+        shutil.move(front_update_src, "/front-update.py")
+        os.chmod("/front-update.py", 0o755)
+        should_restart = True
+
     os.remove(filename)
-    # Path('/app/reload').touch()
+
+    if should_restart:
+        log.info("Restarting updater process...")
+        sys.exit(0)
 
 def load_config_file():
     try:
@@ -140,7 +162,8 @@ def main():
                 "serial_number": hwid,
                 "username": username.strip(),
                 "front":True,
-                "version": version
+                "version": version,
+                "script_version": SCRIPT_VERSION
             }
             url="https://mikrowizard.com/wp-json/mikrowizard/v1/get_update"
             # send post request to server mikrowizard.com with params in json

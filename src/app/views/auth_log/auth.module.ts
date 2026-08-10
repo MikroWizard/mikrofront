@@ -8,6 +8,7 @@ import {
   CollapseModule,
   BadgeModule,
   AlertModule,
+  ModalModule,
 } from '@coreui/angular';
 import { AuthRoutingModule } from './auth-routing.module';
 import { AuthComponent } from './auth.component';
@@ -22,6 +23,8 @@ import {MatDatepickerModule} from '@angular/material/datepicker';
 import {MatInputModule} from '@angular/material/input';
 import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatSelectModule} from '@angular/material/select';
+import { SharedModule } from '../../shared/shared.module';
+
 @NgModule({
   imports: [
     AuthRoutingModule,
@@ -30,6 +33,7 @@ import {MatSelectModule} from '@angular/material/select';
     GridModule,
     FormsModule,
     ButtonModule,
+    ModalModule,
     TableModule,
     DrawerModule,
     InputTextModule,
@@ -40,7 +44,8 @@ import {MatSelectModule} from '@angular/material/select';
     MatDatepickerModule,
     MatSelectModule,
     BadgeModule,
-    AlertModule
+    AlertModule,
+    SharedModule
   ],
   declarations: [AuthComponent],
   exports: [AuthComponent],

@@ -40,6 +40,41 @@ export class DevLogsComponent implements OnInit, OnDestroy {
   public event_types_filtered: any = [];
   public filters_visible: boolean = false;
   public reloading: boolean = false;
+
+  public exportModalVisible: boolean = false;
+  public exportColumns = [
+    { field: 'id', label: 'ID', selected: true },
+    { field: 'eventtime', label: 'Timestamp', selected: true },
+    { field: 'name', label: 'Router Name', selected: true },
+    { field: 'devip', label: 'Router IP', selected: true },
+    { field: 'eventtype', label: 'Event Type / Topics', selected: true },
+    { field: 'detail', label: 'Message / Detail', selected: true },
+    { field: 'status', label: 'Status', selected: true },
+    { field: 'level', label: 'Level', selected: false },
+    { field: 'comment', label: 'Comment', selected: false },
+    { field: 'src', label: 'Source', selected: false }
+  ];
+
+  openExportModal() {
+    this.exportModalVisible = true;
+  }
+
+  fetchExportData = async (params: { startDate?: string; endDate?: string; scope?: string }) => {
+    const filterCopy = { ...this.filters };
+    if (params.startDate) {
+      filterCopy['start_time'] = `${params.startDate}T00:00:00.000Z`;
+    } else {
+      filterCopy['start_time'] = '1970-01-01T00:00:00.000Z';
+    }
+    if (params.endDate) {
+      filterCopy['end_time'] = `${params.endDate}T23:59:59.000Z`;
+    } else {
+      const today = new Date().toISOString().slice(0, 10);
+      filterCopy['end_time'] = `${today}T23:59:59.000Z`;
+    }
+    const res = await this.data_provider.get_dev_logs(filterCopy);
+    return res.result || res || [];
+  };
   constructor(
     private data_provider: dataProvider,
     private router: Router,

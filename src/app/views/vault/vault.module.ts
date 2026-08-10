@@ -3,6 +3,7 @@ import { CommonModule } from "@angular/common";
 import { FormsModule,ReactiveFormsModule } from "@angular/forms";
 
 import {
+  AlertModule,
   ButtonModule,
   CardModule,
   FormModule,
@@ -26,6 +27,7 @@ import { SharedModule } from "../../shared/shared.module";
 @NgModule({
   imports: [
     VaultRoutingModule,
+    AlertModule,
     CardModule,
     CommonModule,
     GridModule,

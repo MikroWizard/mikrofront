@@ -45,7 +45,7 @@
               <i class="fa-solid fa-circle-question text-secondary me-1" pTooltip="Specifies how long the active bandwidth transmission test runs. Shorter durations (5s or 10s) are recommended to avoid overloading the router CPU, while longer tests provide more stable and accurate speed results."></i>Test Duration
             </label>
             <select cSelect [(ngModel)]="testDuration" class="form-select">
-              <option value="5s">5 Seconds</option>
+              <option value="5s">5 Seconds (Recommended)</option>
               <option value="10s">10 Seconds</option>
               <option value="20s">20 Seconds</option>
               <option value="30s">30 Seconds</option>
@@ -57,7 +57,7 @@
             <button cButton color="success" class="w-100 py-2 fw-semibold text-white" (click)="runRouterSpeedtest()" [disabled]="testRunning">
               <c-spinner *ngIf="testRunning" size="sm" class="me-2"></c-spinner>
               <i class="fa-solid fa-play me-2" *ngIf="!testRunning"></i>
-              {{ testRunning ? 'Running Test...' : 'Start Speed Test' }}
+              {{ testRunning ? 'Running Test... (' + testRemainingSec + 's remaining)' : 'Start Speed Test' }}
             </button>
           </div>
         </c-col>
@@ -76,35 +76,59 @@
         </div>
 
         <!-- Metrics -->
-        <c-row class="g-3" *ngIf="testResults">
-          <c-col md="3" sm="6">
-            <div class="p-3 rounded text-center border h-100 d-flex flex-column justify-content-center" style="background: rgba(65, 184, 131, 0.1); border-color: rgba(65, 184, 131, 0.2) !important;">
-              <div class="text-muted small uppercase fw-bold mb-1">Download</div>
-              <h4 class="text-success mb-1 fw-bold">{{ testResults.download }}</h4>
-              <div class="text-muted small font-monospace" style="font-size: 0.75rem;" *ngIf="testResults.download_cpu">
-                {{ testResults.download_cpu }}
+        <c-row class="g-2" *ngIf="testResults">
+          <!-- Ping / Latency -->
+          <c-col xs="6" md="2">
+            <div class="p-2 border rounded bg-white text-center h-100 d-flex flex-column justify-content-center">
+              <div class="small text-muted fw-semibold mb-1" style="font-size: 0.75rem;"><i class="fa-solid fa-arrow-right-to-bracket text-info me-1"></i> Ping</div>
+              <div class="h5 mb-0 font-monospace fw-bold text-dark">{{ testResults.ping }}</div>
+            </div>
+          </c-col>
+          <!-- Jitter -->
+          <c-col xs="6" md="2">
+            <div class="p-2 border rounded bg-white text-center h-100 d-flex flex-column justify-content-center">
+              <div class="small text-muted fw-semibold mb-1" style="font-size: 0.75rem;"><i class="fa-solid fa-wave-square text-info me-1"></i> Jitter</div>
+              <div class="h5 mb-0 font-monospace fw-bold text-dark">{{ testResults.jitter }}</div>
+            </div>
+          </c-col>
+          <!-- TCP Download -->
+          <c-col xs="6" md="2">
+            <div class="p-2 border rounded text-center h-100 d-flex flex-column justify-content-center" style="background: rgba(65, 184, 131, 0.05); border-color: rgba(65, 184, 131, 0.1) !important;">
+              <div class="small text-muted fw-semibold mb-1" style="font-size: 0.75rem;"><i class="fa-solid fa-cloud-arrow-down text-success me-1"></i> TCP Down</div>
+              <div class="h5 mb-1 font-monospace fw-bold text-success">{{ testResults.tcp_download }}</div>
+              <div class="text-muted small font-monospace" style="font-size: 0.65rem;" *ngIf="testResults.tcp_download_cpu">
+                {{ testResults.tcp_download_cpu }}
               </div>
             </div>
           </c-col>
-          <c-col md="3" sm="6">
-            <div class="p-3 rounded text-center border h-100 d-flex flex-column justify-content-center" style="background: rgba(0, 120, 255, 0.08); border-color: rgba(0, 120, 255, 0.15) !important;">
-              <div class="text-muted small uppercase fw-bold mb-1">Upload</div>
-              <h4 class="text-primary mb-1 fw-bold">{{ testResults.upload }}</h4>
-              <div class="text-muted small font-monospace" style="font-size: 0.75rem;" *ngIf="testResults.upload_cpu">
-                {{ testResults.upload_cpu }}
+          <!-- TCP Upload -->
+          <c-col xs="6" md="2">
+            <div class="p-2 border rounded text-center h-100 d-flex flex-column justify-content-center" style="background: rgba(0, 120, 255, 0.05); border-color: rgba(0, 120, 255, 0.1) !important;">
+              <div class="small text-muted fw-semibold mb-1" style="font-size: 0.75rem;"><i class="fa-solid fa-cloud-arrow-up text-primary me-1"></i> TCP Up</div>
+              <div class="h5 mb-1 font-monospace fw-bold text-primary">{{ testResults.tcp_upload }}</div>
+              <div class="text-muted small font-monospace" style="font-size: 0.65rem;" *ngIf="testResults.tcp_upload_cpu">
+                {{ testResults.tcp_upload_cpu }}
               </div>
             </div>
           </c-col>
-          <c-col md="3" sm="6">
-            <div class="p-3 rounded text-center border h-100 d-flex flex-column justify-content-center" style="background: rgba(0, 0, 0, 0.02); border-color: rgba(0, 0, 0, 0.05) !important;">
-              <div class="text-muted small uppercase fw-bold mb-1">Ping</div>
-              <h4 class="text-dark mb-0 fw-bold">{{ testResults.ping }}</h4>
+          <!-- UDP Download -->
+          <c-col xs="6" md="2">
+            <div class="p-2 border rounded text-center h-100 d-flex flex-column justify-content-center" style="background: rgba(13, 202, 240, 0.05); border-color: rgba(13, 202, 240, 0.1) !important;">
+              <div class="small text-muted fw-semibold mb-1" style="font-size: 0.75rem;"><i class="fa-solid fa-cloud-arrow-down text-info me-1"></i> UDP Down</div>
+              <div class="h5 mb-1 font-monospace fw-bold text-info">{{ testResults.udp_download }}</div>
+              <div class="text-muted small font-monospace" style="font-size: 0.65rem;" *ngIf="testResults.udp_download_cpu">
+                {{ testResults.udp_download_cpu }}
+              </div>
             </div>
           </c-col>
-          <c-col md="3" sm="6">
-            <div class="p-3 rounded text-center border h-100 d-flex flex-column justify-content-center" style="background: rgba(0, 0, 0, 0.02); border-color: rgba(0, 0, 0, 0.05) !important;">
-              <div class="text-muted small uppercase fw-bold mb-1">Jitter</div>
-              <h4 class="text-dark mb-0 fw-bold">{{ testResults.jitter }}</h4>
+          <!-- UDP Upload -->
+          <c-col xs="6" md="2">
+            <div class="p-2 border rounded text-center h-100 d-flex flex-column justify-content-center" style="background: rgba(255, 193, 7, 0.05); border-color: rgba(255, 193, 7, 0.1) !important;">
+              <div class="small text-muted fw-semibold mb-1" style="font-size: 0.75rem;"><i class="fa-solid fa-cloud-arrow-up text-warning me-1"></i> UDP Up</div>
+              <div class="h5 mb-1 font-monospace fw-bold text-warning">{{ testResults.udp_upload }}</div>
+              <div class="text-muted small font-monospace" style="font-size: 0.65rem;" *ngIf="testResults.udp_upload_cpu">
+                {{ testResults.udp_upload_cpu }}
+              </div>
             </div>
           </c-col>
         </c-row>
@@ -151,15 +175,17 @@
             <tr class="table-light">
               <th class="py-2 px-3">Type</th>
               <th class="py-2 px-3">Date</th>
-              <th class="py-2 px-3">Download</th>
-              <th class="py-2 px-3">Upload</th>
+              <th class="py-2 px-3">TCP Down</th>
+              <th class="py-2 px-3">TCP Up</th>
+              <th class="py-2 px-3">UDP Down</th>
+              <th class="py-2 px-3">UDP Up</th>
               <th class="py-2 px-3">Ping</th>
               <th class="py-2 px-3">Jitter</th>
               <th class="py-2 px-3 text-end">Actions</th>
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let h of speedHistory" class="border-bottom">
+            <tr *ngFor="let h of paginatedHistory" class="border-bottom">
               <td class="px-3">
                 <c-badge color="success" *ngIf="h.test_type === 'router'">Router</c-badge>
                 <c-badge color="info" *ngIf="h.test_type === 'browser' || !h.test_type">Browser</c-badge>
@@ -167,6 +193,8 @@
               <td class="px-3 text-dark">{{ h.created | date:'short' }}</td>
               <td class="px-3 fw-semibold text-success">{{ h.download }} Mbps</td>
               <td class="px-3 fw-semibold text-primary">{{ h.upload }} Mbps</td>
+              <td class="px-3 fw-semibold text-info">{{ h.udp_download ? h.udp_download + ' Mbps' : '-' }}</td>
+              <td class="px-3 fw-semibold text-warning">{{ h.udp_upload ? h.udp_upload + ' Mbps' : '-' }}</td>
               <td class="px-3 text-dark">{{ h.ping }} ms</td>
               <td class="px-3 text-dark">{{ h.jitter }} ms</td>
               <td class="px-3 text-end">
@@ -182,6 +210,22 @@
           </tbody>
         </table>
       </div>
+
+      <!-- Pagination Controls -->
+      <div class="mt-3 d-flex justify-content-end" *ngIf="speedHistory.length > pageSize">
+        <c-pagination size="sm" class="mb-0">
+          <c-page-item [disabled]="currentPage === 1">
+            <a cPageLink (click)="onPageChange(currentPage - 1)" style="cursor: pointer;">Previous</a>
+          </c-page-item>
+          <c-page-item *ngFor="let page of getPagesArray()" [active]="currentPage === page">
+            <a cPageLink (click)="onPageChange(page)" style="cursor: pointer;">{{ page }}</a>
+          </c-page-item>
+          <c-page-item [disabled]="currentPage === totalPages">
+            <a cPageLink (click)="onPageChange(currentPage + 1)" style="cursor: pointer;">Next</a>
+          </c-page-item>
+        </c-pagination>
+      </div>
+
     </c-card-body>
   </c-card>
 </ng-container>

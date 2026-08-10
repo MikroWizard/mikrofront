@@ -28,6 +28,8 @@ import { FormsModule } from "@angular/forms";
 import { UnifiedDiffComponent,SideBySideDiffComponent } from 'ngx-diff';
 import { ClipboardModule } from "@angular/cdk/clipboard";
 
+import { SharedModule } from "../../shared/shared.module";
+
 @NgModule({
   imports: [
     BackupsRoutingModule,
@@ -55,7 +57,8 @@ import { ClipboardModule } from "@angular/cdk/clipboard";
     SideBySideDiffComponent,
     ToastModule,
     HighlightJsModule,
-    ClipboardModule
+    ClipboardModule,
+    SharedModule
   ],
   declarations: [BackupsComponent],
 })

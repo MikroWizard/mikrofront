@@ -20,6 +20,36 @@ export class DhcpInfoComponent implements AfterContentInit {
   dhcp_history:any;
   dhcp_history_modal: boolean = false;
   current_dhcp:any;
+
+  public leasesExportModalVisible: boolean = false;
+  public historyExportModalVisible: boolean = false;
+
+  public leaseExportColumns = [
+    { field: 'address', label: 'IP Address', selected: true },
+    { field: 'dynamic', label: 'Type (Dynamic/Static)', selected: true },
+    { field: 'expires-after', label: 'Expires After', selected: true },
+    { field: 'host-name', label: 'Host Name', selected: true },
+    { field: 'status', label: 'Status', selected: true },
+    { field: 'mac-address', label: 'MAC Address', selected: true },
+    { field: 'server', label: 'Server', selected: false },
+    { field: 'comment', label: 'Comment', selected: false }
+  ];
+
+  public historyExportColumns = [
+    { field: 'eventtime', label: 'Timestamp', selected: true },
+    { field: 'detail', label: 'Type / Detail', selected: true },
+    { field: 'comment', label: 'Comment', selected: true },
+    { field: 'name', label: 'Router Name', selected: true },
+    { field: 'ip', label: 'Router IP', selected: true }
+  ];
+
+  openLeasesExportModal() {
+    this.leasesExportModalVisible = true;
+  }
+
+  openHistoryExportModal() {
+    this.historyExportModalVisible = true;
+  }
   constructor(
     private changeDetectorRef: ChangeDetectorRef,
     private data_provider: dataProvider,

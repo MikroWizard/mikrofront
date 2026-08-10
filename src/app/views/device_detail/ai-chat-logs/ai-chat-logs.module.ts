@@ -10,6 +10,8 @@ import { TableModule as PTableModule } from 'primeng/table';
 
 import { AIChatLogsComponent } from './ai-chat-logs.component';
 
+import { SharedModule } from '../../../shared/shared.module';
+
 @NgModule({
   declarations: [
     AIChatLogsComponent
@@ -20,7 +22,8 @@ import { AIChatLogsComponent } from './ai-chat-logs.component';
     ButtonModule,
     ModalModule,
     SpinnerModule,
-    PTableModule
+    PTableModule,
+    SharedModule
   ],
   exports: [
     AIChatLogsComponent

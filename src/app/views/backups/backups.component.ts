@@ -27,6 +27,20 @@ export class BackupsComponent implements OnInit {
 	public compare_type="unified";
 	public copy_msg:boolean=false;
 	public confirmationText: string = '';
+
+	public exportModalVisible: boolean = false;
+	public exportColumns = [
+		{ field: 'id', label: 'ID', selected: true },
+		{ field: 'devname', label: 'Device Name', selected: true },
+		{ field: 'devip', label: 'Device IP', selected: true },
+		{ field: 'createdC', label: 'Created At', selected: true },
+		{ field: 'filesize', label: 'File Size', selected: true },
+		{ field: 'checksum', label: 'Checksum', selected: false }
+	];
+
+	openExportModal() {
+		this.exportModalVisible = true;
+	}
 	
 	constructor(
 		private data_provider: dataProvider,

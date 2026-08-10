@@ -63,6 +63,20 @@ export class UserTasksComponent implements OnInit {
   public rows: any = [];
   public SelectedTask: any = {};
   public SelectedTaskItems: any = "";
+
+  public exportModalVisible: boolean = false;
+  public exportColumns = [
+    { field: 'id', label: 'ID', selected: true },
+    { field: 'name', label: 'Task Name', selected: true },
+    { field: 'desc_cron', label: 'Schedule (Cron)', selected: true },
+    { field: 'status', label: 'Status', selected: true },
+    { field: 'description', label: 'Description', selected: true },
+    { field: 'last_run', label: 'Last Run', selected: false }
+  ];
+
+  openExportModal() {
+    this.exportModalVisible = true;
+  }
   public runConfirmModalVisible: boolean = false;
   public EditTaskModalVisible: boolean = false;
   public DeleteConfirmModalVisible: boolean = false;

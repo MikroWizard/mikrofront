@@ -64,12 +64,15 @@
           </div>
 
         </c-row>
-        <div class="mb-3 d-flex justify-content-end">
+        <div class="mb-3 d-flex justify-content-end align-items-center gap-2">
           <span class="p-input-icon-left">
             <i class="pi pi-search"></i>
             <input type="text" pInputText placeholder="Search logs..." (input)="applyFilterGlobal($event, 'contains')"
               class="form-control-sm" />
           </span>
+          <button cButton color="primary" size="sm" (click)="openExportModal()">
+            <i class="fa-solid fa-file-export me-1"></i> Export Report
+          </button>
         </div>
 
         <p-table #dt [value]="source" [paginator]="true" [rows]="10" [showCurrentPageReport]="true"
@@ -207,3 +210,14 @@
     </c-card>
   </c-col>
 </c-row>
+
+<app-export-modal
+  [(visible)]="exportModalVisible"
+  title="Export Syslog Report"
+  [allData]="source"
+  [filteredData]="table ? table.filteredValue : source"
+  [customColumns]="exportColumns"
+  [fetchFn]="fetchExportData"
+  dateField="created"
+  defaultFileName="syslog_report">
+</app-export-modal>

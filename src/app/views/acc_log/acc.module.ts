@@ -24,6 +24,8 @@ import { MatSelectModule } from "@angular/material/select";
 
 import { FormsModule } from "@angular/forms";
 
+import { SharedModule } from "../../shared/shared.module";
+
 @NgModule({
   imports: [
     AccRoutingModule,
@@ -43,7 +45,8 @@ import { FormsModule } from "@angular/forms";
     MatDatepickerModule,
     MatSelectModule,
     BadgeModule,
-    AlertModule
+    AlertModule,
+    SharedModule
   ],
   declarations: [AccComponent],
   exports: [AccComponent],
