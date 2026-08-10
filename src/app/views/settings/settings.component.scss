@@ -662,3 +662,100 @@
     text-overflow: ellipsis;
   }
 }
+
+// SMTP Test Log Panel
+.smtp-log-panel {
+  background: #1a1d28;
+  border: 1px solid #323a4a;
+  border-radius: 6px;
+  overflow: hidden;
+  text-align: left;
+}
+
+.smtp-log-header {
+  background: #222635;
+  padding: 8px 14px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #8e98b6;
+  border-bottom: 1px solid #323a4a;
+}
+
+.smtp-log-body {
+  padding: 6px 0;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.smtp-log-entry {
+  display: flex;
+  align-items: center;
+  padding: 5px 14px;
+  font-size: 0.78rem;
+  font-family: 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
+  color: #9ba3c4;
+  gap: 10px;
+
+  .log-step {
+    background: #2a2f3d;
+    color: #6fe0b0;
+    padding: 1px 7px;
+    border-radius: 3px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    min-width: 52px;
+    text-align: center;
+    text-transform: uppercase;
+  }
+
+  .log-msg {
+    flex: 1;
+    color: #c4cdde;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .log-time {
+    color: #6c768d;
+    font-size: 0.72rem;
+    min-width: 50px;
+    text-align: right;
+  }
+
+  &.log-error {
+    .log-step {
+      background: rgba(229, 83, 83, 0.2);
+      color: #e55353;
+    }
+    .log-msg {
+      color: #f0a0a0;
+    }
+  }
+
+  &.log-total {
+    border-top: 1px solid #323a4a;
+    margin-top: 4px;
+    padding-top: 7px;
+
+    .log-step {
+      background: rgba(99, 102, 241, 0.2);
+      color: #818cf8;
+    }
+    .log-msg {
+      font-weight: 600;
+      color: #e8ecf3;
+    }
+    .log-time {
+      font-weight: 600;
+      color: #e8ecf3;
+    }
+  }
+
+  &.log-success {
+    .log-step {
+      background: rgba(107, 224, 176, 0.2);
+      color: #6fe0b0;
+    }
+  }
+}

@@ -1,0 +1,953 @@
+<c-row>
+  <c-col xs>
+    <c-card class="mb-4">
+      <c-card-header style="padding: 0;">
+        <c-row class="align-items-center">
+          <c-col xs>
+            <div class="nav nav-underline bg-transparent">
+              <div class="nav-item">
+                <a [class.active]="activeTab === 'rules'" class="nav-link" (click)="switchTab('rules')" style="cursor: pointer;">
+                  <i class="fa-solid fa-clipboard-list me-1"></i>Rules
+                </a>
+              </div>
+              <div class="nav-item">
+                <a [class.active]="activeTab === 'channels'" class="nav-link" (click)="switchTab('channels')" style="cursor: pointer;">
+                  <i class="fa-solid fa-satellite-dish me-1"></i>Channels
+                </a>
+              </div>
+              <div class="nav-item" *ngIf="isAdmin">
+                <a [class.active]="activeTab === 'logs'" class="nav-link" (click)="switchTab('logs')" style="cursor: pointer;">
+                  <i class="fa-solid fa-history me-1"></i>Logs
+                </a>
+              </div>
+            </div>
+          </c-col>
+          <c-col xs="auto" class="pe-3">
+            <ng-container *ngIf="activeTab === 'rules'">
+              <button cButton color="primary" size="sm" (click)="openRuleModal()" style="color: #fff;">
+                <i class="fa-solid fa-plus me-1"></i>New Rule
+              </button>
+            </ng-container>
+            <ng-container *ngIf="activeTab === 'channels'">
+              <button cButton color="success" size="sm" (click)="openChannelModal()" style="color: #fff;">
+                <i class="fa-solid fa-plus me-1"></i>Add Channel
+              </button>
+            </ng-container>
+          </c-col>
+        </c-row>
+      </c-card-header>
+      <c-card-body>
+
+      <!-- Loading State -->
+      <div *ngIf="loading" class="text-center py-5">
+        <c-spinner size="sm" class="mb-3"></c-spinner>
+        <h5 class="text-muted">Loading data...</h5>
+      </div>
+
+      <!-- Rules Tab -->
+      <div *ngIf="!loading && activeTab === 'rules'">
+        <div class="tab-info-header mb-3">
+          <div class="d-flex align-items-center">
+            <i class="fa-solid fa-clipboard-list text-primary me-2 fs-4"></i>
+            <div>
+              <h5 class="mb-0">Alert Rules</h5>
+              <p class="text-muted mb-0 small">Configure rules to trigger notifications when specific events occur.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Admin Filter Toolbar -->
+        <div class="d-flex gap-2 mb-3 flex-wrap align-items-center bg-light p-2 rounded border" *ngIf="isAdmin">
+          <div class="d-flex align-items-center gap-2">
+            <label class="small fw-semibold text-nowrap mb-0">Role:</label>
+            <select class="form-select form-select-sm w-auto" [(ngModel)]="ruleFilterRole">
+              <option value="all">All Roles</option>
+              <option value="staff">Admin & Staff</option>
+              <option value="customer">Customers</option>
+            </select>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <label class="small fw-semibold text-nowrap mb-0">User:</label>
+            <input type="text" class="form-control form-control-sm" placeholder="Search name or username..." [(ngModel)]="ruleFilterSearch" style="min-width:180px">
+          </div>
+        </div>
+
+        <div class="mb-1 d-flex justify-content-end">
+          <span class="p-input-icon-left table-search-input">
+            <i class="pi pi-search"></i>
+            <input type="text" pInputText placeholder="Search rules..." (input)="dtRules.filterGlobal($any($event.target).value, 'contains')" class="form-control-sm" />
+          </span>
+        </div>
+
+        <p-table #dtRules [value]="filteredRules" [paginator]="true" [rows]="10" [showGridlines]="true" [stripedRows]="true" styleClass="p-datatable-sm p-datatable-gridlines p-datatable-striped" [globalFilterFields]="['name']">
+          <ng-template pTemplate="header">
+            <tr>
+              <th pSortableColumn="name">Rule Name <p-sortIcon field="name"></p-sortIcon></th>
+              <th>Status</th>
+              <th>Trigger</th>
+              <th>Target</th>
+              <th>Actions</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-rule>
+            <tr>
+              <td><strong>{{rule.name}}</strong></td>
+              <td>
+                <c-badge [color]="rule.enabled ? 'success' : 'secondary'">{{rule.enabled ? 'Active' :
+                  'Disabled'}}</c-badge>
+              </td>
+              <td>
+                Event: <c-badge color="info" class="me-1" *ngFor="let e of rule.event_types">{{e}}</c-badge>
+                <span class="text-muted small" *ngIf="rule.event_types?.length===0">Any</span><br />
+                Sev: <c-badge color="warning" class="me-1" *ngFor="let s of rule.event_levels">{{s}}</c-badge>
+                <span class="text-muted small" *ngIf="rule.event_levels?.length===0">Any</span>
+              </td>
+              <td>
+                <span *ngIf="rule.scope === 'global'">All Devices</span>
+                <span *ngIf="rule.scope === 'group'">Group: {{getGroupName(rule.target_id)}}</span>
+                <span *ngIf="rule.scope === 'device'">Device: {{getDevName(rule.target_id)}}</span>
+                <span *ngIf="rule.scope === 'groups'">Multiple Groups ({{rule.target_ids?.length || 0}})</span>
+                <span *ngIf="rule.scope === 'devices'">Multiple Devices ({{rule.target_ids?.length || 0}})</span>
+              </td>
+              <td>
+                <ng-container *ngIf="isAdmin || rule.owner_id === myUid">
+                  <button cButton color="info" variant="ghost" size="sm" (click)="openRuleModal(rule)" cTooltip="Edit">
+                    <i class="fa-solid fa-edit"></i>
+                  </button>
+                  <button cButton color="danger" variant="ghost" size="sm" (click)="deleteRule(rule.id)"
+                    cTooltip="Delete">
+                    <i class="fa-solid fa-trash"></i>
+                  </button>
+                </ng-container>
+                <ng-container *ngIf="!isAdmin && rule.owner_id !== myUid">
+                  <i class="fa-solid fa-lock text-muted" cTooltip="Configured by Admin"></i>
+                </ng-container>
+              </td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td [attr.colspan]="5" class="text-center">No alert rules configured.</td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
+
+      <!-- Channels Tab -->
+      <div *ngIf="!loading && activeTab === 'channels'">
+        <p class="text-muted mb-3">Set up your personal notification channels (Telegram, Email, Slack, etc).</p>
+
+        <div class="row">
+          <div class="col-md-4 mb-3" *ngFor="let ch of channels">
+            <c-card>
+              <c-card-body>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <div class="d-flex align-items-center">
+                    <div class="service-icon me-2" [style.color]="ch.service_color || '#333'">
+                      <i class="{{ch.service_icon}} fs-3"></i>
+                    </div>
+                    <div>
+                      <h5 class="mb-0">{{ch.name}}</h5>
+                      <small class="text-muted">{{ch.service_name}}</small>
+                    </div>
+                  </div>
+                  <c-badge [color]="ch.enabled ? 'success' : 'secondary'">{{ch.enabled ? 'Active' :
+                    'Disabled'}}</c-badge>
+                </div>
+                <p class="mb-3 text-truncate" style="font-family: monospace; font-size: 0.85rem;">{{ch.identifier}}</p>
+
+                <div class="d-flex justify-content-between border-top pt-3 mt-auto">
+                    <div>
+                      <button cButton color="info" variant="ghost" size="sm" class="me-2" (click)="openChannelModal(ch)">Edit</button>
+                      <button cButton color="primary" variant="ghost" size="sm" (click)="openInstructionModal(ch)"><i class="fa-solid fa-circle-info me-1"></i> Setup Guide</button>
+                    </div>
+                    <div>
+                    <button cButton color="secondary" variant="ghost" size="sm" class="me-2"
+                      (click)="testChannel(ch.id)">Test</button>
+                    <button cButton color="danger" variant="ghost" size="sm"
+                      (click)="deleteChannel(ch.id)">Delete</button>
+                  </div>
+                </div>
+              </c-card-body>
+            </c-card>
+          </div>
+          <div class="col-12 text-center py-4" *ngIf="channels.length === 0">
+            <p class="text-muted">You have no alert channels configured.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Logs Tab -->
+      <div *ngIf="!loading && activeTab === 'logs' && isAdmin">
+        <div class="tab-info-header mb-3">
+          <div class="d-flex align-items-center">
+            <i class="fa-solid fa-history text-info me-2 fs-4"></i>
+            <div>
+              <h5 class="mb-0">Dispatch History</h5>
+              <p class="text-muted mb-0 small">View alert dispatch logs sent through notification channels.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-1 d-flex justify-content-end">
+          <span class="p-input-icon-left table-search-input">
+            <i class="pi pi-search"></i>
+            <input type="text" pInputText placeholder="Search logs..." (input)="dtLogs.filterGlobal($any($event.target).value, 'contains')" class="form-control-sm" />
+          </span>
+        </div>
+
+        <p-table #dtLogs [value]="dispatchLogs" [paginator]="true" [rows]="15" [showGridlines]="true" [stripedRows]="true"
+          styleClass="p-datatable-sm p-datatable-gridlines p-datatable-striped" [globalFilterFields]="['rule', 'channel_type', 'status']">
+          <ng-template pTemplate="header">
+            <tr>
+              <th pSortableColumn="dispatched">Time <p-sortIcon field="dispatched"></p-sortIcon></th>
+              <th pSortableColumn="rule">Rule <p-sortIcon field="rule"></p-sortIcon></th>
+              <th>Event</th>
+              <th pSortableColumn="channel_type">Channel <p-sortIcon field="channel_type"></p-sortIcon></th>
+              <th pSortableColumn="destination_url">Destination <p-sortIcon field="destination_url"></p-sortIcon></th>
+              <th pSortableColumn="status">Status <p-sortIcon field="status"></p-sortIcon></th>
+              <th>Response</th>
+              <th>Actions</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-log>
+            <tr>
+              <td>{{log.dispatched | date:'short'}}</td>
+              <td><strong>{{log.rule?.name || 'Manual Test'}}</strong></td>
+              <td>
+                 <div *ngIf="log.event_snap" class="d-flex flex-column">
+                    <strong class="text-capitalize">{{log.event_snap.eventtype}}</strong>
+                    <small class="text-muted">{{log.event_snap.level}}</small>
+                 </div>
+                 <span *ngIf="!log.event_snap" class="text-muted">-</span>
+              </td>
+              <td><c-badge color="info">{{log.channel_type}}</c-badge></td>
+              <td><span class="text-truncate d-inline-block" style="max-width: 150px;"
+                  [title]="log.destination_url">{{log.destination_url}}</span></td>
+              <td>
+                <c-badge [color]="log.status === 'success' ? 'success' : 'danger'">{{log.status}}</c-badge>
+              </td>
+              <td>
+                 <span class="text-truncate d-inline-block" style="max-width: 120px;" [title]="log.response_text">
+                    <small class="text-muted">{{log.response_text}}</small>
+                 </span>
+              </td>
+              <td>
+                <button cButton color="primary" variant="ghost" size="sm" (click)="viewEventDetails(log)" [disabled]="!log.event_snap" cTooltip="View Event Details">
+                  <i class="fa-solid fa-eye"></i>
+                </button>
+              </td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="8" class="text-center">No dispatch history.</td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
+
+    </c-card-body>
+  </c-card>
+  </c-col>
+</c-row>
+
+<!-- Rule Modal -->
+<c-modal #RuleModal backdrop="static" [(visible)]="showRuleModal" size="lg">
+  <c-modal-header class="bg-primary text-white">
+    <h5 cModalTitle><i class="fa-solid fa-bell me-2"></i>{{ruleForm.id ? 'Edit Alert Rule' : 'Create New Alert Rule'}}
+    </h5>
+    <button (click)="showRuleModal = false" cButtonClose class="text-white"></button>
+  </c-modal-header>
+  <c-modal-body *ngIf="showRuleModal" class="p-4">
+    <form>
+      <div class="row">
+        <!-- Rule Name -->
+        <div class="col-md-12 mb-3">
+          <label class="form-label fw-bold">Rule Name <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" name="rname" [(ngModel)]="ruleForm.name"
+            placeholder="e.g., Critical Network Down" required>
+        </div>
+
+        <!-- Target Scope -->
+        <div class="col-md-12 mb-4">
+          <div class="border p-3 rounded bg-light dark:bg-dark">
+            <label class="form-label fw-bold mb-2 text-primary">Target Scope <i
+                class="fa-solid fa-circle-question ms-1 text-muted"
+                cTooltip="Select which devices this rule should apply to."></i></label>
+            <div class="row align-items-center">
+              <div class="col-md-4">
+                <select class="form-select" name="rscope" [(ngModel)]="ruleForm.scope">
+                  <option value="global" *ngIf="isAdmin">All Devices</option>
+                  <option value="group" *ngIf="isAdmin">Specific Group</option>
+                  <option value="groups" *ngIf="isAdmin">Multiple Groups</option>
+                  <option value="device">Specific Device</option>
+                  <option value="devices">Multiple Devices</option>
+                </select>
+              </div>
+              <div class="col-md-8">
+                <!-- Specific Group -->
+                <ng-container *ngIf="ruleForm.scope === 'group'">
+                  <select *ngIf="devgroups.length <= 15" class="form-select" name="rgrp"
+                    [(ngModel)]="ruleForm.target_id">
+                    <option [ngValue]="null" disabled>Select Group...</option>
+                    <option *ngFor="let g of devgroups" [ngValue]="g.id">{{g.name}}</option>
+                  </select>
+                  <div *ngIf="devgroups.length > 15" class="d-flex align-items-center">
+                    <button cButton color="outline-primary" size="sm" type="button" (click)="openGroupSelectModal()">
+                      <i class="fa-solid fa-search me-1"></i> Search Group...
+                    </button>
+                    <div class="ms-2">
+                      <span class="badge bg-primary"
+                        *ngIf="ruleForm.target_id">{{getGroupName(ruleForm.target_id)}}</span>
+                      <span class="text-muted small" *ngIf="!ruleForm.target_id">None selected</span>
+                    </div>
+                  </div>
+                </ng-container>
+
+                <!-- Multiple Groups -->
+                <div *ngIf="ruleForm.scope === 'groups'">
+                  <button cButton color="outline-primary" size="sm" type="button" (click)="openGroupSelectModal()">
+                    <i class="fa-solid fa-folder me-1"></i> Choose Groups... ({{selectedGroups.length}} selected)
+                  </button>
+                  <div class="mt-2 d-flex flex-wrap gap-1" *ngIf="selectedGroups.length > 0"
+                    style="max-height: 120px; overflow-y: auto;">
+                    <span *ngFor="let grp of selectedGroups" class="badge bg-secondary">{{grp.name}}</span>
+                  </div>
+                </div>
+
+                <!-- Specific Device -->
+                <ng-container *ngIf="ruleForm.scope === 'device'">
+                  <select *ngIf="devices.length <= 15" class="form-select" name="rdev" [(ngModel)]="ruleForm.target_id">
+                    <option [ngValue]="null" disabled>Select Device...</option>
+                    <option *ngFor="let d of devices" [ngValue]="d.id">{{d.name}}</option>
+                  </select>
+                  <div *ngIf="devices.length > 15" class="d-flex align-items-center">
+                    <button cButton color="outline-primary" size="sm" type="button" (click)="openDeviceSelectModal()">
+                      <i class="fa-solid fa-search me-1"></i> Search Device...
+                    </button>
+                    <div class="ms-2">
+                      <span class="badge bg-primary"
+                        *ngIf="ruleForm.target_id">{{getDevName(ruleForm.target_id)}}</span>
+                      <span class="text-muted small" *ngIf="!ruleForm.target_id">None selected</span>
+                    </div>
+                  </div>
+                </ng-container>
+                <!-- Multiple Devices -->
+                <div *ngIf="ruleForm.scope === 'devices'">
+                  <button cButton color="outline-primary" size="sm" type="button" (click)="openDeviceSelectModal()">
+                    <i class="fa-solid fa-server me-1"></i> Choose Devices... ({{selectedDevices.length}} selected)
+                  </button>
+                  <div class="mt-2 d-flex flex-wrap gap-1" *ngIf="selectedDevices.length > 0"
+                    style="max-height: 120px; overflow-y: auto;">
+                    <span *ngFor="let dev of selectedDevices" class="badge bg-secondary">{{dev.name}}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Event Types & Severities (Side by side) -->
+        <div class="col-md-6 mb-4">
+          <label class="form-label fw-bold">Event Types <span class="text-muted small fw-normal">(Select
+              Multiple)</span></label>
+          <div class="p-3 border rounded h-100 bg-white dark:bg-darker">
+            <div class="row">
+              <div class="col-6 mb-2" *ngFor="let e of eventTypes">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" [id]="'ev_' + e"
+                    [checked]="ruleForm.event_types.includes(e)" (change)="toggleArrayItem('event_types', e)">
+                  <label class="form-check-label text-capitalize" [for]="'ev_' + e"
+                    style="cursor: pointer; font-size: 0.9rem;">
+                    {{e.replace('_', ' ')}}
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-6 mb-4">
+          <label class="form-label fw-bold">Severities <span class="text-muted small fw-normal">(Select
+              Multiple)</span></label>
+          <div class="p-3 border rounded h-100 bg-white dark:bg-darker">
+            <div class="d-flex flex-column gap-2">
+              <div class="form-check" *ngFor="let s of severities">
+                <input class="form-check-input" type="checkbox" [id]="'sev_' + s"
+                  [checked]="ruleForm.event_levels.includes(s)" (change)="toggleArrayItem('event_levels', s)">
+                <label class="form-check-label text-capitalize" [for]="'sev_' + s" style="cursor: pointer;">
+                  <c-badge
+                    [color]="s === 'critical' ? 'danger' : s === 'error' ? 'danger' : s === 'warning' ? 'warning' : 'info'">{{s}}</c-badge>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Advanced Filters -->
+        <div class="col-md-12 mb-4">
+          <div class="border p-3 rounded">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <label class="form-label mb-0 fw-bold text-primary"><i class="fa-solid fa-filter me-1"></i> Advanced
+                Filters <span class="text-muted fw-normal">(Optional)</span></label>
+            </div>
+            <div class="row">
+              <div class="col-md-6 mb-3 mb-md-0">
+                <div class="d-flex justify-content-between align-items-center">
+                  <label class="form-label small mb-1 fw-semibold">Syslog Regex Filter <i
+                      class="fa-solid fa-circle-question ms-1 text-muted"
+                      cTooltip="Filter events matching a regular expression. E.g. .*login failed.* or ^(?:OAM|BFD).*"></i></label>
+                  <c-dropdown>
+                    <a cDropdownToggle class="text-decoration-none small text-primary fw-semibold"
+                      style="cursor: pointer;">
+                      <i class="fa-solid fa-magic me-1"></i> Quick Presets
+                    </a>
+                    <ul cDropdownMenu class="shadow-sm" style="font-size: 0.85rem;">
+                      <li><a cDropdownItem (click)="ruleForm.event_details = '.*login failed.*'">Login Failed</a></li>
+                      <li><a cDropdownItem (click)="ruleForm.event_details = '.*wireguard.*'">Wireguard Events</a></li>
+                      <li><a cDropdownItem (click)="ruleForm.event_details = '.*system reboot.*'">System Reboot</a></li>
+                      <li><a cDropdownItem (click)="ruleForm.event_details = '.*ipsec.*'">IPSec Tunnels</a></li>
+                      <li>
+                        <hr cDropdownDivider>
+                      </li>
+                      <li><a cDropdownItem (click)="ruleForm.event_details = ''">Clear Filter</a></li>
+                    </ul>
+                  </c-dropdown>
+                </div>
+                <div class="input-group input-group-sm">
+                  <input type="text" class="form-control" name="rdet" [(ngModel)]="ruleForm.event_details"
+                    placeholder="e.g. .*login failed.*">
+                  <button cButton color="info" variant="outline" (click)="openAIHelp()"
+                    cTooltip="Ask AI to write a regex for you"><i class="fa-solid fa-robot"></i></button>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small mb-1 fw-semibold">Source Interface/IP Matcher <i
+                    class="fa-solid fa-circle-question ms-1 text-muted"
+                    cTooltip="Filter by the source interface or IP. E.g. ether1 or 192.168.88.*"></i></label>
+                <input type="text" class="form-control form-control-sm" name="rsrc" [(ngModel)]="event_srcs_str"
+                  placeholder="Comma separated, e.g. ether1, ether2">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recipients Selection -->
+        <div class="col-md-12 mb-4" *ngIf="isAdmin">
+          <div class="border p-3 rounded bg-light dark:bg-dark">
+            <label class="form-label fw-bold mb-2 text-primary">Recipients <i
+                class="fa-solid fa-circle-question ms-1 text-muted"
+                cTooltip="Select which users should receive notifications for this rule."></i></label>
+            <div class="row align-items-center">
+              <div class="col-md-12">
+                <button cButton color="outline-primary" size="sm" type="button" (click)="openRecipientSelectModal()">
+                  <i class="fa-solid fa-users me-1"></i> Choose Recipients... ({{selectedRecipients.length}} selected)
+                </button>
+                <div class="mt-2 d-flex flex-wrap gap-1" *ngIf="selectedRecipients.length > 0"
+                  style="max-height: 120px; overflow-y: auto;">
+                  <span *ngFor="let u of selectedRecipients" class="badge bg-secondary"><i
+                      class="fa-solid fa-user me-1"></i>{{u.username}}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Template and Settings -->
+        <div class="col-md-8 mb-3">
+          <label class="form-label fw-bold">Message Template <span
+              class="text-muted small fw-normal">(Optional)</span></label>
+          <textarea class="form-control" rows="2" name="rmsg" [(ngModel)]="ruleForm.recipient_custom"
+            placeholder="Leave empty for default."></textarea>
+          <div class="form-text mt-2 small">
+            Customize the alert text sent to recipients. Leave blank to use the standard template.<br />
+            <strong>Available variables:</strong>
+            <code>&#123;devname&#125;</code> (Device Name),
+            <code>&#123;eventType&#125;</code> (e.g., Link Down),
+            <code>&#123;detail&#125;</code> (Full log message)
+          </div>
+        </div>
+
+        <div class="col-md-4 mb-3">
+          <label class="form-label fw-bold">Cooldown <i class="fa-solid fa-circle-question ms-1 text-muted"
+              cTooltip="Prevent spam. Wait X minutes before sending another alert for the same exact event on this device."></i></label>
+          <div class="input-group">
+            <input type="number" class="form-control" name="rcoold" [(ngModel)]="ruleForm.cooldown_sec" min="0">
+            <span class="input-group-text">Seconds</span>
+          </div>
+        </div>
+
+        <div class="col-md-12 mt-2">
+          <div class="d-flex justify-content-between align-items-center border p-3 rounded bg-light dark:bg-dark">
+            <div>
+              <strong class="d-block mb-1 text-primary">Rule Active</strong>
+              <span class="small text-muted">Enable or disable this rule globally.</span>
+            </div>
+            <div class="form-check form-switch mb-0" style="transform: scale(1.3); margin-right: 10px;">
+              <input class="form-check-input mt-0" style="cursor: pointer;" type="checkbox" role="switch" id="ract"
+                name="ract" [(ngModel)]="ruleForm.enabled">
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
+  </c-modal-body>
+  <c-modal-footer class="bg-light dark:bg-dark">
+    <button cButton color="secondary" (click)="showRuleModal = false">Cancel</button>
+    <button cButton color="primary" (click)="saveRule()" [disabled]="!ruleForm.name"><i
+        class="fa-solid fa-check me-2"></i>Save Rule</button>
+  </c-modal-footer>
+</c-modal>
+
+<!-- Modal: Device Selection Grid -->
+<c-modal #deviceSelectModal backdrop="static" size="lg" [(visible)]="deviceSelectModalVisible" id="deviceSelectModal"
+  style="z-index: 1070; backdrop-filter: blur(2px);">
+  <c-modal-header class="bg-primary text-white">
+    <h5 cModalTitle><i class="fa-solid fa-server me-2"></i>Select Devices</h5>
+    <button (click)="deviceSelectModalVisible=false" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body class="p-4">
+    <div class="mb-3 d-flex justify-content-between align-items-center">
+      <div>
+        <strong *ngIf="selectedDevices.length > 0">{{selectedDevices.length}} device(s) selected</strong>
+        <span *ngIf="selectedDevices.length === 0" class="text-muted">No devices selected</span>
+      </div>
+      <span class="p-input-icon-left table-search-input">
+        <i class="pi pi-search"></i>
+        <input type="text" pInputText placeholder="Search available..."
+          (input)="applyFilterDevices($event, 'contains', dtDevices)" class="form-control form-control-sm"
+          style="width: 200px;" />
+      </span>
+    </div>
+
+    <p-table #dtDevices [value]="devices" [paginator]="true" [rows]="10" [resizableColumns]="true"
+      columnResizeMode="expand" [showGridlines]="true" [stripedRows]="true"
+      styleClass="p-datatable-sm p-datatable-gridlines p-datatable-striped" [(selection)]="selectedDevices"
+      [globalFilterFields]="['name', 'ip', 'mac']">
+      <ng-template pTemplate="header">
+        <tr>
+          <th style="width: 4rem" pResizableColumn><p-tableHeaderCheckbox></p-tableHeaderCheckbox></th>
+          <th pSortableColumn="name" pResizableColumn>Device Name <p-sortIcon field="name"></p-sortIcon></th>
+          <th pSortableColumn="ip" pResizableColumn>IP Address <p-sortIcon field="ip"></p-sortIcon></th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-item>
+        <tr>
+          <td><p-tableCheckbox [value]="item"></p-tableCheckbox></td>
+          <td>
+            <div class="d-flex align-items-center">
+              <i class="fa-solid fa-server me-2 text-primary"></i>
+              <strong>{{item.name}}</strong>
+            </div>
+          </td>
+          <td><span class="badge bg-secondary">{{item.ip || item.host || 'No IP'}}</span></td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </c-modal-body>
+  <c-modal-footer>
+    <button (click)="confirmDeviceSelection()" cButton color="primary">Confirm Selection</button>
+  </c-modal-footer>
+</c-modal>
+
+<!-- Modal: Group Selection Grid -->
+<c-modal #groupSelectModal backdrop="static" size="lg" [(visible)]="groupSelectModalVisible" id="groupSelectModal"
+  style="z-index: 1070; backdrop-filter: blur(2px);">
+  <c-modal-header class="bg-primary text-white">
+    <h5 cModalTitle><i class="fa-solid fa-folder me-2"></i>Select Groups</h5>
+    <button (click)="groupSelectModalVisible=false" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body class="p-4">
+    <div class="mb-3 d-flex justify-content-between align-items-center">
+      <div>
+        <strong *ngIf="selectedGroups.length > 0">{{selectedGroups.length}} group(s) selected</strong>
+        <span *ngIf="selectedGroups.length === 0" class="text-muted">No groups selected</span>
+      </div>
+      <span class="p-input-icon-left table-search-input">
+        <i class="pi pi-search"></i>
+        <input type="text" pInputText placeholder="Search available..."
+          (input)="applyFilterGroups($event, 'contains', dtGroups)" class="form-control form-control-sm"
+          style="width: 200px;" />
+      </span>
+    </div>
+
+    <p-table #dtGroups [value]="devgroups" [paginator]="true" [rows]="10" [resizableColumns]="true"
+      columnResizeMode="expand" [showGridlines]="true" [stripedRows]="true"
+      styleClass="p-datatable-sm p-datatable-gridlines p-datatable-striped" [(selection)]="selectedGroups"
+      [globalFilterFields]="['name']">
+      <ng-template pTemplate="header">
+        <tr>
+          <th style="width: 4rem" pResizableColumn><p-tableHeaderCheckbox></p-tableHeaderCheckbox></th>
+          <th pSortableColumn="name" pResizableColumn>Group Name <p-sortIcon field="name"></p-sortIcon></th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-item>
+        <tr>
+          <td><p-tableCheckbox [value]="item"></p-tableCheckbox></td>
+          <td>
+            <div class="d-flex align-items-center">
+              <i class="fa-solid fa-folder me-2 text-primary"></i>
+              <strong>{{item.name}}</strong>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </c-modal-body>
+  <c-modal-footer>
+    <button (click)="confirmGroupSelection()" cButton color="primary">Confirm Selection</button>
+  </c-modal-footer>
+</c-modal>
+
+<!-- Recipient Select Modal -->
+<c-modal #RecipientSelectModal [(visible)]="recipientSelectModalVisible" size="lg">
+  <c-modal-header>
+    <h5 cModalTitle>Select Recipients</h5>
+    <button (click)="recipientSelectModalVisible = false" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body class="p-4" style="max-height: 70vh; overflow-y: auto; overflow-x: hidden;">
+    <div class="row align-items-center mb-3">
+      <div class="col-md-12 mb-3">
+        <c-button-group>
+          <button cButton [color]="userRoleFilter === 'all' ? 'primary' : 'outline-primary'" size="sm"
+            (click)="setRoleFilter('all')">All</button>
+          <button cButton [color]="userRoleFilter === 'staff' ? 'primary' : 'outline-primary'" size="sm"
+            (click)="setRoleFilter('staff')">Staff</button>
+          <button cButton [color]="userRoleFilter === 'customers' ? 'primary' : 'outline-primary'" size="sm"
+            (click)="setRoleFilter('customers')">Customers</button>
+        </c-button-group>
+      </div>
+      <div class="col-md-12">
+        <div class="input-group input-group-sm mb-3">
+          <span class="input-group-text bg-light"><i class="fa-solid fa-search"></i></span>
+          <input type="text" class="form-control" placeholder="Search by username, full name, or role..."
+            (input)="applyFilterUsers($event, 'contains', dtUsers)" />
+        </div>
+      </div>
+    </div>
+
+    <p-table #dtUsers [value]="filteredUsers" [paginator]="true" [rows]="10" [resizableColumns]="true"
+      columnResizeMode="expand" [showGridlines]="true" [stripedRows]="true"
+      styleClass="p-datatable-sm p-datatable-gridlines p-datatable-striped" [(selection)]="selectedRecipients"
+      [globalFilterFields]="['username', 'role', 'first_name', 'last_name']">
+      <ng-template pTemplate="header">
+        <tr>
+          <th style="width: 4rem" pResizableColumn><p-tableHeaderCheckbox></p-tableHeaderCheckbox></th>
+          <th pSortableColumn="username" pResizableColumn>Username <p-sortIcon field="username"></p-sortIcon></th>
+          <th pSortableColumn="first_name" pResizableColumn>Full Name <p-sortIcon field="first_name"></p-sortIcon></th>
+          <th pSortableColumn="role" pResizableColumn>Role <p-sortIcon field="role"></p-sortIcon></th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-u>
+        <tr>
+          <td><p-tableCheckbox [value]="u"></p-tableCheckbox></td>
+          <td>
+            <div class="d-flex align-items-center">
+              <i class="fa-solid fa-user me-2 text-primary"></i>
+              <strong>{{u.username}}</strong>
+            </div>
+          </td>
+          <td>{{u.first_name}} {{u.last_name}}</td>
+          <td><span class="badge bg-secondary">{{u.role}}</span></td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="3" class="text-center p-4 text-muted">
+            <i class="fa-solid fa-user-slash fs-4 mb-2"></i>
+            <p class="mb-0">No users found matching your search.</p>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </c-modal-body>
+  <c-modal-footer>
+    <button cButton color="secondary" (click)="recipientSelectModalVisible = false">Cancel</button>
+    <button cButton color="primary" (click)="confirmRecipientSelection()">Done</button>
+  </c-modal-footer>
+</c-modal>
+
+<!-- Channel Modal -->
+<c-modal #ChannelModal backdrop="static" [(visible)]="showChannelModal">
+  <c-modal-header>
+    <h5 cModalTitle>{{channelForm.id ? 'Edit Channel' : 'New Channel'}}</h5>
+    <button (click)="showChannelModal = false" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body *ngIf="showChannelModal">
+    <div class="alert alert-warning" *ngIf="channelServices.length === 0">
+      No alert services are enabled by the administrator. Go to Settings -> Alert Channels to enable services.
+    </div>
+    <form *ngIf="channelServices.length > 0">
+      <div class="mb-3">
+        <label class="form-label">Channel Name</label>
+        <input type="text" class="form-control" name="cname" [(ngModel)]="channelForm.name"
+          placeholder="e.g. My Telegram" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Service Type</label>
+        <select class="form-select" name="ctype" [(ngModel)]="channelForm.channel_type" [disabled]="channelForm.id" (change)="onChannelTypeChange()">
+          <option *ngFor="let s of channelServices" [value]="s.id">{{s.name}}</option>
+        </select>
+      </div>
+      <div *ngIf="selectedServiceFields.length > 0" class="mb-3 border p-3 rounded">
+        <label class="form-label fw-bold">Service Configuration</label>
+        <div class="mt-2" *ngFor="let f of selectedServiceFields; let i = index">
+          <label class="form-label small">{{f.label}} <span *ngIf="f.required" class="text-danger">*</span></label>
+          <input *ngIf="!f.is_secret" type="text" class="form-control form-control-sm" name="cf_{{f.key}}_{{i}}"
+            [(ngModel)]="channelFields[f.key]" [placeholder]="f.placeholder || f.label" [required]="f.required">
+          <input *ngIf="f.is_secret" type="password" class="form-control form-control-sm" name="cf_{{f.key}}_{{i}}"
+            [(ngModel)]="channelFields[f.key]" [placeholder]="f.placeholder || f.label" [required]="f.required">
+          <div class="form-text mt-1" style="font-size: 0.75rem; color: #888;">{{f.help || f.help_text}}</div>
+        </div>
+      </div>
+      <div *ngIf="selectedServiceFields.length === 0 && channelForm.channel_type"
+        class="alert alert-info py-2 small mb-3">
+        <i class="fa-solid fa-info-circle me-1"></i> No additional configuration needed for this service type.
+      </div>
+      <div class="form-check form-switch mt-3">
+        <input class="form-check-input" type="checkbox" role="switch" id="cenab" name="cenab"
+          [(ngModel)]="channelForm.enabled">
+        <label class="form-check-label" for="cenab">Channel Enabled</label>
+      </div>
+    </form>
+  </c-modal-body>
+  <c-modal-footer>
+    <button cButton color="primary" (click)="saveChannel()" [disabled]="!isChannelFormValid">Save</button>
+    <button cButton color="secondary" (click)="showChannelModal = false">Cancel</button>
+  </c-modal-footer>
+</c-modal>
+
+<!-- Event Details Modal -->
+<c-modal #EventModal backdrop="static" [(visible)]="eventModalVisible" size="lg">
+  <c-modal-header class="bg-light dark:bg-darker">
+    <h5 cModalTitle><i class="fa-solid fa-file-lines me-2 text-primary"></i>Event Snapshot</h5>
+    <button (click)="eventModalVisible = false" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body *ngIf="selectedEventDetails" class="p-4">
+    <table class="table table-bordered border-light mb-0">
+      <tbody>
+        <tr>
+          <th style="width: 180px;" class="bg-light dark:bg-dark text-muted fw-bold">Event Type</th>
+          <td class="text-capitalize fw-semibold">{{selectedEventDetails.eventtype}}</td>
+        </tr>
+        <tr>
+          <th class="bg-light dark:bg-dark text-muted fw-bold">Severity Level</th>
+          <td>
+             <c-badge [color]="selectedEventDetails.level?.toLowerCase() === 'critical' ? 'danger' : 
+                               selectedEventDetails.level?.toLowerCase() === 'error' ? 'danger' :
+                               selectedEventDetails.level?.toLowerCase() === 'warning' ? 'warning' : 'info'">
+                {{selectedEventDetails.level | uppercase}}
+             </c-badge>
+          </td>
+        </tr>
+        <tr>
+          <th class="bg-light dark:bg-dark text-muted fw-bold">Device ID</th>
+          <td><code>{{selectedEventDetails.devid || 'System / Unassigned'}}</code></td>
+        </tr>
+        <tr>
+          <th class="bg-light dark:bg-dark text-muted fw-bold">Event Detail</th>
+          <td>
+            <div class="bg-light p-3 rounded border" style="max-height: 250px; overflow-y: auto;">
+              <span style="white-space: pre-wrap; font-family: monospace; font-size: 0.9rem;">{{selectedEventDetails.detail}}</span>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </c-modal-body>
+  <c-modal-footer>
+    <button cButton color="secondary" (click)="eventModalVisible = false">Close</button>
+  </c-modal-footer>
+</c-modal>
+
+<!-- Channel Instruction Modal -->
+<c-modal #InstructionModal backdrop="static" [(visible)]="instructionModalVisible" size="lg">
+  <c-modal-header class="bg-primary text-white">
+    <h5 cModalTitle><i class="fa-solid fa-book-open me-2"></i>Setup Guide: {{selectedChannelForInstruction?.name}}</h5>
+    <button (click)="instructionModalVisible = false" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body *ngIf="selectedChannelForInstruction" class="p-4" style="max-height: 70vh; overflow-y: auto;">
+    
+    <!-- NTFY Instructions -->
+    <div *ngIf="selectedChannelForInstruction.channel_type === 'ntfy'">
+      <div class="d-flex align-items-center mb-4">
+        <i class="fa-solid fa-leaf fs-1 text-success me-3"></i>
+        <div>
+          <h4 class="mb-0">Ntfy.sh Setup</h4>
+          <p class="text-muted mb-0">Receive instant push notifications on your phone or browser.</p>
+        </div>
+      </div>
+
+      <div class="alert alert-warning border-warning shadow-sm mb-4">
+        <h5 class="alert-heading text-dark"><i class="fa-solid fa-triangle-exclamation text-warning me-2"></i><strong>Security Warning: Topics are Public!</strong></h5>
+        <p class="mb-0 text-dark">Ntfy.sh acts like a public radio frequency. <strong>Anyone</strong> who knows or guesses your topic name can read your notifications. The generated topic below is randomized to act like a secure password. <strong>Do not change it to a common word</strong> like "MikroWizard" or "MyRouter", or others will intercept your alerts!</p>
+      </div>
+      
+      <ol class="list-group list-group-numbered mb-4 shadow-sm">
+        <li class="list-group-item d-flex justify-content-between align-items-start p-3">
+          <div class="ms-2 me-auto">
+            <div class="fw-bold fs-5 mb-1">Download the App</div>
+            Install the free <strong>ntfy</strong> app from the <a href="https://apps.apple.com/us/app/ntfy/id1625396347" target="_blank">App Store</a> or <a href="https://play.google.com/store/apps/details?id=io.heckel.ntfy" target="_blank">Google Play Store</a>. You can also use the web app at <a href="https://ntfy.sh" target="_blank">ntfy.sh</a>.
+          </div>
+        </li>
+        <li class="list-group-item d-flex justify-content-between align-items-start p-3 bg-light">
+          <div class="ms-2 me-auto w-100">
+            <div class="fw-bold fs-5 mb-1">Subscribe to your Secure Topic</div>
+            Open the app on your phone, tap the <strong class="fs-5">+</strong> button, and type in this exact secret topic name:<br/>
+            <div class="bg-white p-3 mt-3 rounded text-center border shadow-sm">
+              <code class="fs-4 text-primary user-select-all">{{parsedChannelFields?.topic || 'Your_Topic_Here'}}</code>
+            </div>
+            <small class="text-muted mt-2 d-block"><i class="fa-solid fa-circle-info me-1"></i> Tap to copy the topic above.</small>
+          </div>
+        </li>
+        <li class="list-group-item d-flex justify-content-between align-items-start p-3">
+          <div class="ms-2 me-auto">
+            <div class="fw-bold fs-5 mb-1">Test the Connection</div>
+            Close this guide and click the <strong class="text-secondary border px-2 py-1 rounded small">Test</strong> button on your channel card. You should immediately hear a push notification ping on your phone!
+          </div>
+        </li>
+      </ol>
+    </div>
+
+    <!-- Telegram Instructions -->
+    <div *ngIf="selectedChannelForInstruction.channel_type === 'telegram'">
+      <div class="d-flex align-items-center mb-4">
+        <i class="fa-brands fa-telegram fs-1 text-info me-3"></i>
+        <div>
+          <h4 class="mb-0">Telegram Setup</h4>
+          <p class="text-muted mb-0">Receive alerts directly to your Telegram app.</p>
+        </div>
+      </div>
+      
+      <div class="alert alert-info">
+        <i class="fa-solid fa-circle-info me-2"></i> The administrator has configured the Telegram Bot. You only need to provide your <strong>Chat ID</strong>.
+      </div>
+
+      <ol class="list-group list-group-numbered mb-4 shadow-sm">
+        <li class="list-group-item d-flex justify-content-between align-items-start p-3">
+          <div class="ms-2 me-auto">
+            <div class="fw-bold">Start the Bot</div>
+            Open Telegram and search for <strong>{{ getGlobalConfigValue('telegram', 'bot_username') || 'the bot configured by your system administrator' }}</strong>. Send a <code>/start</code> message to the bot to activate it for your account. The bot cannot send you messages until you initiate a chat with it.
+          </div>
+        </li>
+        <li class="list-group-item d-flex justify-content-between align-items-start p-3">
+          <div class="ms-2 me-auto">
+            <div class="fw-bold">Find your Chat ID</div>
+            To get your personal Chat ID, search for <strong>&#64;userinfobot</strong> in Telegram and send it a message. It will reply with your numerical ID (e.g. <code>123456789</code>).
+          </div>
+        </li>
+      </ol>
+      <div class="bg-light p-3 rounded border">
+        <strong>Your Configured Chat ID:</strong> <code class="fs-6 text-primary">{{parsedChannelFields?.chat_id || 'Not configured'}}</code>
+      </div>
+    </div>
+
+    <!-- Discord Instructions -->
+    <div *ngIf="selectedChannelForInstruction.channel_type === 'discord'">
+      <div class="d-flex align-items-center mb-4">
+        <i class="fa-brands fa-discord fs-1 text-primary me-3" style="color: #5865F2 !important;"></i>
+        <div>
+          <h4 class="mb-0">Discord Webhook Setup</h4>
+          <p class="text-muted mb-0">Push notifications directly to a Discord Server Channel.</p>
+        </div>
+      </div>
+      
+      <ol class="list-group list-group-numbered mb-4 shadow-sm">
+        <li class="list-group-item p-3">
+          <div class="fw-bold">Open Server Settings</div>
+          Open Discord, navigate to <strong>{{ getGlobalConfigValue('discord', 'server_name') || 'your Server' }}</strong>, click the gear icon next to the text channel where you want the alerts to appear, and click <strong>Integrations</strong>.
+        </li>
+        <li class="list-group-item p-3">
+          <div class="fw-bold">Create Webhook</div>
+          Click <strong>Webhooks</strong> -> <strong>New Webhook</strong>. Name the bot "MikroWizard Alerts".
+        </li>
+        <li class="list-group-item p-3">
+          <div class="fw-bold">Copy Webhook URL</div>
+          Click <strong>Copy Webhook URL</strong> and paste it into the Webhook URL field for this channel in MikroWizard.
+        </li>
+      </ol>
+      <div class="bg-light p-3 rounded border" style="word-break: break-all;">
+        <strong>Your Webhook URL:</strong> <code class="text-primary">{{parsedChannelFields?.webhook_url || 'Not configured'}}</code>
+      </div>
+    </div>
+
+    <!-- Slack Instructions -->
+    <div *ngIf="selectedChannelForInstruction.channel_type === 'slack'">
+      <div class="d-flex align-items-center mb-4">
+        <i class="fa-brands fa-slack fs-1 me-3" style="color: #4A154B;"></i>
+        <div>
+          <h4 class="mb-0">Slack Setup</h4>
+          <p class="text-muted mb-0">Push notifications directly to your specific Slack Workspace.</p>
+        </div>
+      </div>
+      <div class="alert alert-info">
+        <i class="fa-solid fa-circle-info me-2"></i> This requires creating an <strong>Incoming Webhook</strong> in your Slack workspace.
+      </div>
+      <ol class="list-group list-group-numbered mb-4 shadow-sm">
+        <li class="list-group-item p-3">
+          <div class="fw-bold">Go to Slack App Directory</div>
+          Search for "Incoming WebHooks" in the Slack App Directory and click <strong>Add to Slack</strong>.
+        </li>
+        <li class="list-group-item p-3">
+          <div class="fw-bold">Select Channel</div>
+          Choose the specific Slack channel where you want your device alerts to appear.
+        </li>
+        <li class="list-group-item p-3">
+          <div class="fw-bold">Copy Webhook URL</div>
+          Copy the generated Webhook URL (it looks like <code>https://hooks.slack.com/services/...</code>) and paste it into the Webhook URL field for this channel in MikroWizard.
+        </li>
+      </ol>
+      <div class="bg-light p-3 rounded border" style="word-break: break-all;">
+        <strong>Your Webhook URL:</strong> <code class="text-primary">{{parsedChannelFields?.webhook_url || 'Not configured'}}</code>
+      </div>
+    </div>
+
+    <!-- Pushover Instructions -->
+    <div *ngIf="selectedChannelForInstruction.channel_type === 'pushover'">
+      <div class="d-flex align-items-center mb-4">
+        <i class="fa-solid fa-mobile-screen fs-1 text-primary me-3"></i>
+        <div>
+          <h4 class="mb-0">Pushover Setup</h4>
+          <p class="text-muted mb-0">Reliable push notifications for iOS, Android, and Desktop.</p>
+        </div>
+      </div>
+      <ol class="list-group list-group-numbered shadow-sm">
+        <li class="list-group-item p-3">
+          Register at <a href="https://pushover.net/" target="_blank">Pushover.net</a> and install the mobile app.
+        </li>
+        <li class="list-group-item p-3">
+          Copy your <strong>User Key</strong> from the main dashboard.
+        </li>
+        <li class="list-group-item p-3">
+          Scroll down and click <strong>Create an Application/API Token</strong>. Name it "MikroWizard" and copy the generated <strong>API Token/Key</strong>.
+        </li>
+      </ol>
+    </div>
+
+    <!-- Fallback / Other -->
+    <div *ngIf="!['ntfy', 'telegram', 'discord', 'slack', 'pushover'].includes(selectedChannelForInstruction.channel_type)">
+      <div class="d-flex align-items-center mb-3">
+        <div class="service-icon me-3" [style.color]="selectedChannelForInstruction.service_color || '#333'">
+          <i class="{{selectedChannelForInstruction.service_icon}} fs-1"></i>
+        </div>
+        <div>
+          <h4 class="mb-0">{{selectedChannelForInstruction.service_name || selectedChannelForInstruction.channel_type}} Setup</h4>
+        </div>
+      </div>
+      <div class="alert alert-info shadow-sm">
+        <i class="fa-solid fa-circle-info me-2"></i> Instructions for this service are not fully detailed here. Please refer to the specific service's documentation to configure your client.
+      </div>
+      <p class="text-muted">Current raw configuration string for this channel:</p>
+      <div class="bg-light p-3 rounded border" style="font-family: monospace; font-size: 0.9rem; overflow-wrap: break-word;">
+        {{selectedChannelForInstruction.identifier}}
+      </div>
+    </div>
+
+  </c-modal-body>
+  <c-modal-footer>
+    <button cButton color="secondary" (click)="instructionModalVisible = false">Close</button>
+  </c-modal-footer>
+</c-modal>
+
+<c-toaster position="fixed" placement="top-end"></c-toaster>

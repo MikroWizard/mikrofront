@@ -28,6 +28,9 @@
           <button class="tab-link" [class.active]="activeTab === 'speedtest'" (click)="activeTab = 'speedtest'">
             <i class="fa-solid fa-gauge-high me-2"></i>Speed Test Servers
           </button>
+          <button class="tab-link" *ngIf="ispro" [class.active]="activeTab === 'alerts'" (click)="activeTab = 'alerts'">
+            <i class="fa-solid fa-bell me-2"></i>Alert Channels
+          </button>
         </div>
 
         <!-- Firmware Tab -->
@@ -582,17 +585,21 @@
                   <input cFormControl [(ngModel)]="sysconfigs['smtp_host']['value']" placeholder="smtp.gmail.com" class="form-control" />
                 </div>
               </c-col>
-              <c-col md="3">
+              <c-col md="6">
                 <div class="setting-group">
                   <label class="setting-label">SMTP Port</label>
                   <input cFormControl [(ngModel)]="sysconfigs['smtp_port']['value']" placeholder="587" class="form-control" />
                 </div>
               </c-col>
-              <c-col md="3" class="d-flex align-items-center mt-4">
-                <c-form-check [switch]="true" sizing="lg">
-                  <input cFormCheckInput [(ngModel)]="sysconfigs['smtp_use_tls']['value']" type="checkbox" />
-                  <label cFormCheckLabel>Use SSL/TLS</label>
-                </c-form-check>
+              <c-col md="6">
+                <div class="setting-group">
+                  <label class="setting-label">SMTP Security Protocol</label>
+                  <select cFormControl [(ngModel)]="sysconfigs['smtp_security']['value']" class="form-control">
+                    <option value="none">None (no encryption)</option>
+                    <option value="starttls">STARTTLS (port 587)</option>
+                    <option value="ssl_tls">SSL/TLS (port 465)</option>
+                  </select>
+                </div>
               </c-col>
               <c-col md="6">
                 <div class="setting-group">
@@ -620,7 +627,7 @@
               </c-col>
             </c-row>
             <div class="mt-3">
-              <button cButton color="info" size="sm" (click)="testSmtp()" [disabled]="!sysconfigs['smtp_host']['value']">
+              <button cButton color="info" size="sm" (click)="openSmtpTestModal()">
                 <i class="fa-solid fa-paper-plane me-1"></i>Send Test Email
               </button>
             </div>
@@ -653,7 +660,7 @@
               <c-col md="4">
                 <div class="setting-group">
                   <label class="setting-label">AI Provider</label>
-                  <select cSelect [(ngModel)]="sysconfigs['ai_provider']['value']" class="form-select" id="aiProviderSelect">
+                  <select cSelect [(ngModel)]="sysconfigs['ai_provider']['value']" (ngModelChange)="onProviderChange($event)" class="form-select" id="aiProviderSelect">
                     <option value="gemini">🤖 Google Gemini</option>
                     <option value="openai">🧠 OpenAI (GPT-4 etc.)</option>
                     <option value="anthropic">🎭 Anthropic Claude</option>
@@ -1123,8 +1130,99 @@
           </div>
         </c-card-body>
 
+        <!-- Alerts Tab (PRO) -->
+        <c-card-body *ngIf="activeTab === 'alerts' && ispro" class="tab-content">
+          <div class="mb-4">
+            <h4 class="card-title mb-0"><i class="fa-solid fa-bell me-2 text-primary"></i>Alert Channels Configuration</h4>
+            <div class="alert alert-primary mt-3 shadow-sm border-primary">
+               <h5 class="alert-heading"><i class="fa-solid fa-circle-info me-2"></i>How Alert Channels Work</h5>
+               <p class="mb-2">This section allows you, the <strong>Administrator</strong>, to globally enable and configure supported notification services for the entire MikroWizard platform.</p>
+               <ul class="mb-0">
+                  <li><strong>Enable/Disable:</strong> Only services enabled here will be visible to end-users when they create their own Notification Channels in the Alerts tab.</li>
+                  <li><strong>Global Configuration:</strong> Some services (like Slack or Telegram) require an Administrator to configure an API Token or Webhook URL globally. Enter those credentials here.</li>
+                  <li><strong>User Input:</strong> Other services (like Ntfy or Pushover) only require user-specific credentials. End-users will provide those when they set up their channel.</li>
+               </ul>
+            </div>
+          </div>
+
+          <div class="alert alert-info d-flex align-items-center mb-4 shadow-sm">
+            <i class="fa-solid fa-power-off me-3 fs-3 text-info"></i>
+            <div>
+              <strong class="d-block mb-1">Background Alert Dispatcher</strong>
+              <div class="form-check form-switch mt-1">
+                <input class="form-check-input" type="checkbox" role="switch" id="globalAlertsEnable" [(ngModel)]="alertGlobalEnabled">
+                <label class="form-check-label" for="globalAlertsEnable" [ngClass]="alertGlobalEnabled ? 'text-success fw-bold' : 'text-muted'">{{ alertGlobalEnabled ? 'System Dispatcher is ACTIVE' : 'System Dispatcher is DISABLED' }}</label>
+              </div>
+              <small class="text-muted d-block mt-1">When disabled, no alerts will be evaluated or sent by the system, regardless of user rules. Useful for maintenance windows.</small>
+            </div>
+          </div>
+
+          <div class="table-responsive mt-3">
+            <table class="table table-bordered table-striped align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th style="width: 50px;" [cTooltip]="'Toggle to make this service available or hidden for all users across the system.'">
+                    Enable <i class="fa-solid fa-circle-question small text-muted ms-1"></i>
+                  </th>
+                  <th style="width: 250px;">Service</th>
+                  <th [cTooltip]="'Global API Keys, Bot Tokens, or Webhooks required to connect to the service. Users cannot see these keys.'">
+                    Global Configuration <i class="fa-solid fa-circle-question small text-muted ms-1"></i>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let svc of alertCatalog">
+                  <td>
+                    <div class="form-check form-switch mt-2">
+                      <input class="form-check-input" type="checkbox" role="switch" [checked]="alertEnabledIds.includes(svc.id)" (change)="toggleService(svc.id, $event)">
+                    </div>
+                  </td>
+                  <td>
+                    <div class="d-flex align-items-center">
+                      <div class="service-icon me-3" [style.background-color]="svc.color" style="width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white;">
+                        <i class="{{svc.icon}} fs-5"></i>
+                      </div>
+                      <div>
+                        <strong>{{svc.name}}</strong>
+                        <div class="text-muted small mt-1">
+                          <span class="badge bg-secondary me-1" *ngIf="getGlobalFieldsCount(svc) > 0" [cTooltip]="'These fields are configured by you (the admin) for the entire system.'">{{getGlobalFieldsCount(svc)}} Global Config</span>
+                          <span class="badge bg-info text-dark" *ngIf="getUserFieldsCount(svc) > 0" [cTooltip]="'These fields will be requested from end-users when they setup their own alert channels.'">{{getUserFieldsCount(svc)}} User Input</span>
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <div *ngIf="svc.fields.length > 0">
+                      <div class="row gx-2 gy-2">
+                        <ng-container *ngFor="let f of svc.fields">
+                          <div class="col-md-6" *ngIf="f.is_global">
+                            <label class="form-label small text-muted mb-1">{{f.label}}</label>
+                            <input *ngIf="!f.is_secret" type="text" class="form-control form-control-sm" [placeholder]="f.placeholder || f.label" [value]="getGlobalField(svc.id, f.key)" (input)="setGlobalField(svc.id, f.key, $any($event.target).value)">
+                            <input *ngIf="f.is_secret" type="password" class="form-control form-control-sm" [placeholder]="f.placeholder || f.label" [value]="getGlobalField(svc.id, f.key)" (input)="setGlobalField(svc.id, f.key, $any($event.target).value)">
+                            <div class="form-text mt-1" style="font-size: 0.75rem;">{{f.help || f.help_text}}</div>
+                          </div>
+                        </ng-container>
+                      </div>
+                    </div>
+                    <div *ngIf="svc.fields.length === 0">
+                      <span class="text-muted small">No configuration fields defined.</span>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="save-section mt-4">
+            <button cButton color="primary" size="lg" (click)="saveAlertSettings()" [disabled]="SysConfigloading">
+              <c-spinner *ngIf="SysConfigloading" size="sm" class="me-2"></c-spinner>
+              <i *ngIf="!SysConfigloading" class="fa-solid fa-save me-2"></i>Save Alert Settings
+            </button>
+          </div>
+        </c-card-body>
+
         <!-- Loading State -->
-        <c-card-body *ngIf="['system', 'email', 'ai', 'speedtest'].includes(activeTab) && SysConfigloading" class="text-center py-5">
+        <c-card-body *ngIf="['system', 'email', 'ai', 'speedtest', 'alerts'].includes(activeTab) && SysConfigloading" class="text-center py-5">
           <c-spinner size="sm" class="mb-3"></c-spinner>
           <h5 class="text-muted">Loading system configuration...</h5>
         </c-card-body>
@@ -1173,4 +1271,76 @@
     </button>
   </c-modal-footer>
 </c-modal>
+
+<c-modal #SmtpTestModal backdrop="static" [(visible)]="smtpTestModalVisible" id="SmtpTestModal">
+  <c-modal-header>
+    <h5 cModalTitle>SMTP Test Connection</h5>
+    <button (click)="closeSmtpTestModal()" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body>
+    <div *ngIf="smtpTestStep === 1" style="animation: fadeIn 0.3s ease-in-out;">
+      <h6 class="mb-4 text-primary">Step 1: Configure Test Recipient</h6>
+      <p class="text-muted mb-3">Enter the email address to receive a test message.</p>
+      <div class="setting-group">
+        <label class="setting-label">Test Recipient Email</label>
+        <input cFormControl [(ngModel)]="testRecipientEmail" placeholder="admin@localhost" class="form-control" type="email" />
+      </div>
+    </div>
+    <div *ngIf="smtpTestStep === 2" class="text-center py-4" style="animation: fadeIn 0.3s ease-in-out;">
+      <h6 class="mb-4 text-primary">Step 2: Testing Connection</h6>
+      <c-spinner color="info" class="mb-3"></c-spinner>
+      <p class="text-muted mb-1">Sending test email...</p>
+      <p class="text-muted small">Please wait while we verify your SMTP settings.</p>
+      <p class="text-muted small">Recipient: {{ testRecipientEmail }}</p>
+    </div>
+    <div *ngIf="smtpTestStep === 3" class="text-center py-3" style="animation: fadeIn 0.3s ease-in-out;">
+      <div *ngIf="smtpTestStatus === 'success'">
+        <h6 class="mb-3 text-success">
+          <i class="fa-solid fa-circle-check me-2"></i>Step 3: Email Sent Successfully
+        </h6>
+        <div class="success-banner mb-3">
+          <i class="fa-solid fa-check-circle me-2"></i>
+          <span>{{ smtpTestMessage }}</span>
+        </div>
+      </div>
+      <div *ngIf="smtpTestStatus === 'error'">
+        <h6 class="mb-3 text-danger">
+          <i class="fa-solid fa-circle-xmark me-2"></i>Step 3: Email Failed
+        </h6>
+        <div class="warning-banner mb-3">
+          <i class="fa-solid fa-triangle-exclamation me-2"></i>
+          <span>{{ smtpTestMessage }}</span>
+        </div>
+      </div>
+      <div *ngIf="smtpTestLog.length > 0" class="smtp-log-panel mt-3">
+        <div class="smtp-log-header">
+          <i class="fa-solid fa-list-ul me-1"></i>Connection Log
+        </div>
+        <div class="smtp-log-body">
+          <div *ngFor="let entry of smtpTestLog" class="smtp-log-entry"
+               [class.log-error]="entry.type === 'error'"
+               [class.log-total]="entry.type === 'total'"
+               [class.log-success]="entry.type === 'success'">
+            <span class="log-step">{{ entry.step }}</span>
+            <span class="log-msg">{{ entry.msg }}</span>
+            <span class="log-time">{{ entry.time }}s</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </c-modal-body>
+  <c-modal-footer>
+    <button *ngIf="smtpTestStep === 1" [cModalToggle]="SmtpTestModal.id" cButton color="secondary">Cancel</button>
+    <button *ngIf="smtpTestStep === 1" (click)="runSmtpTest()" cButton color="info">
+      <i class="fa-solid fa-paper-plane me-1"></i>Send Test
+    </button>
+    <button *ngIf="smtpTestStep === 2" (click)="closeSmtpTestModal()" cButton color="secondary">Cancel</button>
+    <button *ngIf="smtpTestStep === 3 && smtpTestStatus === 'success'" (click)="closeSmtpTestModal()" cButton color="info">Close</button>
+    <button *ngIf="smtpTestStep === 3 && smtpTestStatus === 'error'" (click)="retrySmtpTest()" cButton color="warning">
+      <i class="fa-solid fa-rotate-right me-1"></i>Try Again
+    </button>
+    <button *ngIf="smtpTestStep === 3 && smtpTestStatus === 'error'" (click)="closeSmtpTestModal()" cButton color="secondary">Close</button>
+  </c-modal-footer>
+</c-modal>
+
 <c-toaster position="fixed" placement="top-end"></c-toaster>

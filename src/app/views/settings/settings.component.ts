@@ -89,6 +89,12 @@ export class SettingsComponent implements OnInit {
   public sysconfigs: any = [];
   public currentFirm:any = [];
   
+  // Alerts settings state
+  public alertCatalog: any[] = [];
+  public alertGlobalConfig: any = {};
+  public alertEnabledIds: string[] = [];
+  public alertGlobalEnabled: boolean = false;
+  
   // Speed Test Server state
   public newServer: any = {
     name: '',
@@ -126,6 +132,7 @@ export class SettingsComponent implements OnInit {
     this.initAvailbleFirms();
     this.initFirmsTable();
     this.initsettings();
+    this.loadAlertSettings();
   }
   delete_fimrware(firm:any,del:boolean=false) {
     var _self = this;
@@ -274,6 +281,24 @@ export class SettingsComponent implements OnInit {
     });
   }
 
+  onProviderChange(newProvider: string): void {
+    if (!this.sysconfigs || !this.sysconfigs['ai_model']) return;
+    
+    // Set sensible defaults when switching providers so the user knows what to type
+    // and so old provider models don't bleed into the new one causing errors
+    const defaults: {[key: string]: string} = {
+      'gemini': 'gemini-2.5-flash',
+      'openai': 'gpt-4o-mini',
+      'anthropic': 'claude-3-5-sonnet-20241022',
+      'deepseek': 'deepseek-chat',
+      'openrouter': ''
+    };
+    
+    if (newProvider in defaults) {
+      this.sysconfigs['ai_model']['value'] = defaults[newProvider];
+    }
+  }
+
   initsettings(): void {
     var _self = this;
     this.data_provider.get_settings().then((res) => {
@@ -331,10 +356,15 @@ export class SettingsComponent implements OnInit {
       });
       _self.sysconfigs['smtp_password']['value'] = ""; // Clear SMTP password on load for input security
 
-      if (!('smtp_use_tls' in _self.sysconfigs)) {
-        _self.sysconfigs['smtp_use_tls'] = { value: true };
+      if (!('smtp_security' in _self.sysconfigs)) {
+        _self.sysconfigs['smtp_security'] = { value: 'starttls' };
       } else {
-        _self.sysconfigs['smtp_use_tls']['value'] = /true/i.test(_self.sysconfigs['smtp_use_tls']['value']);
+        const val = _self.sysconfigs['smtp_security']['value'];
+        if (typeof val === 'boolean') {
+          _self.sysconfigs['smtp_security']['value'] = val ? 'starttls' : 'none';
+        } else if (val && ['none', 'starttls', 'ssl_tls'].indexOf(val) === -1) {
+          _self.sysconfigs['smtp_security']['value'] = /true/i.test(val) ? 'starttls' : 'none';
+        }
       }
 
       if (!('smtp_enable_admin_reset' in _self.sysconfigs)) {
@@ -411,17 +441,62 @@ export class SettingsComponent implements OnInit {
     });
   }
 
-  testSmtp(): void {
+  public smtpTestModalVisible: boolean = false;
+  public smtpTestStep: number = 1;
+  public smtpTestStatus: string = 'idle';
+  public smtpTestMessage: string = '';
+  public smtpTestLog: any[] = [];
+  public testRecipientEmail: string = 'admin@localhost';
+
+  openSmtpTestModal(): void {
+    this.smtpTestStep = 1;
+    this.smtpTestStatus = 'idle';
+    this.smtpTestMessage = '';
+    this.smtpTestModalVisible = true;
+  }
+
+  closeSmtpTestModal(): void {
+    this.smtpTestModalVisible = false;
+  }
+
+  runSmtpTest(): void {
     var _self = this;
-    this.data_provider.adminSendSmtpTest().then((res: any) => {
+    this.smtpTestStep = 2;
+    this.smtpTestStatus = 'sending';
+    this.smtpTestMessage = '';
+
+    const payload = {
+      recipient: this.testRecipientEmail,
+      host: this.sysconfigs['smtp_host']['value'] || '',
+      port: this.sysconfigs['smtp_port']['value'] || '587',
+      user: this.sysconfigs['smtp_user']['value'] || '',
+      password: this.sysconfigs['smtp_password']['value'] || '',
+      security: this.sysconfigs['smtp_security']['value'] || 'starttls',
+      from_email: this.sysconfigs['smtp_from']['value'] || '',
+    };
+
+    this.data_provider.adminSendSmtpTest(payload).then((res: any) => {
+      _self.smtpTestStep = 3;
+      _self.smtpTestLog = res['log'] || [];
       if (res['status'] === 'success') {
-        _self.show_toast("SMTP Test", res['message'] || "Test email sent successfully!", "success");
+        _self.smtpTestStatus = 'success';
+        _self.smtpTestMessage = res['message'] || 'Test email sent successfully!';
       } else {
-        _self.show_toast("SMTP Test Error", res['err'] || "Failed to send test email.", "danger");
+        _self.smtpTestStatus = 'error';
+        _self.smtpTestMessage = res['err'] || 'Failed to send test email.';
       }
-    }).catch(err => {
-      _self.show_toast("SMTP Test Error", "Connection error with server.", "danger");
+    }).catch(() => {
+      _self.smtpTestStep = 3;
+      _self.smtpTestStatus = 'error';
+      _self.smtpTestMessage = 'Connection error with server.';
+      _self.smtpTestLog = [];
     });
+  }
+
+  retrySmtpTest(): void {
+    this.smtpTestStep = 1;
+    this.smtpTestStatus = 'idle';
+    this.smtpTestMessage = '';
   }
 
   initAvailbleFirms(): void {
@@ -573,6 +648,60 @@ export class SettingsComponent implements OnInit {
     }
     this.sysconfigs['speedtest_servers']['value'].splice(index, 1);
     this.show_toast("Speed Test Server", "Server removed. Don't forget to click Save System Settings.", "info");
+  }
+
+  // ---- Alert Channels Setup ----
+
+  loadAlertSettings() {
+    this.data_provider.alerts_services().then((res: any) => {
+      this.alertCatalog = res.catalog || [];
+      this.alertEnabledIds = res.enabled_ids || [];
+      this.alertGlobalConfig = res.global_config || {};
+      this.alertGlobalEnabled = res.global_enabled || false;
+    }).catch(() => {});
+  }
+
+  toggleService(svcId: string, event: any) {
+    if (event.target.checked) {
+      if (!this.alertEnabledIds.includes(svcId)) this.alertEnabledIds.push(svcId);
+    } else {
+      this.alertEnabledIds = this.alertEnabledIds.filter(id => id !== svcId);
+    }
+  }
+
+  getGlobalField(svcId: string, fieldKey: string): string {
+    return this.alertGlobalConfig[svcId]?.[fieldKey] || '';
+  }
+
+  setGlobalField(svcId: string, fieldKey: string, value: string) {
+    if (!this.alertGlobalConfig[svcId]) this.alertGlobalConfig[svcId] = {};
+    this.alertGlobalConfig[svcId][fieldKey] = value;
+  }
+
+  getGlobalFieldsCount(svc: any): number {
+    if (!svc || !svc.fields) return 0;
+    return svc.fields.filter((f: any) => f.is_global).length;
+  }
+
+  getUserFieldsCount(svc: any): number {
+    if (!svc || !svc.fields) return 0;
+    return svc.fields.filter((f: any) => !f.is_global).length;
+  }
+
+  saveAlertSettings() {
+    this.SysConfigloading = true;
+    this.data_provider.alerts_settings_save({
+      enabled_ids: this.alertEnabledIds,
+      global_config: this.alertGlobalConfig,
+      global_enabled: this.alertGlobalEnabled
+    }).then(() => {
+      this.SysConfigloading = false;
+      this.show_toast('Alert Settings', 'Alert settings saved successfully', 'success');
+      this.loadAlertSettings(); // refresh to get updated 'global_configured' flags
+    }).catch((e: any) => {
+      this.SysConfigloading = false;
+      this.show_toast('Alert Settings', 'Failed to save: ' + e, 'danger');
+    });
   }
 
   private _self_ref: any = null;
