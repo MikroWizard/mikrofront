@@ -1,0 +1,71 @@
+.settings-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 1000;
+  backdrop-filter: blur(3px);
+}
+
+.settings-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 350px;
+  height: 100vh;
+  background: #151624;
+  border-left: 1px solid #2c2e4a;
+  z-index: 1001;
+  box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+  display: flex;
+  flex-direction: column;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+.settings-header {
+  padding: 20px;
+  border-bottom: 1px solid #2c2e4a;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.settings-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #ececf2;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: #8e90a6;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+.close-btn:hover { color: #fff; }
+
+.settings-body {
+  padding: 20px;
+  flex: 1;
+  overflow-y: auto;
+  color: #b5b7c7;
+}
+.settings-body label {
+  font-size: 0.9em;
+  margin-bottom: 5px;
+  color: #ececf2;
+}
+
+.settings-footer {
+  padding: 20px;
+  border-top: 1px solid #2c2e4a;
+}

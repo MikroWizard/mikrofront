@@ -20,11 +20,12 @@ import { provideDateFnsAdapter } from 'ngx-material-date-fns-adapter';
 import { AppComponent } from './app.component';
 
 // Import containers
-import { DefaultFooterComponent, DefaultHeaderComponent, DefaultLayoutComponent } from './containers';
+import { DefaultFooterComponent, DefaultHeaderComponent, DefaultLayoutComponent, ConnectionManagerLayoutComponent } from './containers';
 import { MikroWizardProvider } from './providers/mikrowizard/provider';
 import { dataProvider } from './providers/mikrowizard/data';
 import { loginChecker } from './providers/login_checker';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
+import { CustomerChatWidgetModule } from './containers/customer-chat-widget/customer-chat-widget.module';
 
 import {
   AvatarModule,
@@ -54,7 +55,8 @@ import { IconModule, IconSetService } from '@coreui/icons-angular';
 const APP_CONTAINERS = [
   DefaultFooterComponent,
   DefaultHeaderComponent,
-  DefaultLayoutComponent
+  DefaultLayoutComponent,
+  ConnectionManagerLayoutComponent
 ];
 export function loginStatusProviderFactory(provider: loginChecker) {
   return () => provider.load();
@@ -89,7 +91,8 @@ export function loginStatusProviderFactory(provider: loginChecker) {
         NgScrollbarModule,
         ModalModule,
         FontAwesomeModule,
-        TableModule], providers: [
+        TableModule,
+        CustomerChatWidgetModule], providers: [
         {
             provide: LocationStrategy,
             useClass: HashLocationStrategy

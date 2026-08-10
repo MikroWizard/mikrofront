@@ -31,6 +31,9 @@
   </div>
   <!--app footer-->
   <app-default-footer />
+  
+  <!-- Global AI Chatbot for Customers -->
+  <app-customer-chat-widget *ngIf="current_user && current_user.role === 'customer' && ispro"></app-customer-chat-widget>
 </div>
 
 <c-modal #UserProfileModal backdrop="static" size="lg" [(visible)]="UserProfileModalVisible" id="UserProfileModal">

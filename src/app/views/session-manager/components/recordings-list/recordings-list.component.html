@@ -1,0 +1,162 @@
+<ng-template #contentBlock>
+  <div class="bg-light p-2 rounded mb-3 border border-light d-flex flex-wrap gap-2 align-items-end">
+    <div class="flex-grow-1" style="min-width: 200px;" *ngIf="!hideDeviceFilter">
+      <div class="input-group input-group-sm">
+        <span class="input-group-text bg-white text-muted" style="border-color: #dee2e6;"><i class="fas fa-desktop"></i></span>
+        <input type="text" class="form-control" placeholder="Filter by Device..." [(ngModel)]="selectedDevice" (ngModelChange)="searchDevice($event)" [matAutocomplete]="deviceAuto" style="border-color: #dee2e6;">
+        <button class="btn btn-outline-secondary bg-white" style="border-color: #dee2e6;" type="button" *ngIf="selectedDevice" (click)="onDeviceClear(); $event.stopPropagation()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <mat-autocomplete #deviceAuto="matAutocomplete" [displayWith]="displayDevice" (optionSelected)="onDeviceSelect($event.option.value)">
+        <mat-option *ngFor="let dev of suggestedDevices" [value]="dev">
+          <div class="d-flex flex-column lh-sm py-1">
+            <span class="fw-semibold" style="font-size: 0.85rem;">{{dev.name}}</span>
+            <small class="text-muted" style="font-size: 0.75rem;">{{dev.ip}}</small>
+          </div>
+        </mat-option>
+      </mat-autocomplete>
+    </div>
+
+    <div class="flex-grow-1" style="min-width: 200px;">
+      <div class="input-group input-group-sm">
+        <span class="input-group-text bg-white text-muted" style="border-color: #dee2e6;"><i class="fas fa-user"></i></span>
+        <input type="text" class="form-control" placeholder="Filter by User..." [(ngModel)]="selectedUser" (ngModelChange)="searchUser($event)" [matAutocomplete]="userAuto" style="border-color: #dee2e6;">
+        <button class="btn btn-outline-secondary bg-white" style="border-color: #dee2e6;" type="button" *ngIf="selectedUser" (click)="onUserClear(); $event.stopPropagation()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <mat-autocomplete #userAuto="matAutocomplete" [displayWith]="displayUser" (optionSelected)="onUserSelect($event.option.value)">
+        <mat-option *ngFor="let usr of suggestedUsers" [value]="usr">
+          <div class="d-flex flex-column lh-sm py-1">
+            <span class="fw-semibold" style="font-size: 0.85rem;">{{usr.first_name}} {{usr.last_name}}</span>
+            <small class="text-muted" style="font-size: 0.75rem;">{{usr.username}}</small>
+          </div>
+        </mat-option>
+      </mat-autocomplete>
+    </div>
+
+    <div class="flex-grow-1 d-flex gap-2" style="min-width: 260px;">
+      <div class="input-group input-group-sm w-50">
+        <input class="form-control" [matDatepicker]="fromPicker" [(ngModel)]="recordingFilters.date_from" (dateChange)="loadRecordings()" placeholder="From Date" style="border-color: #dee2e6;">
+        <span class="input-group-text bg-white" style="border-color: #dee2e6; padding: 0 4px;">
+          <mat-datepicker-toggle [for]="fromPicker"></mat-datepicker-toggle>
+        </span>
+        <mat-datepicker #fromPicker></mat-datepicker>
+      </div>
+      <div class="input-group input-group-sm w-50">
+        <input class="form-control" [matDatepicker]="toPicker" [(ngModel)]="recordingFilters.date_to" (dateChange)="loadRecordings()" placeholder="To Date" style="border-color: #dee2e6;">
+        <span class="input-group-text bg-white" style="border-color: #dee2e6; padding: 0 4px;">
+          <mat-datepicker-toggle [for]="toPicker"></mat-datepicker-toggle>
+        </span>
+        <mat-datepicker #toPicker></mat-datepicker>
+      </div>
+    </div>
+
+    <div class="flex-grow-1" style="min-width: 200px;">
+      <div class="input-group input-group-sm">
+        <span class="input-group-text bg-white text-muted" style="border-color: #dee2e6;"><i class="fas fa-search"></i></span>
+        <input type="text" class="form-control" placeholder="Search table..." (input)="applyFilterRecordings($event, 'contains')" style="border-color: #dee2e6;">
+      </div>
+    </div>
+
+    <div>
+      <button type="button" class="btn btn-outline-primary btn-sm" (click)="openExportModal()">
+        <i class="fa-solid fa-file-export me-1"></i> Export Report
+      </button>
+    </div>
+  </div>
+
+  <p-table #dtRecordings [value]="recordings" [paginator]="true" [rows]="10" [showGridlines]="true"
+    [stripedRows]="true" [resizableColumns]="true" columnResizeMode="expand"
+    styleClass="p-datatable-sm" [loading]="loading"
+    [globalFilterFields]="['id', 'device_name', 'device_ip', 'user_name', 'protocol']">
+    <ng-template pTemplate="header">
+      <tr>
+        <th pSortableColumn="id" pResizableColumn>ID <p-sortIcon field="id"></p-sortIcon></th>
+        <th pSortableColumn="device_name" pResizableColumn>Device <p-sortIcon field="device_name"></p-sortIcon></th>
+        <th pSortableColumn="user_name" pResizableColumn>User <p-sortIcon field="user_name"></p-sortIcon></th>
+        <th pSortableColumn="protocol" pResizableColumn>Protocol <p-sortIcon field="protocol"></p-sortIcon></th>
+        <th pSortableColumn="started_fmt" pResizableColumn>Recorded At <p-sortIcon field="started_fmt"></p-sortIcon></th>
+        <th style="width: 100px" class="text-center">Actions</th>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="body" let-item>
+      <tr>
+        <td><small>{{item.id}}</small></td>
+        <td>
+          <div class="fw-semibold">{{item.device_name || item.device_id}}</div>
+          <small class="text-muted">{{item.device_ip}}</small>
+        </td>
+        <td><i class="fas fa-user me-1 text-muted"></i>{{item.user_name || item.user_id}}</td>
+        <td><c-badge [color]="item.protocol === 'ssh' ? 'dark' : 'info'">{{item.protocol}}</c-badge></td>
+        <td><small>{{item.started_fmt}}</small></td>
+        <td class="text-center">
+          <button cButton size="sm" color="primary" variant="outline"
+            (click)="openRecordingModal(item.id)" pTooltip="Play Recording">
+            <i class="fas fa-play"></i>
+          </button>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+</ng-template>
+
+<!-- Embedded mode -->
+<c-card class="mb-0" *ngIf="embedded" [ngStyle]="{'border-top': 'none'}">
+  <c-card-header class="d-flex align-items-center">
+    <strong><i class="fas fa-video text-warning me-2"></i>Sessions</strong>
+    <button cButton size="sm" color="primary" variant="outline" class="ms-auto" (click)="loadRecordings()">
+      <i class="fas fa-sync-alt me-1" [class.fa-spin]="loading"></i>Refresh
+    </button>
+  </c-card-header>
+  <c-card-body>
+    <ng-container *ngTemplateOutlet="contentBlock"></ng-container>
+  </c-card-body>
+</c-card>
+
+<!-- Standalone mode -->
+<div *ngIf="!embedded">
+  <c-card-body>
+    <div class="tab-info-header mb-4">
+      <div class="d-flex align-items-center">
+        <i class="fas fa-video text-warning me-2 fs-4"></i>
+        <div class="flex-grow-1">
+          <h5 class="mb-1">Session Recordings</h5>
+          <p class="text-muted mb-0 small">Browse recorded terminal sessions. Filter by device, user, or date range.</p>
+        </div>
+        <div>
+          <button cButton size="sm" color="primary" variant="outline" (click)="loadRecordings()">
+            <i class="fas fa-sync-alt me-1" [class.fa-spin]="loading"></i>Refresh
+          </button>
+        </div>
+      </div>
+    </div>
+    <ng-container *ngTemplateOutlet="contentBlock"></ng-container>
+  </c-card-body>
+</div>
+
+<!-- Recording Player Modal -->
+<c-modal #recordingModal backdrop="static" [(visible)]="recordingModalVisible" size="lg" id="recordingModal">
+  <c-modal-header>
+    <h6 cModalTitle><i class="fas fa-video me-2"></i>Session Recording</h6>
+    <button (click)="recordingModalVisible=false" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body>
+    <iframe *ngIf="recordingUrl" [src]="recordingUrl" style="width:100%;height:600px;border:0;border-radius:4px;" allowfullscreen></iframe>
+  </c-modal-body>
+  <c-modal-footer>
+    <button [cModalToggle]="recordingModal.id" cButton color="secondary">Close</button>
+  </c-modal-footer>
+</c-modal>
+
+<app-export-modal
+  [(visible)]="exportModalVisible"
+  title="Export Session Recordings Report"
+  [allData]="recordings"
+  [filteredData]="dtRecordings ? dtRecordings.filteredValue : recordings"
+  [customColumns]="exportColumns"
+  [fetchFn]="fetchExportData"
+  dateField="created_at"
+  defaultFileName="session_recordings_report">
+</app-export-modal>

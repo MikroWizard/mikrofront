@@ -1,0 +1,172 @@
+<ng-template #contentBlock>
+  <div class="bg-light p-2 rounded mb-3 border border-light d-flex flex-wrap gap-2 align-items-end">
+    <div class="flex-grow-1" style="min-width: 200px;" *ngIf="!hideDeviceFilter">
+      <div class="input-group input-group-sm">
+        <span class="input-group-text bg-white text-muted" style="border-color: #dee2e6;"><i class="fas fa-desktop"></i></span>
+        <input type="text" class="form-control" placeholder="Filter by Device..." [(ngModel)]="selectedDevice" (ngModelChange)="searchDevice($event)" [matAutocomplete]="deviceAuto" style="border-color: #dee2e6;">
+        <button class="btn btn-outline-secondary bg-white" style="border-color: #dee2e6;" type="button" *ngIf="selectedDevice" (click)="onDeviceClear(); $event.stopPropagation()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <mat-autocomplete #deviceAuto="matAutocomplete" [displayWith]="displayDevice" (optionSelected)="onDeviceSelect($event.option.value)">
+        <mat-option *ngFor="let dev of suggestedDevices" [value]="dev">
+          <div class="d-flex flex-column lh-sm py-1">
+            <span class="fw-semibold" style="font-size: 0.85rem;">{{dev.name}}</span>
+            <small class="text-muted" style="font-size: 0.75rem;">{{dev.ip}}</small>
+          </div>
+        </mat-option>
+      </mat-autocomplete>
+    </div>
+
+    <div class="flex-grow-1" style="min-width: 200px;">
+      <div class="input-group input-group-sm">
+        <span class="input-group-text bg-white text-muted" style="border-color: #dee2e6;"><i class="fas fa-user"></i></span>
+        <input type="text" class="form-control" placeholder="Filter by User..." [(ngModel)]="selectedUser" (ngModelChange)="searchUser($event)" [matAutocomplete]="userAuto" style="border-color: #dee2e6;">
+        <button class="btn btn-outline-secondary bg-white" style="border-color: #dee2e6;" type="button" *ngIf="selectedUser" (click)="onUserClear(); $event.stopPropagation()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <mat-autocomplete #userAuto="matAutocomplete" [displayWith]="displayUser" (optionSelected)="onUserSelect($event.option.value)">
+        <mat-option *ngFor="let usr of suggestedUsers" [value]="usr">
+          <div class="d-flex flex-column lh-sm py-1">
+            <span class="fw-semibold" style="font-size: 0.85rem;">{{usr.first_name}} {{usr.last_name}}</span>
+            <small class="text-muted" style="font-size: 0.75rem;">{{usr.username}}</small>
+          </div>
+        </mat-option>
+      </mat-autocomplete>
+    </div>
+
+    <div class="flex-grow-1 d-flex gap-2" style="min-width: 260px;">
+      <div class="input-group input-group-sm w-50">
+        <input class="form-control" [matDatepicker]="fromPicker" [(ngModel)]="commandFilters.date_from" (dateChange)="loadCommandLogs()" placeholder="From Date" style="border-color: #dee2e6;">
+        <span class="input-group-text bg-white" style="border-color: #dee2e6; padding: 0 4px;">
+          <mat-datepicker-toggle [for]="fromPicker"></mat-datepicker-toggle>
+        </span>
+        <mat-datepicker #fromPicker></mat-datepicker>
+      </div>
+      <div class="input-group input-group-sm w-50">
+        <input class="form-control" [matDatepicker]="toPicker" [(ngModel)]="commandFilters.date_to" (dateChange)="loadCommandLogs()" placeholder="To Date" style="border-color: #dee2e6;">
+        <span class="input-group-text bg-white" style="border-color: #dee2e6; padding: 0 4px;">
+          <mat-datepicker-toggle [for]="toPicker"></mat-datepicker-toggle>
+        </span>
+        <mat-datepicker #toPicker></mat-datepicker>
+      </div>
+    </div>
+
+    <div class="flex-grow-1 d-flex gap-3 align-items-center" style="min-width: 220px;">
+      <div class="input-group input-group-sm flex-grow-1">
+        <span class="input-group-text bg-white text-muted" style="border-color: #dee2e6;"><i class="fas fa-search"></i></span>
+        <input type="text" class="form-control" placeholder="Search Commands..." (input)="applyFilterCommands($event, 'contains')" style="border-color: #dee2e6;">
+      </div>
+      <div class="form-check form-switch mb-0" style="min-width: max-content;">
+        <input class="form-check-input" type="checkbox" id="blockedOnly" [(ngModel)]="commandFilters.blocked_only" (change)="loadCommandLogs()" style="cursor: pointer;" />
+        <label class="form-check-label small fw-semibold text-muted" for="blockedOnly" style="cursor: pointer; padding-top: 2px;">Blocked</label>
+      </div>
+      <div>
+        <button type="button" class="btn btn-outline-primary btn-sm" (click)="openExportModal()">
+          <i class="fa-solid fa-file-export me-1"></i> Export Report
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <p-table #dtCommands [value]="commandLogs" [paginator]="true" [rows]="20" [showGridlines]="true"
+    [stripedRows]="true" [resizableColumns]="true" columnResizeMode="expand"
+    styleClass="p-datatable-sm" [loading]="loading"
+    [globalFilterFields]="['command', 'device_name', 'device_ip', 'user_name', 'session_id']">
+    <ng-template pTemplate="header">
+      <tr>
+        <th pSortableColumn="timestamp" pResizableColumn>Timestamp <p-sortIcon field="timestamp"></p-sortIcon></th>
+        <th pSortableColumn="device_name" pResizableColumn>Device <p-sortIcon field="device_name"></p-sortIcon></th>
+        <th pSortableColumn="user_name" pResizableColumn>User <p-sortIcon field="user_name"></p-sortIcon></th>
+        <th pSortableColumn="session_id" pResizableColumn>Session <p-sortIcon field="session_id"></p-sortIcon></th>
+        <th pSortableColumn="command" pResizableColumn>Command <p-sortIcon field="command"></p-sortIcon></th>
+        <th pSortableColumn="is_blocked" pResizableColumn style="width: 90px">Blocked</th>
+        <th style="width: 100px" class="text-center">Actions</th>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="body" let-item>
+      <tr>
+        <td><small>{{item.timestamp_fmt || item.timestamp}}</small></td>
+        <td>
+          <div class="fw-semibold">{{item.device_name || item.device_id}}</div>
+          <small class="text-muted">{{item.device_ip}}</small>
+        </td>
+        <td><i class="fas fa-user me-1 text-muted"></i>{{item.user_name || item.user_id}}</td>
+        <td><small>{{item.session_id}}</small></td>
+        <td><code>{{item.command}}</code></td>
+        <td>
+          <c-badge [color]="item.is_blocked ? 'danger' : 'success'">
+            {{item.is_blocked ? 'Blocked' : 'Allowed'}}
+          </c-badge>
+        </td>
+        <td class="text-center">
+          <button cButton size="sm" color="info" variant="outline" class="me-1" pTooltip="Filter by this session" (click)="filterBySession(item.session_id)">
+            <i class="fas fa-filter"></i>
+          </button>
+          <button cButton size="sm" color="success" variant="outline" pTooltip="Play Session Recording" (click)="openRecordingModal(item.session_id)">
+            <i class="fas fa-play"></i>
+          </button>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+</ng-template>
+
+<!-- Embedded mode -->
+<c-card class="mb-0" *ngIf="embedded" [ngStyle]="{'border-top': 'none'}">
+  <c-card-header class="d-flex align-items-center">
+    <strong><i class="fas fa-keyboard text-secondary me-2"></i>Command History</strong>
+    <button cButton size="sm" color="primary" variant="outline" class="ms-auto" (click)="loadCommandLogs()">
+      <i class="fas fa-sync-alt me-1" [class.fa-spin]="loading"></i>Refresh
+    </button>
+  </c-card-header>
+  <c-card-body>
+    <ng-container *ngTemplateOutlet="contentBlock"></ng-container>
+  </c-card-body>
+</c-card>
+
+<!-- Standalone mode -->
+<div *ngIf="!embedded">
+  <c-card [ngStyle]="{'border': 'none'}">
+  <c-card-header>
+     <div class="d-flex align-items-center">
+        <div class="flex-grow-1">
+          <h5 class="mb-1">        <i class="fas fa-keyboard text-secondary small me-2 fs-4"></i>
+Command History</h5>
+          <p class="text-muted mb-0 small">Search commands typed during terminal sessions. Filter by device, session, or text.</p>
+        </div>
+        <div>
+          <button cButton size="sm" color="primary" variant="outline" (click)="loadCommandLogs()">
+            <i class="fas fa-sync-alt me-1" [class.fa-spin]="loading"></i>Refresh
+          </button>
+        </div>
+      </div>
+    </c-card-header>
+    <c-card-body>
+      <ng-container *ngTemplateOutlet="contentBlock"></ng-container>
+    </c-card-body>
+    </c-card>
+</div>
+
+<!-- Recording Player Modal -->
+<c-modal #recordingModal backdrop="static" [(visible)]="recordingModalVisible" size="lg" id="recordingModal">
+  <c-modal-header>
+    <h6 cModalTitle><i class="fas fa-video me-2"></i>Session Recording</h6>
+    <button (click)="recordingModalVisible=false" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body>
+    <iframe *ngIf="recordingUrl" [src]="recordingUrl" style="width:100%;height:600px;border:0;border-radius:4px;" allowfullscreen></iframe>
+  </c-modal-body>
+</c-modal>
+
+<app-export-modal
+  [(visible)]="exportModalVisible"
+  title="Export Command Logs Report"
+  [allData]="commandLogs"
+  [filteredData]="dtCommands ? dtCommands.filteredValue : commandLogs"
+  [customColumns]="exportColumns"
+  [fetchFn]="fetchExportData"
+  dateField="timestamp"
+  defaultFileName="command_logs_report">
+</app-export-modal>

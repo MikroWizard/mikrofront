@@ -1,0 +1,393 @@
+<c-row>
+  <c-col xs>
+    <c-card class="mb-4">
+      <c-card-header style="padding: 0;">
+        <c-row class="align-items-center">
+          <c-col xs>
+            <div class="nav nav-underline bg-transparent">
+              <div class="nav-item">
+                <a [class.active]="activeTab === 'templates'" class="nav-link" (click)="switchTab('templates')" style="cursor: pointer;">
+                  <i class="fas fa-puzzle-piece me-1"></i>Templates
+                </a>
+              </div>
+              <div class="nav-item">
+                <a [class.active]="activeTab === 'brands'" class="nav-link" (click)="switchTab('brands')" style="cursor: pointer;">
+                  <i class="fas fa-tag me-1"></i>Brands
+                </a>
+              </div>
+            </div>
+          </c-col>
+          <c-col xs="auto" class="pe-3">
+            <button cButton color="success" size="sm" (click)="activeTab === 'templates' ? openCreateModal() : openBrandCreateModal()" *ngIf="ispro" style="color: #fff;">
+              <i class="fas fa-plus me-1"></i>{{activeTab === 'templates' ? 'Create Template' : 'Add Brand'}}
+            </button>
+          </c-col>
+        </c-row>
+      </c-card-header>
+      <c-card-body>
+
+        <!-- ==================== TEMPLATES TAB ==================== -->
+        <div *ngIf="activeTab === 'templates'">
+          <div class="tab-info-header mb-3">
+            <div class="d-flex align-items-center">
+              <i class="fas fa-puzzle-piece text-info me-2 fs-4"></i>
+              <div>
+                <p class="text-muted mb-0 small">Define connection templates for SSH/Telnet/API access to network devices.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-1 d-flex justify-content-end">
+            <span class="p-input-icon-left table-search-input">
+              <i class="pi pi-search"></i>
+              <input type="text" pInputText placeholder="Search templates..." (input)="dt.filterGlobal($any($event.target).value, 'contains')" class="form-control-sm" />
+            </span>
+          </div>
+
+          <p-table #dt [value]="templates" [paginator]="true" [rows]="15" [showGridlines]="true"
+            [stripedRows]="true" [resizableColumns]="true" columnResizeMode="expand"
+            styleClass="p-datatable-sm p-datatable-gridlines p-datatable-striped" [loading]="loading"
+            [globalFilterFields]="['display_name', 'brand', 'os_type']">
+            <ng-template pTemplate="header">
+              <tr>
+                <th pSortableColumn="display_name" pResizableColumn>Name <p-sortIcon field="display_name"></p-sortIcon></th>
+                <th pSortableColumn="brand" pResizableColumn>Brand <p-sortIcon field="brand"></p-sortIcon></th>
+                <th pSortableColumn="os_type" pResizableColumn>OS Type <p-sortIcon field="os_type"></p-sortIcon></th>
+                <th>Enabled</th>
+                <th>System</th>
+                <th style="width: 140px" class="text-center">Actions</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-item>
+              <tr>
+                <td><strong>{{item.display_name}}</strong></td>
+                <td><c-badge color="info">{{getBrandName(item.brand)}}</c-badge></td>
+                <td><small class="text-muted">{{item.os_type || 'generic'}}</small></td>
+                <td>
+                  <button cButton [color]="item.is_active ? 'success' : 'secondary'" size="sm"
+                    (click)="toggleActive(item)">
+                    <i class="fas" [ngClass]="item.is_active ? 'fa-check' : 'fa-times'"></i>
+                  </button>
+                </td>
+                <td>
+                  <c-badge [color]="item.is_system ? 'warning' : 'light'">{{item.is_system ? 'System' : 'Custom'}}</c-badge>
+                </td>
+                <td class="text-center">
+                  <button cButton size="sm" color="primary" variant="outline" class="me-1"
+                    (click)="openEditModal(item)" pTooltip="Edit Template">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button cButton size="sm" color="danger" variant="outline"
+                    *ngIf="!item.is_system" (click)="deleteTemplate(item.id)" pTooltip="Delete">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </div>
+
+        <!-- ==================== BRANDS TAB ==================== -->
+        <div *ngIf="activeTab === 'brands'">
+          <div class="tab-info-header mb-3">
+            <div class="d-flex align-items-center">
+              <i class="fas fa-tag text-info me-2 fs-4"></i>
+              <div>
+                <p class="text-muted mb-0 small">Manage device brands. System brands are pre-defined; user brands can be created, edited, or deleted.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-1 d-flex justify-content-end">
+            <span class="p-input-icon-left table-search-input">
+              <i class="pi pi-search"></i>
+              <input type="text" pInputText placeholder="Search brands..." (input)="dtBrands.filterGlobal($any($event.target).value, 'contains')" class="form-control-sm" />
+            </span>
+          </div>
+
+          <p-table #dtBrands [value]="brands" [paginator]="true" [rows]="15" [showGridlines]="true"
+            [stripedRows]="true" [resizableColumns]="true" columnResizeMode="expand"
+            styleClass="p-datatable-sm p-datatable-gridlines p-datatable-striped" [loading]="loading"
+            [globalFilterFields]="['brand', 'display_name']">
+            <ng-template pTemplate="header">
+              <tr>
+                <th pSortableColumn="brand" pResizableColumn>Brand Slug <p-sortIcon field="brand"></p-sortIcon></th>
+                <th pSortableColumn="display_name" pResizableColumn>Display Name <p-sortIcon field="display_name"></p-sortIcon></th>
+                <th>Type</th>
+                <th>Active</th>
+                <th style="width: 140px" class="text-center">Actions</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-item>
+              <tr>
+                <td><code>{{item.brand}}</code></td>
+                <td><strong>{{item.display_name}}</strong></td>
+                <td>
+                  <c-badge [color]="item.is_system ? 'warning' : 'success'">
+                    <i class="fas" [ngClass]="item.is_system ? 'fa-lock' : 'fa-user'"></i>
+                    {{item.is_system ? 'System' : 'User'}}
+                  </c-badge>
+                </td>
+                <td>
+                  <button cButton [color]="item.is_active ? 'success' : 'secondary'" size="sm"
+                    (click)="toggleBrandActive(item)">
+                    <i class="fas" [ngClass]="item.is_active ? 'fa-check' : 'fa-times'"></i>
+                  </button>
+                </td>
+                <td class="text-center">
+                  <button cButton size="sm" color="primary" variant="outline" class="me-1"
+                    (click)="openBrandEditModal(item)" pTooltip="Edit Brand">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button cButton size="sm" color="danger" variant="outline"
+                    *ngIf="!item.is_system" (click)="deleteBrand(item.brand, item.is_system)" pTooltip="Delete Brand">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </div>
+      </c-card-body>
+    </c-card>
+  </c-col>
+</c-row>
+
+<!-- ==================== TEMPLATE EDIT/CREATE MODAL ==================== -->
+<c-modal #editModal backdrop="static" size="xl" [(visible)]="editModalVisible" id="editModal">
+  <c-modal-header>
+    <h6 cModalTitle>
+      <i class="fas me-2" [ngClass]="editData.id ? 'fa-edit text-primary' : 'fa-plus text-success'"></i>
+      {{editData.id ? 'Edit Template' : 'Create Template'}}
+    </h6>
+    <button (click)="editModalVisible=false" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body>
+    <!-- Basic Info -->
+    <h6 class="mb-3"><i class="fas fa-tag me-2 text-primary"></i>Basic Information</h6>
+    <c-row class="g-3 mb-4">
+      <c-col xs="12" md="4">
+        <label class="form-label small">Display Name *</label>
+        <input cFormControl size="sm" [(ngModel)]="editData.display_name" placeholder="e.g. Cisco IOS" />
+      </c-col>
+      <c-col xs="12" md="4">
+        <label class="form-label small">Brand</label>
+        <select cSelect size="sm" [(ngModel)]="editData.brand">
+          <option value="">Generic</option>
+          <option *ngFor="let b of brands" [value]="b.brand || b.id">{{b.display_name || b.name || b.brand}}</option>
+        </select>
+      </c-col>
+      <c-col xs="12" md="2">
+        <label class="form-label small">OS Type</label>
+        <input cFormControl size="sm" [(ngModel)]="editData.os_type" placeholder="generic" />
+      </c-col>
+      <c-col xs="12" md="2">
+        <label class="form-label small">Active</label>
+        <div class="form-check form-switch mt-2">
+          <input class="form-check-input" type="checkbox" [(ngModel)]="editData.is_active" id="activeToggle" />
+        </div>
+      </c-col>
+    </c-row>
+
+    <!-- Prompt Settings -->
+    <h6 class="mb-3"><i class="fas fa-terminal me-2 text-info"></i>Prompt Settings</h6>
+    <c-row class="g-3 mb-4">
+      <c-col xs="12" md="4">
+        <label class="form-label small">Login Pattern</label>
+        <input cFormControl size="sm" [(ngModel)]="editData.prompt.login_pattern" placeholder="[Ll]ogin:" />
+      </c-col>
+      <c-col xs="12" md="4">
+        <label class="form-label small">Password Pattern</label>
+        <input cFormControl size="sm" [(ngModel)]="editData.prompt.password_pattern" placeholder="[Pp]assword:" />
+      </c-col>
+      <c-col xs="12">
+        <label class="form-label small">Prompt Patterns (regex patterns to detect prompt)</label>
+        <div *ngFor="let p of editData.prompt.patterns || []; let i = index" class="input-group mb-1">
+          <input cFormControl size="sm" [(ngModel)]="editData.prompt.patterns[i]" placeholder="e.g. \S+#" class="form-control" />
+          <button cButton size="sm" color="danger" variant="outline" (click)="removePromptPattern(i)">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <button cButton size="sm" color="success" variant="outline" (click)="addPromptPattern()" class="mt-1">
+          <i class="fas fa-plus me-1"></i>Add Pattern
+        </button>
+      </c-col>
+    </c-row>
+
+    <!-- Privilege Escalation -->
+    <h6 class="mb-3"><i class="fas fa-shield-halved me-2 text-warning"></i>Privilege Escalation</h6>
+    <c-row class="g-3 mb-4">
+      <c-col xs="12" md="4">
+        <label class="form-label small">Command</label>
+        <input cFormControl size="sm" [(ngModel)]="editData.privilege_escalation.command" placeholder="enable" />
+      </c-col>
+      <c-col xs="12" md="4">
+        <label class="form-label small">Password Prompt Pattern</label>
+        <input cFormControl size="sm" [(ngModel)]="editData.privilege_escalation.password_prompt" placeholder="[Pp]assword:" />
+      </c-col>
+      <c-col xs="12" md="4">
+        <label class="form-label small">Success Pattern</label>
+        <input cFormControl size="sm" [(ngModel)]="editData.privilege_escalation.success_pattern" placeholder="\S+#" />
+      </c-col>
+    </c-row>
+
+    <!-- Pagination & Linebreak -->
+    <h6 class="mb-3"><i class="fas fa-scroll me-2 text-success"></i>Pagination & Linebreak</h6>
+    <c-row class="g-3 mb-4">
+      <c-col xs="12" md="2">
+        <div class="form-check form-switch mt-4">
+          <input class="form-check-input" type="checkbox" [(ngModel)]="editData.pagination.enabled" id="paginationToggle" />
+          <label class="form-check-label small" for="paginationToggle">Disabled Paging</label>
+        </div>
+      </c-col>
+      <c-col xs="12" md="4">
+        <label class="form-label small">Paging Command</label>
+        <input cFormControl size="sm" [(ngModel)]="editData.pagination.key" placeholder="terminal length 0" />
+      </c-col>
+      <c-col xs="12" md="4">
+        <label class="form-label small">Reset Paging Command</label>
+        <input cFormControl size="sm" [(ngModel)]="editData.pagination.prompt" placeholder="terminal length 40" />
+      </c-col>
+      <c-col xs="12" md="2">
+        <label class="form-label small">Linebreak</label>
+        <select cSelect size="sm" [(ngModel)]="editData.connection.linebreak">
+          <option value="n">Unix (\n)</option>
+          <option value="r">CR (\r)</option>
+        </select>
+      </c-col>
+    </c-row>
+
+    <!-- Connection Settings -->
+    <h6 class="mb-3"><i class="fas fa-plug me-2 text-secondary"></i>Connection Settings</h6>
+    <c-row class="g-3 mb-4">
+      <c-col xs="12" md="6">
+        <label class="form-label small">Protocol</label>
+        <select cSelect size="sm" [(ngModel)]="editData.connection.protocol">
+          <option value="ssh">SSH</option>
+          <option value="telnet">Telnet</option>
+        </select>
+      </c-col>
+      <c-col xs="12" md="6">
+        <label class="form-label small">Connection Timeout (s)</label>
+        <input cFormControl size="sm" type="number" [(ngModel)]="editData.connection.timeout" />
+      </c-col>
+    </c-row>
+
+    <!-- Commands -->
+    <h6 class="mb-3"><i class="fas fa-code me-2 text-danger"></i>Device Commands</h6>
+    <c-row class="g-3 mb-4">
+      <c-col xs="12" md="6">
+        <label class="form-label small">Version Command</label>
+        <input cFormControl size="sm" [(ngModel)]="editData.commands.show_version" placeholder="show version" />
+      </c-col>
+      <c-col xs="12" md="6">
+        <label class="form-label small">Backup Command</label>
+        <input cFormControl size="sm" [(ngModel)]="editData.commands.show_config" placeholder="show running-config" />
+      </c-col>
+      <c-col xs="12" md="6">
+        <label class="form-label small">Interfaces Command</label>
+        <input cFormControl size="sm" [(ngModel)]="editData.commands.show_interfaces" placeholder="show ip interface brief" />
+      </c-col>
+      <c-col xs="12" md="6">
+        <label class="form-label small">ARP Command</label>
+        <input cFormControl size="sm" [(ngModel)]="editData.commands.show_arp" placeholder="show arp" />
+      </c-col>
+      <c-col xs="12" md="6">
+        <label class="form-label small">Routing Command</label>
+        <input cFormControl size="sm" [(ngModel)]="editData.commands.show_routing" placeholder="show ip route" />
+      </c-col>
+      <c-col xs="12" md="6">
+        <label class="form-label small">Log Command</label>
+        <input cFormControl size="sm" [(ngModel)]="editData.commands.show_log" placeholder="show logging" />
+      </c-col>
+      <c-col xs="12" md="6">
+        <label class="form-label small">Save Config Command</label>
+        <input cFormControl size="sm" [(ngModel)]="editData.commands.save_config" placeholder="wr mem / write memory / commit" />
+      </c-col>
+    </c-row>
+
+    <!-- Error Patterns & Post/Pre Commands -->
+    <h6 class="mb-3"><i class="fas fa-exclamation-triangle me-2 text-danger"></i>Error Patterns & Lifecycle Commands</h6>
+    <c-row class="g-3 mb-4">
+      <c-col xs="12" md="4">
+        <label class="form-label small">Error Patterns</label>
+        <div *ngFor="let p of editData.error_patterns.patterns || []; let i = index" class="input-group mb-1">
+          <input cFormControl size="sm" [(ngModel)]="editData.error_patterns.patterns[i]" placeholder="% Invalid" class="form-control" />
+          <button cButton size="sm" color="danger" variant="outline" (click)="removeErrorPattern(i)">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <button cButton size="sm" color="success" variant="outline" (click)="addErrorPattern()" class="mt-1">
+          <i class="fas fa-plus me-1"></i>Add Pattern
+        </button>
+      </c-col>
+      <c-col xs="12" md="4">
+        <label class="form-label small">Post-Login Commands</label>
+        <div *ngFor="let c of editData.post_login_commands || []; let i = index" class="input-group mb-1">
+          <input cFormControl size="sm" [(ngModel)]="editData.post_login_commands[i]" placeholder="terminal length 0" class="form-control" />
+          <button cButton size="sm" color="danger" variant="outline" (click)="removePostLoginCommand(i)">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <button cButton size="sm" color="success" variant="outline" (click)="addPostLoginCommand()" class="mt-1">
+          <i class="fas fa-plus me-1"></i>Add Command
+        </button>
+      </c-col>
+      <c-col xs="12" md="4">
+        <label class="form-label small">Pre-Logout Commands</label>
+        <div *ngFor="let c of editData.pre_logout_commands || []; let i = index" class="input-group mb-1">
+          <input cFormControl size="sm" [(ngModel)]="editData.pre_logout_commands[i]" placeholder="exit" class="form-control" />
+          <button cButton size="sm" color="danger" variant="outline" (click)="removePreLogoutCommand(i)">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <button cButton size="sm" color="success" variant="outline" (click)="addPreLogoutCommand()" class="mt-1">
+          <i class="fas fa-plus me-1"></i>Add Command
+        </button>
+      </c-col>
+    </c-row>
+  </c-modal-body>
+  <c-modal-footer>
+    <button cButton color="primary" (click)="saveTemplate()" [disabled]="!editData.display_name">
+      <i class="fas fa-save me-1"></i>{{editData.id ? 'Update' : 'Create'}}
+    </button>
+    <button (click)="editModalVisible=false" cButton color="secondary">Cancel</button>
+  </c-modal-footer>
+</c-modal>
+
+<!-- ==================== BRAND CREATE/EDIT MODAL ==================== -->
+<c-modal #brandModal backdrop="static" size="sm" [(visible)]="brandModalVisible" id="brandModal">
+  <c-modal-header>
+    <h6 cModalTitle>
+      <i class="fas me-2" [ngClass]="isEditingBrand ? 'fa-edit text-primary' : 'fa-plus text-success'"></i>
+      {{isEditingBrand && brandEditData.is_system ? 'View Brand' : isEditingBrand ? 'Edit Brand' : 'Add Brand'}}
+    </h6>
+    <button (click)="brandModalVisible=false" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body>
+    <c-row class="g-3">
+      <c-col xs="12" md="6">
+        <label class="form-label small">Brand Slug *</label>
+        <input cFormControl size="sm" [(ngModel)]="brandEditData.brand" placeholder="e.g. cisco" [readonly]="isEditingBrand || brandEditData.is_system" />
+        <small class="text-muted" *ngIf="!isEditingBrand && !brandEditData.is_system">Lowercase, no spaces. Cannot be changed after creation.</small>
+      </c-col>
+      <c-col xs="12" md="6">
+        <label class="form-label small">Display Name *</label>
+        <input cFormControl size="sm" [(ngModel)]="brandEditData.display_name" placeholder="e.g. Cisco" [readonly]="brandEditData.is_system" />
+      </c-col>
+      <c-col xs="12" *ngIf="brandEditData.is_system">
+        <c-alert color="warning" class="mb-0">
+          <i class="fas fa-lock me-1"></i>System brand — read-only.
+        </c-alert>
+      </c-col>
+    </c-row>
+  </c-modal-body>
+  <c-modal-footer>
+    <button cButton color="primary" (click)="saveBrand()" *ngIf="!brandEditData.is_system" [disabled]="!brandEditData.brand || !brandEditData.display_name">
+      <i class="fas fa-save me-1"></i>{{isEditingBrand ? 'Update' : 'Create'}}
+    </button>
+    <button (click)="brandModalVisible=false" cButton color="secondary">Close</button>
+  </c-modal-footer>
+</c-modal>
+
+<c-toaster position="fixed" placement="top-end"></c-toaster>

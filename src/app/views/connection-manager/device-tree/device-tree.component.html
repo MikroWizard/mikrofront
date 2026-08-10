@@ -1,0 +1,105 @@
+<div class="mw-tree">
+  <!-- Search Header -->
+  <div class="mw-tree-search p-2">
+    <div class="input-group input-group-sm">
+      <span class="input-group-text bg-dark border-secondary text-secondary"><i class="fa-solid fa-search"></i></span>
+      <input type="text" class="form-control bg-dark border-secondary text-white" placeholder="Search devices..." [(ngModel)]="searchTerm">
+    </div>
+  </div>
+
+  <!-- Loading state -->
+  <div class="mw-tree-loading" *ngIf="loading">
+    <div class="spinner-border spinner-border-sm" style="color: #4e9af1;" role="status"></div>
+    <span>Loading devices...</span>
+  </div>
+
+  <!-- Empty state -->
+  <div class="mw-tree-empty" *ngIf="!loading && filteredGroups.length === 0">
+    <i class="fa-solid fa-circle-exclamation"></i>
+    <span>No devices found</span>
+  </div>
+
+  <!-- Device Groups -->
+  <div class="mw-group" *ngFor="let group of filteredGroups">
+    <!-- Group header row -->
+    <div class="mw-group-row" (click)="toggleGroup(group)" [class.text-warning]="group.isFavorites">
+      <i class="fa-solid fa-chevron-right mw-chevron" [class.open]="group.expanded"></i>
+      <i class="mw-folder-icon fa-solid" [class.fa-star]="group.isFavorites" [class.fa-folder-open]="group.expanded && !group.isFavorites" [class.fa-folder]="!group.expanded && !group.isFavorites"></i>
+      <span class="mw-group-name">{{ group.name }}</span>
+      <span class="mw-badge">{{ group.devices.length }}</span>
+    </div>
+
+    <!-- Devices inside group -->
+    <div class="mw-devices" *ngIf="group.expanded">
+      <div class="mw-device-row d-flex align-items-center justify-content-between"
+           *ngFor="let dev of group.devices"
+           (contextmenu)="onContextMenu($event, dev)">
+        <div class="d-flex align-items-center gap-2" style="flex: 1; min-width: 0;"
+              (dblclick)="ispro && connectDefault(dev)"
+             title="Double-click to connect (default)">
+          
+          <span class="mw-brand-icon">
+            <img *ngIf="getBrandIcon(dev)" [src]="getBrandIcon(dev)" [title]="dev.brand || dev.device_type" alt="">
+            <i *ngIf="!getBrandIcon(dev)" class="fa-solid fa-network-wired"></i>
+          </span>
+          
+          <div class="mw-dev-info" style="min-width: 0;">
+            <div class="mw-dev-name text-truncate">{{ dev.name }}</div>
+            <div class="mw-dev-ip text-truncate">{{ dev.ip || dev.ip_address }}</div>
+          </div>
+        </div>
+        
+        <div class="mw-protocol-actions d-flex gap-1 ms-2 align-items-center">
+          <i class="fa-star" [class.fa-solid]="dev.is_favorite" [class.fa-regular]="!dev.is_favorite" [class.text-warning]="dev.is_favorite" [class.text-secondary]="!dev.is_favorite" (click)="toggleFavorite(dev, $event)" style="cursor: pointer; font-size: 0.8rem; margin-right: 4px;" title="Toggle Favorite"></i>
+        
+          <!-- WebFig: only for MikroTik devices -->
+          <button class="btn btn-link p-0 mw-proto-btn"
+                  *ngIf="ispro && hasProtocol(dev, 'webfig')"
+                  (click)="connectProtocol(dev, 'webfig')"
+                  title="Open WebFig Interface">
+            <i class="fa-solid fa-globe text-info" style="font-size: 0.8rem;"></i>
+          </button>
+          
+          <!-- SSH -->
+          <button class="btn btn-link p-0 mw-proto-btn"
+                  *ngIf="ispro && hasProtocol(dev, 'ssh')"
+                  (click)="connectProtocol(dev, 'ssh')"
+                  title="Open SSH Terminal">
+            <i class="fa-solid fa-terminal text-success" style="font-size: 0.8rem;"></i>
+          </button>
+          
+          <!-- Telnet -->
+          <button class="btn btn-link p-0 mw-proto-btn"
+                  *ngIf="ispro && hasProtocol(dev, 'telnet')"
+                  (click)="connectProtocol(dev, 'telnet')"
+                  title="Open Telnet Terminal">
+            <i class="fa-solid fa-square-poll-horizontal text-warning" style="font-size: 0.8rem;"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Context Menu -->
+<div *ngIf="contextMenuVisible" 
+     class="custom-context-menu" 
+     [style.left.px]="contextMenuPosition.x" 
+     [style.top.px]="contextMenuPosition.y"
+     (click)="closeContextMenu()">
+  <div class="context-menu-header">{{ selectedDeviceForContext?.name }}</div>
+  <div class="context-menu-item" (click)="openToolModal('ping')"><i class="fa-solid fa-satellite-dish me-2"></i>Ping Tool</div>
+  <div class="context-menu-item" (click)="openToolModal('speedtest')" *ngIf="!selectedDeviceForContext?.device_type || selectedDeviceForContext?.device_type === 'mikrotik'"><i class="fa-solid fa-gauge-high me-2"></i>Speed Test</div>
+  <div class="context-menu-item" (click)="openToolModal('logs')"><i class="fa-solid fa-file-lines me-2"></i>Device Logs</div>
+  <div class="divider"></div>
+  <div class="context-menu-item" (click)="openToolModal('commands')"><i class="fa-solid fa-keyboard me-2"></i>Command History</div>
+  <div class="context-menu-item" (click)="openToolModal('versions')"><i class="fa-solid fa-history me-2"></i>Config Versions</div>
+  <div class="context-menu-item" (click)="openToolModal('executions')"><i class="fa-solid fa-list-check me-2"></i>Execution History</div>
+  <div class="divider"></div>
+  <div class="context-menu-item" (click)="openToolModal('backup')"><i class="fa-solid fa-database me-2"></i>Backup Now</div>
+  <div class="context-menu-item" (click)="openToolModal('sessions')"><i class="fa-solid fa-play me-2"></i>Latest Sessions</div>
+  <div class="divider"></div>
+  <div class="context-menu-item" (click)="openDeviceDetails()"><i class="fa-solid fa-circle-info me-2"></i>Device Details <i class="fa-solid fa-arrow-up-right-from-square ms-auto text-secondary" style="font-size: 0.7rem;"></i></div>
+</div>
+<!-- Global click listener to close context menu -->
+<div *ngIf="contextMenuVisible" class="context-menu-backdrop" (click)="closeContextMenu()" (contextmenu)="closeContextMenu(); $event.preventDefault()"></div>

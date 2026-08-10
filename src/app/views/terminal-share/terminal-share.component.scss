@@ -1,0 +1,25 @@
+.terminal-wrapper {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  background-color: #0a0a0f;
+  overflow: hidden;
+  margin: 0;
+  padding: 10px;
+}
+
+.xterm-container {
+  width: 100%;
+  height: 100%;
+}
+
+.terminal-overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(10, 10, 15, 0.8);
+  z-index: 10;
+}

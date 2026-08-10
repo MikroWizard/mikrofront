@@ -1,0 +1,13 @@
+<div class="terminal-wrapper" (click)="focusTerminal()">
+  <div *ngIf="loading" class="terminal-overlay">
+    <div class="spinner-border text-info" role="status"></div>
+    <div class="mt-2 text-white">Connecting to shared session...</div>
+  </div>
+  
+  <div *ngIf="error" class="terminal-overlay text-danger">
+    <i class="fa-solid fa-circle-exclamation fa-2x mb-2"></i>
+    <div>{{error}}</div>
+  </div>
+  
+  <div #terminalContainer class="xterm-container" [hidden]="loading || error"></div>
+</div>

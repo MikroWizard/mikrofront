@@ -1,0 +1,13 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background-color: #0d0d1a;
+  color: #e0e0f0;
+}
+
+.cm-header-bar {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}

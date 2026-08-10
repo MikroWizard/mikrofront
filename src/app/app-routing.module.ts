@@ -1,7 +1,7 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 
-import { DefaultLayoutComponent } from './containers';
+import { DefaultLayoutComponent, ConnectionManagerLayoutComponent } from './containers';
 import { Page404Component } from './views/pages/page404/page404.component';
 import { Page500Component } from './views/pages/page500/page500.component';
 import { LoginComponent } from './views/pages/login/login.component';
@@ -89,6 +89,11 @@ const routes: Routes = [
           import('./views/settings/settings.module').then((m) => m.SettingsModule)
       },
       {
+        path: 'alerts',
+        loadChildren: () =>
+          import('./views/alerts/alerts.module').then((m) => m.AlertsModule)
+      },
+      {
         path: 'accountlog',
         loadChildren: () =>
           import('./views/acc_log/acc.module').then((m) => m.AccModule)
@@ -114,6 +119,11 @@ const routes: Routes = [
           import('./views/sequences/sequences.module').then((m) => m.SequencesModule)
       },
       {
+        path: 'executions',
+        loadChildren: () =>
+          import('./views/executions/executions.module').then((m) => m.ExecutionsModule)
+      },
+      {
         path: 'user_manager',
         loadChildren: () =>
           import('./views/user_manager/user_manager.module').then((m) => m.UserManagerModule)
@@ -134,9 +144,19 @@ const routes: Routes = [
           import('./views/customer-portal/customer-portal.module').then((m) => m.CustomerPortalModule)
       },
       {
+        path: 'customer-router-tools',
+        loadChildren: () =>
+          import('./views/customer-router-tools/customer-router-tools.module').then((m) => m.CustomerRouterToolsModule)
+      },
+      {
         path: 'customer-tickets',
         loadChildren: () =>
           import('./views/customer-tickets/customer-tickets.module').then((m) => m.CustomerTicketsModule)
+      },
+      {
+        path: 'customer-router-tools',
+        loadChildren: () =>
+          import('./views/customer-router-tools/customer-router-tools.module').then((m) => m.CustomerRouterToolsModule)
       },
       {
         path: 'customer-diagnostics',
@@ -147,6 +167,11 @@ const routes: Routes = [
         path: 'customer-portforward',
         loadChildren: () =>
           import('./views/customer-portforward/customer-portforward.module').then((m) => m.CustomerPortForwardModule)
+      },
+      {
+        path: 'customer-firewall',
+        loadChildren: () =>
+          import('./views/customer-firewall/customer-firewall.module').then((m) => m.CustomerFirewallModule)
       },
       {
         path: 'customer-speedtest',
@@ -169,6 +194,21 @@ const routes: Routes = [
           import('./views/ai-chat-logs/ai-chat-logs.module').then((m) => m.AIChatLogsModule)
       },
       {
+        path: 'pam',
+        loadChildren: () =>
+          import('./views/session-manager/session-manager.module').then((m) => m.SessionManagerModule)
+      },
+      {
+        path: 'templates',
+        loadChildren: () =>
+          import('./views/template-manager/template-manager.module').then((m) => m.TemplateManagerModule)
+      },
+      {
+        path: 'policies',
+        loadChildren: () =>
+          import('./views/policy-manager/policy-manager.module').then((m) => m.PolicyManagerModule)
+      },
+      {
         path: 'pages',
         loadChildren: () =>
           import('./views/pages/pages.module').then((m) => m.PagesModule)
@@ -181,6 +221,30 @@ const routes: Routes = [
     data: {
       title: 'Page 404'
     }
+  },
+  {
+    path: 'connection-manager',
+    component: ConnectionManagerLayoutComponent,
+    data: {
+      title: 'Connection Manager'
+    },
+    children: [
+      {
+        path: '',
+        loadChildren: () =>
+          import('./views/connection-manager/connection-manager.module').then((m) => m.ConnectionManagerModule)
+      }
+    ]
+  },
+  {
+    path: 'terminal-share',
+    loadChildren: () =>
+      import('./views/terminal-share/terminal-share.module').then((m) => m.TerminalShareModule)
+  },
+  {
+    path: 'webfig-share',
+    loadChildren: () =>
+      import('./views/webfig-share/webfig-share.module').then((m) => m.WebfigShareModule)
   },
   {
     path: '500',

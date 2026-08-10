@@ -1,0 +1,64 @@
+<div class="settings-overlay" (click)="onClose()"></div>
+<div class="settings-panel">
+  <div class="settings-header">
+    <h3>Terminal Settings</h3>
+    <button class="close-btn" (click)="onClose()">&times;</button>
+  </div>
+  
+  <div class="settings-body">
+    <div class="form-group mb-3">
+      <label>Font Family</label>
+      <input type="text" class="form-control bg-dark text-white border-secondary" [(ngModel)]="settings.fontFamily" (ngModelChange)="onPreview()" placeholder="'JetBrains Mono', monospace">
+    </div>
+    
+    <div class="form-group mb-3">
+      <label>Font Size</label>
+      <input type="number" class="form-control bg-dark text-white border-secondary" [(ngModel)]="settings.fontSize" (ngModelChange)="onPreview()">
+    </div>
+    
+    <div class="form-group mb-3">
+      <label>Cursor Style</label>
+      <select class="form-select bg-dark text-white border-secondary" [(ngModel)]="settings.cursorStyle" (ngModelChange)="onPreview()">
+        <option value="block">Block</option>
+        <option value="underline">Underline</option>
+        <option value="bar">Bar</option>
+      </select>
+    </div>
+    
+    <div class="form-check mb-3">
+      <input class="form-check-input" type="checkbox" id="cursorBlink" [(ngModel)]="settings.cursorBlink" (ngModelChange)="onPreview()">
+      <label class="form-check-label" for="cursorBlink">Cursor Blink</label>
+    </div>
+    
+    <hr class="border-secondary">
+    
+    <div class="form-group mb-3">
+      <label>Background Color</label>
+      <div class="d-flex align-items-center">
+        <input type="color" class="form-control form-control-color bg-dark border-secondary p-1 mr-2" [(ngModel)]="settings.background" (ngModelChange)="onPreview()">
+        <input type="text" class="form-control bg-dark text-white border-secondary w-75 ml-2" [(ngModel)]="settings.background" (ngModelChange)="onPreview()">
+      </div>
+    </div>
+    
+    <div class="form-group mb-3">
+      <label>Text Color</label>
+      <div class="d-flex align-items-center">
+        <input type="color" class="form-control form-control-color bg-dark border-secondary p-1 mr-2" [(ngModel)]="settings.foreground" (ngModelChange)="onPreview()">
+        <input type="text" class="form-control bg-dark text-white border-secondary w-75 ml-2" [(ngModel)]="settings.foreground" (ngModelChange)="onPreview()">
+      </div>
+    </div>
+    
+    <div class="form-group mb-3">
+      <label>Cursor Color</label>
+      <div class="d-flex align-items-center">
+        <input type="color" class="form-control form-control-color bg-dark border-secondary p-1 mr-2" [(ngModel)]="settings.cursorColor" (ngModelChange)="onPreview()">
+        <input type="text" class="form-control bg-dark text-white border-secondary w-75 ml-2" [(ngModel)]="settings.cursorColor" (ngModelChange)="onPreview()">
+      </div>
+    </div>
+  </div>
+  
+  <div class="settings-footer">
+    <button class="btn btn-secondary w-100 mb-2" (click)="onClose()">Cancel</button>
+    <button class="btn btn-primary w-100" style="background-color: #00ffd0; color: #000; border: none;" (click)="onSave()">Apply Settings</button>
+  </div>
+</div>

@@ -1,0 +1,178 @@
+<c-modal [visible]="visible" (visibleChange)="visibleChange.emit($event)" size="xl" backdrop="static" id="exportModal">
+  <c-modal-header class="bg-light">
+    <h5 cModalTitle class="d-flex align-items-center mb-0">
+      <i class="fa-solid fa-file-export text-primary me-2 fs-5"></i>
+      <span>{{ title }}</span>
+    </h5>
+    <button (click)="closeModal()" cButtonClose></button>
+  </c-modal-header>
+
+  <c-modal-body class="p-3">
+    <div class="row g-3">
+      <!-- Left Column: Scope, Date Filters, Format, Summary -->
+      <div class="col-lg-5 col-md-6 border-end pe-3">
+        <!-- 1. Export Format Selection -->
+        <div class="mb-3">
+          <label class="form-label fw-bold small text-uppercase text-muted">1. Export Format</label>
+          <div class="btn-group w-100" role="group">
+            <input type="radio" class="btn-check" name="exportFormat" id="fmtCsv" value="csv" [(ngModel)]="exportFormat">
+            <label class="btn btn-outline-primary" for="fmtCsv">
+              <i class="fa-solid fa-file-csv me-1"></i> CSV (.csv)
+            </label>
+
+            <input type="radio" class="btn-check" name="exportFormat" id="fmtXls" value="xls" [(ngModel)]="exportFormat">
+            <label class="btn btn-outline-success" for="fmtXls">
+              <i class="fa-solid fa-file-excel me-1"></i> Excel (.xls)
+            </label>
+          </div>
+        </div>
+
+        <!-- 2. Export Scope -->
+        <div class="mb-3">
+          <label class="form-label fw-bold small text-uppercase text-muted">2. Data Scope</label>
+          <div class="form-check mb-1">
+            <input class="form-check-input" type="radio" name="exportScope" id="scopeAll" value="all" [(ngModel)]="exportScope" (change)="onScopeChange()">
+            <label class="form-check-label" for="scopeAll">
+              All Available Data <span class="badge bg-secondary ms-1">{{ (fetchedData || allData || []).length }}</span>
+            </label>
+          </div>
+          <div class="form-check mb-1" *ngIf="filteredData">
+            <input class="form-check-input" type="radio" name="exportScope" id="scopeFiltered" value="filtered" [(ngModel)]="exportScope" (change)="onScopeChange()">
+            <label class="form-check-label" for="scopeFiltered">
+              Filtered View Data <span class="badge bg-info text-dark ms-1">{{ (filteredData || []).length }}</span>
+            </label>
+          </div>
+          <div class="form-check" *ngIf="selectedData">
+            <input class="form-check-input" type="radio" name="exportScope" id="scopeSelected" value="selected" [(ngModel)]="exportScope" (change)="onScopeChange()">
+            <label class="form-check-label" for="scopeSelected">
+              Selected Rows Only <span class="badge bg-warning text-dark ms-1">{{ selectedData.length }}</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- 3. Date Filter (If Date Field Available) -->
+        <div class="mb-3" *ngIf="dateField">
+          <div class="d-flex align-items-center justify-content-between mb-1">
+            <label class="form-label fw-bold small text-uppercase text-muted mb-0">3. Date Range Filter</label>
+            <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none small" (click)="clearDateFilter()" *ngIf="startDate || endDate">
+              Clear Filter
+            </button>
+          </div>
+          <div class="row g-2 mb-2">
+            <div class="col-6">
+              <label class="form-label small text-muted mb-1">From:</label>
+              <input type="date" class="form-control form-control-sm" [(ngModel)]="startDate" (change)="onDateChange()">
+            </div>
+            <div class="col-6">
+              <label class="form-label small text-muted mb-1">To:</label>
+              <input type="date" class="form-control form-control-sm" [(ngModel)]="endDate" (change)="onDateChange()">
+            </div>
+          </div>
+          <div class="btn-group btn-group-sm w-100">
+            <button type="button" class="btn btn-outline-secondary btn-sm" (click)="setQuickDate(0)">Today</button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" (click)="setQuickDate(7)">Last 7 Days</button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" (click)="setQuickDate(30)">Last 30 Days</button>
+          </div>
+        </div>
+
+        <!-- 4. Quick Search Filter -->
+        <div class="mb-3">
+          <label class="form-label fw-bold small text-uppercase text-muted">4. Filter Keywords</label>
+          <div class="input-group input-group-sm">
+            <span class="input-group-text"><i class="fa-solid fa-magnifying-glass"></i></span>
+            <input type="text" class="form-control" placeholder="Search in exported records..." [(ngModel)]="quickSearch">
+          </div>
+        </div>
+
+        <!-- 5. Row & Column Summary Card -->
+        <div class="card bg-light border-0 shadow-sm mb-2">
+          <div class="card-body p-3">
+            <h6 class="card-title fw-bold text-dark mb-2">Export Summary</h6>
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span class="text-muted small">Matching Data Rows:</span>
+              <span class="badge bg-primary fs-6" *ngIf="!loadingData">{{ getProcessedData().length }}</span>
+              <span class="text-primary small fw-bold" *ngIf="loadingData"><span class="spinner-border spinner-border-sm me-1" role="status"></span> Fetching...</span>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span class="text-muted small">Selected Columns:</span>
+              <span class="badge bg-success fs-6">{{ selectedColumns.length }} of {{ columns.length }}</span>
+            </div>
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="text-muted small">Output Format:</span>
+              <span class="badge bg-dark fs-6">{{ exportFormat | uppercase }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Column Selector & Data Preview -->
+      <div class="col-lg-7 col-md-6 ps-3">
+        <!-- Columns Selector Card -->
+        <div class="mb-3">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <label class="form-label fw-bold small text-uppercase text-muted mb-0">Select Export Columns</label>
+            <div>
+              <button type="button" class="btn btn-outline-primary btn-sm me-1 py-0 px-2" (click)="selectAllColumns(true)">Select All</button>
+              <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2" (click)="selectAllColumns(false)">Deselect All</button>
+            </div>
+          </div>
+
+          <div class="input-group input-group-sm mb-2">
+            <span class="input-group-text"><i class="fa-solid fa-filter"></i></span>
+            <input type="text" class="form-control" placeholder="Search columns..." [(ngModel)]="columnSearch">
+          </div>
+
+          <div class="border rounded p-2 bg-white column-list-box">
+            <div class="row g-2">
+              <div class="col-sm-6" *ngFor="let col of filteredColumns">
+                <div class="form-check text-truncate" [title]="col.label + ' (' + col.field + ')'">
+                  <input class="form-check-input" type="checkbox" [id]="'col_' + col.field" [(ngModel)]="col.selected">
+                  <label class="form-check-label small" [for]="'col_' + col.field">
+                    <span class="fw-semibold">{{ col.label }}</span>
+                    <span class="text-muted ms-1" style="font-size: 0.75rem;">({{ col.field }})</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sample Data Preview -->
+        <div>
+          <label class="form-label fw-bold small text-uppercase text-muted mb-1">
+            Data Sample Preview (First {{ getPreviewData().length }} Rows)
+          </label>
+          <div class="table-responsive border rounded preview-table-box bg-white">
+            <table class="table table-sm table-hover table-striped mb-0 small">
+              <thead class="table-dark sticky-top">
+                <tr>
+                  <th *ngFor="let c of selectedColumns">{{ c.label }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let row of getPreviewData()">
+                  <td *ngFor="let c of selectedColumns" class="text-nowrap text-truncate" style="max-width: 150px;" [title]="getCellValue(row, c.field)">
+                    {{ getCellValue(row, c.field) || '-' }}
+                  </td>
+                </tr>
+                <tr *ngIf="getPreviewData().length === 0">
+                  <td [attr.colspan]="selectedColumns.length || 1" class="text-center text-muted p-3">
+                    No matching records found for export.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </c-modal-body>
+
+  <c-modal-footer class="bg-light">
+    <button cButton color="secondary" (click)="closeModal()">Cancel</button>
+    <button cButton color="primary" (click)="exportData()" [disabled]="selectedColumns.length === 0 || getProcessedData().length === 0">
+      <i class="fa-solid fa-download me-1"></i>
+      Export {{ getProcessedData().length }} Records ({{ exportFormat | uppercase }})
+    </button>
+  </c-modal-footer>
+</c-modal>

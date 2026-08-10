@@ -57,6 +57,9 @@
     </div>
 
     <c-header-nav class="ms-3">
+      <button cButton color="primary" variant="outline" size="sm" class="me-3 rounded-pill btn-connection-mgr d-inline-flex align-items-center" (click)="navigateToConnectionManager()" *ngIf="ispro" title="Switch to Connection Manager">
+        <i class="fa-solid fa-network-wired"></i> <span class="d-none d-md-inline ms-1">Connection Manager</span>
+      </button>
       <ng-container *ngTemplateOutlet="taskDropdown"></ng-container> | 
       <ng-container *ngTemplateOutlet="userDropdown"></ng-container>
     </c-header-nav>

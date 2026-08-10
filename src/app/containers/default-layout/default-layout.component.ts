@@ -208,73 +208,102 @@ export class DefaultLayoutComponent implements OnInit {
     var _self = this;
     this.get_user_info();
     if (this.current_user && this.current_user.role === 'customer') {
-      this.data_provider.customerGetDevices().then((res: any) => {
-        const devs = res.result || res || [];
-        const showAuth = devs.some((d: any) => d.allow_log_auth === true);
-        const showAcc = devs.some((d: any) => d.allow_log_acc === true);
-        const showDev = devs.some((d: any) => d.allow_log_dev === true);
+      this.data_provider.getSessionInfo().then((res) => {
+        _self.ispro = res['ISPRO'];
+        this.data_provider.customerGetDevices().then((devRes: any) => {
+          const devs = devRes.result || devRes || [];
+          const showAuth = devs.some((d: any) => d.allow_log_auth === true);
+          const showAcc = devs.some((d: any) => d.allow_log_acc === true);
+          const showDev = devs.some((d: any) => d.allow_log_dev === true);
 
-        let dynamicNavs: any[] = [
-          {
-            name: 'Customer Portal',
-            url: '/customer-portal',
-            iconComponent: { name: 'cil-speedometer' },
-          },
-          {
-            name: 'Advanced Diagnostics',
-            url: '/customer-diagnostics',
-            icon: 'fa-solid fa-gauge-high'
-          },
-          {
-            name: 'Port Forwarding',
-            url: '/customer-portforward',
-            icon: 'fa-solid fa-route'
-          },
-          {
-            name: 'Speed Test',
-            url: '/customer-speedtest',
-            icon: 'fa-solid fa-gauge'
-          },
-          {
-            name: 'Support Tickets',
-            url: '/customer-tickets',
-            icon: 'fa-solid fa-ticket'
+          let dynamicNavs: any[] = [
+            {
+              name: 'Customer Portal',
+              url: '/customer-portal',
+              iconComponent: { name: 'cil-speedometer' },
+              attributes: { 'pro': true }
+            },
+            {
+              name: 'Tools & Clients',
+              url: '/customer-router-tools',
+              icon: 'fa-solid fa-screwdriver-wrench'
+            },
+            {
+              name: 'Advanced Diagnostics',
+              url: '/customer-diagnostics',
+              icon: 'fa-solid fa-gauge-high'
+            },
+            {
+              name: 'Port Forwarding',
+              url: '/customer-portforward',
+              icon: 'fa-solid fa-route'
+            },
+            {
+              name: 'Simple Firewall',
+              url: '/customer-firewall',
+              icon: 'fa-solid fa-shield-halved'
+            },
+            {
+              name: 'Speed Test',
+              url: '/customer-speedtest',
+              icon: 'fa-solid fa-gauge',
+              attributes: { 'pro': true }
+            },
+            {
+              name: 'Support Tickets',
+              url: '/customer-tickets',
+              icon: 'fa-solid fa-ticket',
+              attributes: { 'pro': true }
+            },
+            {
+              name: 'Alerts & Notifications',
+              url: '/alerts',
+              icon: 'fa-solid fa-bell',
+              attributes: { 'pro': true }
+            }
+          ];
+
+          if (showAuth) {
+            dynamicNavs.push({
+              name: 'Authentication Logs',
+              url: '/authlog',
+              icon: 'fa-solid fa-check-to-slot'
+            } as any);
           }
-        ];
+          if (showAcc) {
+            dynamicNavs.push({
+              name: 'Accounting Logs',
+              url: '/accountlog',
+              icon: 'fa-solid fa-list-check'
+            } as any);
+          }
+          if (showDev) {
+            dynamicNavs.push({
+              name: 'Device Logs',
+              url: '/devlogs',
+              icon: 'fa-regular fa-rectangle-list'
+            } as any);
+          }
 
-        if (showAuth) {
           dynamicNavs.push({
-            name: 'Authentication Logs',
-            url: '/authlog',
-            icon: 'fa-solid fa-check-to-slot'
-          } as any);
-        }
-        if (showAcc) {
-          dynamicNavs.push({
-            name: 'Accounting Logs',
-            url: '/accountlog',
-            icon: 'fa-solid fa-list-check'
-          } as any);
-        }
-        if (showDev) {
-          dynamicNavs.push({
-            name: 'Device Logs',
-            url: '/devlogs',
-            icon: 'fa-regular fa-rectangle-list'
-          } as any);
-        }
+            name: 'Docs',
+            url: 'https://mikrowizard.com/docs',
+            iconComponent: { name: 'cil-description' },
+            attributes: { target: '_blank', class: '-text-dark' },
+            class: 'mt-auto'
+          });
 
-        dynamicNavs.push({
-          name: 'Docs',
-          url: 'https://mikrowizard.com/docs',
-          iconComponent: { name: 'cil-description' },
-          attributes: { target: '_blank', class: '-text-dark' },
-          class: 'mt-auto'
+          _self.navItems = dynamicNavs.filter((item: any) => {
+            if (item.attributes && 'pro' in item.attributes && !_self.ispro) {
+              return false;
+            }
+            return true;
+          });
+        }).catch(() => {
+          _self.navItems = customerNavItems;
         });
-
-        this.navItems = dynamicNavs;
       }).catch(() => {
-        this.navItems = customerNavItems;
+        _self.navItems = customerNavItems;
       });
 
       if (this.router.url === '/' || this.router.url === '/dashboard') {

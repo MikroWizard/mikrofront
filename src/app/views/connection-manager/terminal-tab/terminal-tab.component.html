@@ -1,0 +1,120 @@
+<div class="terminal-tab-wrapper position-relative">
+  <!-- Floating Actions (Settings & Power) -->
+  <div class="terminal-floating-actions">
+    <button class="btn btn-sm btn-link p-1" (click)="shareSession()" title="Share Session">
+      <i class="fa-solid fa-share-nodes"></i>
+    </button>
+    <button class="btn btn-sm btn-link p-1" (click)="exportHistory()" title="Export History">
+      <i class="fa-solid fa-download"></i>
+    </button>
+    <button class="btn btn-sm btn-link p-1" (click)="openSettings()" title="Terminal Settings">
+      <i class="fa-solid fa-gear"></i>
+    </button>
+    <button class="btn btn-sm btn-link p-1" (click)="disconnect()" title="Disconnect Session">
+      <i class="fa-solid fa-power-off fa-power-off"></i>
+    </button>
+  </div>
+
+  <c-modal [visible]="showShareModal" (visibleChange)="showShareModal = $event" alignment="center">
+    <c-modal-header class="text-dark">
+      <h5 cModalTitle>Share Session</h5>
+      <button cButtonClose (click)="showShareModal = false"></button>
+    </c-modal-header>
+    <c-modal-body class="text-dark">
+      <div *ngIf="!shareUrl">
+        <!-- Share Type Selection -->
+        <c-nav variant="tabs" class="mb-3">
+          <c-nav-item>
+            <a [cTabContent]="tabContent" [routerLink] [tabPaneIdx]="0" cNavLink [active]="shareType === 'guest'" (click)="shareType = 'guest'">Guest Link</a>
+          </c-nav-item>
+          <c-nav-item>
+            <a [cTabContent]="tabContent" [routerLink] [tabPaneIdx]="1" cNavLink [active]="shareType === 'user'" (click)="shareType = 'user'">Internal User</a>
+          </c-nav-item>
+        </c-nav>
+
+        <c-tab-content #tabContent="cTabContent" [activeTabPaneIdx]="shareType === 'guest' ? 0 : 1">
+          <!-- Guest Tab -->
+          <c-tab-pane class="p-3">
+            <div class="mb-3">
+              <label class="form-label">Role</label>
+              <select class="form-select" [(ngModel)]="shareRole">
+                <option value="observer">Observer (View Only)</option>
+                <option value="collaborator">Collaborator (Can Type)</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Guest Name (Optional)</label>
+              <input type="text" class="form-control" [(ngModel)]="shareName" placeholder="e.g. John Doe">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Require Password (Optional)</label>
+              <input type="text" class="form-control" [(ngModel)]="sharePassword" placeholder="Leave empty for no password">
+            </div>
+            <c-form-check class="mb-2">
+              <input cFormCheckInput type="checkbox" [(ngModel)]="shareOneTime" id="oneTimeCheck2" />
+              <label cFormCheckLabel for="oneTimeCheck2">One-Time Use Token</label>
+            </c-form-check>
+            <c-form-check class="mb-3">
+              <input cFormCheckInput type="checkbox" [(ngModel)]="shareHostApproval" id="hostApproveCheck2" />
+              <label cFormCheckLabel for="hostApproveCheck2">Require Host Approval (Waiting Room)</label>
+            </c-form-check>
+          </c-tab-pane>
+
+          <!-- Internal User Tab -->
+          <c-tab-pane class="p-3">
+            <div class="mb-3">
+              <label class="form-label">Select User</label>
+              <div class="w-100 p-fluid">
+                <mat-form-field appearance="fill" class="w-100">
+                  <mat-label>Search User by Name or Username</mat-label>
+                  <input type="text" matInput [(ngModel)]="shareTargetUserSearch" (ngModelChange)="searchShareUser($event)" [matAutocomplete]="auto">
+                  <button *ngIf="shareTargetUserSearch" matSuffix mat-icon-button aria-label="Clear" (click)="shareTargetUserSearch=''; shareTargetUserId=null; searchShareUser('')">
+                    <mat-icon>close</mat-icon>
+                  </button>
+                  <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onUserSelected($event.option.value)">
+                    <mat-option *ngFor="let usr of userList" [value]="usr.id">
+                      {{usr.first_name}} {{usr.last_name}} ({{usr.username}})
+                    </mat-option>
+                  </mat-autocomplete>
+                </mat-form-field>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Role</label>
+              <select class="form-select" [(ngModel)]="shareRole">
+                <option value="observer">Observer (View Only)</option>
+                <option value="collaborator">Collaborator (Can Type)</option>
+              </select>
+            </div>
+            <div class="alert alert-info">
+              <i class="fas fa-info-circle me-2"></i> The user will receive an email invite and a system alert.
+            </div>
+          </c-tab-pane>
+        </c-tab-content>
+        
+        <button class="btn btn-primary mb-3 mt-2" (click)="generateShareLink()">Generate Share</button>
+      </div>
+
+      <div class="input-group mb-3" *ngIf="shareUrl">
+        <input type="text" class="form-control" [value]="shareUrl" readonly>
+        <button class="btn btn-primary" type="button" (click)="copyShareUrl()">Copy Link</button>
+      </div>
+    </c-modal-body>
+  </c-modal>
+
+  <div class="terminal-body" (click)="focusTerminal()" (contextmenu)="onContextMenu($event)">
+    <div *ngIf="loading" class="terminal-overlay">
+      <div class="spinner-border text-info" role="status"></div>
+      <div class="mt-2 text-white">Connecting to {{device?.name}}...</div>
+    </div>
+    
+    <div *ngIf="error" class="terminal-overlay text-danger">
+      <i class="fa-solid fa-circle-exclamation fa-2x mb-2"></i>
+      <div>{{error}}</div>
+    </div>
+    
+    <div #terminalContainer class="xterm-container" [hidden]="loading || error"></div>
+  </div>
+</div>
+
+<app-terminal-settings *ngIf="showSettings" [initialSettings]="settings" (close)="cancelSettings()" (save)="applySettings($event)" (preview)="previewSettings($event)"></app-terminal-settings>

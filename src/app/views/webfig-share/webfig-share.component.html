@@ -1,0 +1,34 @@
+<div class="webfig-share-wrapper">
+  <div *ngIf="loading" class="overlay">
+    <div class="spinner-border text-info mb-3" role="status"></div>
+    <div class="text-white h6">Connecting to shared WebFig session...</div>
+  </div>
+
+  <div *ngIf="pendingApproval" class="overlay text-center">
+    <div class="spinner-grow text-warning mb-3" role="status"></div>
+    <div class="text-warning h5 mb-2"><i class="fas fa-user-clock me-2"></i>Waiting for Host Approval</div>
+    <div class="text-muted small">The session host has been notified. This page will connect automatically once approved.</div>
+  </div>
+
+  <div *ngIf="passwordPromptVisible" class="overlay">
+    <div class="card bg-dark text-white p-4 shadow-lg border-secondary" style="max-width: 400px; width: 100%;">
+      <div class="card-body text-center">
+        <i class="fas fa-lock text-warning fa-3x mb-3"></i>
+        <h5 class="card-title mb-3">Password Required</h5>
+        <p class="text-muted small mb-3">This WebFig session is password protected. Enter the guest password to proceed.</p>
+        <div *ngIf="error" class="alert alert-danger py-1 px-2 small mb-3">{{error}}</div>
+        <div class="input-group mb-3">
+          <input type="password" class="form-control bg-secondary text-white border-0" [(ngModel)]="passwordInput" placeholder="Enter guest password" (keyup.enter)="submitPassword()" />
+          <button class="btn btn-info" (click)="submitPassword()">Join</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="error && !passwordPromptVisible" class="overlay text-danger text-center">
+    <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
+    <div class="h5">{{error}}</div>
+  </div>
+
+  <iframe *ngIf="iframeUrl && !loading && !error && !pendingApproval && !passwordPromptVisible" [src]="iframeUrl" class="webfig-iframe"></iframe>
+</div>

@@ -1,0 +1,108 @@
+<!-- MikroWizard Connection Manager Header -->
+<div class="cm-header-bar d-flex align-items-center justify-content-between px-3" style="height: 52px; background-color: #1a1a2e; border-bottom: 1px solid #2d2d4e; flex-shrink: 0;">
+  <!-- Left: Brand + Title -->
+  <div class="d-flex align-items-center gap-3">
+    <a routerLink="/dashboard" class="d-flex align-items-center text-decoration-none me-3">
+      <img src="assets/img/brand/logo-MIkroWizard-small-color.svg" width="32" height="32" alt="MikroWizard" />
+    </a>
+    <div class="vr" style="opacity: 0.2; height: 28px;"></div>
+    <div class="d-flex align-items-center">
+      <i class="fa-solid fa-network-wired me-2" style="color: #4e9af1; font-size: 1rem;"></i>
+      <span class="fw-semibold" style="color: #e0e0f0; font-size: 0.95rem; letter-spacing: 0.5px;">Connection Manager</span>
+    </div>
+  </div>
+
+  <!-- Right: Actions -->
+  <div class="d-flex align-items-center gap-2">
+    <ng-container *ngTemplateOutlet="taskDropdown"></ng-container>
+    <div class="vr mx-2" style="opacity: 0.2; height: 20px;"></div>
+    <ng-container *ngTemplateOutlet="userDropdown"></ng-container>
+
+    <a routerLink="/dashboard" class="btn btn-sm ms-3" style="background-color: rgba(255,255,255,0.07); color: #a0a0c0; border: 1px solid rgba(255,255,255,0.1); font-size: 0.8rem;">
+      <i class="fa-solid fa-arrow-left me-1"></i> Dashboard
+    </a>
+  </div>
+</div>
+
+<!-- Main router outlet -->
+<div style="height: calc(100vh - 52px); overflow: hidden;">
+  <router-outlet></router-outlet>
+</div>
+
+<ng-template #userDropdown>
+  <c-dropdown alignment="end" variant="nav-item">
+    <button
+      cButton
+      color=""
+      [caret]="false"
+      cDropdownToggle
+      class="py-0 text-white"
+    >
+      <svg cIcon class="me-2" name="cilUser"></svg>
+      {{fname}} {{lname}}
+    </button>
+    <ul cDropdownMenu class="pt-0 pr-5 w-auto" style="z-index: 10000;">
+      <li>
+        <h6 cDropdownHeader class="bg-light fw-semibold py-2">User Menu</h6>
+      </li>
+      <li>
+        <button (click)="callParent('password')" cDropdownItem>
+          <svg cIcon class="me-2" name="cilUser"></svg>
+          Change password
+        </button>
+      </li>
+      <li>
+        <button (click)="callParent('otp')" cDropdownItem>
+          <svg cIcon class="me-2" name="cilUser"></svg>
+          setup otp
+        </button>
+      </li>
+      <li>
+        <a routerLink="./" (click)="logout()" cDropdownItem>
+          <svg cIcon class="me-2" name="cilExitToApp"></svg>
+          Logout
+        </a>
+      </li>
+    </ul>
+  </c-dropdown>
+</ng-template>
+
+<ng-template #taskDropdown>
+  <c-dropdown alignment="end" variant="nav-item">
+    <button
+      cButton
+      color=""
+      [caret]="false"
+      cDropdownToggle
+      class="py-0 text-white"
+      style="margin-right: 10px;"
+    >
+    <i class="fa-solid fa-gear"></i><c-badge color="danger" style="left: unset !important;" position="bottom-end" shape="rounded-pill">{{tasks.length}}</c-badge>
+    </button>
+    <ul cDropdownMenu class="pt-0 pr-5 w-auto" style="z-index: 10000;">
+      <li>
+        <h6 cDropdownHeader class="bg-light fw-semibold py-2">Running Background Tasks</h6>
+      </li>
+      <li>
+        <table cTable small style="min-width: 250px;">
+          <thead style="font-size: 0.9rem;">
+          <tr>
+            <th scope="col"></th>
+            <th scope="col" style="color: darkgrey;">Task name</th>
+            <th scope="col" style="width: 60px;"></th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr *ngFor="let task of tasks; let i = index">
+            <th scope="row">{{i+1}}</th>
+            <td>{{task.name}}</td>
+            <td>
+              <button (click)="callParentConfirm('CancelTask',task)"  cButton  variant="ghost" color="danger" size="sm" ><i class="fa-solid fa-stop"></i></button>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </li>
+    </ul>
+  </c-dropdown>
+</ng-template>

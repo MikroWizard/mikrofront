@@ -1,197 +1,191 @@
 <c-row>
   <c-col xs>
     <c-card class="mb-4">
-      <c-card-header style="padding: 0">
-        <ul class="nav nav-underline mb-0">
-          <li class="nav-item">
-            <a class="nav-link" [class.active]="activeTab === 'policies'" (click)="activeTab = 'policies'" style="cursor: pointer;"><i class="fas fa-shield-halved me-2"></i>Access Policies</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" [class.active]="activeTab === 'expansions'" (click)="activeTab = 'expansions'" style="cursor: pointer;"><i class="fas fa-magic me-2"></i>Command Expansions</a>
-          </li>
-        </ul>
+      <c-card-header style="padding: 0;">
+        <c-row class="align-items-center">
+          <c-col xs>
+            <div class="nav nav-underline bg-transparent">
+              <div class="nav-item">
+                <a class="nav-link" [class.active]="activeTab === 'policies'" (click)="activeTab = 'policies'" style="cursor: pointer;">
+                  <i class="fas fa-shield-halved me-1"></i>Access Policies
+                </a>
+              </div>
+              <div class="nav-item">
+                <a class="nav-link" [class.active]="activeTab === 'expansions'" (click)="activeTab = 'expansions'" style="cursor: pointer;">
+                  <i class="fas fa-magic me-1"></i>Command Expansions
+                </a>
+              </div>
+            </div>
+          </c-col>
+          <c-col xs="auto" class="pe-3">
+            <ng-container *ngIf="activeTab === 'policies'">
+              <button cButton color="primary" size="sm" (click)="openCreateDialog()" style="color: #fff;">
+                <i class="fas fa-plus me-1"></i>New Policy
+              </button>
+            </ng-container>
+            <ng-container *ngIf="activeTab === 'expansions'">
+              <div class="d-flex gap-2 align-items-center">
+                <select *ngIf="brands.length > 0" cSelect [(ngModel)]="expBrandFilter" (change)="filterExpByBrand()" class="form-select-sm" style="width:150px; font-size:0.85rem;">
+                  <option value="">All Brands</option>
+                  <option *ngFor="let b of brands" [value]="b.brand" style="text-transform: capitalize;">{{b.display_name || b.brand}}</option>
+                </select>
+                <button cButton color="primary" size="sm" (click)="openExpCreateDialog()" style="color: #fff;">
+                  <i class="fas fa-plus me-1"></i>New Expansion
+                </button>
+              </div>
+            </ng-container>
+          </c-col>
+        </c-row>
       </c-card-header>
-    </c-card>
+      <c-card-body>
+        <!-- ==================== ACCESS POLICIES TAB ==================== -->
+        <div *ngIf="activeTab === 'policies'">
+          <p class="text-muted small">Manage command filtering, whitelist/blacklist, and auto-exec policies for terminal gateway access.</p>
 
-<c-card class="mb-4" *ngIf="activeTab === 'policies'">
-  <c-card-header>
-    <c-row class="align-items-center">
-      <c-col xs>
-        <strong><i class="fas fa-shield-halved me-2"></i>Terminal Access Policies</strong>
-      </c-col>
-      <c-col xs="auto">
-        <button cButton color="primary" size="sm" (click)="openCreateDialog()">
-          <i class="fas fa-plus me-1"></i>New Policy
-        </button>
-      </c-col>
-    </c-row>
-  </c-card-header>
-  <c-card-body>
-    <p class="text-muted small">Manage command filtering, whitelist/blacklist, and auto-exec policies for terminal gateway access.</p>
+          <div class="mb-1 d-flex justify-content-end">
+            <span class="p-input-icon-left table-search-input">
+              <i class="pi pi-search"></i>
+              <input type="text" pInputText placeholder="Search policies..."
+                (input)="applyFilterGlobal($event, 'contains')" class="form-control-sm" />
+            </span>
+          </div>
 
-    <div class="mb-3 d-flex justify-content-end">
-      <span class="p-input-icon-left">
-        <i class="pi pi-search"></i>
-        <input type="text" pInputText placeholder="Search policies..."
-          (input)="applyFilterGlobal($event, 'contains')" class="form-control-sm" />
-      </span>
-    </div>
-
-    <p-table #dt [value]="policies" [paginator]="true" [rows]="15" [showGridlines]="true"
-      [stripedRows]="true" [resizableColumns]="true" columnResizeMode="expand"
-      styleClass="p-datatable-sm" [loading]="loading"
-      [globalFilterFields]="['id', 'name', 'policy_type', 'matching', 'defense_level']">
-      <ng-template pTemplate="header">
-        <tr>
-          <th pSortableColumn="id" pResizableColumn style="width:60px">ID <p-sortIcon field="id"></p-sortIcon></th>
-          <th pSortableColumn="name" pResizableColumn>Name <p-sortIcon field="name"></p-sortIcon></th>
-          <th pSortableColumn="policy_type" pResizableColumn style="width:110px">Type <p-sortIcon field="policy_type"></p-sortIcon></th>
-          <th pSortableColumn="matching" pResizableColumn style="width:100px">Matching <p-sortIcon field="matching"></p-sortIcon></th>
-          <th pSortableColumn="defense_level" pResizableColumn style="width:90px">Defense <p-sortIcon field="defense_level"></p-sortIcon></th>
-          <th pSortableColumn="agent_modes" pResizableColumn style="width:70px">Agent <p-sortIcon field="agent_modes"></p-sortIcon></th>
-          <th pSortableColumn="rule_count" pResizableColumn style="width:65px">Rules <p-sortIcon field="rule_count"></p-sortIcon></th>
-          <th pResizableColumn style="width:200px">Brands Covered</th>
-          <th pResizableColumn style="width:140px">Description</th>
-          <th style="width:100px" class="text-center">Actions</th>
-        </tr>
-      </ng-template>
-      <ng-template pTemplate="body" let-item>
-        <tr>
-          <td><small class="text-muted">{{item.id}}</small></td>
-          <td><span class="fw-semibold small">{{item.name}}</span></td>
-          <td>
-            <c-badge [color]="item.policy_type === 'blacklist' ? 'dark' : item.policy_type === 'whitelist' ? 'warning' : 'info'">
-              {{item.policy_type}}
-            </c-badge>
-          </td>
-          <td><small>{{item.matching}}</small></td>
-          <td><c-badge [color]="getDefenseBadgeColor(item.defense_level || 'standard')" style="font-size:0.7rem;">{{item.defense_level || 'standard'}}</c-badge></td>
-          <td>
-            <c-badge [color]="(item.agent_modes?.linux !== 'none' || item.agent_modes?.darwin !== 'none' || item.agent_modes?.freebsd !== 'none') ? 'success' : 'secondary'" style="font-size:0.7rem;">
-              <i class="fas" [ngClass]="(item.agent_modes?.linux !== 'none' || item.agent_modes?.darwin !== 'none' || item.agent_modes?.freebsd !== 'none') ? 'fa-microchip' : 'fa-ban'"></i>
-              {{(item.agent_modes?.linux !== 'none' || item.agent_modes?.darwin !== 'none' || item.agent_modes?.freebsd !== 'none') ? 'On' : 'Off'}}
-            </c-badge>
-          </td>
-          <td><small>{{item.rule_count || 0}}</small></td>
-          <td>
-            <span *ngIf="hasAllBrands(item)"><c-badge color="secondary" class="me-1">All</c-badge></span>
-            <c-badge *ngFor="let b of getBrandCoverage(item)" color="primary" class="me-1" style="text-transform: capitalize;">{{b}}</c-badge>
-            <span *ngIf="getBrandCoverage(item).length === 0 && !hasAllBrands(item)" class="text-muted small">—</span>
-          </td>
-          <td><small class="text-muted">{{item.description}}</small></td>
-          <td class="text-center">
-            <button cButton size="sm" color="info" variant="outline" class="me-1"
-              (click)="openEditDialog(item)" pTooltip="Edit Policy">
-              <i class="fas fa-edit"></i>
-            </button>
-            <button cButton size="sm" color="danger" variant="outline"
-              (click)="confirmDelete(item)" pTooltip="Delete Policy">
-              <i class="fas fa-trash"></i>
-            </button>
-          </td>
-        </tr>
-      </ng-template>
-      <ng-template pTemplate="emptymessage">
-        <tr>
-          <td colspan="10" class="text-center text-muted py-4">
-            <i class="fas fa-shield-halved fa-2x mb-2 d-block"></i>
-            No terminal policies created yet. Click "New Policy" to create one.
-          </td>
-        </tr>
-      </ng-template>
-    </p-table>
-  </c-card-body>
-</c-card>
-
-<c-card class="mb-4" *ngIf="activeTab === 'expansions'">
-  <c-card-header>
-    <c-row class="align-items-center">
-      <c-col xs>
-        <strong><i class="fas fa-magic me-2"></i>Command Expansions</strong>
-      </c-col>
-      <c-col xs="auto">
-        <div class="d-flex gap-2">
-          <select *ngIf="brands.length > 0" cSelect [(ngModel)]="expBrandFilter" (change)="filterExpByBrand()" class="form-select-sm" style="width:150px; font-size:0.85rem;">
-            <option value="">All Brands</option>
-            <option *ngFor="let b of brands" [value]="b.brand" style="text-transform: capitalize;">{{b.display_name || b.brand}}</option>
-          </select>
-          <button cButton color="primary" size="sm" (click)="openExpCreateDialog()">
-            <i class="fas fa-plus me-1"></i>New Expansion
-          </button>
+          <p-table #dt [value]="policies" [paginator]="true" [rows]="15" [showGridlines]="true"
+            [stripedRows]="true" [resizableColumns]="true" columnResizeMode="expand"
+            styleClass="p-datatable-sm" [loading]="loading"
+            [globalFilterFields]="['id', 'name', 'policy_type', 'matching', 'defense_level']">
+            <ng-template pTemplate="header">
+              <tr>
+                <th pSortableColumn="id" pResizableColumn style="width:60px">ID <p-sortIcon field="id"></p-sortIcon></th>
+                <th pSortableColumn="name" pResizableColumn>Name <p-sortIcon field="name"></p-sortIcon></th>
+                <th pSortableColumn="policy_type" pResizableColumn style="width:110px">Type <p-sortIcon field="policy_type"></p-sortIcon></th>
+                <th pSortableColumn="matching" pResizableColumn style="width:100px">Matching <p-sortIcon field="matching"></p-sortIcon></th>
+                <th pSortableColumn="defense_level" pResizableColumn style="width:90px">Defense <p-sortIcon field="defense_level"></p-sortIcon></th>
+                <th pSortableColumn="agent_modes" pResizableColumn style="width:70px">Agent <p-sortIcon field="agent_modes"></p-sortIcon></th>
+                <th pSortableColumn="rule_count" pResizableColumn style="width:65px">Rules <p-sortIcon field="rule_count"></p-sortIcon></th>
+                <th pResizableColumn style="width:200px">Brands Covered</th>
+                <th pResizableColumn style="width:140px">Description</th>
+                <th style="width:100px" class="text-center">Actions</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-item>
+              <tr>
+                <td><small class="text-muted">{{item.id}}</small></td>
+                <td><span class="fw-semibold small">{{item.name}}</span></td>
+                <td>
+                  <c-badge [color]="item.policy_type === 'blacklist' ? 'dark' : item.policy_type === 'whitelist' ? 'warning' : 'info'">
+                    {{item.policy_type}}
+                  </c-badge>
+                </td>
+                <td><small>{{item.matching}}</small></td>
+                <td><c-badge [color]="getDefenseBadgeColor(item.defense_level || 'standard')" style="font-size:0.7rem;">{{item.defense_level || 'standard'}}</c-badge></td>
+                <td>
+                  <c-badge [color]="(item.agent_modes?.linux !== 'none' || item.agent_modes?.darwin !== 'none' || item.agent_modes?.freebsd !== 'none') ? 'success' : 'secondary'" style="font-size:0.7rem;">
+                    <i class="fas" [ngClass]="(item.agent_modes?.linux !== 'none' || item.agent_modes?.darwin !== 'none' || item.agent_modes?.freebsd !== 'none') ? 'fa-microchip' : 'fa-ban'"></i>
+                    {{(item.agent_modes?.linux !== 'none' || item.agent_modes?.darwin !== 'none' || item.agent_modes?.freebsd !== 'none') ? 'On' : 'Off'}}
+                  </c-badge>
+                </td>
+                <td><small>{{item.rule_count || 0}}</small></td>
+                <td>
+                  <span *ngIf="hasAllBrands(item)"><c-badge color="secondary" class="me-1">All</c-badge></span>
+                  <c-badge *ngFor="let b of getBrandCoverage(item)" color="primary" class="me-1" style="text-transform: capitalize;">{{b}}</c-badge>
+                  <span *ngIf="getBrandCoverage(item).length === 0 && !hasAllBrands(item)" class="text-muted small">—</span>
+                </td>
+                <td><small class="text-muted">{{item.description}}</small></td>
+                <td class="text-center">
+                  <button cButton size="sm" color="info" variant="outline" class="me-1"
+                    (click)="openEditDialog(item)" pTooltip="Edit Policy">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button cButton size="sm" color="danger" variant="outline"
+                    (click)="confirmDelete(item)" pTooltip="Delete Policy">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </td>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+              <tr>
+                <td colspan="10" class="text-center text-muted py-4">
+                  <i class="fas fa-shield-halved fa-2x mb-2 d-block"></i>
+                  No terminal policies created yet. Click "New Policy" to create one.
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
         </div>
-      </c-col>
-    </c-row>
-  </c-card-header>
-  <c-card-body>
-    <div class="d-flex justify-content-between align-items-center mb-3">
-      <p class="text-muted small mb-0">Define shorthands that auto-expand into full commands when processed by the terminal gateway.</p>
-      <span class="p-input-icon-left table-search-input">
-        <i class="pi pi-search"></i>
-        <input type="text" pInputText placeholder="Search expansions..." (input)="applyExpFilterGlobal($event, 'contains')" class="form-control-sm" />
-      </span>
-    </div>
 
-    <p-table #expDt [value]="expansions" [paginator]="true" [rows]="15" [showGridlines]="true"
-      [stripedRows]="true" [resizableColumns]="true" columnResizeMode="expand"
-      styleClass="p-datatable-sm" [loading]="loadingExpansions"
-      [globalFilterFields]="['brand', 'shorthand', 'full_command', 'expansion_type']">
-      <ng-template pTemplate="header">
-        <tr>
-          <th pSortableColumn="id" style="width:60px">ID <p-sortIcon field="id"></p-sortIcon></th>
-          <th pSortableColumn="brand" style="width:120px">Brand <p-sortIcon field="brand"></p-sortIcon></th>
-          <th pSortableColumn="expansion_type" style="width:120px">Type <p-sortIcon field="expansion_type"></p-sortIcon></th>
-          <th pSortableColumn="shorthand">Shorthand <p-sortIcon field="shorthand"></p-sortIcon></th>
-          <th pSortableColumn="full_command">Full Command <p-sortIcon field="full_command"></p-sortIcon></th>
-          <th pSortableColumn="is_default" style="width:100px">Source <p-sortIcon field="is_default"></p-sortIcon></th>
-          <th pSortableColumn="is_enabled" style="width:100px">Status <p-sortIcon field="is_enabled"></p-sortIcon></th>
-          <th style="width:100px" class="text-center">Actions</th>
-        </tr>
-      </ng-template>
-      <ng-template pTemplate="body" let-item>
-        <tr>
-          <td><small class="text-muted">{{item.id}}</small></td>
-          <td style="text-transform: capitalize;"><span class="fw-semibold small">{{item.brand}}</span></td>
-          <td>
-            <c-badge [color]="item.expansion_type === 'shorthand' ? 'info' : 'secondary'">
-              {{item.expansion_type === 'shorthand' ? 'Shorthand' : 'Full Cmd'}}
-            </c-badge>
-          </td>
-          <td><code>{{item.shorthand || '--'}}</code></td>
-          <td><code>{{item.full_command}}</code></td>
-          <td>
-            <c-badge [color]="item.is_default ? 'secondary' : 'primary'">{{item.is_default ? 'System' : 'Custom'}}</c-badge>
-          </td>
-          <td>
-            <c-badge [color]="item.is_enabled ? 'success' : 'danger'">{{item.is_enabled ? 'Enabled' : 'Disabled'}}</c-badge>
-          </td>
-          <td class="text-center">
-            <button cButton size="sm" color="info" variant="outline" class="me-1"
-              (click)="openExpEditDialog(item)" pTooltip="Edit">
-              <i class="fas fa-edit"></i>
-            </button>
-            <button cButton size="sm" [color]="item.is_enabled ? 'warning' : 'success'" variant="outline" class="me-1"
-              (click)="toggleExpansionState(item)" [pTooltip]="item.is_enabled ? 'Disable' : 'Enable'">
-              <i class="fas" [ngClass]="item.is_enabled ? 'fa-ban' : 'fa-check'"></i>
-            </button>
-            <button cButton size="sm" color="danger" variant="outline"
-              (click)="deleteExpansion(item)" pTooltip="Delete" [disabled]="item.is_default">
-              <i class="fas fa-trash"></i>
-            </button>
-          </td>
-        </tr>
-      </ng-template>
-      <ng-template pTemplate="emptymessage">
-        <tr>
-          <td colspan="8" class="text-center text-muted py-4">
-            <i class="fas fa-magic fa-2x mb-2 d-block"></i>
-            No command expansions defined.
-          </td>
-        </tr>
-      </ng-template>
-    </p-table>
-  </c-card-body>
-</c-card>
+        <!-- ==================== COMMAND EXPANSIONS TAB ==================== -->
+        <div *ngIf="activeTab === 'expansions'">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <p class="text-muted small mb-0">Define shorthands that auto-expand into full commands when processed by the terminal gateway.</p>
+            <span class="p-input-icon-left table-search-input">
+              <i class="pi pi-search"></i>
+              <input type="text" pInputText placeholder="Search expansions..." (input)="applyExpFilterGlobal($event, 'contains')" class="form-control-sm" />
+            </span>
+          </div>
 
+          <p-table #expDt [value]="expansions" [paginator]="true" [rows]="15" [showGridlines]="true"
+            [stripedRows]="true" [resizableColumns]="true" columnResizeMode="expand"
+            styleClass="p-datatable-sm" [loading]="loadingExpansions"
+            [globalFilterFields]="['brand', 'shorthand', 'full_command', 'expansion_type']">
+            <ng-template pTemplate="header">
+              <tr>
+                <th pSortableColumn="id" style="width:60px">ID <p-sortIcon field="id"></p-sortIcon></th>
+                <th pSortableColumn="brand" style="width:120px">Brand <p-sortIcon field="brand"></p-sortIcon></th>
+                <th pSortableColumn="expansion_type" style="width:120px">Type <p-sortIcon field="expansion_type"></p-sortIcon></th>
+                <th pSortableColumn="shorthand">Shorthand <p-sortIcon field="shorthand"></p-sortIcon></th>
+                <th pSortableColumn="full_command">Full Command <p-sortIcon field="full_command"></p-sortIcon></th>
+                <th pSortableColumn="is_default" style="width:100px">Source <p-sortIcon field="is_default"></p-sortIcon></th>
+                <th pSortableColumn="is_enabled" style="width:100px">Status <p-sortIcon field="is_enabled"></p-sortIcon></th>
+                <th style="width:100px" class="text-center">Actions</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-item>
+              <tr>
+                <td><small class="text-muted">{{item.id}}</small></td>
+                <td style="text-transform: capitalize;"><span class="fw-semibold small">{{item.brand}}</span></td>
+                <td>
+                  <c-badge [color]="item.expansion_type === 'shorthand' ? 'info' : 'secondary'">
+                    {{item.expansion_type === 'shorthand' ? 'Shorthand' : 'Full Cmd'}}
+                  </c-badge>
+                </td>
+                <td><code>{{item.shorthand || '--'}}</code></td>
+                <td><code>{{item.full_command}}</code></td>
+                <td>
+                  <c-badge [color]="item.is_default ? 'secondary' : 'primary'">{{item.is_default ? 'System' : 'Custom'}}</c-badge>
+                </td>
+                <td>
+                  <c-badge [color]="item.is_enabled ? 'success' : 'danger'">{{item.is_enabled ? 'Enabled' : 'Disabled'}}</c-badge>
+                </td>
+                <td class="text-center">
+                  <button cButton size="sm" color="info" variant="outline" class="me-1"
+                    (click)="openExpEditDialog(item)" pTooltip="Edit">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button cButton size="sm" [color]="item.is_enabled ? 'warning' : 'success'" variant="outline" class="me-1"
+                    (click)="toggleExpansionState(item)" [pTooltip]="item.is_enabled ? 'Disable' : 'Enable'">
+                    <i class="fas" [ngClass]="item.is_enabled ? 'fa-ban' : 'fa-check'"></i>
+                  </button>
+                  <button cButton size="sm" color="danger" variant="outline"
+                    (click)="deleteExpansion(item)" pTooltip="Delete" [disabled]="item.is_default">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </td>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+              <tr>
+                <td colspan="8" class="text-center text-muted py-4">
+                  <i class="fas fa-magic fa-2x mb-2 d-block"></i>
+                  No command expansions defined.
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </div>
+      </c-card-body>
+    </c-card>
   </c-col>
 </c-row>
 

@@ -32,12 +32,13 @@ export class DefaultHeaderComponent extends HeaderComponent {
 
   public selectedDeviceId: number | null = null;
   public devices: any[] = [];
+  public ispro: boolean = false;
 
   constructor(
     private classToggler: ClassToggleService,
     private router: Router,
     private login_checker: loginChecker,
-		private data_provider: dataProvider,
+		private data_provider: dataProvider
   ) {
     super();
     var _self = this;
@@ -87,11 +88,15 @@ export class DefaultHeaderComponent extends HeaderComponent {
     });
   }
 
-  onDeviceChange() {
+  onDeviceChange(): void {
     if (this.selectedDeviceId) {
       localStorage.setItem('customer_selected_device_id', this.selectedDeviceId.toString());
       this.emitDeviceChange();
     }
+  }
+
+  navigateToConnectionManager(): void {
+    this.router.navigate(['/connection-manager']);
   }
 
   emitDeviceChange() {
@@ -103,6 +108,9 @@ export class DefaultHeaderComponent extends HeaderComponent {
     var _self = this;
     console.log('DefaultHeaderComponent');
     this.get_user_info();
+    this.data_provider.getSessionInfo().then((res: any) => {
+      _self.ispro = res.ISPRO;
+    });
     if (this.current_user && this.current_user.role === 'customer') {
       this.loadCustomerDevices();
       return;

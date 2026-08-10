@@ -1,0 +1,306 @@
+<c-row>
+  <c-col xs>
+    <c-card class="mb-4">
+      <c-card-header>
+        <c-row class="align-items-center">
+          <c-col xs>
+            <strong><i class="fas fa-terminal text-success me-2"></i>Active Terminal Sessions</strong>
+          </c-col>
+          <c-col xs="auto">
+            <button cButton size="sm" color="primary" variant="outline" (click)="loadSessions()">
+              <i class="fas fa-sync-alt me-1" [class.fa-spin]="loading"></i>Refresh
+            </button>
+          </c-col>
+        </c-row>
+      </c-card-header>
+      <c-card-body>
+
+        <div class="bg-light p-2 rounded mb-3 border border-light d-flex flex-wrap gap-2 align-items-end">
+          <div class="flex-grow-1" style="min-width: 200px;">
+            <div class="input-group input-group-sm">
+              <span class="input-group-text bg-white text-muted" style="border-color: #dee2e6;"><i class="fas fa-desktop"></i></span>
+              <input type="text" class="form-control" placeholder="Filter by Device..." [(ngModel)]="selectedDevice" (ngModelChange)="searchDevice($event)" [matAutocomplete]="deviceAuto" style="border-color: #dee2e6;">
+              <button class="btn btn-outline-secondary bg-white" style="border-color: #dee2e6;" type="button" *ngIf="selectedDevice" (click)="onDeviceClear(); $event.stopPropagation()">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+            <mat-autocomplete #deviceAuto="matAutocomplete" [displayWith]="displayDevice" (optionSelected)="onDeviceSelect($event.option.value)">
+              <mat-option *ngFor="let dev of suggestedDevices" [value]="dev">
+                <div class="d-flex flex-column lh-sm py-1">
+                  <span class="fw-semibold" style="font-size: 0.85rem;">{{dev.name}}</span>
+                  <small class="text-muted" style="font-size: 0.75rem;">{{dev.ip}}</small>
+                </div>
+              </mat-option>
+            </mat-autocomplete>
+          </div>
+          
+          <div class="flex-grow-1" style="min-width: 200px;">
+            <div class="input-group input-group-sm">
+              <span class="input-group-text bg-white text-muted" style="border-color: #dee2e6;"><i class="fas fa-user"></i></span>
+              <input type="text" class="form-control" placeholder="Filter by User..." [(ngModel)]="selectedUser" (ngModelChange)="searchUser($event)" [matAutocomplete]="userAuto" style="border-color: #dee2e6;">
+              <button class="btn btn-outline-secondary bg-white" style="border-color: #dee2e6;" type="button" *ngIf="selectedUser" (click)="onUserClear(); $event.stopPropagation()">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+            <mat-autocomplete #userAuto="matAutocomplete" [displayWith]="displayUser" (optionSelected)="onUserSelect($event.option.value)">
+              <mat-option *ngFor="let usr of suggestedUsers" [value]="usr">
+                <div class="d-flex flex-column lh-sm py-1">
+                  <span class="fw-semibold" style="font-size: 0.85rem;">{{usr.first_name}} {{usr.last_name}}</span>
+                  <small class="text-muted" style="font-size: 0.75rem;">{{usr.username}}</small>
+                </div>
+              </mat-option>
+            </mat-autocomplete>
+          </div>
+
+          <div class="flex-grow-1" style="min-width: 200px;">
+            <div class="input-group input-group-sm">
+              <span class="input-group-text bg-white text-muted" style="border-color: #dee2e6;"><i class="fas fa-search"></i></span>
+              <input type="text" class="form-control" placeholder="Search table..." (input)="applyFilterSessions($event, 'contains')" style="border-color: #dee2e6;">
+            </div>
+          </div>
+        </div>
+
+        <p-table #dtSessions [value]="sessions" [paginator]="true" [rows]="10" [showGridlines]="true"
+          [stripedRows]="true" [resizableColumns]="true" columnResizeMode="expand"
+          styleClass="p-datatable-sm p-datatable-gridlines p-datatable-striped" [loading]="loading"
+          [globalFilterFields]="['id', 'device_name', 'device_ip', 'user_name', 'status', 'protocol']">
+          <ng-template pTemplate="header">
+            <tr>
+              <th pSortableColumn="id" pResizableColumn>ID <p-sortIcon field="id"></p-sortIcon></th>
+              <th pSortableColumn="device_name" pResizableColumn>Device <p-sortIcon field="device_name"></p-sortIcon></th>
+              <th pSortableColumn="user_name" pResizableColumn>User <p-sortIcon field="user_name"></p-sortIcon></th>
+              <th pSortableColumn="protocol" pResizableColumn>Protocol <p-sortIcon field="protocol"></p-sortIcon></th>
+              <th pSortableColumn="status" pResizableColumn>Status <p-sortIcon field="status"></p-sortIcon></th>
+              <th pSortableColumn="participants" pResizableColumn>Participants</th>
+              <th pSortableColumn="duration_fmt" pResizableColumn>Duration <p-sortIcon field="duration_fmt"></p-sortIcon></th>
+              <th pSortableColumn="started_fmt" pResizableColumn>Started <p-sortIcon field="started_fmt"></p-sortIcon></th>
+              <th style="width: 100px" class="text-center">Actions</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-item>
+            <tr>
+              <td><small>{{item.id}}</small></td>
+              <td>
+                <div class="fw-semibold">{{item.device_name || item.device_id}}</div>
+                <small class="text-muted">{{item.device_ip}}</small>
+              </td>
+              <td><i class="fas fa-user me-1 text-muted"></i>{{item.user_name || item.user_id}}</td>
+              <td>
+                <c-badge [color]="(item.protocol === 'webfig' || item.stype === 'webfig') ? 'warning' : (item.protocol === 'ssh' ? 'dark' : 'info')">
+                  <i [class]="(item.protocol === 'webfig' || item.stype === 'webfig') ? 'fas fa-globe me-1' : 'fas fa-terminal me-1'"></i>
+                  {{(item.protocol || item.stype || 'terminal') | uppercase}}
+                </c-badge>
+              </td>
+              <td>
+                <c-badge [color]="item.status === 'active' ? 'success' : 'secondary'">{{item.status}}</c-badge>
+              </td>
+              <td>
+                <div *ngIf="item.participants && item.participants.length > 0">
+                  <span class="badge bg-info">{{item.participants.length}} Online</span>
+                  <div *ngIf="item.participants.length <= 5" class="small text-muted mt-1">
+                    <div *ngFor="let p of item.participants" class="mb-1">
+                      <strong>{{p.name}}</strong> ({{p.role}})
+                      <br><small><i class="fas fa-network-wired me-1"></i>{{p.ip}}</small>
+                    </div>
+                  </div>
+                </div>
+                <div *ngIf="!item.participants || item.participants.length === 0">
+                  <span class="badge bg-secondary">0 Online</span>
+                </div>
+              </td>
+              <td><small>{{item.duration_fmt}}</small></td>
+              <td><small>{{item.started_fmt}}</small></td>
+              <td style="width: 100px" class="text-center">
+                <!-- For WebFig: Quick button is Monitor Live -->
+                <button *ngIf="item.protocol === 'webfig' || item.stype === 'webfig'" cButton size="sm" color="warning" variant="outline" class="me-1"
+                  (click)="watchSession(item.id, true)" pTooltip="Monitor Live (Watch WebFig)">
+                  <i class="fas fa-desktop"></i>
+                </button>
+                <!-- For Terminal: Quick button is Join Session -->
+                <button *ngIf="item.protocol !== 'webfig' && item.stype !== 'webfig'" cButton size="sm" color="info" variant="outline" class="me-1"
+                  (click)="collaborateSession(item.id, false)" pTooltip="Join Terminal Session">
+                  <i class="fas fa-right-to-bracket"></i>
+                </button>
+
+                <button color="primary" variant="ghost" size="sm" [matMenuTriggerFor]="menu" cButton>
+                  <i class="fa-solid fa-ellipsis-vertical"></i>
+                </button>
+                <mat-menu #menu="matMenu">
+                  <div cListGroup>
+                    <button size="sm" (click)="watchSession(item.id, item.protocol === 'webfig' || item.stype === 'webfig')" cListGroupItem style="padding: 6px 10px; border:none; cursor: pointer;">
+                      <i [class]="(item.protocol === 'webfig' || item.stype === 'webfig') ? 'fas fa-desktop text-warning me-2' : 'fas fa-eye text-primary me-2'"></i>
+                      <small>{{(item.protocol === 'webfig' || item.stype === 'webfig') ? 'Monitor Live' : 'Watch'}}</small>
+                    </button>
+                    <button size="sm" (click)="loadParticipants(item.id, item.protocol === 'webfig' || item.stype === 'webfig')" cListGroupItem style="padding: 6px 10px; border:none; cursor: pointer;">
+                      <i class="fas fa-users text-info me-2"></i><small>Participants</small>
+                    </button>
+                    <button size="sm" (click)="openShareModal(item.id, item.protocol === 'webfig' || item.stype === 'webfig')" cListGroupItem style="padding: 6px 10px; border:none; cursor: pointer;">
+                      <i class="fas fa-share-alt text-success me-2"></i><small>Share</small>
+                    </button>
+                    <button *ngIf="item.status === 'active'" size="sm" (click)="confirmKillSession(item.id, item.protocol === 'webfig' || item.stype === 'webfig')" cListGroupItem style="padding: 6px 10px; border:none; cursor: pointer;">
+                      <i class="fas fa-times-circle text-danger me-2"></i><small>Terminate</small>
+                    </button>
+                  </div>
+                </mat-menu>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </c-card-body>
+    </c-card>
+  </c-col>
+</c-row>
+
+<!-- Share Session Modal -->
+<c-modal #shareModal backdrop="static" [(visible)]="shareModalVisible" id="shareModal">
+  <c-modal-header>
+    <h6 cModalTitle><i class="fas fa-share-alt me-2"></i>Share Session</h6>
+    <button (click)="shareModalVisible=!shareModalVisible" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body>
+    <div *ngIf="!shareUrl">
+      <!-- Share Type Selection -->
+      <c-nav variant="tabs" class="mb-3">
+        <c-nav-item>
+          <a [cTabContent]="tabContent" [routerLink] [tabPaneIdx]="0" cNavLink [active]="shareType === 'guest'" (click)="shareType = 'guest'">Guest Link</a>
+        </c-nav-item>
+        <c-nav-item>
+          <a [cTabContent]="tabContent" [routerLink] [tabPaneIdx]="1" cNavLink [active]="shareType === 'user'" (click)="shareType = 'user'">Internal User</a>
+        </c-nav-item>
+      </c-nav>
+      
+      <c-tab-content #tabContent="cTabContent" [activeTabPaneIdx]="shareType === 'guest' ? 0 : 1">
+        <!-- Guest Tab -->
+        <c-tab-pane class="p-3">
+          <div class="mb-3">
+            <label class="form-label">Role</label>
+            <select class="form-select" [(ngModel)]="shareRole">
+              <option value="observer">Observer (View Only)</option>
+              <option value="collaborator">Collaborator (Can Type)</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Guest Name (Optional)</label>
+            <input type="text" class="form-control" [(ngModel)]="shareName" placeholder="e.g. John Doe">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Require Password (Optional)</label>
+            <input type="text" class="form-control" [(ngModel)]="sharePassword" placeholder="Leave empty for no password">
+          </div>
+          <c-form-check class="mb-2">
+            <input cFormCheckInput type="checkbox" [(ngModel)]="shareOneTime" id="oneTimeCheck" />
+            <label cFormCheckLabel for="oneTimeCheck">One-Time Use Token</label>
+          </c-form-check>
+          <c-form-check>
+            <input cFormCheckInput type="checkbox" [(ngModel)]="shareHostApproval" id="hostApproveCheck" />
+            <label cFormCheckLabel for="hostApproveCheck">Require Host Approval (Waiting Room)</label>
+          </c-form-check>
+        </c-tab-pane>
+
+        <!-- Internal User Tab -->
+        <c-tab-pane class="p-3">
+          <div class="mb-3">
+            <label class="form-label">Select User</label>
+            <div class="w-100 p-fluid">
+              <mat-form-field appearance="fill" class="w-100">
+                <mat-label>Search User by Name or Username</mat-label>
+                <input type="text" matInput [(ngModel)]="shareTargetUserSearch" (ngModelChange)="searchShareUser($event)" [matAutocomplete]="auto">
+                <button *ngIf="shareTargetUserSearch" matSuffix mat-icon-button aria-label="Clear" (click)="shareTargetUserSearch=''; shareTargetUserId=null; searchShareUser('')">
+                  <mat-icon>close</mat-icon>
+                </button>
+                <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onUserSelected($event.option.value)">
+                  <mat-option *ngFor="let usr of userList" [value]="usr.id">
+                    {{usr.first_name}} {{usr.last_name}} ({{usr.username}})
+                  </mat-option>
+                </mat-autocomplete>
+              </mat-form-field>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Role</label>
+            <select class="form-select" [(ngModel)]="shareRole">
+              <option value="observer">Observer (View Only)</option>
+              <option value="collaborator">Collaborator (Can Type)</option>
+            </select>
+          </div>
+          <div class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i> The user will receive an email invite and a system alert.
+          </div>
+        </c-tab-pane>
+      </c-tab-content>
+    </div>
+    
+    <div class="input-group mb-3" *ngIf="shareUrl">
+      <span class="input-group-text"><i class="fas fa-link"></i></span>
+      <input [value]="origin + shareUrl" cFormControl disabled="true" class="form-control" />
+      <button cButton color="secondary" variant="outline" (click)="copyShareUrl()">
+        <i class="fas fa-copy"></i>
+      </button>
+    </div>
+  </c-modal-body>
+  <c-modal-footer>
+    <button *ngIf="!shareUrl" cButton color="primary" (click)="generateShareLink()">Generate Link</button>
+    <button [cModalToggle]="shareModal.id" cButton color="secondary">Close</button>
+  </c-modal-footer>
+</c-modal>
+
+<!-- Kill Session Confirm Modal -->
+<c-modal #killConfirmModal backdrop="static" [(visible)]="killSessionVisible" id="killConfirmModal">
+  <c-modal-header>
+    <h6 cModalTitle><i class="fas fa-exclamation-triangle me-2 text-warning"></i>Terminate Session</h6>
+    <button [cModalToggle]="killConfirmModal.id" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body>
+    <div class="alert alert-danger">
+      <i class="fas fa-exclamation-triangle me-2"></i>
+      <strong>Warning:</strong> This will forcefully terminate the session and disconnect the user.
+    </div>
+    <p>Are you sure you want to terminate session <strong>{{killSessionId}}</strong>?</p>
+  </c-modal-body>
+  <c-modal-footer>
+    <button cButton color="danger" (click)="executeKillSession()">
+      <i class="fas fa-times-circle me-1"></i>Yes, Terminate
+    </button>
+    <button [cModalToggle]="killConfirmModal.id" cButton color="secondary">Cancel</button>
+  </c-modal-footer>
+</c-modal>
+
+<!-- Participants Modal -->
+<c-modal #participantModal backdrop="static" size="lg" [(visible)]="participantModalVisible" id="participantModal">
+  <c-modal-header>
+    <h6 cModalTitle><i class="fas fa-users me-2"></i>Session Participants</h6>
+    <button (click)="participantModalVisible=false" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body>
+    <p class="text-muted mb-3" *ngIf="participantSessionId">
+      Participants in session <strong>{{participantSessionId}}</strong>:
+    </p>
+    <p-table [value]="participantData" [showGridlines]="true" [stripedRows]="true" styleClass="p-datatable-sm"
+      *ngIf="participantData.length > 0">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>User ID</th>
+          <th>Role</th>
+          <th>Token</th>
+          <th>Joined At</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-item>
+        <tr>
+          <td><i class="fas fa-user me-1 text-muted"></i>{{item.user_name || item.user_id}}</td>
+          <td><c-badge [color]="item.role === 'observer' ? 'info' : 'warning'">{{item.role}}</c-badge></td>
+          <td><small class="text-muted">{{item.token?.substring(0, 12)}}...</small></td>
+          <td><small>{{item.joined_fmt}}</small></td>
+        </tr>
+      </ng-template>
+    </p-table>
+    <div *ngIf="participantData.length === 0" class="text-center py-3 text-muted">
+      No participants found for this session.
+    </div>
+  </c-modal-body>
+  <c-modal-footer>
+    <button (click)="participantModalVisible=false" cButton color="secondary">Close</button>
+  </c-modal-footer>
+</c-modal>
+
+<c-toaster position="fixed" placement="top-end"></c-toaster>

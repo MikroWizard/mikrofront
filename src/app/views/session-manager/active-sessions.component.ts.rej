@@ -1,0 +1,24 @@
+--- active-sessions.component.ts
++++ active-sessions.component.ts
+@@ -34,6 +34,13 @@
+   shareToken: string = '';
+   shareRole: string = 'observer';
+   shareName: string = '';
++  shareType: string = 'guest';
++  shareTargetUserId: string = '';
++  sharePassword: string = '';
++  shareOneTime: boolean = false;
++  shareHostApproval: boolean = false;
++
++  userList: any[] = [];
+ 
+   origin = window.location.origin;
+ 
+@@ -53,6 +60,7 @@
+   ngOnInit() {
+     this.tz = this.data_provider.get_user_tz();
+     this.loadSessions();
++    this.loadUsers();
+ 
+     this.socketTimer = setInterval(() => {
+       if (this.sessions.length > 0) {

@@ -1,0 +1,27 @@
+.btn-connection-mgr {
+  font-size: 0.76rem !important;
+  font-weight: 500 !important;
+  padding: 0.22rem 0.65rem !important;
+  border-radius: 50rem !important;
+  border: 1px solid rgba(50, 31, 219, 0.25) !important;
+  background-color: rgba(50, 31, 219, 0.06) !important;
+  color: #321fdb !important;
+  transition: all 0.2s ease-in-out !important;
+
+  i {
+    font-size: 0.82rem;
+    color: #321fdb;
+    transition: color 0.2s ease-in-out;
+  }
+
+  &:hover, &:focus, &:active {
+    background-color: #321fdb !important;
+    border-color: #321fdb !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 6px rgba(50, 31, 219, 0.25);
+
+    i {
+      color: #ffffff !important;
+    }
+  }
+}

@@ -1,0 +1,256 @@
+import { Component, OnInit, Input, ViewChild, ViewChildren, QueryList } from '@angular/core';
+import { dataProvider } from '../../../../providers/mikrowizard/data';
+import { loginChecker } from '../../../../providers/login_checker';
+import { formatInTimeZone } from 'date-fns-tz';
+import { Table } from 'primeng/table';
+import { ToasterComponent } from '@coreui/angular';
+import { AppToastComponent } from '../../../toast-simple/toast.component';
+import { Router } from '@angular/router';
+
+@Component({
+  selector: 'app-sessions-list',
+  templateUrl: './sessions-list.component.html',
+  styleUrls: ['./sessions-list.component.scss']
+})
+export class SessionsListComponent implements OnInit {
+  @Input() defaultFilters: any = null;
+  @ViewChild('dtSessions') dtSessions!: Table;
+  @ViewChildren(ToasterComponent) viewChildren!: QueryList<ToasterComponent>;
+
+  public sessions: any[] = [];
+  public loading: boolean = false;
+  public tz: string = '';
+  public origin = window.location.origin;
+
+  public sessionFilters: any = { status: 'active', device_id: '', user_id: '' };
+  
+  public killSessionVisible: boolean = false;
+  public killSessionId: string = '';
+
+  public shareModalVisible: boolean = false;
+  public shareUrl: string = '';
+  public shareToken: string = '';
+  public shareSessionId: string = '';
+  public shareRole: string = 'observer';
+  public shareName: string = '';
+  public shareType: string = 'guest';
+  public shareTargetUserId: string = '';
+  public sharePassword: string = '';
+  public shareOneTime: boolean = false;
+  public shareHostApproval: boolean = false;
+  public userList: any[] = [];
+
+  public participantModalVisible: boolean = false;
+  public participantData: any[] = [];
+  public participantSessionId: string = '';
+
+  public toasterForm = { autohide: true, delay: 3000, position: 'fixed', fade: true, closeButton: true };
+
+  // Autocomplete
+  public suggestedDevices: any[] = [];
+  public suggestedUsers: any[] = [];
+  public selectedDevice: any = null;
+  public selectedUser: any = null;
+
+  constructor(private data_provider: dataProvider, private login_checker: loginChecker, private router: Router) {}
+
+  ngOnInit(): void {
+    if (this.defaultFilters) {
+      this.sessionFilters = { ...this.sessionFilters, ...this.defaultFilters };
+      // Init selections if ids are provided
+      if (this.sessionFilters.device_id) {
+        this.selectedDevice = { id: this.sessionFilters.device_id, name: 'Filtered Device' };
+      }
+      if (this.sessionFilters.user_id) {
+        this.selectedUser = { id: this.sessionFilters.user_id, username: 'Filtered User' };
+      }
+    }
+    this.data_provider.getSessionInfo().then((res: any) => {
+      this.tz = res.tz;
+      this.loadSessions();
+      this.loadUsers();
+    });
+  }
+
+  loadUsers() {
+    this.data_provider.get_users(1, 1000, '').then((res: any) => {
+      if (res.status === 'success') {
+        this.userList = res.data;
+      }
+    });
+  }
+
+  show_toast(title: string, body: string, color: string) {
+    const { ...props } = { ...this.toasterForm, color, title, body };
+    const componentRef = this.viewChildren.first.addToast(AppToastComponent, props, {});
+    componentRef.instance['closeButton'] = props.closeButton;
+  }
+
+  // AUTOCOMPLETE
+  searchDevice(event: any) {
+    this.data_provider.get_devices(event.query).then((res: any) => {
+      if (res.status === 'success') {
+        this.suggestedDevices = res.data;
+      }
+    });
+  }
+
+  searchUser(event: any) {
+    this.data_provider.get_users(1, 20, event.query).then((res: any) => {
+      if (res.status === 'success') {
+        this.suggestedUsers = res.data;
+      }
+    });
+  }
+
+  onDeviceSelect(event: any) {
+    this.sessionFilters.device_id = event.id;
+    this.loadSessions();
+  }
+  
+  onUserSelect(event: any) {
+    this.sessionFilters.user_id = event.id;
+    this.loadSessions();
+  }
+
+  onDeviceClear() {
+    this.sessionFilters.device_id = '';
+    this.loadSessions();
+  }
+
+  onUserClear() {
+    this.sessionFilters.user_id = '';
+    this.loadSessions();
+  }
+
+  loadSessions() {
+    this.loading = true;
+    const data: any = { page: 1, limit: 100, status: this.sessionFilters.status || '' };
+    if (this.sessionFilters.device_id) data.device_id = this.sessionFilters.device_id;
+    if (this.sessionFilters.user_id) data.user_id = this.sessionFilters.user_id;
+
+    this.data_provider.listSessions(data).then((res: any) => {
+      if (res.status === 'success') {
+        this.sessions = res.data.map((s: any) => {
+          let duration_fmt = '-';
+          if (s.started) {
+            const start = new Date(s.started.split('.')[0] + '.000Z').getTime();
+            const end = s.ended ? new Date(s.ended.split('.')[0] + '.000Z').getTime() : new Date().getTime();
+            const diffMins = Math.floor((end - start) / 60000);
+            const h = Math.floor(diffMins / 60);
+            const m = diffMins % 60;
+            duration_fmt = h > 0 ? `${h}h ${m}m` : `${m}m`;
+          }
+          return {
+            ...s,
+            started_fmt: s.started ? formatInTimeZone(s.started.split('.')[0] + '.000Z', this.tz, 'yyyy-MM-dd HH:mm:ss') : '-',
+            ended_fmt: s.ended ? formatInTimeZone(s.ended.split('.')[0] + '.000Z', this.tz, 'yyyy-MM-dd HH:mm:ss') : '-',
+            duration_fmt
+          };
+        });
+      }
+      this.loading = false;
+    });
+  }
+
+  applySessionFilter() {
+    this.loadSessions();
+  }
+
+  applyFilterSessions($event: any, stringVal: string) {
+    this.dtSessions.filterGlobal(($event.target as HTMLInputElement).value, stringVal);
+  }
+
+  confirmKillSession(sessionId: string) {
+    this.killSessionId = sessionId;
+    this.killSessionVisible = true;
+  }
+
+  executeKillSession() {
+    this.data_provider.killTerminalSession(this.killSessionId).then((res: any) => {
+      if (res.status === 'success') {
+        this.show_toast('Success', 'Session terminated', 'success');
+        this.loadSessions();
+      } else {
+        this.show_toast('Error', res.error || 'Failed to kill session', 'danger');
+      }
+      this.killSessionVisible = false;
+    });
+  }
+
+  openShareModal(sessionId: string) {
+    this.shareSessionId = sessionId;
+    this.shareUrl = '';
+    this.shareToken = '';
+    this.shareRole = 'observer';
+    this.shareName = '';
+    this.shareType = 'guest';
+    this.shareTargetUserId = '';
+    this.sharePassword = '';
+    this.shareOneTime = false;
+    this.shareHostApproval = false;
+    this.shareModalVisible = true;
+  }
+
+  generateShareLink() {
+    this.data_provider.shareSession(this.shareSessionId, this.shareRole, this.shareName, this.shareType, this.shareTargetUserId, this.sharePassword, this.shareOneTime, this.shareHostApproval).then((res: any) => {
+      if (res.status === 'success') {
+        this.shareUrl = res.share_url;
+        this.shareToken = res.token;
+      } else {
+        this.show_toast('Error', res.error || 'Failed to share session', 'danger');
+      }
+    });
+  }
+
+  watchSession(sessionId: string) {
+    const adminPass = Math.random().toString(36).slice(-8);
+    this.data_provider.shareSession(sessionId, 'observer', 'Admin Watch', 'guest', '', adminPass, false, false).then((res: any) => {
+      if (res.status === 'success') {
+        window.open(this.origin + '/#/terminal-share?token=' + res.token + '&password=' + adminPass, '_blank');
+      } else {
+        this.show_toast('Error', res.error || 'Failed to watch session', 'danger');
+      }
+    });
+  }
+
+  collaborateSession(sessionId: string) {
+    const adminPass = Math.random().toString(36).slice(-8);
+    this.data_provider.shareSession(sessionId, 'collaborator', 'Admin Collab', 'guest', '', adminPass, false, false).then((res: any) => {
+      if (res.status === 'success') {
+        window.open(this.origin + '/#/terminal-share?token=' + res.token + '&password=' + adminPass, '_blank');
+      } else {
+        this.show_toast('Error', res.error || 'Failed to collaborate on session', 'danger');
+      }
+    });
+  }
+
+  copyShareUrl() {
+    const url = this.origin + '/#/terminal-share?token=' + this.shareToken;
+    if (this.sharePassword) {
+      navigator.clipboard.writeText(url + '&password=' + this.sharePassword).then(() => {
+        this.show_toast('Success', 'Share URL (with password) copied to clipboard', 'success');
+      });
+    } else {
+      navigator.clipboard.writeText(url).then(() => {
+        this.show_toast('Success', 'Share URL copied to clipboard', 'success');
+      });
+    }
+  }
+
+  loadParticipants(sessionId: string) {
+    this.participantSessionId = sessionId;
+    this.participantModalVisible = true;
+    this.data_provider.sessionParticipants(sessionId).then((res: any) => {
+      if (res.status === 'success') {
+        this.participantData = res.data.map((p: any) => ({
+          ...p,
+          joined_fmt: p.joined_at ? formatInTimeZone(p.joined_at.split('.')[0] + '.000Z', this.tz, 'yyyy-MM-dd HH:mm:ss') : '-'
+        }));
+      } else {
+        this.show_toast('Error', res.error || 'Failed to load participants', 'danger');
+        this.participantModalVisible = false;
+      }
+    });
+  }
+}

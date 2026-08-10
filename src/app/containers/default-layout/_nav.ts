@@ -72,6 +72,11 @@ export const navItems: INavData[] = [
     icon: 'fa-solid fa-database'
   },
   {
+    name: 'Executions',
+    url: '/executions',
+    icon: 'fa-solid fa-list-check'
+  },
+  {
     name: 'Snippets',
     url: '/snippets',
     icon: 'fa-solid fa-code'
@@ -169,11 +174,47 @@ export const navItems: INavData[] = [
     name: 'Customer Tickets',
     url: '/admin-tickets',
     icon: 'fa-solid fa-ticket',
+    attributes: { 'pro': true }
   },
   {
     name: 'Customer Portals',
     url: '/customer-assignments',
     icon: 'fa-solid fa-user-tag',
+    attributes: { 'pro': true }
+  },
+  {
+    name: 'Privileged sessions (PAM)',
+    title: true,
+    attributes: { 'pro': true }
+  },
+  {
+    name: 'Active sessions',
+    url: '/pam/active',
+    icon: 'fa-solid fa-terminal',
+    attributes: { 'pro': true }
+  },
+  {
+    name: 'Session history',
+    url: '/pam/history',
+    icon: 'fa-solid fa-clock-rotate-left',
+    attributes: { 'pro': true }
+  },
+  {
+    name: 'Command history',
+    url: '/pam/commands',
+    icon: 'fa-solid fa-keyboard',
+    attributes: { 'pro': true }
+  },
+  {
+    name: 'Brands / Templates',
+    url: '/templates',
+    icon: 'fa-solid fa-puzzle-piece',
+  },
+  {
+    name: 'Terminal Policies',
+    url: '/policies',
+    icon: 'fa-solid fa-shield-halved',
+    attributes: { 'pro': true }
   },
   {
     name: 'AI Chat Audit Logs',
@@ -184,6 +225,12 @@ export const navItems: INavData[] = [
     title: true,
     name: 'System',
     class: 'py-0'
+  },
+  {
+    name: 'Alerts & Notifications',
+    url: '/alerts',
+    icon: 'fa-solid fa-bell',
+    attributes: { 'pro': true }
   },
   {
     name: 'Settings',
@@ -222,6 +269,11 @@ export const customerNavItems: INavData[] = [
     iconComponent: { name: 'cil-speedometer' },
   },
   {
+    name: 'Tools & Clients',
+    url: '/customer-router-tools',
+    icon: 'fa-solid fa-screwdriver-wrench'
+  },
+  {
     name: 'Advanced Diagnostics',
     url: '/customer-diagnostics',
     icon: 'fa-solid fa-gauge-high'
@@ -230,6 +282,11 @@ export const customerNavItems: INavData[] = [
     name: 'Port Forwarding',
     url: '/customer-portforward',
     icon: 'fa-solid fa-route'
+  },
+  {
+    name: 'Simple Firewall',
+    url: '/customer-firewall',
+    icon: 'fa-solid fa-shield-halved'
   },
   {
     name: 'Speed Test',

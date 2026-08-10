@@ -93,7 +93,10 @@ export class MikroWizardProvider {
 		catch(e){
 			console.log(error);
 		}
-		return Promise.reject(error.message || error);
+		const body = error.error || error;
+		const inner = body && body.result ? body.result : body;
+		const msg = (typeof inner === 'object' ? inner.error || inner.message : inner) || error.message || error;
+		return Promise.reject(msg);
 	}
 
 	public init(configs: any) {

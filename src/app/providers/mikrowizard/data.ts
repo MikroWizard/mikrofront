@@ -149,13 +149,18 @@ export class dataProvider {
     }
 
     get_editform(id: number) {
-        var data = {
-            'devid': id
-        }
+        let data = { devid: id };
         return this.MikroWizardRPC.sendJsonRequest("/api/dev/get_editform", data);
     }
     save_editform(data: any) {
         return this.MikroWizardRPC.sendJsonRequest("/api/dev/save_editform", data);
+    }
+    get_editform_pro(id: number) {
+        let data = { devid: id };
+        return this.MikroWizardRPC.sendJsonRequest("/api/pro/dev/get_editform", data);
+    }
+    save_editform_pro(data: any) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/pro/dev/save_editform", data);
     }
     get_dev_sensors(id: number, delta: string = "5m", total_type: string = "bps") {
         var data = {
@@ -220,6 +225,42 @@ export class dataProvider {
     get_auth_logs(filters: any) {
         var data = filters;
         return this.MikroWizardRPC.sendJsonRequest("/api/auth/list", data);
+    }
+
+    getWebfigRecordingStreamUrl(sessionId: string) {
+        return "/api/proxy/recording/stream/" + sessionId;
+    }
+
+    getWebfigLiveStreamUrl(sessionId: string) {
+        return "/api/proxy/recording/live/" + sessionId;
+    }
+
+    shareWebfigSession(sessionId: string, role: string, name: string, shareType: string, targetUserId: string, password: string, oneTime: boolean, hostApproval: boolean) {
+        var data = {
+            session_id: sessionId,
+            role: role,
+            name: name,
+            share_type: shareType,
+            target_user_id: targetUserId,
+            password: password,
+            one_time: oneTime,
+            host_approval: hostApproval
+        };
+        return this.MikroWizardRPC.sendJsonRequest("/api/proxy/session/share", data);
+    }
+
+    joinWebfigSession(token: string, password?: string, guestName?: string) {
+        var data = {
+            token: token,
+            password: password || '',
+            guest_name: guestName || ''
+        };
+        return this.MikroWizardRPC.sendJsonRequest("/api/proxy/session/join", data);
+    }
+
+    getWebfigParticipants(sessionId: string) {
+        var data = { session_id: sessionId };
+        return this.MikroWizardRPC.sendJsonRequest("/api/proxy/session/participants", data);
     }
 
     get_account_logs(filters: any) {
@@ -306,9 +347,10 @@ export class dataProvider {
         return this.MikroWizardRPC.sendJsonRequest("/api/snippet/delete", data);
     }
 
-    get_executed_snipet(id: number) {
+    get_executed_snipet(id: number, limit: number = 1000) {
         var data = {
-            'id': id
+            'id': id,
+            'limit': limit
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/snippet/executed", data);
     }
@@ -727,6 +769,9 @@ export class dataProvider {
     customerTogglePortforward(devid: number, rule_id: string, disabled: boolean) {
         return this.MikroWizardRPC.sendJsonRequest(`/api/customer/devices/${devid}/portforwards/toggle`, { rule_id, disabled });
     }
+    customerMovePortforward(devid: number, rule_id: string, destination: string) {
+        return this.MikroWizardRPC.sendJsonRequest(`/api/customer/devices/${devid}/portforwards/move`, { rule_id, destination });
+    }
     customerGetAddressLists(devid: number) {
         return this.MikroWizardRPC.sendHttpGetRequest(`/api/customer/devices/${devid}/address-lists`);
     }
@@ -738,6 +783,30 @@ export class dataProvider {
     }
     customerToggleAddressList(devid: number, rule_id: string, disabled: boolean) {
         return this.MikroWizardRPC.sendJsonRequest(`/api/customer/devices/${devid}/address-lists/toggle`, { rule_id, disabled });
+    }
+    customerGetFirewallRules(devid: number) {
+        return this.MikroWizardRPC.sendHttpGetRequest(`/api/customer/devices/${devid}/firewall/list`);
+    }
+    customerGetFirewallPresetStatus(devid: number) {
+        return this.MikroWizardRPC.sendHttpGetRequest(`/api/customer/devices/${devid}/firewall/preset/status`);
+    }
+    customerEnableFirewallPreset(devid: number, preset_key: string) {
+        return this.MikroWizardRPC.sendJsonRequest(`/api/customer/devices/${devid}/firewall/preset/enable`, { preset_key });
+    }
+    customerDisableFirewallPreset(devid: number, preset_key: string) {
+        return this.MikroWizardRPC.sendJsonRequest(`/api/customer/devices/${devid}/firewall/preset/disable`, { preset_key });
+    }
+    customerAddFirewallCustom(devid: number, payload: any) {
+        return this.MikroWizardRPC.sendJsonRequest(`/api/customer/devices/${devid}/firewall/custom/add`, payload);
+    }
+    customerDeleteFirewallCustom(devid: number, rule_id: string) {
+        return this.MikroWizardRPC.sendJsonRequest(`/api/customer/devices/${devid}/firewall/custom/delete`, { rule_id });
+    }
+    customerToggleFirewallCustom(devid: number, rule_id: string, disabled: boolean) {
+        return this.MikroWizardRPC.sendJsonRequest(`/api/customer/devices/${devid}/firewall/custom/toggle`, { rule_id, disabled });
+    }
+    customerMoveFirewallRule(devid: number, rule_id: string, destination_id: string) {
+        return this.MikroWizardRPC.sendJsonRequest(`/api/customer/devices/${devid}/firewall/rule/move`, { rule_id, destination_id });
     }
     customerGetSpeedtestHistory(devid: number) {
         return this.MikroWizardRPC.sendHttpGetRequest(`/api/customer/speedtest/history?devid=${devid}`);
@@ -763,6 +832,24 @@ export class dataProvider {
     customerGetConnectedClients(devid: number) {
         return this.MikroWizardRPC.sendHttpGetRequest("/api/customer/connected-clients?devid=" + devid);
     }
+
+    customerTerminalGetFavorites() {
+        return this.MikroWizardRPC.sendHttpGetRequest("/api/terminal/favorites");
+    }
+
+    customerTerminalSaveFavorites(device_ids: number[]) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/terminal/favorites", { favorites: device_ids });
+    }
+
+    terminalGetFavorites() {
+        return this.MikroWizardRPC.sendHttpGetRequest("/api/terminal/favorites");
+    }
+
+    terminalSaveFavorites(device_ids: number[]) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/terminal/favorites", { favorites: device_ids });
+    }
+
+
     customerGetTickets() {
         return this.MikroWizardRPC.sendHttpGetRequest("/api/customer/tickets");
     }
@@ -789,6 +876,10 @@ export class dataProvider {
     }
     customerPingDevice(devid: number, target: string, count: number) {
         return this.MikroWizardRPC.sendJsonRequest(`/api/customer/devices/${devid}/ping`, { target, count });
+    }
+
+    pingDevice(devid: number, target: string = "", count: number = 4) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/dev/ping", { devid, host: target, count });
     }
     customerRebootDevice(devid: number) {
         return this.MikroWizardRPC.sendJsonRequest(`/api/customer/devices/${devid}/reboot`, {});
@@ -878,8 +969,8 @@ export class dataProvider {
     adminUnassignCustomer(id: number) {
         return this.MikroWizardRPC.sendJsonRequest("/api/admin/customer/unassign_pro", { id });
     }
-    adminSendSmtpTest() {
-        return this.MikroWizardRPC.sendJsonRequest("/api/admin/smtp_test_pro", {});
+    adminSendSmtpTest(payload: any) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/admin/smtp_test_pro", payload);
     }
 
     getSpeedtestServers() {
@@ -899,8 +990,42 @@ export class dataProvider {
     }
 
     ////
-    //// End api funcs
+    //// Alert API endpoints
     ////
+    alerts_options() {
+        return this.MikroWizardRPC.sendJsonRequest("/api/alerts/options", {});
+    }
+    alerts_services() {
+        return this.MikroWizardRPC.sendJsonRequest("/api/alerts/services", {});
+    }
+    alerts_settings_save(data: any) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/alerts/settings/save", data);
+    }
+    alerts_list() {
+        return this.MikroWizardRPC.sendJsonRequest("/api/alerts/list", {});
+    }
+    alerts_save(data: any) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/alerts/save", data);
+    }
+    alerts_delete(id: number) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/alerts/delete", { id });
+    }
+    alert_channels_list() {
+        return this.MikroWizardRPC.sendJsonRequest("/api/alerts/channels/list", {});
+    }
+    alert_channels_save(data: any) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/alerts/channels/save", data);
+    }
+    alert_channels_delete(id: number) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/alerts/channels/delete", { id });
+    }
+    alerts_test(data: any) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/alerts/test", data);
+    }
+    alerts_history(limit: number = 200) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/alerts/history", { limit });
+    }
+
     setupSession(context: any, session: any) {
         this.MikroWizardRPC.clearCookeis();
         this.MikroWizardRPC.setNewSession(context, session);
@@ -924,5 +1049,227 @@ export class dataProvider {
 
     getFullUrl(url: any) {
         return this.serverUrl + url;
+    }
+
+    // ---- Session Management ----
+    listSessions(data: any) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/terminal/sessions/list", data);
+    }
+
+    killTerminalSession(sessionId: string) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/terminal/sessions/kill", { session_id: sessionId });
+    }
+
+    sessionsByDevice(deviceId: string) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/terminal/sessions/by-device", { device_id: deviceId });
+    }
+
+    sessionsByUser(userId: string) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/terminal/sessions/by-user", { user_id: userId });
+    }
+
+    sessionParticipants(sessionId: string) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/terminal/sessions/participants", { session_id: sessionId });
+    }
+
+    shareSession(sessionId: string, role: string = 'observer', name: string = '', shareType: string = 'guest', targetUserId: string = '', password: string = '', oneTime: boolean = false, hostApproval: boolean = false) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/terminal/session/share", { 
+            session_id: sessionId, 
+            role: role, 
+            name: name,
+            share_type: shareType,
+            target_user_id: targetUserId,
+            password: password,
+            one_time: oneTime,
+            host_approval: hostApproval
+        });
+    }
+
+    listRecordings(data: any) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/terminal/recording/list", data);
+    }
+
+    // ---- Non-MikroTik Device Management ----
+    listNonMikrotikDevices() {
+        return this.MikroWizardRPC.sendJsonRequest("/api/non-mikrotik/devices/list", {});
+    }
+
+    bulk_add_non_mikrotik_devices(devices: any[]) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/non-mikrotik/devices/bulk_add", { devices: devices });
+    }
+
+    validate_non_mikrotik_bulk(devices: any[]) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/non-mikrotik/devices/bulk/validate", { devices: devices });
+    }
+
+    getNonMikrotikInfo(deviceId: number) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/non-mikrotik/devices/info", { device_id: deviceId });
+    }
+
+    addNonMikrotikDevice(data: any) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/non-mikrotik/devices/add", data);
+    }
+
+    editNonMikrotikDevice(data: any) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/non-mikrotik/devices/edit", data);
+    }
+
+    deleteNonMikrotikDevice(data: any) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/non-mikrotik/devices/delete", data);
+    }
+
+    attachDeviceToGroups(deviceId: number, groupIds: number[]) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/non-mikrotik/groups/attach", { device_id: deviceId, group_ids: groupIds });
+    }
+
+    // ---- PAM / Template Management ----
+    listBrands() {
+        return this.MikroWizardRPC.sendJsonRequest("/api/pam/brands/list", {});
+    }
+
+    listTemplates(data: any) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/pam/templates/list", data);
+    }
+
+    getTemplate(templateId: number) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/pam/templates/get", { template_id: templateId });
+    }
+
+    createTemplate(data: any) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/pam/templates/create", data);
+    }
+
+    updateTemplate(data: any) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/pam/templates/update", data);
+    }
+
+    deleteTemplate(templateId: number) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/pam/templates/delete", { id: templateId });
+    }
+
+    // ---- Brand CRUD ----
+    createBrand(data: any) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/pam/brands/create", data);
+    }
+
+    updateBrand(data: any) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/pam/brands/update", data);
+    }
+
+    deleteBrand(brand: string) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/pam/brands/delete", { brand });
+    }
+
+    // ---- Credentials ----
+    listCredentials(data: any) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/pam/credentials/list", data);
+    }
+
+    // ---- Terminal Command Logs ----
+    terminalLogSearch(data: any) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/terminal/logs/search", data);
+    }
+
+    getDeviceAgentConfig(deviceId: number) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/terminal/device/agent-config", {
+            device_id: deviceId
+        });
+    }
+
+    setDeviceAgentConfig(deviceId: number, agentModes: any) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/terminal/device/agent-config", {
+            device_id: deviceId,
+            agent_modes: agentModes
+        });
+    }
+
+    // ---- Terminal Policies ----
+    listPolicies() {
+        return this.MikroWizardRPC.sendJsonRequest("/api/policy/list", {});
+    }
+
+    getPolicy(id: string) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/policy/info", { id });
+    }
+
+    createPolicy(data: any) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/policy/create", data);
+    }
+
+    updatePolicy(data: any) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/policy/update", data);
+    }
+
+    deletePolicy(id: string) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/policy/delete", { id });
+    }
+
+    getDeviceBrands() {
+        return this.MikroWizardRPC.sendJsonRequest("/api/pam/brands/list", {});
+    }
+
+    // ---- Policy Grants ----
+    listPolicyGrants(data: any) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/policy/grant/list", data);
+    }
+
+    createPolicyGrant(data: any) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/policy/grant/create", data);
+    }
+
+    deletePolicyGrant(data: any) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/policy/grant/delete", data);
+    }
+
+    // ---- Config Versions (FREE) ----
+    get_config_versions(params: any) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/config-versions/list", params);
+    }
+
+    get_config_version(id: number) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/config-versions/get", { id });
+    }
+
+    get_latest_config_version(device_id: number, command_key: string = 'show_config') {
+        return this.MikroWizardRPC.sendJsonRequest("/api/config-versions/latest", { device_id, command_key });
+    }
+
+    get_raw_config(id: number) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/config-versions/raw", { version_id: id });
+    }
+
+    // ---- Executions (FREE) ----
+    get_executions(params: any) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/executions/list", params);
+    }
+
+    run_execution(params: any) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/executions/run", params);
+    }
+
+    get_execution_status(execution_run_id: string) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/executions/status", { execution_run_id });
+    }
+
+    export_executions_csv(execution_run_id: string) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/executions/export", { execution_run_id });
+    }
+
+    // ---- Config Versions (PRO) ----
+    diff_config_versions(version_id_a: number, version_id_b: number) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/config-versions/diff", { version_id_a, version_id_b });
+    }
+
+    search_config_versions(params: any) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/config-versions/search", params);
+    }
+
+    preview_diff_exclusions(template_id: number, sample_text: string) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/config-versions/diff-exclusions/preview", { template_id, sample_text });
+    }
+
+    // ---- Sequence History Export (PRO) ----
+    export_sequence_history(seq_id: number) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/snippet/sequence/history/export", { id: seq_id });
     }
 }

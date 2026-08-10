@@ -1,0 +1,331 @@
+<div class="cm-layout" [class.cm-dark-theme]="isDarkMode">
+
+  <!-- ═══════════════ LEFT SIDEBAR: Device Tree ═══════════════ -->
+  <div class="cm-sidebar">
+    <div class="cm-sidebar-header">
+      <span class="fw-bold text-uppercase" style="color: rgba(255,255,255,0.7); letter-spacing: 1px; font-size: 0.72rem;">
+        <i class="fa-solid fa-sitemap me-2" style="color: #4e9af1;"></i>Connections
+      </span>
+      <div>
+        <button class="btn btn-sm p-0 me-2" style="color: rgba(255,255,255,0.5);" title="Toggle Night Mode" (click)="toggleTheme()">
+          <i class="fa-solid" [class.fa-moon]="!isDarkMode" [class.fa-sun]="isDarkMode" style="font-size: 0.8rem;"></i>
+        </button>
+        <button class="btn btn-sm p-0" style="color: rgba(255,255,255,0.5);" title="Refresh" (click)="deviceTree.refresh()">
+          <i class="fa-solid fa-rotate-right" style="font-size: 0.8rem;"></i>
+        </button>
+      </div>
+    </div>
+    <div class="cm-sidebar-body">
+      <app-device-tree #deviceTree (deviceSelected)="onDeviceSelected($event)"></app-device-tree>
+    </div>
+  </div>
+
+  <!-- ═══════════════ RIGHT MAIN PANEL ═══════════════ -->
+  <div class="cm-main">
+
+    <!-- Empty state: no sessions open -->
+    <div class="cm-empty" *ngIf="activeSessions.length === 0">
+      <i class="fa-solid fa-network-wired"></i>
+      <h4>No Active Sessions</h4>
+      <p>Double-click a device in the tree to open a terminal.</p>
+    </div>
+
+    <!-- Active sessions: tab bar + content -->
+    <ng-container *ngIf="activeSessions.length > 0">
+
+      <!-- Tab Bar -->
+      <div class="cm-tab-bar" style="overflow-x: auto; overflow-y: hidden;">
+        <c-nav variant="tabs" class="border-0 flex-nowrap" style="min-width: max-content;" cdkDropList cdkDropListOrientation="horizontal" (cdkDropListDropped)="drop($event)">
+          <c-nav-item *ngFor="let session of activeSessions; let i = index" cdkDrag>
+            <a [active]="activeTabIndex === i"
+               cNavLink
+               href="javascript:void(0)"
+               (click)="activeTabIndex = i"
+               class="cm-tab"
+               [class.active]="activeTabIndex === i"
+               [title]="'IP: ' + session.device.ip + ' | Protocol: ' + session.protocol.toUpperCase()">
+              <!-- Tab Icon based on protocol -->
+              <i class="fa-solid tab-icon me-2" 
+                 [class.fa-globe]="session.protocol === 'webfig'"
+                 [class.fa-terminal]="session.protocol !== 'webfig'"
+                 style="font-size: 0.75rem;"></i>
+              <span style="max-width: 160px; overflow: hidden; text-overflow: ellipsis;">
+                {{ session.device.name || session.device.ip }} <small class="text-muted ms-1" style="font-size: 0.65rem; text-transform: uppercase;">({{ session.protocol }})</small>
+              </span>
+              <button class="cm-tab-close" (click)="closeSession(i, $event)" title="Close">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </a>
+          </c-nav-item>
+        </c-nav>
+      </div>
+
+      <!-- Tab Content Area -->
+      <div class="cm-content h-100">
+        <div *ngFor="let session of activeSessions; let i = index" 
+             [hidden]="activeTabIndex !== i"
+             class="h-100 w-100">
+            
+            <!-- WebFig Session: render in iframe -->
+            <iframe *ngIf="session.protocol === 'webfig'"
+                    [src]="session.webfigUrl"
+                    class="w-100 h-100 border-0 bg-white"
+                    style="border-radius: 4px;">
+            </iframe>
+
+            <!-- Terminal Session (SSH/Telnet) -->
+            <app-terminal-tab
+              *ngIf="session.protocol !== 'webfig'"
+              [device]="session.device"
+              [protocol]="session.protocol"
+              (requestClose)="closeSession(i)"
+              (protocolResolved)="session.protocol = $event"
+              class="d-block h-100">
+            </app-terminal-tab>
+
+        </div>
+      </div>
+
+    </ng-container>
+  </div>
+
+</div>
+
+<!-- Ping / Traceroute Modal -->
+<c-modal id="pingModal" [visible]="showPingModal" (visibleChange)="showPingModal = $event" size="lg">
+  <c-modal-header class="bg-light">
+    <h5 class="mb-0 fw-bold text-dark d-flex align-items-center">
+      <i class="fa-solid fa-terminal text-primary me-2"></i> Manual Testing Tools - {{ selectedDeviceForTool?.name }}
+    </h5>
+    <button cButtonClose (click)="showPingModal = false"></button>
+  </c-modal-header>
+  <c-modal-body class="p-4 bg-white">
+    <!-- Tab selector -->
+    <div class="btn-group btn-group-sm mb-3" role="group">
+      <button type="button" class="btn" [ngClass]="toolType === 'ping' ? 'btn-primary' : 'btn-outline-primary'" (click)="toolType = 'ping'">Ping</button>
+      <button type="button" class="btn" [ngClass]="toolType === 'traceroute' ? 'btn-primary' : 'btn-outline-primary'" (click)="toolType = 'traceroute'" *ngIf="!isSelectedDeviceNonMikrotik()">Traceroute</button>
+    </div>
+
+    <!-- Input Form -->
+    <div class="mb-3">
+      <label for="diagTarget" class="form-label fw-semibold text-dark">Target Host / IP Address</label>
+      <div class="input-group">
+        <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-crosshairs text-secondary"></i></span>
+        <input id="diagTarget" cFormControl placeholder="e.g., 8.8.8.8 or google.com" [(ngModel)]="target" class="border-start-0" [disabled]="runningTool || isSelectedDeviceNonMikrotik()" />
+      </div>
+      <div class="text-muted small" *ngIf="isSelectedDeviceNonMikrotik()"><i class="fa-solid fa-info-circle me-1"></i>Non-MikroTik device — pinging from server to device IP only.</div>
+      <!-- Target Suggestions -->
+      <div class="d-flex flex-wrap gap-2 mt-2 align-items-center" *ngIf="!isSelectedDeviceNonMikrotik()">
+        <span class="small text-muted me-1">Suggestions:</span>
+        <button *ngFor="let sug of targetSuggestions" type="button" class="btn btn-xs btn-outline-secondary rounded-pill px-2.5 py-0.5 small" (click)="selectSuggestion(sug.value)" [disabled]="runningTool">
+          {{sug.label}}
+        </button>
+      </div>
+    </div>
+
+    <!-- Ping Count selector (if ping selected) -->
+    <div class="mb-4" *ngIf="toolType === 'ping'">
+      <label for="pingCountSelect" class="form-label fw-semibold text-dark">Packets Count</label>
+      <select id="pingCountSelect" cSelect [(ngModel)]="pingCount" [disabled]="runningTool" class="form-select">
+        <option [ngValue]="2">2 Packets</option>
+        <option [ngValue]="4">4 Packets (Standard)</option>
+        <option [ngValue]="10">10 Packets</option>
+      </select>
+    </div>
+
+    <!-- Action Button -->
+    <div class="d-grid mb-4">
+      <button cButton color="primary" class="fw-bold" (click)="runTool()" [disabled]="!target.trim() || runningTool">
+        <c-spinner *ngIf="runningTool" size="sm" class="me-1"></c-spinner>
+        <i class="fa-solid fa-circle-play me-1" *ngIf="!runningTool"></i>
+        {{ runningTool ? 'Running Test...' : (toolType === 'ping' ? 'Run Ping Test' : 'Run Traceroute') }}
+      </button>
+    </div>
+
+    <!-- Test output terminal -->
+    <div class="mt-3">
+      <div class="d-flex justify-content-between align-items-center mb-1">
+        <span class="fw-semibold text-muted small"><i class="fa-solid fa-terminal me-1"></i> Console Output</span>
+        <button *ngIf="toolOutput" type="button" class="btn btn-link btn-sm text-secondary p-0 text-decoration-none" (click)="toolOutput = ''; pingResults = []; tracerouteHops = []">Clear</button>
+      </div>
+
+      <!-- Terminal layout -->
+      <div class="font-monospace p-3 bg-dark text-success rounded-3 border border-secondary shadow-inner" style="min-height: 180px; max-height: 280px; overflow-y: auto; font-size: 0.85rem; line-height: 1.5; white-space: pre-wrap;">
+        <div *ngIf="runningTool" class="text-white-50"><i class="fa-solid fa-spinner fa-spin me-2 text-info"></i>Executing command on router... Please wait.</div>
+        <div *ngIf="!runningTool && !toolOutput" class="text-muted">Console idle. Enter a target and run a test to view raw command logs.</div>
+        <div *ngIf="toolOutput">{{toolOutput}}</div>
+      </div>
+    </div>
+  </c-modal-body>
+</c-modal>
+
+<!-- Speed Test Modal -->
+<c-modal id="speedTestModal" [visible]="showSpeedTestModal" (visibleChange)="showSpeedTestModal = $event" size="xl">
+  <c-modal-header class="bg-light">
+    <h5 cModalTitle class="fw-bold text-dark"><i class="fa-solid fa-gauge-high text-primary me-2"></i>Speed Test - {{ selectedDeviceForTool?.name }}</h5>
+    <button cButtonClose (click)="showSpeedTestModal = false"></button>
+  </c-modal-header>
+  <c-modal-body class="p-0 bg-white">
+    <div style="max-height: 75vh; overflow-y: auto; overflow-x: hidden;">
+      <app-speed-test *ngIf="showSpeedTestModal" [devid]="selectedDeviceForTool?.id" [ispro]="true"></app-speed-test>
+    </div>
+  </c-modal-body>
+</c-modal>
+
+<!-- Logs Modal -->
+<c-modal id="logsModal" [visible]="showLogsModal" (visibleChange)="showLogsModal = $event" size="xl">
+  <c-modal-header>
+    <h5 cModalTitle>Logs - {{ selectedDeviceForTool?.name }}</h5>
+    <button cButtonClose (click)="showLogsModal = false"></button>
+  </c-modal-header>
+  <c-modal-body class="p-0">
+    <div class="nav nav-underline px-3 pt-2" style="background: #fff; border-bottom: 2px solid #2c3e50;width: 100%;">
+      <div class="nav-item" (click)="activeLogsTab = 'events'">
+        <a class="nav-link cursor-pointer" [class.active]="activeLogsTab === 'events'">Device Events</a>
+      </div>
+      <div class="nav-item" (click)="activeLogsTab = 'auth'">
+        <a class="nav-link cursor-pointer" [class.active]="activeLogsTab === 'auth'">Authentication</a>
+      </div>
+      <div class="nav-item" (click)="activeLogsTab = 'acc'">
+        <a class="nav-link cursor-pointer" [class.active]="activeLogsTab === 'acc'">Accounting</a>
+      </div>
+    </div>
+    
+    <div class="mt-3 p-3" style="max-height: 70vh; overflow-y: auto; background-color: #fff;">
+        <app-devlogs *ngIf="activeLogsTab === 'events' && showLogsModal" style="width: 100%;" [component_devid]="selectedDeviceForTool?.id"></app-devlogs>
+        <app-authlogs *ngIf="activeLogsTab === 'auth' && showLogsModal" style="width: 100%;" [component_devid]="selectedDeviceForTool?.id"></app-authlogs>
+        <app-acclogs *ngIf="activeLogsTab === 'acc' && showLogsModal" style="width: 100%" [component_devid]="selectedDeviceForTool?.id"></app-acclogs>
+    </div>
+  </c-modal-body>
+</c-modal>
+
+<!-- Command History Modal -->
+<c-modal id="commandsModal" [visible]="showCommandsModal" (visibleChange)="showCommandsModal = $event" size="xl">
+  <c-modal-header class="bg-light">
+    <h5 cModalTitle class="fw-bold"><i class="fa-solid fa-keyboard me-2 text-secondary"></i>Command History - {{ selectedDeviceForTool?.name }}</h5>
+    <div class="d-flex align-items-center gap-2">
+      <button cButton size="sm" color="primary" variant="outline" (click)="fetchCommands()"><i class="fa-solid fa-rotate me-1"></i>Refresh</button>
+      <button cButtonClose (click)="showCommandsModal = false"></button>
+    </div>
+  </c-modal-header>
+  <c-modal-body *ngIf="showCommandsModal" style="min-height: 300px; max-height: 65vh; overflow-y: auto;">
+    <div *ngIf="cmdLoading" class="text-center py-5"><c-spinner size="sm"></c-spinner><span class="ms-2 text-muted">Loading...</span></div>
+    <div *ngIf="!cmdLoading && deviceCommands.length === 0" class="text-center py-5 text-muted">
+      <i class="fa-solid fa-keyboard fa-2x d-block mb-3 text-secondary"></i>
+      No command history found.<br/>
+      <small>Open PAM > Command History for full search.</small>
+    </div>
+    <div *ngIf="!cmdLoading && deviceCommands.length > 0">
+      <div class="table-responsive">
+        <table class="table table-hover table-striped align-middle border">
+          <thead class="table-light"><tr><th>Time</th><th>User</th><th>Command</th><th>Result</th></tr></thead>
+          <tbody>
+            <tr *ngFor="let c of deviceCommands">
+              <td class="small">{{ c.executed_at || c.timestamp || '-' }}</td>
+              <td class="small">{{ c.username || c.user || '-' }}</td>
+              <td class="small font-monospace" style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" [pTooltip]="c.command || c.command_string">{{ (c.command || c.command_string || '').substring(0, 80) }}</td>
+              <td><c-badge [color]="c.status === 'allowed' ? 'success' : 'danger'" style="font-size: 0.7rem;">{{ c.result || c.status || '-' }}</c-badge></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </c-modal-body>
+  <c-modal-footer>
+    <button (click)="showCommandsModal = false" cButton color="secondary">Close</button>
+  </c-modal-footer>
+</c-modal>
+
+<!-- Config Versions Modal -->
+<c-modal id="versionsModal" [visible]="showVersionsModal" (visibleChange)="showVersionsModal = $event" size="xl">
+  <c-modal-header class="bg-light">
+    <h5 cModalTitle class="fw-bold"><i class="fa-solid fa-history me-2 text-warning"></i>Config Versions - {{ selectedDeviceForTool?.name }}</h5>
+    <div class="d-flex align-items-center gap-2">
+      <button cButton size="sm" color="primary" variant="outline" (click)="refreshModal('versions')"><i class="fa-solid fa-rotate me-1"></i>Refresh</button>
+      <button cButtonClose (click)="showVersionsModal = false"></button>
+    </div>
+  </c-modal-header>
+  <c-modal-body *ngIf="showVersionsModal" style="min-height: 350px; max-height: 70vh; overflow-y: auto;">
+    <app-config-versions [devid]="selectedDeviceForTool?.id" [ispro]="true"></app-config-versions>
+  </c-modal-body>
+  <c-modal-footer>
+    <button (click)="showVersionsModal = false" cButton color="secondary">Close</button>
+  </c-modal-footer>
+</c-modal>
+
+<!-- Execution History Modal -->
+<c-modal id="executionsModal" [visible]="showExecutionsModal" (visibleChange)="showExecutionsModal = $event" size="xl">
+  <c-modal-header class="bg-light">
+    <h5 cModalTitle class="fw-bold"><i class="fa-solid fa-list-check me-2 text-primary"></i>Execution History - {{ selectedDeviceForTool?.name }}</h5>
+    <div class="d-flex align-items-center gap-2">
+      <button cButton size="sm" color="primary" variant="outline" (click)="refreshModal('executions')"><i class="fa-solid fa-rotate me-1"></i>Refresh</button>
+      <button cButtonClose (click)="showExecutionsModal = false"></button>
+    </div>
+  </c-modal-header>
+  <c-modal-body *ngIf="showExecutionsModal" style="min-height: 300px; max-height: 65vh; overflow-y: auto;">
+    <div *ngIf="execsLoading" class="text-center py-5"><c-spinner size="sm"></c-spinner><span class="ms-2 text-muted">Loading...</span></div>
+    <div *ngIf="!execsLoading && deviceExecutions.length === 0" class="text-center py-5 text-muted">No executions found for this device.</div>
+    <div *ngIf="!execsLoading && deviceExecutions.length > 0">
+      <div class="table-responsive">
+        <table class="table table-hover table-striped align-middle border">
+          <thead class="table-light"><tr><th>Run</th><th>Command</th><th>Status</th><th>Changed</th><th>Duration</th><th>Time</th></tr></thead>
+          <tbody>
+            <tr *ngFor="let e of deviceExecutions">
+              <td class="small font-monospace text-muted">{{ e.execution_run_id?.substring(0, 10) }}...</td>
+              <td class="small">{{ e.command_key || e.command_string?.substring(0, 25) }}</td>
+              <td><c-badge [color]="e.status === 'ok' ? 'success' : e.status === 'timeout' ? 'warning' : 'danger'" style="font-size: 0.7rem;">{{ e.status }}</c-badge></td>
+              <td><c-badge [color]="e.is_versioned ? 'success' : 'secondary'" style="font-size: 0.7rem;">{{ e.is_versioned ? 'Yes' : 'No' }}</c-badge></td>
+              <td class="small text-muted">{{ e.duration_ms }}ms</td>
+              <td class="small">{{ e.executed_at | date:'short' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </c-modal-body>
+  <c-modal-footer>
+    <button (click)="showExecutionsModal = false" cButton color="secondary">Close</button>
+  </c-modal-footer>
+</c-modal>
+
+<!-- Sessions Modal -->
+<c-modal id="sessionsModal" [visible]="showSessionsModal" (visibleChange)="showSessionsModal = $event" size="xl">
+  <c-modal-header class="bg-light">
+    <h5 cModalTitle class="fw-bold"><i class="fa-solid fa-play me-2 text-info"></i>Sessions - {{ selectedDeviceForTool?.name }}</h5>
+    <div class="d-flex align-items-center gap-2">
+      <button cButton size="sm" color="primary" variant="outline" (click)="fetchSessions()"><i class="fa-solid fa-rotate me-1"></i>Refresh</button>
+      <button cButtonClose (click)="showSessionsModal = false"></button>
+    </div>
+  </c-modal-header>
+  <c-modal-body *ngIf="showSessionsModal" style="min-height: 250px; max-height: 65vh; overflow-y: auto;">
+    <div *ngIf="sessionsLoading" class="text-center py-5"><c-spinner size="sm"></c-spinner><span class="ms-2 text-muted">Loading sessions...</span></div>
+    <div *ngIf="!sessionsLoading && sessionRecordings.length === 0" class="text-center py-5 text-muted">
+      <i class="fa-solid fa-play fa-2x d-block mb-3 text-secondary"></i>
+      No recorded sessions found for this device.
+    </div>
+    <div *ngIf="!sessionsLoading && sessionRecordings.length > 0">
+      <div class="table-responsive">
+        <table class="table table-hover table-striped align-middle border">
+          <thead class="table-light"><tr><th>Started</th><th>Status</th><th>User</th><th style="width: 100px;">Playback</th></tr></thead>
+          <tbody>
+            <tr *ngFor="let s of sessionRecordings">
+              <td class="small">{{ s.started || s.created_at || '-' }}</td>
+              <td><c-badge [color]="s.status === 'active' ? 'success' : 'secondary'" style="font-size: 0.7rem;">{{ s.status || '-' }}</c-badge></td>
+              <td class="small">{{ s.user_id || '-' }}</td>
+              <td>
+                <button *ngIf="s.recording_path" cButton size="sm" color="info" variant="outline" (click)="playRecording(s)">
+                  <i class="fa-solid fa-play me-1"></i>Play
+                </button>
+                <span *ngIf="!s.recording_path" class="text-muted small">-</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </c-modal-body>
+  <c-modal-footer>
+    <button (click)="showSessionsModal = false" cButton color="secondary">Close</button>
+  </c-modal-footer>
+</c-modal>
+

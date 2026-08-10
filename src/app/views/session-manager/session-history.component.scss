@@ -1,0 +1,29 @@
+.settings-tabs {
+  background: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+  padding: 0 1.5rem;
+  display: flex;
+}
+
+.tab-link {
+  border: none;
+  background: transparent;
+  border-radius: 0;
+  padding: 1rem 1.5rem;
+  font-weight: 500;
+  color: #6c757d;
+  transition: all 0.2s ease;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+}
+
+.tab-link:hover {
+  color: #495057;
+  background: rgba(13, 110, 253, 0.05);
+}
+
+.tab-link.active {
+  color: #0d6efd;
+  background: white;
+  border-bottom-color: #0d6efd;
+}

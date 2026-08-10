@@ -4,5 +4,17 @@
     "secure": false,
     "changeOrigin": true,
     "pathRewrite": {"^/api" : ""}
+  },
+  "/terminal-ws": {
+    "target": "http://127.0.0.1:8201/",
+    "secure": false,
+    "ws": true,
+    "changeOrigin": true,
+    "pathRewrite": {"^/terminal-ws" : ""}
+  },
+  "/agent": {
+    "target": "http://127.0.0.1:8202",
+    "secure": false,
+    "changeOrigin": true
   }
 }

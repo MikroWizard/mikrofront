@@ -1,0 +1,224 @@
+<c-card class="mb-4 shadow-sm border-0">
+  <c-card-header class="bg-light py-3 border-bottom">
+    <div class="d-flex align-items-center justify-content-between">
+      <div class="d-flex align-items-center">
+        <i class="fa-solid fa-list-check me-2 text-primary" style="font-size: 1.1rem;"></i>
+        <h6 class="mb-0 fw-bold">Command Execution History</h6>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <c-spinner size="sm" *ngIf="loading"></c-spinner>
+        <c-badge *ngIf="activeRunId" color="warning" class="px-2 py-1">
+          <i class="fa-solid fa-spinner fa-spin me-1"></i> Running {{ activeRunId.substring(0, 8) }}...
+        </c-badge>
+      </div>
+    </div>
+  </c-card-header>
+  <c-card-body>
+    <!-- Filters -->
+    <c-row class="g-2 mb-2">
+      <c-col md="4">
+        <div class="input-group input-group-sm">
+          <span class="input-group-text bg-white" style="border-color: #dee2e6;">
+            <i class="fa-solid fa-search text-muted"></i>
+          </span>
+          <input type="text" class="form-control form-control-sm" placeholder="Search device, command, status..."
+            [(ngModel)]="filters.search" style="border-color: #dee2e6;"
+            (keyup.enter)="applyFilters()" (input)="applyFilterGlobal($event)" />
+        </div>
+      </c-col>
+      <c-col md="2">
+        <div class="input-group input-group-sm">
+          <input class="form-control form-control-sm" [matDatepicker]="startPicker"
+            [(ngModel)]="filters.start_date" placeholder="Start date" style="border-color: #dee2e6;" />
+          <span class="input-group-text bg-white d-flex align-items-center" style="border-color: #dee2e6; padding: 0 2px;">
+            <mat-datepicker-toggle [for]="startPicker"></mat-datepicker-toggle>
+          </span>
+          <mat-datepicker #startPicker></mat-datepicker>
+        </div>
+      </c-col>
+      <c-col md="2">
+        <div class="input-group input-group-sm">
+          <input class="form-control form-control-sm" [matDatepicker]="endPicker"
+            [(ngModel)]="filters.end_date" placeholder="End date" style="border-color: #dee2e6;" />
+          <span class="input-group-text bg-white d-flex align-items-center" style="border-color: #dee2e6; padding: 0 2px;">
+            <mat-datepicker-toggle [for]="endPicker"></mat-datepicker-toggle>
+          </span>
+          <mat-datepicker #endPicker></mat-datepicker>
+        </div>
+      </c-col>
+      <c-col md="2">
+        <select cSelect [(ngModel)]="filters.status" class="form-select form-select-sm"
+          (change)="applyFilters()">
+          <option *ngFor="let s of statusOptions" [value]="s.value">{{ s.label }}</option>
+        </select>
+      </c-col>
+      <c-col md="3">
+        <div class="d-flex gap-1">
+          <button cButton color="primary" size="sm" (click)="applyFilters()">
+            <i class="fa-solid fa-magnifying-glass me-1"></i> Apply
+          </button>
+          <button cButton color="secondary" size="sm" (click)="resetFilters()">
+            <i class="fa-solid fa-rotate me-1"></i> Reset
+          </button>
+          <button cButton color="info" size="sm" (click)="openExportModal()" class="text-white">
+            <i class="fa-solid fa-file-export me-1"></i> Export Report
+          </button>
+        </div>
+      </c-col>
+    </c-row>
+    <c-row class="g-2 mb-3">
+      <c-col md="3">
+        <input cFormControl type="text" placeholder="Device ID" [(ngModel)]="filters.device_id"
+          class="form-control form-control-sm" (keyup.enter)="applyFilters()" />
+      </c-col>
+      <c-col md="4">
+        <input cFormControl type="text" placeholder="Run ID (UUID)" [(ngModel)]="filters.execution_run_id"
+          class="form-control form-control-sm" (keyup.enter)="applyFilters()" />
+      </c-col>
+      <c-col md="3">
+        <input cFormControl type="text" placeholder="Task ID" [(ngModel)]="filters.user_task_id"
+          class="form-control form-control-sm" (keyup.enter)="applyFilters()" />
+      </c-col>
+    </c-row>
+
+    <!-- Table -->
+    <p-table #dt 
+      [value]="executions" 
+      dataKey="id"
+      [paginator]="false"
+      [rows]="perPage"
+      [globalFilterFields]="['device_id','command_key','command_string','status']"
+      [resizableColumns]="true"
+      [rowHover]="true"
+      styleClass="p-datatable-gridlines p-datatable-striped">
+      <ng-template pTemplate="header">
+        <tr>
+          <th style="width: 140px;">Run ID</th>
+          <th style="width: 70px;">Device</th>
+          <th style="width: 120px;">Command</th>
+          <th style="width: 80px;">Status</th>
+          <th style="width: 70px;">Changed</th>
+          <th style="width: 80px;">Duration</th>
+          <th style="width: 140px;">Executed At</th>
+          <th style="width: 130px;" class="text-center">Actions</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-e>
+        <tr>
+          <td class="small font-monospace text-muted">{{ e.execution_run_id?.substring(0, 12) }}...</td>
+          <td class="small">{{ e.device_id }}</td>
+          <td class="small font-monospace">{{ e.command_key || e.command_string?.substring(0, 30) }}</td>
+          <td>
+            <c-badge [color]="localStatusClass(e.status)" style="font-size: 0.7rem;">
+              {{ e.status }}
+            </c-badge>
+          </td>
+          <td>
+            <c-badge [color]="e.is_versioned ? 'success' : 'secondary'" style="font-size: 0.7rem;">
+              {{ e.is_versioned ? 'Yes' : 'No' }}
+            </c-badge>
+          </td>
+          <td class="small text-muted">{{ e.duration_ms }}ms</td>
+          <td class="small">{{ e.executedC }}</td>
+          <td class="text-center">
+            <div class="d-flex gap-1 justify-content-center">
+              <button cButton color="outline-info" size="sm" pTooltip="View version" (click)="viewVersion(e)" *ngIf="e.version_id">
+                <i class="fa-solid fa-code-branch"></i>
+              </button>
+              <button cButton color="outline-primary" size="sm" pTooltip="View results" (click)="openResults(e)">
+                <i class="fa-solid fa-table-list"></i>
+              </button>
+              <button cButton color="outline-success" size="sm" pTooltip="Re-run" (click)="reRun(e)">
+                <i class="fa-solid fa-rotate-right"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr><td colspan="8" class="text-center py-4 text-muted">No execution history found.</td></tr>
+      </ng-template>
+    </p-table>
+
+    <!-- Pagination -->
+    <div class="mt-3 d-flex justify-content-between align-items-center" *ngIf="total > perPage">
+      <small class="text-muted">Total: {{ total }} executions</small>
+      <c-pagination size="sm" class="mb-0" style="flex-wrap: wrap;">
+        <c-page-item [disabled]="currentPage === 1">
+          <a cPageLink (click)="onPageChange(currentPage - 1)" style="cursor: pointer;">Previous</a>
+        </c-page-item>
+        <ng-container *ngFor="let page of pagesArray">
+          <c-page-item *ngIf="page === '...'" [disabled]="true">
+            <a cPageLink>…</a>
+          </c-page-item>
+          <c-page-item *ngIf="page !== '...'" [active]="currentPage === page">
+            <a cPageLink (click)="onPageChange(+page)" style="cursor: pointer;">{{ page }}</a>
+          </c-page-item>
+        </ng-container>
+        <c-page-item [disabled]="currentPage === totalPages">
+          <a cPageLink (click)="onPageChange(currentPage + 1)" style="cursor: pointer;">Next</a>
+        </c-page-item>
+      </c-pagination>
+    </div>
+
+  </c-card-body>
+</c-card>
+
+<!-- Results Modal -->
+<c-modal #resultsModal backdrop="static" size="xl" [(visible)]="resultsModalVisible" id="resultsModal">
+  <c-modal-header>
+    <h5 cModalTitle><i class="fa-solid fa-table-list me-2 text-primary"></i>
+      Run Results: {{ selectedRunId.substring(0, 12) }}...
+    </h5>
+    <button cButton color="primary" size="sm" (click)="downloadRunCsv()" class="me-2">
+      <i class="fa-solid fa-download me-1"></i> Download CSV
+    </button>
+    <button (click)="resultsModalVisible=false" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body *ngIf="resultsModalVisible" style="min-height: 200px; max-height: 65vh; overflow-y: auto;">
+    <div class="table-responsive" *ngIf="selectedRunExecutions.length > 0">
+      <table class="table table-hover table-striped table-sm align-middle border">
+        <thead class="table-light">
+          <tr>
+            <th>Device ID</th>
+            <th>Command</th>
+            <th>Status</th>
+            <th>Changed</th>
+            <th>Duration</th>
+            <th>Error</th>
+            <th>Executed At</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let re of selectedRunExecutions">
+            <td class="small">{{ re.device_id }}</td>
+            <td class="small font-monospace">{{ re.command_key || re.command_string?.substring(0, 25) }}</td>
+            <td><c-badge [color]="localStatusClass(re.status)" style="font-size: 0.65rem;">{{ re.status }}</c-badge></td>
+            <td><c-badge [color]="re.is_versioned ? 'success' : 'secondary'" style="font-size: 0.65rem;">{{ re.is_versioned ? 'Yes' : 'No' }}</c-badge></td>
+            <td class="small text-muted">{{ re.duration_ms }}ms</td>
+            <td class="small text-muted" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ re.error_message || '-' }}</td>
+            <td class="small">{{ re.executedC }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="text-center py-4 text-muted" *ngIf="selectedRunExecutions.length === 0">
+      <c-spinner size="sm" color="info"></c-spinner> Loading results...
+    </div>
+  </c-modal-body>
+  <c-modal-footer>
+    <button (click)="resultsModalVisible=false" cButton color="secondary">Close</button>
+  </c-modal-footer>
+</c-modal>
+
+<app-export-modal
+  [(visible)]="exportModalVisible"
+  title="Export Executions Report"
+  [allData]="executions"
+  [filteredData]="dt?.filteredValue || executions"
+  [customColumns]="exportColumns"
+  dateField="created_at"
+  defaultFileName="executions_report">
+</app-export-modal>
+
+<c-toaster position="fixed" placement="top-end"></c-toaster>

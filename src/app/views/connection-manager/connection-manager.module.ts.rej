@@ -1,0 +1,12 @@
+--- connection-manager.module.ts
++++ connection-manager.module.ts
+@@ -44,7 +45,8 @@
+     AccModule,
+     CustomerRouterToolsModule,
+     SpeedTestModule,
+-    DragDropModule
++    DragDropModule,
++    AutoCompleteModule
+   ]
+ })
+ export class ConnectionManagerModule { }

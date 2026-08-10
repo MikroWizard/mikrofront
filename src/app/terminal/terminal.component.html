@@ -1,0 +1,27 @@
+<div class="terminal-page">
+  <div class="header">
+    <h1>MikroWizard+ Terminal</h1>
+    <p>Target Device ID: <b>{{ deviceId }}</b> | Status: 
+      <span *ngIf="isConnecting" class="text-warning">Connecting...</span>
+      <span *ngIf="isConnected" class="text-success">Connected</span>
+      <span *ngIf="!isConnected && !isConnecting" class="text-danger">Disconnected</span>
+    </p>
+  </div>
+  
+  <div *ngIf="errorMessage" class="alert alert-danger mt-3">
+    {{ errorMessage }}
+  </div>
+
+  <div id="terminal-container" [hidden]="errorMessage || isConnecting">
+    <button class="gear-btn" (click)="showSettings = true" title="Terminal Settings">&#9881;</button>
+    <div #terminalContainer style="width: 100%; height: 100%;"></div>
+  </div>
+
+  <!-- Settings overlay/panel -->
+  <app-terminal-settings 
+    *ngIf="showSettings" 
+    [initialSettings]="settings"
+    (close)="showSettings = false"
+    (save)="applySettings($event)">
+  </app-terminal-settings>
+</div>
