@@ -5,8 +5,12 @@ import {
   ChangeDetectorRef,
   Component,
   OnInit,
+  OnChanges,
+  SimpleChanges,
   Input,
-  ViewChild
+  ViewChild,
+  ViewChildren,
+  QueryList
 } from '@angular/core';
 import { getStyle } from '@coreui/utils';
 import { ChartjsComponent } from '@coreui/angular-chartjs';
@@ -18,7 +22,9 @@ import { dataProvider } from '../../../providers/mikrowizard/data';
   styleUrls: ['./widgets-dropdown.component.scss'],
   changeDetection: ChangeDetectionStrategy.Default
 })
-export class WidgetsDropdownComponent implements OnInit, AfterContentInit {
+export class WidgetsDropdownComponent implements OnInit, AfterContentInit, OnChanges {
+
+  @ViewChildren(ChartjsComponent) charts!: QueryList<ChartjsComponent>;
 
   constructor(
     private changeDetectorRef: ChangeDetectorRef,
@@ -162,7 +168,24 @@ export class WidgetsDropdownComponent implements OnInit, AfterContentInit {
 
   ngAfterContentInit(): void {
     this.changeDetectorRef.detectChanges();
+  }
 
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['devicedata'] && !changes['devicedata'].firstChange) {
+      if (this.charts && this.devicedata && this.devicedata.sensors) {
+        const sensors = this.devicedata.sensors;
+        this.charts.forEach((c, index) => {
+          const sensor = sensors[index];
+          if (sensor) {
+            c.data = this.devicedata[sensor];
+            if (c.chart) {
+              c.chart.data = this.devicedata[sensor];
+              c.chart.update();
+            }
+          }
+        });
+      }
+    }
   }
   
   convert_bw_human(mynumber:number=0,unit:string){
@@ -212,6 +235,7 @@ export class WidgetsDropdownComponent implements OnInit, AfterContentInit {
   }
 
   count_calc(data:any){
+    if(!data || !data.sensors) return 3;
     if(data.sensors.length > 4)
       return 2
     else if(data.sensors.length <= 4)

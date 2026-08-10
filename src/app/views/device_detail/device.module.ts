@@ -37,6 +37,11 @@ import { AccModule } from "../acc_log/acc.module";
 import { FormsModule } from "@angular/forms";
 import { SpeedTestModule } from "./speed-test/speed-test.module";
 import { AIChatLogsModule } from "./ai-chat-logs/ai-chat-logs.module";
+import { CustomerRouterToolsModule } from "../customer-router-tools/customer-router-tools.module";
+import { ConfigVersionsModule } from "./config-versions/config-versions.module";
+import { SessionManagerModule } from "../session-manager/session-manager.module";
+
+import { SharedModule } from "../../shared/shared.module";
 
 @NgModule({
   imports: [
@@ -72,6 +77,10 @@ import { AIChatLogsModule } from "./ai-chat-logs/ai-chat-logs.module";
     TabsModule,
     SpeedTestModule,
     AIChatLogsModule,
+    CustomerRouterToolsModule,
+    ConfigVersionsModule,
+    SessionManagerModule,
+    SharedModule
   ],
   declarations: [DeviceComponent],
 })

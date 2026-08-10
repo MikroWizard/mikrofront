@@ -13,12 +13,15 @@
         </c-row>
       </c-card-header>
       <c-card-body>
-        <div class="mb-1 d-flex justify-content-end">
+        <div class="mb-1 d-flex justify-content-end align-items-center gap-2">
           <span class="p-input-icon-left table-search-input">
             <i class="pi pi-search"></i>
             <input type="text" pInputText placeholder="Search groups..." (input)="applyFilterGlobal($event, 'contains')"
               class="form-control-sm" />
           </span>
+          <button cButton color="primary" size="sm" (click)="openExportModal()">
+            <i class="fa-solid fa-file-export me-1"></i> Export Report
+          </button>
         </div>
 
         <p-table #dt [value]="source" [paginator]="true" [rows]="10" [showCurrentPageReport]="true"
@@ -357,11 +360,11 @@
   <c-modal-body>
     <c-card class="mb-3">
       <c-card-header class="bg-light">
-        <h6 class="mb-0"><i class="fa-solid fa-user-plus me-2"></i>Add User Permission</h6>
+        <h6 class="mb-0"><i class="fa-solid fa-user-plus me-2"></i>Add User Access</h6>
       </c-card-header>
       <c-card-body>
         <c-row class="g-3">
-          <c-col md="4">
+          <c-col md="3">
             <div class="search-select-wrapper">
               <label class="search-label">User</label>
               <input cFormControl [(ngModel)]="userSearch" (input)="filterUsers($event)"
@@ -377,7 +380,7 @@
               </div>
             </div>
           </c-col>
-          <c-col md="4">
+          <c-col md="3">
             <div class="search-select-wrapper">
               <label class="search-label">Permission</label>
               <input cFormControl [(ngModel)]="permissionSearch" (input)="filterPermissions($event)"
@@ -395,10 +398,25 @@
               </div>
             </div>
           </c-col>
-          <c-col md="4" class="d-flex align-items-end">
+          <c-col md="3" *ngIf="ispro">
+            <div class="search-select-wrapper">
+              <label class="search-label">Terminal Policy</label>
+              <input cFormControl [(ngModel)]="policySearch" (input)="filterPolicies($event)"
+                (focus)="showPolicyDropdown = true" (blur)="hidePolicyDropdown()"
+                placeholder="Search policy..." class="search-input compact-select" autocomplete="off" />
+              <div *ngIf="showPolicyDropdown && filteredPolicies.length > 0" class="search-dropdown">
+                <div *ngFor="let p of filteredPolicies" class="search-option" (mousedown)="selectPolicy(p)">
+                  {{p.name}}
+                </div>
+              </div>
+              <div *ngIf="showPolicyDropdown && filteredPolicies.length === 0 && policySearch"
+                class="search-no-results">No policies found</div>
+            </div>
+          </c-col>
+          <c-col md="3" class="d-flex align-items-end">
             <button cButton color="success" (click)="addUserPermission()"
               [disabled]="!selectedUser || !selectedPermission">
-              <i class="fa-solid fa-plus me-1"></i>Add Permission
+              <i class="fa-solid fa-plus me-1"></i>Add Access
             </button>
           </c-col>
         </c-row>
@@ -410,56 +428,144 @@
           ({{selectedGroup?.assigned_users?.length || 0}} users)</h6>
       </c-card-header>
       <c-card-body class="p-0">
+        <div class="p-2 d-flex justify-content-between align-items-center" *ngIf="selectedGroup?.assigned_users?.length > 0">
+          <span class="text-muted small">{{selectedGroup?.assigned_users?.length || 0}} total</span>
+          <span class="p-input-icon-left">
+            <i class="fa-solid fa-search"></i>
+            <input pInputText type="text" (input)="filterUserPermsTable($event)"
+              placeholder="Search users..." class="form-control form-control-sm" style="width:220px" />
+          </span>
+        </div>
         <div *ngIf="selectedGroup?.assigned_users?.length === 0" class="text-center p-4 text-muted">
           <i class="fa-solid fa-users-slash fa-2x mb-2"></i>
           <p class="mb-0">No users have permissions for this group</p>
         </div>
-        <div *ngIf="selectedGroup?.assigned_users?.length > 0" class="table-responsive">
-          <table class="table table-hover mb-0">
-            <thead class="table-light">
-              <tr>
-                <th width="40">#</th>
-                <th>User</th>
-                <th>Name</th>
-                <th>Permission</th>
-                <th width="200">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let user of selectedGroup.assigned_users; let i = index">
-                <td class="text-muted">{{i + 1}}</td>
-                <td>
-                  <div class="d-flex align-items-center">
-                    <i class="fa-solid fa-user me-2 text-primary"></i>
-                    <strong>{{user.username}}</strong>
-                  </div>
-                </td>
-                <td>{{user.first_name}} {{user.last_name}}</td>
-                <td>
+        <p-table #dtUserPerms *ngIf="selectedGroup?.assigned_users?.length > 0"
+          [value]="selectedGroup.assigned_users" [paginator]="true" [rows]="10"
+          [showCurrentPageReport]="true" [rowsPerPageOptions]="[5,10,25,50]"
+          [resizableColumns]="true" columnResizeMode="expand" [showGridlines]="true"
+          [stripedRows]="true" styleClass="p-datatable-sm"
+          [globalFilterFields]="['username', 'first_name', 'last_name', 'perm_name']">
+          <ng-template pTemplate="header">
+            <tr>
+              <th pSortableColumn="username" pResizableColumn style="min-width:140px">
+                <div class="justify-between">
+                  <span>User</span>
+                  <p-sortIcon field="username"></p-sortIcon>
+                </div>
+              </th>
+              <th pSortableColumn="first_name" pResizableColumn style="min-width:140px">
+                <div class="justify-between">
+                  <span>Name</span>
+                  <p-sortIcon field="first_name"></p-sortIcon>
+                </div>
+              </th>
+              <th pSortableColumn="perm_name" pResizableColumn style="min-width:160px">
+                <div class="justify-between">
+                  <span>Permission</span>
+                  <p-sortIcon field="perm_name"></p-sortIcon>
+                </div>
+              </th>
+              <th *ngIf="ispro" pResizableColumn style="min-width:160px">
+                <span>Terminal Policy</span>
+              </th>
+              <th pResizableColumn style="width:100px" class="text-center">Actions</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-user let-i="rowIndex">
+            <tr>
+              <td>
+                <div class="d-flex align-items-center">
+                  <i class="fa-solid fa-user me-2 text-primary"></i>
+                  <strong>{{user.username}}</strong>
+                </div>
+              </td>
+              <td>{{user.first_name}} {{user.last_name}}</td>
+              <td>
+                <div class="d-flex align-items-center gap-1">
                   <c-badge [color]="getPermissionColor(user.perm_name)">{{user.perm_name}}</c-badge>
-                </td>
-                <td>
-                  <div class="btn-group" role="group">
-                    <button cButton color="warning" size="sm" variant="outline" (click)="editUserPermission(user)"
-                      title="Change Permission" [disabled]="selectedGroup.id === 1 && user.username === 'mikrowizard'">
-                      <i class="fa-solid fa-edit"></i>
-                    </button>
-                    <button cButton color="danger" size="sm" variant="outline" (click)="removeUserPermission(user)"
-                      title="Remove Permission" [disabled]="selectedGroup.id === 1 && user.username === 'mikrowizard'">
-                      <i class="fa-solid fa-trash"></i>
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+                  <button cButton color="warning" size="sm" variant="outline" (click)="editUserPermission(user)"
+                    title="Change Permission" [disabled]="selectedGroup.id === 1 && user.username === 'mikrowizard'">
+                    <i class="fa-solid fa-edit"></i>
+                  </button>
+                </div>
+              </td>
+              <td *ngIf="ispro">
+                <div class="d-flex align-items-center gap-1">
+                  <c-badge color="info" *ngIf="getUserPolicy(user.user_id)">{{getUserPolicyDefaultName(user.user_id)}}</c-badge>
+                  <span *ngIf="getUserPolicyBrandCoverage(user.user_id).length > 0" class="d-inline-flex gap-1">
+                    <c-badge *ngFor="let c of getUserPolicyBrandCoverage(user.user_id)" color="primary" style="text-transform: capitalize; font-size:0.65rem;">{{c.brand}}: {{c.policy_name}}</c-badge>
+                  </span>
+                  <span *ngIf="!getUserPolicy(user.user_id)" class="text-muted small">— None —</span>
+                  <button cButton color="warning" size="sm" variant="outline" (click)="editUserPolicy(user)"
+                    title="Change Terminal Policy">
+                    <i class="fa-solid fa-edit"></i>
+                  </button>
+                </div>
+              </td>
+              <td class="text-center">
+                <button cButton color="danger" size="sm" variant="outline" (click)="removeUserPermission(user)"
+                  title="Remove Permission" [disabled]="selectedGroup.id === 1 && user.username === 'mikrowizard'">
+                  <i class="fa-solid fa-trash"></i>
+                </button>
+              </td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="6" class="text-center p-4">No matching users found.</td>
+            </tr>
+          </ng-template>
+        </p-table>
       </c-card-body>
     </c-card>
+
   </c-modal-body>
   <c-modal-footer>
     <button [cModalToggle]="UserManagementModal.id" cButton color="secondary">
       <i class="fa-solid fa-times me-1"></i>Close
+    </button>
+  </c-modal-footer>
+</c-modal>
+
+<c-modal #EditPolicyModal backdrop="static" [(visible)]="EditPolicyModalVisible" id="EditPolicyModal" size="lg">
+  <c-modal-header>
+    <h5 cModalTitle>Terminal Policy for {{editingPolicyUser?.username}} in {{selectedGroup?.name}}</h5>
+    <button [cModalToggle]="EditPolicyModal.id" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body>
+    <div class="mb-3">
+      <label class="form-label fw-semibold">Default Policy (applies when no brand-specific policy is set)</label>
+      <select cSelect [(ngModel)]="newPolicyId" class="form-select">
+        <option value="">— None (no terminal access) —</option>
+        <option *ngFor="let p of allPolicies" [value]="p.id">{{p.name}}</option>
+      </select>
+    </div>
+    <hr *ngIf="allBrands.length > 0" />
+    <div *ngIf="allBrands.length > 0" class="mb-3">
+      <label class="form-label fw-semibold">Per-Brand Policy Overrides</label>
+      <p class="text-muted small mb-2">Optionally assign different policies for specific device brands. If set, these override the default policy for devices of that brand.</p>
+      <table class="table table-sm table-borderless">
+        <tr *ngFor="let b of allBrands">
+          <td style="width: 140px; vertical-align: middle;">
+            <c-badge color="primary" style="text-transform: capitalize;">{{b.display_name || b.brand}}</c-badge>
+          </td>
+          <td>
+            <select cSelect [(ngModel)]="editPolicyBrandMap[b.brand]" (ngModelChange)="setBrandPolicy(b.brand, $event)" class="form-select-sm" style="width:100%;">
+              <option value="">— Use default —</option>
+              <option *ngFor="let p of allPolicies" [value]="p.id">{{p.name}}</option>
+            </select>
+          </td>
+        </tr>
+      </table>
+    </div>
+  </c-modal-body>
+  <c-modal-footer>
+    <button cButton color="primary" (click)="updateUserPolicy()">
+      <i class="fa-solid fa-save me-1"></i>Update
+    </button>
+    <button [cModalToggle]="EditPolicyModal.id" cButton color="secondary">
+      Cancel
     </button>
   </c-modal-footer>
 </c-modal>
@@ -540,3 +646,12 @@
     </button>
   </c-modal-footer>
 </c-modal>
+
+<app-export-modal
+  [(visible)]="exportModalVisible"
+  title="Export Device Groups Report"
+  [allData]="source"
+  [filteredData]="dt?.filteredValue || source"
+  [customColumns]="exportColumns"
+  defaultFileName="device_groups_report">
+</app-export-modal>

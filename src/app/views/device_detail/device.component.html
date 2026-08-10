@@ -22,10 +22,10 @@
           <i class="fa-solid fa-arrows-rotate fa-spin" *ngIf="reloading" style="color: #74C0FC;"></i>
         </a>
       </div>
-      <div class="nav-item" [ngStyle]="{ display: !is_radio ? 'none' : 'block' }" (click)="actice_tab_index = 1">
+      <div class="nav-item" [ngStyle]="{ display: !isMikroTik || !is_radio ? 'none' : 'block' }" (click)="actice_tab_index = 1">
         <a class="nav-link" [active]="false" [cTabContent]="tabContent" [tabPaneIdx]="1">Radio Info</a>
       </div>
-      <div class="nav-item" [ngStyle]="{ display: !dhcp_server_available ? 'none' : 'block' }"
+      <div class="nav-item" [ngStyle]="{ display: !isMikroTik || !dhcp_server_available ? 'none' : 'block' }"
         (click)="actice_tab_index = 2">
         <a class="nav-link" [active]="false" [cTabContent]="tabContent" [tabPaneIdx]="2"
           style="display: inline-block;padding-right: 0;">DHCP server</a>
@@ -34,24 +34,45 @@
           <i class="fa-solid fa-arrows-rotate fa-spin" *ngIf="reloading" style="color: #74C0FC;"></i>
         </a>
       </div>
-      <div class="nav-item" (click)="actice_tab_index = 3">
+      <div class="nav-item" (click)="actice_tab_index = 3" [ngStyle]="{ display: !isMikroTik ? 'none' : 'block' }">
         <a class="nav-link" [active]="false" (click)="show_dev_logs = true" [cTabContent]="tabContent"
           [tabPaneIdx]="3">Device Events</a>
       </div>
-      <div class="nav-item" (click)="actice_tab_index = 4">
+      <div class="nav-item" (click)="actice_tab_index = 3" [ngStyle]="{ display: !ispro || isMikroTik ? 'none' : 'block' }">
+        <a class="nav-link" [active]="false" [cTabContent]="tabContent"
+          [tabPaneIdx]="3"><i class="fas fa-video me-1"></i>Sessions</a>
+      </div>
+      <div class="nav-item" (click)="actice_tab_index = 4" [ngStyle]="{ display: !isMikroTik ? 'none' : 'block' }">
         <a class="nav-link" [active]="false" (click)="show_auth_logs = true" [cTabContent]="tabContent"
           [tabPaneIdx]="4">Authentication</a>
       </div>
-      <div class="nav-item" (click)="actice_tab_index = 5">
+      <div class="nav-item" (click)="actice_tab_index = 4" [ngStyle]="{ display: !ispro || isMikroTik ? 'none' : 'block' }">
+        <a class="nav-link" [active]="false" [cTabContent]="tabContent"
+          [tabPaneIdx]="4"><i class="fas fa-play me-1"></i>Active Sessions</a>
+      </div>
+      <div class="nav-item" (click)="actice_tab_index = 5" [ngStyle]="{ display: !isMikroTik ? 'none' : 'block' }">
         <a class="nav-link" [active]="false" (click)="show_acc_logs = true" [cTabContent]="tabContent"
           [tabPaneIdx]="5">Accounting</a>
       </div>
-      <div class="nav-item" (click)="actice_tab_index = 6" [ngStyle]="{ display: !ispro ? 'none' : 'block' }">
+      <div class="nav-item" (click)="actice_tab_index = 5" [ngStyle]="{ display: !ispro || isMikroTik ? 'none' : 'block' }">
+        <a class="nav-link" [active]="false" [cTabContent]="tabContent"
+          [tabPaneIdx]="5"><i class="fas fa-keyboard me-1"></i>Command History</a>
+      </div>
+      <div class="nav-item" (click)="actice_tab_index = 6" [ngStyle]="{ display: !ispro || !isMikroTik ? 'none' : 'block' }">
         <a class="nav-link" [active]="false" [cTabContent]="tabContent" [tabPaneIdx]="6">Speed Test</a>
       </div>
-      <div class="nav-item" (click)="actice_tab_index = 7"
-        [ngStyle]="{ display: !ispro ? 'none' : 'block' }">
+      <div class="nav-item" (click)="actice_tab_index = 6; loadExecutions()" [ngStyle]="{ display: !ispro || isMikroTik ? 'none' : 'block' }">
+        <a class="nav-link" [active]="false" [cTabContent]="tabContent"
+          [tabPaneIdx]="6"><i class="fas fa-list-check me-1"></i>Execution History</a>
+      </div>
+      <div class="nav-item" (click)="actice_tab_index = 7" [ngStyle]="{ display: !ispro || !isMikroTik ? 'none' : 'block' }">
         <a class="nav-link" [active]="false" [cTabContent]="tabContent" [tabPaneIdx]="7">AI Chatbot Audit Logs</a>
+      </div>
+      <div class="nav-item" (click)="actice_tab_index = 8" [ngStyle]="{ display: !ispro || !isMikroTik ? 'none' : 'block' }">
+        <a class="nav-link" [active]="false" [cTabContent]="tabContent" [tabPaneIdx]="8">Tools & Clients</a>
+      </div>
+      <div class="nav-item" (click)="actice_tab_index = 9" [ngStyle]="{ display: !ispro ? 'none' : 'block' }">
+        <a class="nav-link" [active]="false" [cTabContent]="tabContent" [tabPaneIdx]="9">Config Versions</a>
       </div>
     </div>
 
@@ -59,7 +80,32 @@
       <h5 *ngIf="loading" style="text-align: center;height: 100vh;line-height: 33vh;"><c-spinner color="info"
           variant="grow"></c-spinner>Loading...</h5>
       <c-tab-pane *ngIf="!loading">
-        <c-card class="mb-1">
+        <!-- Non-MikroTik: simplified device info -->
+        <c-row *ngIf="!isMikroTik">
+          <c-col xs="12">
+            <c-card class="mb-3 shadow-sm border-0">
+              <c-card-header class="bg-light">
+                <h6 class="mb-0"><i class="fa-solid fa-circle-info me-2 text-primary"></i>Device Information</h6>
+              </c-card-header>
+              <c-card-body>
+                <div class="row g-3">
+                  <div class="col-md-3"><small class="text-muted">Name</small><div class="fw-semibold">{{ devdata['name'] || '-' }}</div></div>
+                  <div class="col-md-3"><small class="text-muted">IP Address</small><div class="fw-semibold font-monospace">{{ devdata['ip'] || '-' }}</div></div>
+                  <div class="col-md-3"><small class="text-muted">Brand</small><div><c-badge color="info">{{ devdata['device_type'] || '-' }}</c-badge></div></div>
+                  <div class="col-md-3"><small class="text-muted">Model</small><div class="fw-semibold">{{ devdata['device_model'] || devdata['router_type'] || '-' }}</div></div>
+                </div>
+              </c-card-body>
+            </c-card>
+            <c-card class="mb-3 shadow-sm border-0">
+              <c-card-body style="padding: 0;">
+                <app-ping-stats [ping]="devdata['ping']"></app-ping-stats>
+              </c-card-body>
+            </c-card>
+          </c-col>
+        </c-row>
+
+        <!-- MikroTik sensors -->
+        <c-card class="mb-1" *ngIf="isMikroTik">
           <c-card-body>
             <c-row>
               <c-col md="12" sm="12" class="justify-content-end"
@@ -93,7 +139,7 @@
             <app-widgets-dropdown *ngIf="!loading" [devicedata]="devsensors"></app-widgets-dropdown>
           </c-card-body>
         </c-card>
-        <c-row>
+        <c-row *ngIf="isMikroTik">
           <c-col sm="12" lg="6">
             <c-card class="mb-1">
               <c-card-body style="padding: 0;">
@@ -110,17 +156,20 @@
           </c-col>
         </c-row>
         <!-- Mikrotik interfaces table -->
-        <c-row class="interfaces">
+        <c-row class="interfaces" *ngIf="isMikroTik">
           <c-col xs>
             <c-card class="mb-1">
               <c-card-body>
                 <c-row style="flex-direction: row">
-                  <div class="mb-3 d-flex justify-content-end w-100">
-                    <span class="p-input-icon-left">
+                  <div class="mb-3 d-flex justify-content-end align-items-center w-100">
+                    <span class="p-input-icon-left me-2">
                       <i class="pi pi-search"></i>
                       <input type="text" pInputText placeholder="Search interfaces..."
                         (input)="applyFilterGlobal($event, 'contains')" class="form-control-sm" />
                     </span>
+                    <button cButton color="primary" size="sm" (click)="openInterfacesExportModal()">
+                      <i class="fa-solid fa-file-export me-1"></i> Export
+                    </button>
                   </div>
 
                   <p-table #dtInterfaces [value]="interfaces" [paginator]="true" [rows]="10" [showGridlines]="true"
@@ -334,24 +383,97 @@
           <app-dhcp-info [tz]="tz" [dhcp_server_data]="dhcp_server_data" [small_screen]="small_screen"></app-dhcp-info>
         </ng-container>
       </c-tab-pane>
-      <c-tab-pane style="width: 100%;padding-top: 10px;background-color: #fff;">
+      <c-tab-pane style="width: 100%;padding-top: 10px;background-color: #fff;" *ngIf="isMikroTik">
         <app-devlogs style="width: 100%;" [component_devid]="devid"></app-devlogs>
       </c-tab-pane>
-      <c-tab-pane style="width: 100%;padding-top: 10px;background-color: #fff;">
+      <c-tab-pane style="width: 100%;" *ngIf="!isMikroTik">
+        <app-recordings-list [defaultFilters]="{device_id: devid}" [hideDeviceFilter]="true" [embedded]="true"></app-recordings-list>
+      </c-tab-pane>
+      <c-tab-pane style="width: 100%;padding-top: 10px;background-color: #fff;" *ngIf="isMikroTik">
         <app-authlogs style="width: 100%;" [component_devid]="devid"></app-authlogs>
       </c-tab-pane>
-      <c-tab-pane style="width: 100%;padding-top: 10px;background-color: #fff;">
+      <c-tab-pane style="width: 100%;" *ngIf="!isMikroTik">
+        <app-sessions-list [defaultFilters]="{device_id: devid, status: 'active'}" [embedded]="true"></app-sessions-list>
+      </c-tab-pane>
+      <c-tab-pane style="width: 100%;padding-top: 10px;background-color: #fff;" *ngIf="isMikroTik">
         <app-acclogs style="width: 100%" [component_devid]="devid"></app-acclogs>
       </c-tab-pane>
+      <c-tab-pane style="width: 100%;" *ngIf="!isMikroTik">
+        <app-command-logs-list [defaultFilters]="{device_id: devid}" [hideDeviceFilter]="true" [embedded]="true"></app-command-logs-list>
+      </c-tab-pane>
 
-      <!-- Speed Test Tab Pane (Index 6) -->
-      <c-tab-pane style="width: 100%; padding-top: 15px;">
+      <!-- Speed Test Tab Pane (Index 6 - MikroTik) -->
+      <c-tab-pane style="width: 100%;padding-top: 10px;background-color: #fff;" *ngIf="isMikroTik">
         <app-speed-test [devid]="devid" [ispro]="ispro"></app-speed-test>
       </c-tab-pane>
 
+      <!-- Execution History Tab Pane (Index 6 - non-MikroTik) -->
+      <c-tab-pane style="width: 100%;" *ngIf="!isMikroTik">
+        <c-card class="mb-0" [ngStyle]="{'border-top': 'none'}">
+          <c-card-header class="d-flex align-items-center">
+            <strong><i class="fas fa-list-check text-secondary me-2"></i>Execution History</strong>
+            <div class="ms-auto d-flex gap-2">
+              <button cButton size="sm" color="primary" variant="outline" (click)="loadExecutions()">
+                <i class="fas fa-sync-alt me-1" [class.fa-spin]="execsLoading"></i>Refresh
+              </button>
+              <button cButton size="sm" color="info" (click)="openExecutionsExportModal()" class="text-white">
+                <i class="fa-solid fa-file-export me-1"></i>Export
+              </button>
+            </div>
+          </c-card-header>
+          <c-card-body>
+            <p-table [value]="deviceExecutions" [paginator]="true" [rows]="10" [showGridlines]="true"
+              [stripedRows]="true" styleClass="p-datatable-sm" [loading]="execsLoading">
+              <ng-template pTemplate="header">
+                <tr>
+                  <th>Run</th>
+                  <th>Command</th>
+                  <th>Status</th>
+                  <th>Changed</th>
+                  <th>Duration</th>
+                  <th>Time</th>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="body" let-item>
+                <tr>
+                  <td><small class="font-monospace text-muted">{{item.execution_run_id?.substring(0, 10)}}…</small></td>
+                  <td><small>{{item.command_key || item.command_string?.substring(0, 30)}}</small></td>
+                  <td>
+                    <c-badge [color]="item.status === 'ok' ? 'success' : item.status === 'timeout' ? 'warning' : 'danger'" style="font-size: 0.7rem;">{{item.status}}</c-badge>
+                  </td>
+                  <td>
+                    <c-badge [color]="item.is_versioned ? 'success' : 'secondary'" style="font-size: 0.7rem;">{{item.is_versioned ? 'Yes' : 'No'}}</c-badge>
+                  </td>
+                  <td><small class="text-muted">{{item.duration_ms}}ms</small></td>
+                  <td><small>{{item.executed_at | date:'short'}}</small></td>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="emptymessage">
+                <tr>
+                  <td colspan="6" class="text-center text-muted py-4">
+                    <i class="fas fa-list-check fa-2x mb-2 d-block"></i>
+                    No execution history found for this device.
+                  </td>
+                </tr>
+              </ng-template>
+            </p-table>
+          </c-card-body>
+        </c-card>
+      </c-tab-pane>
+
       <!-- AI Chatbot Audit Logs Tab Pane (Index 7) -->
-      <c-tab-pane style="width: 100%; padding-top: 15px;">
-        <app-ai-chat-logs-tab [devid]="devid" [ispro]="ispro"></app-ai-chat-logs-tab>
+      <c-tab-pane style="width: 100%;padding-top: 10px;background-color: #fff;">
+        <app-ai-chat-logs-tab *ngIf="isMikroTik" [devid]="devid" [ispro]="ispro"></app-ai-chat-logs-tab>
+      </c-tab-pane>
+
+      <!-- Tools & Clients Tab Pane (Index 8) -->
+      <c-tab-pane style="width: 100%;padding-top: 10px;background-color: #fff;">
+        <app-customer-router-tools *ngIf="ispro && isMikroTik" [deviceId]="devid" [isAdminView]="true"></app-customer-router-tools>
+      </c-tab-pane>
+
+      <!-- Config Versions Tab Pane (Index 9) -->
+      <c-tab-pane style="width: 100%;padding-top: 10px;background-color: #fff;">
+        <app-config-versions [devid]="devid" [ispro]="ispro"></app-config-versions>
       </c-tab-pane>
     </c-tab-content>
   </c-col>
@@ -376,7 +498,7 @@
 
 <!-- Floating Chat Button (FAB) for Admins -->
 <button class="chat-fab shadow-lg" (click)="toggleChat()" [class.chat-open]="chatVisible" title="AI agent"
-  *ngIf="ispro">
+  *ngIf="ispro && isMikroTik">
   <img *ngIf="!chatVisible" src="assets/images/chat-agent.png"
     style="width: 32px; height: 32px; object-fit: contain;" />
   <i *ngIf="chatVisible" class="fa-solid fa-xmark" style="font-size: 1.4rem;"></i>
@@ -384,7 +506,7 @@
 
 <!-- Floating AI Chat Panel for Admins -->
 <div class="floating-chat-container shadow-lg" [class.show]="chatVisible" [class.theme-dark]="isDarkTheme"
-  [class.theme-light]="!isDarkTheme" [class.maximized]="isMaximized" *ngIf="ispro">
+  [class.theme-light]="!isDarkTheme" [class.maximized]="isMaximized" *ngIf="ispro && isMikroTik">
   <div class="chat-header d-flex align-items-center justify-content-between p-3 border-bottom">
     <div class="d-flex align-items-center">
       <div class="rounded-circle p-1 me-2">
@@ -577,3 +699,21 @@
     </div>
   </div>
 </div>
+
+<app-export-modal
+  [(visible)]="interfacesExportModalVisible"
+  title="Export Interfaces Report"
+  [allData]="interfaces"
+  [filteredData]="dtInterfaces?.filteredValue || interfaces"
+  [customColumns]="interfaceExportColumns"
+  defaultFileName="device_interfaces_report">
+</app-export-modal>
+
+<app-export-modal
+  [(visible)]="executionsExportModalVisible"
+  title="Export Device Executions Report"
+  [allData]="deviceExecutions"
+  [customColumns]="executionExportColumns"
+  dateField="executed_at"
+  defaultFileName="device_executions_report">
+</app-export-modal>

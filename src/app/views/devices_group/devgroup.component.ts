@@ -27,10 +27,29 @@ export class DevicesGroupComponent implements OnInit {
   public uid: number = 0;
   public uname: string = '';
   public tz: string = '';
+  public ispro: boolean = false;
 
   @ViewChild('dt') table!: Table;
   @ViewChild('dtMembers') tableMembers!: Table;
   @ViewChild('dtNewMembers') tableNewMembers!: Table;
+  @ViewChild('dtUserPerms') dtUserPerms!: Table;
+
+  filterUserPermsTable(event: any) {
+    const val = (event.target as HTMLInputElement).value;
+    this.dtUserPerms?.filterGlobal(val, 'contains');
+  }
+
+  public exportModalVisible: boolean = false;
+  public exportColumns = [
+    { field: 'id', label: 'ID', selected: true },
+    { field: 'name', label: 'Group Name', selected: true },
+    { field: 'description', label: 'Description', selected: true },
+    { field: 'devices_count', label: 'Devices Count', selected: true }
+  ];
+
+  openExportModal() {
+    this.exportModalVisible = true;
+  }
 
   constructor(
     private data_provider: dataProvider,
@@ -47,6 +66,7 @@ export class DevicesGroupComponent implements OnInit {
       _self.uid = res.uid;
       _self.uname = res.name;
       _self.tz = res.tz;
+      _self.ispro = res.ISPRO;
       const userId = _self.uid;
 
       if (res.role != "admin") {
@@ -98,6 +118,10 @@ export class DevicesGroupComponent implements OnInit {
   public editingUser: any = null;
   public removingUser: any = null;
   public newPermissionId: string = "";
+  public editingPolicyUser: any = null;
+  public EditPolicyModalVisible: boolean = false;
+  public newPolicyId: string = "";
+  public editPolicyBrandMap: any = {};
   private deviceCache: { [key: number]: any[] } = {};
   private loadingDevices: { [key: number]: boolean } = {};
   public FirmwareConfirmModalVisible: boolean = false;
@@ -238,9 +262,149 @@ export class DevicesGroupComponent implements OnInit {
 
   manageUsers(group: any): void {
     this.selectedGroup = { ...group };
+    this.selectedPolicy = null;
+    this.policySearch = '';
     this.loadAvailableUsers();
     this.loadAvailablePermissions();
+    if (this.ispro) {
+      this.loadGroupPolicies();
+      this.loadPolicyGrants();
+      this.loadBrands();
+    }
     this.UserManagementModalVisible = true;
+  }
+
+  // ---- Terminal Policy Grants (PRO) ----
+
+  public policyGrants: any[] = [];
+  public allPolicies: any[] = [];
+  public allBrands: any[] = [];
+  public filteredPolicies: any[] = [];
+  public policySearch: string = '';
+  public showPolicyDropdown: boolean = false;
+  public selectedPolicy: any = null;
+
+  loadGroupPolicies(): void {
+    this.data_provider.listPolicies().then((res: any) => {
+      if (res.status === 'success') {
+        this.allPolicies = (res.data || []).map((p: any) => ({ id: p.id, name: p.name }));
+        this.filteredPolicies = [...this.allPolicies];
+      }
+    });
+  }
+
+  loadPolicyGrants(): void {
+    if (!this.selectedGroup) return;
+    this.data_provider.listPolicyGrants({ group_id: this.selectedGroup.id }).then((res: any) => {
+      if (res.status === 'success') {
+        this.policyGrants = res.data || [];
+      }
+    });
+  }
+
+  filterPolicies(event: any): void {
+    const query = event.target.value.toLowerCase();
+    this.filteredPolicies = this.allPolicies.filter((p: any) => p.name.toLowerCase().includes(query));
+  }
+
+  selectPolicy(policy: any): void {
+    this.selectedPolicy = policy;
+    this.policySearch = policy.name;
+    this.showPolicyDropdown = false;
+  }
+
+  hidePolicyDropdown(): void {
+    setTimeout(() => this.showPolicyDropdown = false, 200);
+  }
+
+  getUserPolicy(userId: string): any {
+    return this.policyGrants.find((g: any) => g.user_id === userId);
+  }
+
+  getUserPolicyId(userId: string): string {
+    const grant = this.getUserPolicy(userId);
+    return grant ? grant.policy_id : '';
+  }
+
+  getUserPolicyName(userId: string): string {
+    const grant = this.getUserPolicy(userId);
+    return grant ? grant.policy_name : '— None —';
+  }
+
+  getUserPolicyBrandCoverage(userId: string): {brand: string, policy_name: string}[] {
+    const grant = this.getUserPolicy(userId);
+    const coverage: {brand: string, policy_name: string}[] = [];
+    if (grant && grant.brand_map) {
+      for (const [brand, pid] of Object.entries(grant.brand_map)) {
+        if (pid) {
+          const p = this.allPolicies.find((p: any) => p.id === pid);
+          coverage.push({ brand, policy_name: p ? p.name : '—' });
+        }
+      }
+    }
+    return coverage;
+  }
+
+  getUserPolicyDefaultName(userId: string): string {
+    const grant = this.getUserPolicy(userId);
+    if (!grant) return '— None —';
+    // If there's a brand_map but no default policy, show "Per-brand"
+    if (grant.brand_map && Object.keys(grant.brand_map).length > 0 && !grant.policy_id) return 'Per-brand';
+    return grant.policy_name || '— None —';
+  }
+
+  editUserPolicy(user: any): void {
+    this.editingPolicyUser = { ...user };
+    const grant = this.getUserPolicy(user.user_id);
+    this.newPolicyId = grant ? grant.policy_id || '' : '';
+    this.editPolicyBrandMap = grant && grant.brand_map ? { ...grant.brand_map } : {};
+    this.EditPolicyModalVisible = true;
+  }
+
+  updateUserPolicy(): void {
+    if (!this.editingPolicyUser) return;
+    const userId = this.editingPolicyUser.user_id;
+    const brandMap = {} as any;
+    let hasBrandPolicies = false;
+    for (const b of this.allBrands) {
+      const pid = this.editPolicyBrandMap[b.brand];
+      if (pid) {
+        brandMap[b.brand] = pid;
+        hasBrandPolicies = true;
+      }
+    }
+    const payload: any = {
+      user_id: userId,
+      group_id: this.selectedGroup.id,
+      policy_id: this.newPolicyId || (hasBrandPolicies ? null : ''),
+    };
+    if (hasBrandPolicies) {
+      payload.brand_map = brandMap;
+    }
+    this.data_provider.createPolicyGrant(payload).then((res: any) => {
+      if (res.status === 'success') {
+        this.EditPolicyModalVisible = false;
+        this.loadPolicyGrants();
+      }
+    });
+  }
+
+  setBrandPolicy(brand: string, policyId: string): void {
+    if (policyId) {
+      this.editPolicyBrandMap[brand] = policyId;
+    } else {
+      delete this.editPolicyBrandMap[brand];
+    }
+  }
+
+  loadBrands(): void {
+    this.data_provider.getDeviceBrands().then((res: any) => {
+      if (Array.isArray(res)) {
+        this.allBrands = res.filter((b: any) => b.is_active !== false);
+      } else if (res && Array.isArray(res.data)) {
+        this.allBrands = res.data.filter((b: any) => b.is_active !== false);
+      }
+    });
   }
 
   loadAvailableUsers(): void {
@@ -299,25 +463,24 @@ export class DevicesGroupComponent implements OnInit {
   addUserPermission(): void {
     if (!this.selectedUser || !this.selectedPermission) return;
     
-    console.log('Adding user permission:', {
-      userId: this.selectedUser.id,
-      permissionId: this.selectedPermission.id,
-      groupId: this.selectedGroup.id,
-      selectedUser: this.selectedUser,
-      selectedPermission: this.selectedPermission
-    });
-    
     this.data_provider.Add_user_perm(this.selectedUser.id, +this.selectedPermission.id, this.selectedGroup.id)
       .then((res) => {
-        console.log('Add user permission response:', res);
+        if (this.ispro && this.selectedPolicy && this.selectedPolicy.id) {
+          this.data_provider.createPolicyGrant({
+            user_id: this.selectedUser.id,
+            group_id: this.selectedGroup.id,
+            policy_id: this.selectedPolicy.id,
+          }).then(() => this.loadPolicyGrants());
+        }
         this.initGridTable();
         this.selectedUserId = "";
         this.selectedPermId = "";
         this.selectedUser = null;
         this.selectedPermission = null;
+        this.selectedPolicy = null;
         this.userSearch = "";
         this.permissionSearch = "";
-        // Refresh the selected group data
+        this.policySearch = "";
         this.data_provider.get_devgroup_list().then((groups) => {
           this.selectedGroup = groups.find((g: any) => g.id === this.selectedGroup.id);
           this.loadAvailableUsers();
@@ -354,7 +517,14 @@ export class DevicesGroupComponent implements OnInit {
   }
 
   confirmRemovePermission(): void {
+    const userId = this.removingUser.user_id;
     this.data_provider.Delete_user_perm(this.removingUser.id).then(() => {
+      if (this.ispro && userId) {
+        this.data_provider.deletePolicyGrant({
+          user_id: userId,
+          group_id: this.selectedGroup.id,
+        }).then(() => this.loadPolicyGrants());
+      }
       this.RemovePermissionModalVisible = false;
       this.initGridTable();
       // Refresh the selected group data

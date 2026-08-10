@@ -17,49 +17,40 @@
           <ul cListGroup oncontextmenu="return false;" flush>
             <li cListGroupItem (click)="filter_device(0)" style="cursor: pointer;padding: 5px 8px;"
               class="d-flex justify-content-between align-items-center">
-              <div><i style="color:rgb(9, 44, 9)" class="fa-solid fa-hard-drive"></i>
-                | All Devices
+              <div class="d-flex align-items-center gap-2">
+                <span class="mw-dev-icon-slot"><i style="color:rgb(9, 44, 9)" class="fa-solid fa-hard-drive"></i></span>
+                <span class="mw-dev-name">All Devices</span>
               </div>
-              <div class="d-flex alerts-badges"
-                style="min-width: 135px;border-left: 1px solid #ccc;height: 100%;/* text-align: right; */display: flex;flex-direction: row-reverse;">
-                <c-badge *ngIf="CCount" color="danger" style="margin: 0 0 0 1px;" size="sm"
-                  shape="rounded-pill">{{CCount}}
-                  Critical</c-badge>
-                <c-badge *ngIf="ECount" color="danger" size="sm"
-                  style="margin: 0 0 0 1px;background-color: #f58c8c !important;" shape="rounded-pill">{{ECount}}
-                  Error</c-badge>
-                <c-badge *ngIf="WCount" color="warning" size="sm" style="margin: 0 0 0 1px;"
-                  shape="rounded-pill">{{WCount}}
-                  Warning</c-badge>
+              <div class="alerts-badges">
+                <span *ngIf="CCount" class="alert-badge alert-critical" cTooltip="{{CCount}} Critical" triggers="hover">{{CCount}}</span>
+                <span *ngIf="ECount" class="alert-badge alert-error" cTooltip="{{ECount}} Error" triggers="hover">{{ECount}}</span>
+                <span *ngIf="WCount" class="alert-badge alert-warning" cTooltip="{{WCount}} Warning" triggers="hover">{{WCount}}</span>
               </div>
             </li>
             <li *ngFor="let x of devices" cListGroupItem style="cursor: pointer;padding: 5px 8px;"
               (click)="filter_device(x)" (contextmenu)="onrightClick($event,x,true)" class="d-flex justify-content-between align-items-center"
               [ngStyle]="{'background-color':(selected_devid==x.devid)? 'rgb(239 239 239)' : false}">
-              <div>
-                <i *ngIf="x.data" style="color:red;--fa-animation-duration: 2s;" class="fa-solid  fa-beat"
-                  [class.fa-hard-drive]="x.router_type=='router'" [class.fa-satellite-dish]="x.router_type=='bridge'"
-                  [class.fa-tower-cell]="x.router_type=='ap-bridge' || x.router_type=='wds-slave'"
-                  [class.fa-house-signal]="x.router_type=='station'"
-                  [class.fa-tower-broadcast]="x.router_type=='special'"></i>
-                <i *ngIf="!x.data" style="color:green" class="fa-solid " [class.fa-hard-drive]="x.router_type=='router'"
-                  [class.fa-satellite-dish]="x.router_type=='bridge'"
-                  [class.fa-tower-cell]="x.router_type=='ap-bridge' || x.router_type=='wds-slave'"
-                  [class.fa-house-signal]="x.router_type=='station'"
-                  [class.fa-tower-broadcast]="x.router_type=='special'"></i>
-                | {{x.name}}
-              </div>
-              <div class="d-flex alerts-badges"
-                style="min-width: 135px;border-left: 1px solid #ccc;height: 100%;display: flex;flex-direction: row-reverse;">
-                <c-badge *ngIf="x.CCount" color="danger" style="margin: 0 0 0 1px;" size="sm"
-                  shape="rounded-pill">{{x.CCount}}
-                  Critical</c-badge>
-                <c-badge *ngIf="x.ECount" color="danger" size="sm" style="margin: 0 0 0 1px;background-color:orangered"
-                  shape="rounded-pill">{{x.ECount}} Error</c-badge>
-                <c-badge *ngIf="x.WCount" color="warning" size="sm" style="margin: 0 0 0 1px;"
-                  shape="rounded-pill">{{x.WCount}}
-                  Warning</c-badge>
-              </div>
+               <div class="d-flex align-items-center gap-2">
+                 <span class="mw-dev-icon-slot">
+                   <i *ngIf="isMikroTik(x) && x.data" style="color:red;--fa-animation-duration: 2s;" class="fa-solid fa-beat fa-hard-drive"
+                     [class.fa-hard-drive]="x.router_type=='router'" [class.fa-satellite-dish]="x.router_type=='bridge'"
+                     [class.fa-tower-cell]="x.router_type=='ap-bridge' || x.router_type=='wds-slave'"
+                     [class.fa-house-signal]="x.router_type=='station'"
+                     [class.fa-tower-broadcast]="x.router_type=='special'"></i>
+                   <i *ngIf="isMikroTik(x) && !x.data" style="color:green" class="fa-solid fa-hard-drive"
+                     [class.fa-hard-drive]="x.router_type=='router'" [class.fa-satellite-dish]="x.router_type=='bridge'"
+                     [class.fa-tower-cell]="x.router_type=='ap-bridge' || x.router_type=='wds-slave'"
+                     [class.fa-house-signal]="x.router_type=='station'"
+                     [class.fa-tower-broadcast]="x.router_type=='special'"></i>
+                   <img *ngIf="!isMikroTik(x)" [src]="getDeviceIcon(x)" class="mw-brand-icon" [title]="x.brand || x.device_type" alt="" (error)="onImgError($event)">
+                 </span>
+                 <span class="mw-dev-name">{{x.name}}</span>
+               </div>
+               <div class="alerts-badges">
+                 <span *ngIf="x.CCount" class="alert-badge alert-critical" cTooltip="{{x.CCount}} Critical" triggers="hover">{{x.CCount}}</span>
+                 <span *ngIf="x.ECount" class="alert-badge alert-error" cTooltip="{{x.ECount}} Error" triggers="hover">{{x.ECount}}</span>
+                 <span *ngIf="x.WCount" class="alert-badge alert-warning" cTooltip="{{x.WCount}} Warning" triggers="hover">{{x.WCount}}</span>
+               </div>
             </li>
           </ul>
           </div>
@@ -179,26 +170,52 @@
 </c-row>
 <app-license-expired-overlay></app-license-expired-overlay>
 </div>
+<div *ngIf="contextmenu" class="mw-context-overlay" (click)="disableContextMenu()" (contextmenu)="disableContextMenu(); $event.preventDefault()"></div>
 <div *ngIf="contextmenu">
-  <div class="contextmenu" [ngStyle]="{'left.px': contextmenuX, 'top.px': contextmenuY}">
-    <c-card style="padding: 1px;">
-      <small
-        [style.background-color]="((contexItem.level=='Critical')? '#e55353' : ((contexItem.level=='Error') ? '#f58c8c' : '#f9b115'))"
-        style="text-align: center;font-weight: bold;padding: 5px 3px;color: #fff;">{{contexItem.level}} :
-        {{contexItem.name}} ({{contexItem.devip}})</small>
-      <button cButton (click)="fix_event()" size="sm" shape="rounded-0" color="light" style="padding: 0px 10px;">Mark as
-        Fixed</button>
-    </c-card>
+  <div class="mw-context-menu" [ngStyle]="{'left.px': contextmenuX, 'top.px': contextmenuY}">
+    <div class="mw-context-header"
+      [style.background-color]="((contexItem.level=='Critical')? '#e55353' : ((contexItem.level=='Error') ? '#f58c8c' : '#f9b115'))">
+      <span class="mw-context-level">{{contexItem.level}}</span>
+      <span class="mw-context-device">{{contexItem.name}} <small>({{contexItem.devip}})</small></span>
+    </div>
+    <div class="mw-context-items">
+      <button class="mw-context-item" (click)="fix_event()">
+        <i class="fa-solid fa-check me-2"></i> Mark as Fixed
+      </button>
+    </div>
   </div>
 </div>
 
+<div *ngIf="contextmainmenu" class="mw-context-overlay" (click)="disableContextMenu()" (contextmenu)="disableContextMenu(); $event.preventDefault()"></div>
 <div *ngIf="contextmainmenu">
-  <div class="contextmenu" [ngStyle]="{'left.px': contextmenuX, 'top.px': contextmenuY}">
-    <c-card style="padding: 1px;">
-      <small style="text-align: center;font-weight: bold;color: #fff;background-color: #ccc;font-size: 100%;">Device Menu</small>
-      <button cButton (click)="go_device()" size="sm" shape="rounded-0" color="light" style="padding: 0px 10px;font-size: 0.7rem;">Device detail</button>
-      <button cButton (click)="go_logs()" size="sm" shape="rounded-0" color="light" style="padding: 0px 10px;font-size: 0.7rem;">Device Logs</button>
-    </c-card>
+  <div class="mw-context-menu" [ngStyle]="{'left.px': contextmenuX, 'top.px': contextmenuY}">
+    <div class="mw-context-header" style="background-color: #4e9af1;">
+      <span class="mw-context-device">{{contexItem.name}}</span>
+    </div>
+    <div class="mw-context-items">
+      <button class="mw-context-item" (click)="go_device()">
+        <i class="fa-regular fa-eye me-2"></i> Device Details
+      </button>
+      <button class="mw-context-item" (click)="go_terminal()">
+        <i class="fa-solid fa-terminal me-2"></i> Terminal
+      </button>
+      <button *ngIf="isMikroTik(contexItem)" class="mw-context-item" (click)="go_web_access()">
+        <i class="fa-solid fa-globe me-2"></i> Web Access
+      </button>
+      <div class="mw-context-divider"></div>
+      <button class="mw-context-item" (click)="go_logs()">
+        <i class="fa-solid fa-rectangle-list me-2"></i> Device Logs
+      </button>
+      <button *ngIf="isMikroTik(contexItem)" class="mw-context-item" (click)="go_auth_logs()">
+        <i class="fa-regular fa-clock me-2"></i> Auth Logs
+      </button>
+      <button *ngIf="isMikroTik(contexItem)" class="mw-context-item" (click)="go_acc_logs()">
+        <i class="fa-solid fa-table-list me-2"></i> Account Logs
+      </button>
+      <button *ngIf="isMikroTik(contexItem)" class="mw-context-item" (click)="go_backups()">
+        <i class="fa-solid fa-database me-2"></i> Backups
+      </button>
+    </div>
   </div>
 </div>
 
@@ -208,6 +225,7 @@
     <i style="color:#fff" class="fa-solid fa-satellite-dish"></i> : Bridge<br>
     <i style="color:#fff" class="fa-solid fa-tower-cell"></i> : AP Bridge<br>
     <i style="color:#fff" class="fa-solid fa-house-signal"></i> : Station<br>
-    <i style="color:#fff" class="fa-solid fa-tower-broadcast"></i> : special Wireless
+    <i style="color:#fff" class="fa-solid fa-tower-broadcast"></i> : special Wireless<br>
+    <small style="color:#aaa">Non-MikroTik devices show brand logos</small>
   </div>
 </ng-template>

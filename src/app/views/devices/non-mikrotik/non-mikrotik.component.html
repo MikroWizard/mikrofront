@@ -1,6 +1,5 @@
 <c-row>
   <c-col xs>
-<div *ngIf="ispro">
   <c-card class="mb-4">
     <c-card-header>
       <c-row class="align-items-center">
@@ -46,6 +45,10 @@
             <td><small class="text-muted">{{item.device_model || '-'}}</small></td>
             <td><small class="text-muted">{{item.mac || '-'}}</small></td>
             <td class="text-center">
+              <button size="sm" shape="rounded-0" variant="outline" cButton color="primary"
+                (click)="emitAction('details', item)" style="border: none;padding: 4px 7px;">
+                <i class="fa-regular fa-eye"></i><small> Details</small>
+              </button>
               <button color="primary" shape="rounded-0" variant="ghost" style="padding: 4px 7px;"
                 [matMenuTriggerFor]="menu" cButton>
                 <i class="fa-solid fa-bars"></i>
@@ -57,14 +60,18 @@
                     cListGroupItem><i class="fas fa-edit text-primary"></i><small>
                       Edit Device</small></button>
                   <button size="sm" (click)="connectDevice(item)" style="padding: 4px 7px;"
+                    *ngIf="ispro"
                     cListGroupItem><i class="fas fa-terminal text-success"></i><small>
                       Connect</small></button>
-                  <button size="sm" (click)="emitAction('recordings', item)" style="padding: 4px 7px;"
+                  <button size="sm" *ngIf="ispro" (click)="emitAction('recordings', item)" style="padding: 4px 7px;"
                     cListGroupItem><i class="text-warning fas fa-video"></i><small>
                       View Recordings</small></button>
-                  <button size="sm" (click)="emitAction('command-logs', item)" style="padding: 4px 7px;"
+                  <button size="sm" *ngIf="ispro" (click)="emitAction('command-logs', item)" style="padding: 4px 7px;"
                     cListGroupItem><i class="text-secondary fas fa-keyboard"></i><small>
                       Command History</small></button>
+                  <button size="sm" *ngIf="ispro" (click)="emitAction('config-versions', item)" style="padding: 4px 7px;"
+                    cListGroupItem><i class="text-warning fa-solid fa-history"></i><small>
+                      Config Versions</small></button>
                   <button size="sm" (click)="deleteDevice(item.id)" style="padding: 4px 7px;"
                     cListGroupItem><i class="text-danger fa-solid fa-trash"></i><small>
                       Delete Device</small></button>
@@ -163,10 +170,26 @@
         </c-col>
         <c-col xs="12" *ngIf="groups.length > 0">
           <label class="form-label small">Assign to Groups</label>
-          <select cSelect size="sm" multiple [(ngModel)]="addData.group_ids">
-            <option *ngFor="let g of groups" [value]="g.id">{{g.name}}</option>
-          </select>
-          <small class="text-muted">Hold Ctrl/Cmd to select multiple groups</small>
+          <div class="search-select-wrapper">
+            <div class="selected-chips mb-1" *ngIf="addData.group_ids && addData.group_ids.length > 0">
+              <span class="chip-badge" *ngFor="let gid of addData.group_ids">
+                {{getGroupName(gid)}}
+                <i class="fas fa-times ms-1" (click)="removeAddGroup(gid)" style="cursor:pointer;"></i>
+              </span>
+            </div>
+            <input class="form-control form-control-sm" [(ngModel)]="addGroupSearch" (input)="filterAddGroups($event)"
+              (focus)="showAddGroupDropdown = true" (blur)="hideAddGroupDropdown()"
+              placeholder="Search groups..." autocomplete="off" />
+            <div class="search-dropdown" *ngIf="showAddGroupDropdown && filteredAddGroups.length > 0">
+              <div class="search-option" *ngFor="let g of filteredAddGroups" (mousedown)="selectAddGroup(g)">
+                <i class="fas fa-check me-1 text-success" *ngIf="addData.group_ids?.includes(g.id)"></i>
+                {{g.name}}
+              </div>
+            </div>
+            <div class="search-no-results" *ngIf="showAddGroupDropdown && filteredAddGroups.length === 0 && addGroupSearch">
+              No groups found
+            </div>
+          </div>
         </c-col>
       </c-row>
     </c-modal-body>
@@ -267,6 +290,29 @@
             <option value="strict_compat">Strict + Compatible</option>
           </select>
         </c-col>
+        <c-col xs="12" *ngIf="groups.length > 0">
+          <label class="form-label small">Assign to Groups</label>
+          <div class="search-select-wrapper">
+            <div class="selected-chips mb-1" *ngIf="editData.group_ids && editData.group_ids.length > 0">
+              <span class="chip-badge" *ngFor="let gid of editData.group_ids">
+                {{getGroupName(gid)}}
+                <i class="fas fa-times ms-1" (click)="removeEditGroup(gid)" style="cursor:pointer;"></i>
+              </span>
+            </div>
+            <input class="form-control form-control-sm" [(ngModel)]="editGroupSearch" (input)="filterEditGroups($event)"
+              (focus)="showEditGroupDropdown = true" (blur)="hideEditGroupDropdown()"
+              placeholder="Search groups..." autocomplete="off" />
+            <div class="search-dropdown" *ngIf="showEditGroupDropdown && filteredEditGroups.length > 0">
+              <div class="search-option" *ngFor="let g of filteredEditGroups" (mousedown)="selectEditGroup(g)">
+                <i class="fas fa-check me-1 text-success" *ngIf="editData.group_ids?.includes(g.id)"></i>
+                {{g.name}}
+              </div>
+            </div>
+            <div class="search-no-results" *ngIf="showEditGroupDropdown && filteredEditGroups.length === 0 && editGroupSearch">
+              No groups found
+            </div>
+          </div>
+        </c-col>
       </c-row>
     </c-modal-body>
     <c-modal-footer>
@@ -278,11 +324,5 @@
   </c-modal>
 
   <c-toaster position="fixed" placement="top-end"></c-toaster>
-</div>
-<div *ngIf="!ispro" class="text-center py-5">
-  <i class="fas fa-lock fa-3x text-muted mb-3"></i>
-  <h5 class="text-muted">Pro Feature</h5>
-  <p class="text-muted">Non-MikroTik device management is available in the Pro version.</p>
-</div>
   </c-col>
 </c-row>

@@ -1,26 +1,37 @@
 <c-row>
   <c-col xs>
     <c-card class="mb-4">
-      <c-card-header>
-        <c-row>
-          <c-col xs [lg]="3">
-            Devices
+      <c-card-header style="padding: 0;">
+        <c-row class="align-items-center">
+          <c-col xs>
+            <div class="nav nav-underline bg-transparent">
+              <div class="nav-item">
+                <a [class.active]="deviceTab === 'mikrotik'" class="nav-link" (click)="deviceTab='mikrotik'" style="cursor: pointer;">
+                  <i class="fas fa-router me-1"></i>MikroTik
+                </a>
+              </div>
+              <div class="nav-item">
+                <a [class.active]="deviceTab === 'nonmikrotik'" class="nav-link" (click)="deviceTab='nonmikrotik'" style="cursor: pointer;">
+                  <i class="fas fa-server me-1"></i>Other Brands
+                </a>
+              </div>
+            </div>
           </c-col>
-          <c-col xs [lg]="9">
-            <h6 style="text-align: right;">
-              <button cButton color="success" (click)="openAddDeviceModal()" class="mx-1" size="sm"
-                style="color: #fff;"><i class="fa-solid fa-plus"></i> Bulk Add </button>
-              <button cButton color="dark" (click)="scanwizard(1,'')" [cModalToggle]="ScannerModal.id" class="mx-1"
-                size="sm" style="color: #fff;"><i class="fa-solid fa-magnifying-glass"></i> Scan</button>
-              <button cButton color="primary" (click)="show_exec()" class="mx-1" size="sm" style="color: #fff;"><i
-                  class="fa-solid fa-history"></i> History</button>
-            </h6>
+          <c-col xs="auto">
+            <button cButton color="success" (click)="openAddDeviceModal()" class="mx-1" size="sm"
+              style="color: #fff;"><i class="fa-solid fa-plus"></i> Bulk Add </button>
+            <button *ngIf="deviceTab !== 'nonmikrotik'" cButton color="dark" (click)="scanwizard(1,'')" [cModalToggle]="ScannerModal.id" class="mx-1"
+              size="sm" style="color: #fff;"><i class="fa-solid fa-magnifying-glass"></i> Scan</button>
+            <button cButton color="primary" (click)="show_exec()" class="mx-1" size="sm" style="color: #fff;"><i
+                class="fa-solid fa-history"></i> History</button>
+            <button cButton color="info" (click)="openDeviceExportModal()" class="mx-1 text-white" size="sm"><i
+                class="fa-solid fa-file-export me-1"></i> Export Report</button>
           </c-col>
         </c-row>
       </c-card-header>
       <c-card-body>
-        <c-row>
-          <c-col [lg]="9">
+        <c-row class="align-items-center">
+          <c-col xs *ngIf="deviceTab !== 'nonmikrotik'">
             <button cButton color="danger" class="mx-1" size="sm" style="color: #fff;"
               (click)="filterUpdatable()">{{updates.length}} Updatable
             </button>
@@ -29,18 +40,33 @@
               Upgradable</button>
             <button cButton color="secondary" class="mx-1" size="sm" (click)="clearFilter()">Clear Filter</button>
           </c-col>
-          <c-col [lg]="3">
-            <c-input-group *ngIf="groups.length>0">
-              <span cInputGroupText>Group</span>
-              <select [(ngModel)]="selected_group" (change)="groupselected($event)" cSelect>
-                <option value="0" [selected]="selected_group == 0">Select a group</option>
-                <option *ngFor="let g of groups" [value]="g.id" [selected]=" selected_group == g.id ">{{g.name}}
-                </option>
-              </select>
-            </c-input-group>
+          <c-col xs="auto" *ngIf="groups.length>0">
+            <div class="search-select-wrapper" style="min-width:200px;">
+              <c-input-group size="sm">
+                <span cInputGroupText>Group</span>
+                <input cFormControl [(ngModel)]="groupFilterSearch" (input)="filterGroupsSearch($event)"
+                  (focus)="showGroupSearchDropdown = true" (blur)="hideGroupSearchDropdown()"
+                  placeholder="Search group..." autocomplete="off" class="form-control-sm" />
+              </c-input-group>
+              <div class="search-dropdown" *ngIf="showGroupSearchDropdown && filteredGroupSearch.length > 0">
+                <div class="search-option" *ngFor="let g of filteredGroupSearch"
+                  (mousedown)="selectGroupSearch(g)">
+                  <i class="fas fa-check me-1 text-success" *ngIf="selected_group == g.id"></i>
+                  {{g.name}}
+                </div>
+              </div>
+              <div class="search-no-results" *ngIf="showGroupSearchDropdown && filteredGroupSearch.length === 0 && groupFilterSearch">
+                No groups found
+              </div>
+              <div class="search-option" (mousedown)="selectGroupSearch({id:0, name:'All Groups'})"
+                *ngIf="showGroupSearchDropdown && !groupFilterSearch">
+                <i class="fas fa-check me-1 text-success" *ngIf="selected_group == 0"></i>
+                All Groups
+              </div>
+            </div>
           </c-col>
         </c-row>
-        <div class="mb-1 d-flex justify-content-end">
+        <div class="mb-1 d-flex justify-content-end" *ngIf="deviceTab !== 'nonmikrotik'">
           <span class="p-input-icon-left table-search-input">
             <i class="pi pi-search"></i>
             <input type="text" pInputText placeholder="Search devices..."
@@ -48,7 +74,7 @@
           </span>
         </div>
 
-        <p-table #dt [value]="source" [paginator]="true" [rows]="10" [showCurrentPageReport]="true"
+        <p-table *ngIf="deviceTab !== 'nonmikrotik'" #dt [value]="displayDevices" [paginator]="true" [rows]="10" [showCurrentPageReport]="true"
           [(selection)]="selected_rows" (selectionChange)="onSelectionChange($event)"
           [rowsPerPageOptions]="[10, 25, 50]" [resizableColumns]="true" columnResizeMode="expand" [showGridlines]="true"
           [stripedRows]="true" styleClass="p-datatable-sm p-datatable-gridlines p-datatable-striped"
@@ -151,12 +177,12 @@
                     class="fa-regular fa-eye"></i><small> Details</small>
                 </button>
                 <button color="primary" shape="rounded-0" variant="ghost" style="padding: 4px 7px;"
-                  [matMenuTriggerFor]="menu" cButton>
+                  [matMenuTriggerFor]="!item.device_type || item.device_type === 'mikrotik' ? menuMikrotik : menuNonMikrotik" cButton>
                   <i class="fa-solid fa-bars"></i>
                 </button>
-                <mat-menu #menu="matMenu">
+                <mat-menu #menuMikrotik="matMenu">
                   <div cListGroup>
-                    <li cListGroupItem [active]="false" color="dark">Actions Menu</li>
+                    <li cListGroupItem [active]="false" color="dark">MikroTik Actions</li>
                     <button size="sm" (click)="single_device_action(item,'edit')" style="padding: 4px 7px;"
                       cListGroupItem><i class="fa-solid fa-pencil"></i><small>
                         Edit Device</small></button>
@@ -181,6 +207,38 @@
                     <button size="sm" (click)="single_device_action(item,'backup')" style="padding: 4px 7px;"
                       cListGroupItem><i class="text-success fa-solid fa-database"></i><small>
                         Show Backups</small></button>
+                    <button size="sm" (click)="openConfigVersions(item)" style="padding: 4px 7px;"
+                      cListGroupItem><i class="text-warning fa-solid fa-history"></i><small>
+                        Config Versions</small></button>
+                    <button size="sm" (click)="openDeviceRecordings(item)" style="padding: 4px 7px;"
+                      cListGroupItem><i class="text-warning fas fa-video"></i><small>
+                        View Recordings</small></button>
+                    <button size="sm" (click)="openDeviceCommandLogs(item)" style="padding: 4px 7px;"
+                      cListGroupItem><i class="text-secondary fas fa-keyboard"></i><small>
+                        Command History</small></button>
+                    <button size="sm" (click)="single_device_action(item,'delete')" style="padding: 4px 7px;"
+                      cListGroupItem><i class="text-danger fa-solid fa-trash"></i><small>
+                        Delete Device</small></button>
+                  </div>
+                </mat-menu>
+                <mat-menu #menuNonMikrotik="matMenu">
+                  <div cListGroup>
+                    <li cListGroupItem [active]="false" color="dark">Device Actions</li>
+                    <button size="sm" (click)="show_detail(item)" style="padding: 4px 7px;"
+                      cListGroupItem><i class="fa-regular fa-eye"></i><small>
+                        Device Details</small></button>
+                    <button size="sm" (click)="single_device_action(item,'edit')" style="padding: 4px 7px;"
+                      cListGroupItem><i class="fa-solid fa-pencil"></i><small>
+                        Edit Device</small></button>
+                    <button size="sm" *ngIf="ispro" (click)="openDeviceRecordings(item)" style="padding: 4px 7px;"
+                      cListGroupItem><i class="text-warning fas fa-video"></i><small>
+                        View Recordings</small></button>
+                    <button size="sm" *ngIf="ispro" (click)="openDeviceCommandLogs(item)" style="padding: 4px 7px;"
+                      cListGroupItem><i class="text-secondary fas fa-keyboard"></i><small>
+                        Command History</small></button>
+                    <button size="sm" *ngIf="ispro" (click)="openConfigVersions(item)" style="padding: 4px 7px;"
+                      cListGroupItem><i class="text-warning fa-solid fa-history"></i><small>
+                        Config Versions</small></button>
                     <button size="sm" (click)="single_device_action(item,'delete')" style="padding: 4px 7px;"
                       cListGroupItem><i class="text-danger fa-solid fa-trash"></i><small>
                         Delete Device</small></button>
@@ -222,12 +280,13 @@
             </div>
           </c-container>
         </c-navbar>
+        <app-non-mikrotik-devices *ngIf="deviceTab === 'nonmikrotik'"
+          [devices]="source" [ispro]="ispro" [tz]="tz" [groups]="groups" (actionEvent)="handleNonMikrotikAction($event)">
+        </app-non-mikrotik-devices>
       </c-card-body>
     </c-card>
   </c-col>
 </c-row>
-
-
 
 <c-modal #ScannerModal [visible]="scanwizard_modal" (visibleChange)="handleScanwizard_modal($event)" backdrop="static"
   id="ScannerModal">
@@ -532,6 +591,58 @@
       </select>
     </c-input-group>
 
+    <c-row class="g-3 mb-3">
+      <c-col xs="12" md="6">
+        <label class="form-label small">Connection Protocol</label>
+        <div class="d-flex gap-3">
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio"
+              [(ngModel)]="selected_device['editform']['mikrotik_protocol']" value="ssh"
+              (change)="onMikrotikProtocolChange()" id="mikrotik_proto_ssh" />
+            <label class="form-check-label small" for="mikrotik_proto_ssh">SSH</label>
+          </div>
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio"
+              [(ngModel)]="selected_device['editform']['mikrotik_protocol']" value="telnet"
+              (change)="onMikrotikProtocolChange()" id="mikrotik_proto_telnet" />
+            <label class="form-check-label small" for="mikrotik_proto_telnet">Telnet</label>
+          </div>
+        </div>
+      </c-col>
+      <c-col xs="12" md="6">
+        <label class="form-label small">WebFig</label>
+        <div class="d-flex gap-3">
+          <div class="form-check form-check-inline m-0">
+            <input class="form-check-input" type="checkbox"
+              [(ngModel)]="selected_device['editform']['mikrotik_webfig']"
+              id="mikrotik_conn_webfig" />
+            <label class="form-check-label small m-0 ms-1" for="mikrotik_conn_webfig">Enable WebFig</label>
+          </div>
+        </div>
+      </c-col>
+    </c-row>
+
+    <c-row class="g-3 mb-3">
+      <c-col xs="12" md="6">
+        <label class="form-label small">API Port</label>
+        <input cFormControl size="sm" type="number"
+          [(ngModel)]="selected_device['editform']['port']" placeholder="8728" />
+      </c-col>
+      <c-col xs="12" md="6">
+        <label class="form-label small">Port (SSH/Telnet)</label>
+        <input cFormControl size="sm" type="number"
+          [(ngModel)]="selected_device['editform']['connection_port']" placeholder="22" />
+      </c-col>
+    </c-row>
+
+    <c-input-group class="mb-3 align-items-center">
+      <label class="form-label small m-0 me-3">SSL Support (API-SSL)</label>
+      <c-form-check sizing="lg" switch>
+        <input cFormCheckInput type="checkbox" [(ngModel)]="selected_device['editform']['ssl']"
+          (change)="onSslChange()" />
+      </c-form-check>
+    </c-input-group>
+
   </c-modal-body>
   <c-modal-footer>
     <button cButton (click)="save_device()" color="danger">
@@ -551,10 +662,34 @@
   </c-modal-header>
   <c-modal-body>
     <div *ngIf="addDeviceStep === 1">
+      <div class="mb-3">
+        <label class="form-label fw-bold">Device Type</label>
+        <div class="d-flex gap-3">
+          <div class="form-check">
+            <input class="form-check-input" type="radio" [(ngModel)]="bulkDeviceType" value="mikrotik"
+              (change)="onBulkTypeChange()" id="bulkTypeMikrotik">
+            <label class="form-check-label" for="bulkTypeMikrotik">MikroTik RouterOS</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="radio" [(ngModel)]="bulkDeviceType" value="nonmikrotik"
+              (change)="onBulkTypeChange()" id="bulkTypeNonMikrotik">
+            <label class="form-check-label" for="bulkTypeNonMikrotik">Non-MikroTik</label>
+          </div>
+        </div>
+      </div>
+
       <h6>Upload CSV File</h6>
-      <p>Please upload a CSV file containing device information with columns: IP Address, Username, Password, API Port
-      </p>
-      <input type="file" accept=".csv" (change)="onFileSelected($event)" class="form-control mb-3">
+      <div class="d-flex align-items-center gap-2 mb-2">
+        <input type="file" accept=".csv" (change)="onFileSelected($event)" class="form-control">
+        <button cButton size="sm" color="info" variant="outline" (click)="downloadMikrotikCsvTemplate()"
+          *ngIf="bulkDeviceType === 'mikrotik'">
+          <i class="fas fa-download"></i> Sample CSV
+        </button>
+        <button cButton size="sm" color="info" variant="outline" (click)="downloadNonMikrotikCsvTemplate()"
+          *ngIf="bulkDeviceType === 'nonmikrotik'">
+          <i class="fas fa-download"></i> Sample CSV
+        </button>
+      </div>
       <div *ngIf="csvPreview.length > 0">
         <h6>Preview (First 3 rows):</h6>
         <table class="table table-sm table-bordered">
@@ -569,41 +704,232 @@
             </tr>
           </tbody>
         </table>
-        <h6>Column Mapping:</h6>
-        <div class="row">
-          <div class="col-md-6">
-            <label>IP Address Column:</label>
-            <select [(ngModel)]="columnMapping.ip" class="form-select">
-              <option value="">Select Column</option>
-              <option *ngFor="let header of csvHeaders; let i = index" [value]="i">{{header}}</option>
-            </select>
+
+        <!-- MikroTik Column Mapping -->
+        <div *ngIf="bulkDeviceType === 'mikrotik'">
+          <h6>Column Mapping:</h6>
+          <div class="row">
+            <div class="col-md-6">
+              <label>IP Address Column:</label>
+              <select [(ngModel)]="columnMapping.ip" class="form-select">
+                <option value="">Select Column</option>
+                <option *ngFor="let header of csvHeaders; let i = index" [value]="i">{{header}}</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label>Username Column:</label>
+              <select [(ngModel)]="columnMapping.username" class="form-select">
+                <option value="">Select Column</option>
+                <option *ngFor="let header of csvHeaders; let i = index" [value]="i">{{header}}</option>
+              </select>
+            </div>
           </div>
-          <div class="col-md-6">
-            <label>Username Column:</label>
-            <select [(ngModel)]="columnMapping.username" class="form-select">
-              <option value="">Select Column</option>
-              <option *ngFor="let header of csvHeaders; let i = index" [value]="i">{{header}}</option>
-            </select>
+          <div class="row mt-2">
+            <div class="col-md-6">
+              <label>Password Column:</label>
+              <select [(ngModel)]="columnMapping.password" class="form-select">
+                <option value="">Select Column</option>
+                <option *ngFor="let header of csvHeaders; let i = index" [value]="i">{{header}}</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label>API Port Column:</label>
+              <select [(ngModel)]="columnMapping.port" class="form-select">
+                <option value="">Select Column</option>
+                <option *ngFor="let header of csvHeaders; let i = index" [value]="i">{{header}}</option>
+              </select>
+            </div>
+          </div>
+          <div class="row mt-2">
+            <div class="col-md-6">
+              <label>Group IDs (comma-separated):</label>
+              <select [(ngModel)]="columnMapping.group_ids" class="form-select">
+                <option value="">None</option>
+                <option *ngFor="let header of csvHeaders; let i = index" [value]="i">{{header}}</option>
+              </select>
+              <small class="text-muted">Optional: comma-separated group IDs</small>
+            </div>
           </div>
         </div>
-        <div class="row mt-2">
-          <div class="col-md-6">
-            <label>Password Column:</label>
-            <select [(ngModel)]="columnMapping.password" class="form-select">
-              <option value="">Select Column</option>
-              <option *ngFor="let header of csvHeaders; let i = index" [value]="i">{{header}}</option>
-            </select>
+
+        <!-- Non-MikroTik Column Mapping -->
+        <div *ngIf="bulkDeviceType === 'nonmikrotik'">
+          <h6>Column Mapping:</h6>
+          <div class="row">
+            <div class="col-md-6">
+              <label>IP Address <c-badge color="danger">Required</c-badge></label>
+              <select [(ngModel)]="nonMikrotikColumnMapping.ip" class="form-select" (change)="onNonMikrotikColumnMapped()">
+                <option value="">Select Column</option>
+                <option *ngFor="let header of csvHeaders; let i = index" [value]="i">{{header}}</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label>Username <c-badge color="danger">Required</c-badge></label>
+              <select [(ngModel)]="nonMikrotikColumnMapping.username" class="form-select">
+                <option value="">Select Column</option>
+                <option *ngFor="let header of csvHeaders; let i = index" [value]="i">{{header}}</option>
+              </select>
+            </div>
+          </div>
+          <div class="row mt-2">
+            <div class="col-md-6">
+              <label>Password <c-badge color="danger">Required</c-badge></label>
+              <select [(ngModel)]="nonMikrotikColumnMapping.password" class="form-select">
+                <option value="">Select Column</option>
+                <option *ngFor="let header of csvHeaders; let i = index" [value]="i">{{header}}</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label>Device Type / Brand <c-badge color="danger">Required</c-badge></label>
+              <select [(ngModel)]="nonMikrotikColumnMapping.device_type" class="form-select" (change)="onNonMikrotikColumnMapped()">
+                <option value="">Select Column</option>
+                <option *ngFor="let header of csvHeaders; let i = index" [value]="i">{{header}}</option>
+              </select>
+            </div>
+          </div>
+          <div class="row mt-2">
+            <div class="col-md-6">
+              <label>Device Name <small class="text-muted">(defaults to IP)</small></label>
+              <select [(ngModel)]="nonMikrotikColumnMapping.name" class="form-select">
+                <option value="">Not in CSV</option>
+                <option *ngFor="let header of csvHeaders; let i = index" [value]="i">{{header}}</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label>Device Model</label>
+              <select [(ngModel)]="nonMikrotikColumnMapping.device_model" class="form-select">
+                <option value="">Not in CSV</option>
+                <option *ngFor="let header of csvHeaders; let i = index" [value]="i">{{header}}</option>
+              </select>
+            </div>
+          </div>
+          <div class="row mt-2">
+            <div class="col-md-6">
+              <label>Template ID</label>
+              <select [(ngModel)]="nonMikrotikColumnMapping.template_id" class="form-select">
+                <option value="">Not in CSV</option>
+                <option *ngFor="let header of csvHeaders; let i = index" [value]="i">{{header}}</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label>Enable Password</label>
+              <select [(ngModel)]="nonMikrotikColumnMapping.enable_password" class="form-select">
+                <option value="">Not in CSV</option>
+                <option *ngFor="let header of csvHeaders; let i = index" [value]="i">{{header}}</option>
+              </select>
+            </div>
+          </div>
+          <div class="row mt-2">
+            <div class="col-md-6">
+              <label>Protocol <small class="text-muted">(ssh, telnet)</small></label>
+              <select [(ngModel)]="nonMikrotikColumnMapping.protocol" class="form-select">
+                <option value="">Not in CSV (defaults to ssh)</option>
+                <option *ngFor="let header of csvHeaders; let i = index" [value]="i">{{header}}</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label>Port <small class="text-muted">(e.g., 22, 23)</small></label>
+              <select [(ngModel)]="nonMikrotikColumnMapping.port" class="form-select">
+                <option value="">Not in CSV</option>
+                <option *ngFor="let header of csvHeaders; let i = index" [value]="i">{{header}}</option>
+              </select>
+            </div>
+          </div>
+          <div class="row mt-2">
+            <div class="col-md-6">
+              <label>Group IDs</label>
+              <select [(ngModel)]="nonMikrotikColumnMapping.group_ids" class="form-select">
+                <option value="">Not in CSV</option>
+                <option *ngFor="let header of csvHeaders; let i = index" [value]="i">{{header}}</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Guides (Non-MikroTik only) — visible immediately for CSV reference -->
+      <div *ngIf="bulkDeviceType === 'nonmikrotik'">
+        <hr>
+        <div class="row g-3">
+          <div class="col-md-6" *ngIf="availableBrands.length > 0">
+            <div class="border rounded p-2 bg-light">
+              <h6 class="mb-1 small fw-bold">Available Device Brands <c-badge color="danger">Required</c-badge></h6>
+              <div style="max-height: 180px; overflow-y: auto;">
+                <table class="table table-sm table-bordered small mb-0">
+                  <thead><tr><th>CSV Value</th><th>Display Name</th></tr></thead>
+                  <tbody>
+                    <tr *ngFor="let b of availableBrands">
+                      <td><code>{{b.brand}}</code></td>
+                      <td>{{b.display_name || b.name || b.brand}}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
           <div class="col-md-6">
-            <label>API Port Column:</label>
-            <select [(ngModel)]="columnMapping.port" class="form-select">
-              <option value="">Select Column</option>
-              <option *ngFor="let header of csvHeaders; let i = index" [value]="i">{{header}}</option>
-            </select>
+            <div class="border rounded p-2 bg-light">
+              <h6 class="mb-1 small fw-bold">Template ID Catalog</h6>
+              <div *ngIf="nonMikrotikColumnMapping.device_type === ''" class="text-muted small mb-1">
+                Map a Device Type column to filter by brand.
+              </div>
+              <div style="max-height: 180px; overflow-y: auto;">
+                <table class="table table-sm table-bordered small mb-0">
+                  <thead><tr><th>ID</th><th>Brand</th><th>Name</th><th>Protocols</th><th>Enable</th></tr></thead>
+                  <tbody>
+                    <tr *ngFor="let t of (filteredTemplates.length > 0 ? filteredTemplates : availableTemplates)">
+                      <td>{{t.id}}</td>
+                      <td>{{t.brand}}</td>
+                      <td>{{t.display_name}}</td>
+                      <td>{{getTemplateProtocols(t)}}</td>
+                      <td>{{t.has_enable ? 'Yes' : 'No'}}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- Validation Results Step (non-MikroTik) -->
+    <div *ngIf="addDeviceStep === 1.5 && bulkDeviceType === 'nonmikrotik'">
+      <h6>Validation Results</h6>
+      <div class="alert mb-2" [class.alert-success]="validationPassed && !validationHasWarnings"
+        [class.alert-warning]="validationPassed && validationHasWarnings"
+        [class.alert-danger]="!validationPassed">
+        <strong *ngIf="validationPassed && !validationHasWarnings">All {{validationValidCount}} rows are valid.</strong>
+        <strong *ngIf="validationPassed && validationHasWarnings">{{validationValidCount}} rows valid with warnings.</strong>
+        <strong *ngIf="!validationPassed">Some rows have errors. Fix the CSV and re-upload.</strong>
+      </div>
+      <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+        <table class="table table-sm table-bordered small">
+          <thead>
+            <tr><th>#</th><th>IP</th><th>Status</th><th>Details</th></tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of validationResults; let i = index"
+              [class.table-success]="row.valid && (!row.warnings || row.warnings.length === 0)"
+              [class.table-warning]="row.valid && row.warnings && row.warnings.length > 0"
+              [class.table-danger]="!row.valid">
+              <td>{{i + 1}}</td>
+              <td>{{row.ip || '-'}}</td>
+              <td>
+                <c-badge *ngIf="row.valid && (!row.warnings || row.warnings.length === 0)" color="success">Valid</c-badge>
+                <c-badge *ngIf="row.valid && row.warnings && row.warnings.length > 0" color="warning">Warning</c-badge>
+                <c-badge *ngIf="!row.valid" color="danger">Error</c-badge>
+              </td>
+              <td>
+                <div *ngFor="let e of (row.errors || [])" class="text-danger small">&#10060; {{e}}</div>
+                <div *ngFor="let w of (row.warnings || [])" class="text-warning small">&#9888; {{w}}</div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
     <div *ngIf="addDeviceStep === 2" class="text-center">
       <div class="spinner-border text-primary" role="status">
         <span class="visually-hidden">Loading...</span>
@@ -612,7 +938,9 @@
     </div>
     <div *ngIf="addDeviceStep === 3">
       <h5>Upload Complete</h5>
-      <div class="alert alert-success">
+      <div class="alert" [class.alert-success]="uploadResult.failed === 0"
+        [class.alert-warning]="uploadResult.failed > 0 && uploadResult.success > 0"
+        [class.alert-danger]="uploadResult.success === 0">
         <strong>Success:</strong> {{uploadResult.success}} devices added successfully<br>
         <strong>Failed:</strong> {{uploadResult.failed}} devices failed to add
       </div>
@@ -622,14 +950,34 @@
     </div>
   </c-modal-body>
   <c-modal-footer>
-    <button *ngIf="addDeviceStep === 1" cButton color="primary" (click)="uploadDevices()"
-      [disabled]="!isValidMapping()">
+    <button *ngIf="addDeviceStep === 1 && bulkDeviceType === 'mikrotik'" cButton color="primary"
+      (click)="uploadDevices()" [disabled]="!isValidMapping()">
       Add Devices
+    </button>
+    <button *ngIf="addDeviceStep === 1 && bulkDeviceType === 'nonmikrotik'" cButton color="primary"
+      (click)="validateNonMikrotikCSV()" [disabled]="!isNonMikrotikMappingValid()">
+      Validate & Add
+    </button>
+    <button *ngIf="addDeviceStep === 1.5 && validationPassed && !validationHasWarnings" cButton color="primary"
+      (click)="uploadDevices()">
+      Confirm & Add {{validationValidCount}} Devices
+    </button>
+    <button *ngIf="addDeviceStep === 1.5 && validationPassed && validationHasWarnings" cButton color="warning"
+      (click)="uploadDevices()">
+      Ignore Warnings & Add {{validationValidCount}} Devices
+    </button>
+    <button *ngIf="addDeviceStep === 1.5 && !validationPassed" cButton color="secondary"
+      (click)="addDeviceStep = 1">
+      Fix CSV
     </button>
     <button *ngIf="addDeviceStep === 3" cButton color="success" (click)="closeAddDeviceModal()">
       Close
     </button>
-    <button *ngIf="addDeviceStep !== 2" cButton color="secondary" (click)="closeAddDeviceModal()">
+    <button *ngIf="addDeviceStep !== 2 && addDeviceStep !== 1.5" cButton color="secondary"
+      (click)="closeAddDeviceModal()">
+      Cancel
+    </button>
+    <button *ngIf="addDeviceStep === 1.5" cButton color="secondary" (click)="closeAddDeviceModal()">
       Cancel
     </button>
   </c-modal-footer>
@@ -755,5 +1103,57 @@
     </button>
   </c-modal-footer>
 </c-modal>
+
+<!-- Device Recordings Modal -->
+<c-modal #deviceRecordingsModal backdrop="static" size="xl" [(visible)]="deviceRecordingsModalVisible" id="deviceRecordingsModal">
+  <c-modal-header>
+    <h5 cModalTitle><i class="fas fa-video me-2"></i>Recordings: {{selected_device?.name}}</h5>
+    <button (click)="deviceRecordingsModalVisible=false" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body *ngIf="deviceRecordingsModalVisible" style="min-height: 400px; max-height: 70vh; overflow-y: auto;">
+    <app-recordings-list [defaultFilters]="{device_id: selected_device?.id}" [hideDeviceFilter]="true"></app-recordings-list>
+  </c-modal-body>
+  <c-modal-footer>
+    <button (click)="deviceRecordingsModalVisible=false" cButton color="secondary">Close</button>
+  </c-modal-footer>
+</c-modal>
+
+<!-- Device Command Logs Modal -->
+<c-modal #deviceCommandLogsModal backdrop="static" size="xl" [(visible)]="deviceCommandLogsModalVisible" id="deviceCommandLogsModal">
+  <c-modal-header>
+    <h5 cModalTitle><i class="fas fa-keyboard me-2"></i>Command History: {{selected_device?.name}}</h5>
+    <button (click)="deviceCommandLogsModalVisible=false" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body *ngIf="deviceCommandLogsModalVisible" style="min-height: 400px; max-height: 70vh; overflow-y: auto;">
+    <app-command-logs-list [defaultFilters]="{device_id: selected_device?.id}" [hideDeviceFilter]="true"></app-command-logs-list>
+  </c-modal-body>
+  <c-modal-footer>
+    <button (click)="deviceCommandLogsModalVisible=false" cButton color="secondary">Close</button>
+  </c-modal-footer>
+</c-modal>
+
+<!-- Config Versions Modal -->
+<c-modal #configVersionsModal backdrop="static" size="xl" [(visible)]="configVersionsModalVisible" id="configVersionsModal">
+  <c-modal-header>
+    <h5 cModalTitle><i class="fa-solid fa-history me-2 text-warning"></i>Config Versions: {{ selectedConfigDevice?.name }}</h5>
+    <button (click)="configVersionsModalVisible=false" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body *ngIf="configVersionsModalVisible && selectedConfigDevice" style="min-height: 400px; max-height: 70vh; overflow-y: auto;">
+    <app-config-versions [devid]="selectedConfigDevice.id" [ispro]="ispro"></app-config-versions>
+  </c-modal-body>
+  <c-modal-footer>
+    <button (click)="configVersionsModalVisible=false" cButton color="secondary">Close</button>
+  </c-modal-footer>
+</c-modal>
+
+<app-export-modal
+  [(visible)]="deviceExportModalVisible"
+  title="Export Devices Report"
+  [allData]="source"
+  [selectedData]="selected_rows"
+  [customColumns]="deviceExportColumns"
+  dateField="last_seen"
+  defaultFileName="network_devices_report">
+</app-export-modal>
 
 <c-toaster position="fixed" placement="top-end"></c-toaster>

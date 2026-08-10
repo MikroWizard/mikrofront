@@ -22,11 +22,16 @@ import {
 import { MatMenuModule } from "@angular/material/menu";
 import { DevicesRoutingModule } from "./devices-routing.module";
 import { DevicesComponent } from "./devices.component";
+import { SessionManagerModule } from "../session-manager/session-manager.module";
+import { ConfigVersionsModule } from "../device_detail/config-versions/config-versions.module";
+import { NonMikrotikComponent } from "./non-mikrotik/non-mikrotik.component";
 import { TableModule as PrimeNGTableModule } from 'primeng/table';
 import { CheckboxModule } from 'primeng/checkbox';
 import { InputTextModule } from 'primeng/inputtext';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { TooltipModule as PrimeNGTooltipModule } from 'primeng/tooltip';
+
+import { SharedModule } from "../../shared/shared.module";
 
 @NgModule({
   imports: [
@@ -53,8 +58,11 @@ import { TooltipModule as PrimeNGTooltipModule } from 'primeng/tooltip';
     CheckboxModule,
     InputTextModule,
     MultiSelectModule,
-    PrimeNGTooltipModule
+    PrimeNGTooltipModule,
+    SessionManagerModule,
+    ConfigVersionsModule,
+    SharedModule
   ],
-  declarations: [DevicesComponent],
+  declarations: [DevicesComponent, NonMikrotikComponent],
 })
 export class DevicesModule {}

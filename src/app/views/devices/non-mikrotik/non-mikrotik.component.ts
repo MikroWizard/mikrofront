@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, ViewChild, QueryList, ViewChildren, Output, EventEmitter } from '@angular/core';
+import { Component, Input, OnInit, OnChanges, SimpleChanges, ViewChild, QueryList, ViewChildren, Output, EventEmitter } from '@angular/core';
 import { dataProvider } from '../../../providers/mikrowizard/data';
 import { Router } from '@angular/router';
 import { formatInTimeZone } from 'date-fns-tz';
@@ -11,7 +11,7 @@ import { AppToastComponent } from '../../toast-simple/toast.component';
   templateUrl: './non-mikrotik.component.html',
   styleUrls: ['./non-mikrotik.component.scss']
 })
-export class NonMikrotikComponent implements OnInit {
+export class NonMikrotikComponent implements OnInit, OnChanges {
   @Input() devices: any[] = [];
   @Input() ispro: boolean = false;
   @Input() tz: string = '';
@@ -37,6 +37,13 @@ export class NonMikrotikComponent implements OnInit {
   @ViewChild('dtNonMikrotik') dtNonMikrotik!: Table;
   @ViewChildren(ToasterComponent) viewChildren!: QueryList<ToasterComponent>;
 
+  public addGroupSearch: string = '';
+  public filteredAddGroups: any[] = [];
+  public showAddGroupDropdown: boolean = false;
+  public editGroupSearch: string = '';
+  public filteredEditGroups: any[] = [];
+  public showEditGroupDropdown: boolean = false;
+
   public toasterForm = {
     autohide: true, delay: 3000, position: 'fixed', fade: true, closeButton: true
   };
@@ -50,6 +57,12 @@ export class NonMikrotikComponent implements OnInit {
     this.filteredDevices = (this.devices || []).filter((d: any) => d.device_type !== 'mikrotik');
     this.loadBrands();
     this.loadTemplates();
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['devices']) {
+      this.filteredDevices = (this.devices || []).filter((d: any) => d.device_type !== 'mikrotik');
+    }
   }
 
   show_toast(title: string, body: string, color: string) {
@@ -102,6 +115,9 @@ export class NonMikrotikComponent implements OnInit {
     this.editData = { ...dev };
     this.editData.password = '';
     this.editData.enable_password = '';
+    this.editGroupSearch = '';
+    this.filteredEditGroups = [];
+    this.showEditGroupDropdown = false;
     
     Promise.all([
       this.data_provider.getNonMikrotikInfo(dev.id),
@@ -218,6 +234,9 @@ export class NonMikrotikComponent implements OnInit {
   }
 
   openAddModal() {
+    this.addGroupSearch = '';
+    this.filteredAddGroups = [];
+    this.showAddGroupDropdown = false;
     this.addModalVisible = true;
   }
 
@@ -240,5 +259,58 @@ export class NonMikrotikComponent implements OnInit {
 
   applyFilter($event: any, mode: string) {
     this.dtNonMikrotik.filterGlobal(($event.target as HTMLInputElement).value, mode);
+  }
+
+  filterAddGroups(event: any): void {
+    const query = event.target.value.toLowerCase();
+    this.filteredAddGroups = this.groups.filter((g: any) =>
+      g.name.toLowerCase().includes(query)
+    );
+  }
+
+  selectAddGroup(group: any): void {
+    if (!this.addData.group_ids) this.addData.group_ids = [];
+    if (!this.addData.group_ids.includes(group.id)) {
+      this.addData.group_ids = [...this.addData.group_ids, group.id];
+    }
+    this.addGroupSearch = '';
+    this.filteredAddGroups = [];
+  }
+
+  removeAddGroup(groupId: number): void {
+    this.addData.group_ids = this.addData.group_ids.filter((id: number) => id !== groupId);
+  }
+
+  filterEditGroups(event: any): void {
+    const query = event.target.value.toLowerCase();
+    this.filteredEditGroups = this.groups.filter((g: any) =>
+      g.name.toLowerCase().includes(query)
+    );
+  }
+
+  selectEditGroup(group: any): void {
+    if (!this.editData.group_ids) this.editData.group_ids = [];
+    if (!this.editData.group_ids.includes(group.id)) {
+      this.editData.group_ids = [...this.editData.group_ids, group.id];
+    }
+    this.editGroupSearch = '';
+    this.filteredEditGroups = [];
+  }
+
+  removeEditGroup(groupId: number): void {
+    this.editData.group_ids = this.editData.group_ids.filter((id: number) => id !== groupId);
+  }
+
+  hideAddGroupDropdown(): void {
+    setTimeout(() => this.showAddGroupDropdown = false, 200);
+  }
+
+  hideEditGroupDropdown(): void {
+    setTimeout(() => this.showEditGroupDropdown = false, 200);
+  }
+
+  getGroupName(groupId: number): string {
+    const g = this.groups.find((g: any) => g.id == groupId);
+    return g ? g.name : 'Unknown';
   }
 }

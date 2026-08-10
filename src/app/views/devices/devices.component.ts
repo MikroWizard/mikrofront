@@ -20,12 +20,23 @@ import { formatInTimeZone } from "date-fns-tz";
 
 @Component({
   templateUrl: "devices.component.html",
+  styleUrls: ["devices.component.scss"],
 })
 export class DevicesComponent implements OnInit, OnDestroy {
   public uid!: number;
   public uname!: string;
   public tz!: string;
   public ispro:boolean=false;
+  public deviceTab: string = 'mikrotik';
+  public get displayDevices(): any[] {
+    if (!this.source || !Array.isArray(this.source)) return [];
+    return this.source.filter((d: any) => d.device_type === 'mikrotik' || !d.device_type);
+  }
+
+  public deviceRecordingsModalVisible: boolean = false;
+  public deviceCommandLogsModalVisible: boolean = false;
+  public configVersionsModalVisible: boolean = false;
+  public selectedConfigDevice: any = {};
 
   constructor( 
     private data_provider: dataProvider,
@@ -75,6 +86,9 @@ export class DevicesComponent implements OnInit, OnDestroy {
   public scanwizard_prompt: string = "Scanning Network!";
   public groups: any = [];
   public selected_group: number = 0;
+  public groupFilterSearch: string = '';
+  public filteredGroupSearch: any[] = [];
+  public showGroupSearchDropdown: boolean = false;
   public selected_devices: any = {};
   public selected_device: any = {};
   public show_pass: boolean = false;
@@ -97,7 +111,20 @@ export class DevicesComponent implements OnInit, OnDestroy {
   public csvData: any[] = [];
   public csvHeaders: string[] = [];
   public csvPreview: any[] = [];
-  public columnMapping = { ip: '', username: '', password: '', port: '' };
+  public columnMapping = { ip: '', username: '', password: '', port: '', group_ids: '' };
+  public bulkDeviceType: 'mikrotik' | 'nonmikrotik' = 'mikrotik';
+  public nonMikrotikColumnMapping = {
+    name: '', ip: '', username: '', password: '',
+    device_type: '', device_model: '', template_id: '',
+    protocol: '', port: '', enable_password: '', group_ids: '', mac: ''
+  };
+  public availableBrands: any[] = [];
+  public availableTemplates: any[] = [];
+  public filteredTemplates: any[] = [];
+  public validationResults: any[] = [];
+  public validationPassed: boolean = false;
+  public validationHasWarnings: boolean = false;
+  public validationValidCount: number = 0;
   public uploadStatus: string = 'Processing devices...';
   public uploadResult = { success: 0, failed: 0, resultFile: null };
   public currentTaskId: string = '';
@@ -106,6 +133,24 @@ export class DevicesComponent implements OnInit, OnDestroy {
   public selected_rows: any[] = []; // Used by p-table selection
   public Selectedrows: any[] = []; // Legacy ID array used by actions
   public rows: any = []; // For legacy internal use
+
+  public deviceExportModalVisible: boolean = false;
+  public deviceExportColumns = [
+    { field: 'id', label: 'ID', selected: true },
+    { field: 'name', label: 'Device Name', selected: true },
+    { field: 'ip', label: 'IP Address', selected: true },
+    { field: 'mac', label: 'MAC Address', selected: true },
+    { field: 'arch', label: 'CPU Architecture', selected: true },
+    { field: 'current_firmware', label: 'Current Firmware', selected: true },
+    { field: 'uptime', label: 'Uptime', selected: true },
+    { field: 'status', label: 'Status', selected: true },
+    { field: 'model', label: 'Model', selected: false },
+    { field: 'group_name', label: 'Group Name', selected: false }
+  ];
+
+  openDeviceExportModal() {
+    this.deviceExportModalVisible = true;
+  }
   
   toasterForm = {
     autohide: true,
@@ -163,6 +208,37 @@ export class DevicesComponent implements OnInit, OnDestroy {
     this.router.navigate(["/device-stats", { id: item.id }]);
   }
 
+  public openDeviceRecordings(device: any) {
+    this.selected_device = device;
+    this.deviceRecordingsModalVisible = true;
+  }
+
+  public openDeviceCommandLogs(device: any) {
+    this.selected_device = device;
+    this.deviceCommandLogsModalVisible = true;
+  }
+
+  public openConfigVersions(device: any) {
+    this.selectedConfigDevice = device;
+    this.configVersionsModalVisible = true;
+  }
+
+  public openDeviceDetails(device: any) {
+    this.router.navigate(["/device-stats", { id: device.id }]);
+  }
+
+  public handleNonMikrotikAction(event: {type: string, item: any}) {
+    if (event.type === 'recordings') {
+      this.openDeviceRecordings(event.item);
+    } else if (event.type === 'command-logs') {
+      this.openDeviceCommandLogs(event.item);
+    } else if (event.type === 'details') {
+      this.openDeviceDetails(event.item);
+    } else if (event.type === 'config-versions') {
+      this.openConfigVersions(event.item);
+    }
+  }
+
   single_device_action(dev: any, action: string) {
     this.selected_rows = [];
     this.Selectedrows = [dev["id"]];
@@ -207,7 +283,9 @@ export class DevicesComponent implements OnInit, OnDestroy {
   edit_device_form(dev: any) {
     var _self = this;
     this.selected_device = dev;
-    this.data_provider.get_editform(dev.id).then((res) => {
+    
+    let method = this.ispro ? this.data_provider.get_editform_pro(dev.id) : this.data_provider.get_editform(dev.id);
+    method.then((res) => {
       if ("error" in res) {
         if ("error" in res && res.error.indexOf("Unauthorized")) {
           _self.show_toast(
@@ -218,16 +296,41 @@ export class DevicesComponent implements OnInit, OnDestroy {
         }
       } else {
         this.selected_device["editform"] = res;
+        const types = res["connection_types"] || [];
+        res["mikrotik_protocol"] = types.includes("ssh") ? "ssh" : (types.includes("telnet") ? "telnet" : "ssh");
+        res["mikrotik_webfig"] = types.includes("webfig");
+        res["connection_port"] = res["connection_port"] || (res["mikrotik_protocol"] === "telnet" ? 23 : 22);
         this.EditDevModalVisible = true;
       }
     });
   }
-  
+  onMikrotikProtocolChange() {
+    const defaults: Record<string, number> = { ssh: 22, telnet: 23 };
+    const protocol = this.selected_device["editform"]["mikrotik_protocol"];
+    if (protocol) {
+      this.selected_device["editform"]["connection_port"] = defaults[protocol];
+    }
+  }
+
+  onSslChange() {
+    const ssl = this.selected_device["editform"]["ssl"];
+    this.selected_device["editform"]["port"] = ssl ? 8729 : 8728;
+  }
+
   save_device() {
     var _self = this;
-    this.data_provider
-      .save_editform(this.selected_device["editform"])
-      .then((res) => {
+    const editform = this.selected_device["editform"];
+    const types = [];
+    if (editform["mikrotik_protocol"]) {
+      types.push(editform["mikrotik_protocol"]);
+    }
+    if (editform["mikrotik_webfig"]) {
+      types.push("webfig");
+    }
+    editform["connection_types"] = types;
+
+    let method = this.ispro ? this.data_provider.save_editform_pro(editform) : this.data_provider.save_editform(editform);
+    method.then((res) => {
         _self.show_toast("Success", "Device Saved", "success");
         this.initGridTable();
         this.EditDevModalVisible = false;
@@ -239,6 +342,27 @@ export class DevicesComponent implements OnInit, OnDestroy {
       this.router.navigate([".", { id: this.selected_group }]);
     }
     this.initGridTable();
+  }
+
+  filterGroupsSearch(event: any): void {
+    const query = event.target.value.toLowerCase();
+    this.filteredGroupSearch = this.groups.filter((g: any) =>
+      g.name.toLowerCase().includes(query)
+    );
+  }
+
+  selectGroupSearch(group: any): void {
+    this.selected_group = group.id;
+    this.groupFilterSearch = group.id === 0 ? '' : group.name;
+    this.showGroupSearchDropdown = false;
+    if (this.selected_group != 0) {
+      this.router.navigate([".", { id: this.selected_group }]);
+    }
+    this.initGridTable();
+  }
+
+  hideGroupSearchDropdown(): void {
+    setTimeout(() => this.showGroupSearchDropdown = false, 200);
   }
 
   delete_device() {
@@ -605,18 +729,30 @@ export class DevicesComponent implements OnInit, OnDestroy {
     var _self=this;
     _self.selected_device['editform']['password']="Loading ...";
     if (_self.ispro && !this.show_pass){
-      _self.data_provider.get_device_pass(this.selected_device['id']).then((res) => {
-        if ("error" in res && "error" in res && res.error.indexOf("Unauthorized")) {
+      _self.data_provider.get_device_pass(this.selected_device['id']).then((res: any) => {
+        if ("error" in res && res.error && res.error.indexOf("Unauthorized") > -1) {
           _self.show_toast(
             "Error",
             "You are not authorized to perform this action",
             "danger"
           );
         }
-        else{
-        _self.selected_device['editform']['password']=res['password'];
-        this.show_pass=!this.show_pass;
-      }
+        else {
+          const resultObj = res.result ? (res.result.result ? res.result : res) : res;
+          
+          if (resultObj.result && resultObj.result.password) {
+            _self.selected_device['editform']['password']=resultObj.result.password;
+            this.show_pass=!this.show_pass;
+          } else if (resultObj.password) {
+            _self.selected_device['editform']['password']=resultObj.password;
+            this.show_pass=!this.show_pass;
+          } else if (res.password) {
+            _self.selected_device['editform']['password']=res.password;
+            this.show_pass=!this.show_pass;
+          } else {
+            _self.show_toast('Error', res.error || (res.result && res.result.err) || 'Failed to reveal password', 'danger');
+          }
+        }
       });
     }
     else{
@@ -769,6 +905,65 @@ export class DevicesComponent implements OnInit, OnDestroy {
   openAddDeviceModal() {
     this.addDeviceModalVisible = true;
     this.resetAddDeviceForm();
+    this.loadBrandsAndTemplates();
+  }
+
+  loadBrandsAndTemplates() {
+    this.data_provider.listBrands().then((res: any) => {
+      const data = Array.isArray(res) ? res : (res.data || res || []);
+      this.availableBrands = data.filter((b: any) => b.brand !== 'mikrotik');
+    });
+    this.data_provider.listTemplates({}).then((res: any) => {
+      const data = (res.data || res || []);
+      this.availableTemplates = data.map((t: any) => {
+        const conn = t.connection || {};
+        return {
+          id: t.id,
+          brand: t.brand,
+          display_name: t.display_name,
+          os_type: t.os_type,
+          protocols: conn.protocols || [],
+          has_enable: !!t.privilege_escalation,
+        };
+      });
+    });
+  }
+
+  onBulkTypeChange() {
+    this.addDeviceStep = 1;
+    this.csvFile = null;
+    this.csvData = [];
+    this.csvHeaders = [];
+    this.csvPreview = [];
+    this.validationResults = [];
+    this.validationPassed = false;
+  }
+
+  getTemplateProtocols(t: any): string {
+    if (t.protocols && Array.isArray(t.protocols)) return t.protocols.join(', ');
+    return '-';
+  }
+
+  filterTemplatesForBrand(brand: string) {
+    if (!brand) {
+      this.filteredTemplates = this.availableTemplates;
+    } else {
+      this.filteredTemplates = this.availableTemplates.filter((t: any) => t.brand === brand);
+    }
+  }
+
+  downloadMikrotikCsvTemplate() {
+    const csv = 'ip,username,password,port\n192.168.88.1,admin,password,8728\n10.0.0.1,user,pass,8729\n';
+    this.downloadFile(csv, 'mikrotik-bulk-template.csv', 'text/csv');
+  }
+
+  downloadNonMikrotikCsvTemplate() {
+    const csv = 'name,ip,username,password,device_type,template_id,protocol,port,enable_password,device_model\n' +
+      'Core-Switch,10.0.0.1,admin,str0ng!,cisco,1,ssh,22,enable123,WS-C2960\n' +
+      'Edge-Router,10.0.0.2,admin,pass456,cisco,4,telnet,23,admin789,\n' +
+      'Linux-Server,10.0.0.3,root,r00t!,linux,7,ssh,2222,,Ubuntu-22.04\n' +
+      'AP-Office,10.0.0.4,admin,ap1234,generic,1,telnet,23,,\n';
+    this.downloadFile(csv, 'non-mikrotik-bulk-template.csv', 'text/csv');
   }
 
   closeAddDeviceModal() {
@@ -778,14 +973,25 @@ export class DevicesComponent implements OnInit, OnDestroy {
 
   resetAddDeviceForm() {
     this.addDeviceStep = 1;
+    this.bulkDeviceType = 'mikrotik';
     this.csvFile = null;
     this.csvData = [];
     this.csvHeaders = [];
     this.csvPreview = [];
-    this.columnMapping = { ip: '', username: '', password: '', port: '' };
+    this.columnMapping = { ip: '', username: '', password: '', port: '', group_ids: '' };
+    this.nonMikrotikColumnMapping = {
+      name: '', ip: '', username: '', password: '',
+      device_type: '', device_model: '', template_id: '',
+      protocol: '', port: '', enable_password: '', group_ids: '', mac: ''
+    };
     this.uploadStatus = 'Processing devices...';
     this.uploadResult = { success: 0, failed: 0, resultFile: null };
     this.currentTaskId = '';
+    this.validationResults = [];
+    this.validationPassed = false;
+    this.validationHasWarnings = false;
+    this.validationValidCount = 0;
+    this.filteredTemplates = [];
     clearTimeout(this.statusCheckTimer);
   }
 
@@ -814,6 +1020,66 @@ export class DevicesComponent implements OnInit, OnDestroy {
     reader.readAsText(file);
   }
 
+  onNonMikrotikColumnMapped() {
+    const deviceTypeIdx = this.nonMikrotikColumnMapping.device_type;
+    if (deviceTypeIdx !== '' && this.csvPreview.length > 0) {
+      const firstRowVal = this.csvData[0]?.[parseInt(deviceTypeIdx)];
+      if (firstRowVal) {
+        this.filterTemplatesForBrand(firstRowVal);
+      }
+    }
+  }
+
+  isNonMikrotikMappingValid(): boolean {
+    return this.nonMikrotikColumnMapping.ip !== '' &&
+           this.nonMikrotikColumnMapping.username !== '' &&
+           this.nonMikrotikColumnMapping.password !== '' &&
+           this.nonMikrotikColumnMapping.device_type !== '' &&
+           this.csvData.length > 0;
+  }
+
+  validateNonMikrotikCSV() {
+    if (!this.isNonMikrotikMappingValid()) return;
+    
+    const devices = this.csvData.map(row => {
+      const dev: any = { ip: '', username: '', password: '', device_type: '' };
+      if (this.nonMikrotikColumnMapping.name !== '') dev.name = row[parseInt(this.nonMikrotikColumnMapping.name)];
+      dev.ip = row[parseInt(this.nonMikrotikColumnMapping.ip)];
+      dev.username = row[parseInt(this.nonMikrotikColumnMapping.username)];
+      dev.password = row[parseInt(this.nonMikrotikColumnMapping.password)];
+      dev.device_type = row[parseInt(this.nonMikrotikColumnMapping.device_type)];
+      if (this.nonMikrotikColumnMapping.device_model !== '') dev.device_model = row[parseInt(this.nonMikrotikColumnMapping.device_model)];
+      if (this.nonMikrotikColumnMapping.template_id !== '') dev.template_id = row[parseInt(this.nonMikrotikColumnMapping.template_id)];
+      if (this.nonMikrotikColumnMapping.protocol !== '') dev.protocol = row[parseInt(this.nonMikrotikColumnMapping.protocol)];
+      if (this.nonMikrotikColumnMapping.port !== '') dev.port = row[parseInt(this.nonMikrotikColumnMapping.port)];
+      if (this.nonMikrotikColumnMapping.enable_password !== '') dev.enable_password = row[parseInt(this.nonMikrotikColumnMapping.enable_password)];
+      if (this.nonMikrotikColumnMapping.group_ids !== '') dev.group_ids = row[parseInt(this.nonMikrotikColumnMapping.group_ids)];
+      if (this.nonMikrotikColumnMapping.mac !== '') dev.mac = row[parseInt(this.nonMikrotikColumnMapping.mac)];
+      return dev;
+    });
+
+    this.data_provider.validate_non_mikrotik_bulk(devices).then((res: any) => {
+      if (res && res.rows) {
+        this.validationResults = res.rows;
+        this.validationPassed = res.valid || false;
+        this.validationHasWarnings = res.has_warnings || false;
+        this.validationValidCount = res.rows.filter((r: any) => r.valid).length;
+        this.addDeviceStep = 1.5;
+        
+        if (this.availableBrands.length === 0 && res.brands) {
+          this.availableBrands = res.brands;
+        }
+        if (this.availableTemplates.length === 0 && res.templates) {
+          this.availableTemplates = res.templates;
+        }
+      } else {
+        this.show_toast('Error', 'Validation failed', 'danger');
+      }
+    }).catch(() => {
+      this.show_toast('Error', 'Failed to validate devices', 'danger');
+    });
+  }
+
   isValidMapping(): boolean {
     return this.columnMapping.ip !== '' && 
            this.columnMapping.username !== '' && 
@@ -823,36 +1089,78 @@ export class DevicesComponent implements OnInit, OnDestroy {
   }
 
   uploadDevices() {
-    if (!this.isValidMapping()) return;
-    
     this.addDeviceStep = 2;
-    
-    const devices = this.csvData.map(row => ({
-      ip: row[parseInt(this.columnMapping.ip)],
-      username: row[parseInt(this.columnMapping.username)],
-      password: row[parseInt(this.columnMapping.password)],
-      port: row[parseInt(this.columnMapping.port)]
-    }));
+    this.uploadStatus = 'Processing devices...';
 
-    this.data_provider.bulk_add_devices(devices).then((res) => {
-      if ('error' in res) {
-        this.addDeviceStep = 3;
-        this.show_toast('Error', 'Failed to start device upload', 'danger');
-        this.uploadResult = { success: 0, failed: devices.length, resultFile: null };
-      } else if ('taskId' in res) {
-        this.currentTaskId = res.taskId;
-        this.uploadStatus = 'Processing devices...';
-        this.checkUploadStatus();
-      } else {
-        this.addDeviceStep = 3;
-        this.show_toast('Error', 'Invalid response from server', 'danger');
-        this.uploadResult = { success: 0, failed: devices.length, resultFile: null };
-      }
-    }).catch(() => {
+    if (this.bulkDeviceType === 'mikrotik') {
+      if (!this.isValidMapping()) return;
+      const devices = this.csvData.map(row => ({
+        ip: row[parseInt(this.columnMapping.ip)],
+        username: row[parseInt(this.columnMapping.username)],
+        password: row[parseInt(this.columnMapping.password)],
+        port: row[parseInt(this.columnMapping.port)],
+        group_ids: this.columnMapping.group_ids ? row[parseInt(this.columnMapping.group_ids)] : ''
+      }));
+
+      this.data_provider.bulk_add_devices(devices).then((res) => {
+        this.handleBulkAddResponse(res, devices.length);
+      }).catch(() => {
+        this.handleBulkAddError(devices.length);
+      });
+    } else {
+      const devices = this.csvData.map(row => {
+        const dev: any = {};
+        if (this.nonMikrotikColumnMapping.name !== '') dev.name = row[parseInt(this.nonMikrotikColumnMapping.name)];
+        dev.ip = row[parseInt(this.nonMikrotikColumnMapping.ip)];
+        dev.username = row[parseInt(this.nonMikrotikColumnMapping.username)];
+        dev.password = row[parseInt(this.nonMikrotikColumnMapping.password)];
+        dev.device_type = row[parseInt(this.nonMikrotikColumnMapping.device_type)];
+        if (this.nonMikrotikColumnMapping.device_model !== '') dev.device_model = row[parseInt(this.nonMikrotikColumnMapping.device_model)];
+        if (this.nonMikrotikColumnMapping.template_id !== '') dev.template_id = row[parseInt(this.nonMikrotikColumnMapping.template_id)];
+        if (this.nonMikrotikColumnMapping.protocol !== '') dev.protocol = row[parseInt(this.nonMikrotikColumnMapping.protocol)];
+        if (this.nonMikrotikColumnMapping.port !== '') dev.port = row[parseInt(this.nonMikrotikColumnMapping.port)];
+        if (this.nonMikrotikColumnMapping.enable_password !== '') dev.enable_password = row[parseInt(this.nonMikrotikColumnMapping.enable_password)];
+        if (this.nonMikrotikColumnMapping.group_ids !== '') dev.group_ids = row[parseInt(this.nonMikrotikColumnMapping.group_ids)];
+        if (this.nonMikrotikColumnMapping.mac !== '') dev.mac = row[parseInt(this.nonMikrotikColumnMapping.mac)];
+        return dev;
+      });
+
+      this.data_provider.bulk_add_non_mikrotik_devices(devices).then((res) => {
+        if (res && res.status === 'validation_failed') {
+          this.addDeviceStep = 1.5;
+          this.validationResults = res.rows || [];
+          this.validationPassed = false;
+          this.validationValidCount = 0;
+          this.show_toast('Error', 'Validation failed. Check rows for details.', 'danger');
+        } else {
+          this.handleBulkAddResponse(res, devices.length);
+        }
+      }).catch(() => {
+        this.handleBulkAddError(this.csvData.length);
+      });
+    }
+  }
+
+  handleBulkAddResponse(res: any, totalCount: number) {
+    if ('error' in res) {
       this.addDeviceStep = 3;
-      this.uploadResult = { success: 0, failed: devices.length, resultFile: null };
-      this.show_toast('Error', 'Failed to upload devices', 'danger');
-    });
+      this.show_toast('Error', 'Failed to start device upload', 'danger');
+      this.uploadResult = { success: 0, failed: totalCount, resultFile: null };
+    } else if ('taskId' in res) {
+      this.currentTaskId = res.taskId;
+      this.uploadStatus = 'Processing devices...';
+      this.checkUploadStatus();
+    } else {
+      this.addDeviceStep = 3;
+      this.show_toast('Error', 'Invalid response from server', 'danger');
+      this.uploadResult = { success: 0, failed: totalCount, resultFile: null };
+    }
+  }
+
+  handleBulkAddError(totalCount: number) {
+    this.addDeviceStep = 3;
+    this.uploadResult = { success: 0, failed: totalCount, resultFile: null };
+    this.show_toast('Error', 'Failed to upload devices', 'danger');
   }
 
   checkUploadStatus() {

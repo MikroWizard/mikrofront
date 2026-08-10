@@ -119,6 +119,7 @@ export class MonitoringComponent implements OnInit,OnDestroy {
     if (!this.contexItem)
       return
     this.data_provider.monitoring_events_fix(this.contexItem.id).then((res) => {
+      _self.disableContextMenu();
       if('status' in res && res['status']=='failed')
         return;
       _self.reload_data();
@@ -251,12 +252,48 @@ export class MonitoringComponent implements OnInit,OnDestroy {
     this.update_tables();
   }
   go_device(){
-    this.router.navigate(["/device-stats", { id: this.contexItem.devid }]);
+    const devid = this.contexItem.devid;
+    this.disableContextMenu();
+    window.open('#/device-stats;id=' + devid, '_blank');
   }
 
   go_logs(){
-    this.router.navigate(["/devlogs", { devid: this.contexItem.devid }]);
+    const devid = this.contexItem.devid;
+    this.disableContextMenu();
+    window.open('#/devlogs;devid=' + devid, '_blank');
+  }
 
+  go_terminal(){
+    const devid = this.contexItem.devid;
+    this.disableContextMenu();
+    window.open('#/connection-manager/' + devid, '_blank');
+  }
+
+  go_web_access(){
+    const devid = this.contexItem.devid;
+    const ip = this.contexItem.devip;
+    this.disableContextMenu();
+    if (ip) {
+      window.open('/api/proxy/init?devid=' + devid, '_blank');
+    }
+  }
+
+  go_auth_logs(){
+    const devid = this.contexItem.devid;
+    this.disableContextMenu();
+    window.open('#/authlog;devid=' + devid, '_blank');
+  }
+
+  go_acc_logs(){
+    const devid = this.contexItem.devid;
+    this.disableContextMenu();
+    window.open('#/accountlog;devid=' + devid, '_blank');
+  }
+
+  go_backups(){
+    const devid = this.contexItem.devid;
+    this.disableContextMenu();
+    window.open('#/backups;devid=' + devid, '_blank');
   }
   update_tables(){
     // update initAllalerts and initUnfixedalerts  every 1 minute
@@ -333,5 +370,63 @@ export class MonitoringComponent implements OnInit,OnDestroy {
     this.eventsall=false;
     this.eventUnfixedsall=false;
     this.scrollable.update();
+  }
+
+  isMikroTik(device: any): boolean {
+    return !!device.router_type;
+  }
+
+  onImgError(event: Event) {
+    const img = event.target as HTMLImageElement;
+    img.style.display = 'none';
+    const fallback = document.createElement('i');
+    fallback.className = 'fa-solid fa-network-wired';
+    fallback.style.cssText = 'color:#6c757d;font-size:0.85em;';
+    img.parentElement?.appendChild(fallback);
+  }
+
+  getDeviceIcon(device: any): string {
+    const basePath = './assets/Network-Icons-SVG/';
+    const brand = (device.brand || '').toLowerCase();
+    const dtype = (device.device_type || '').toLowerCase();
+    const identifier = brand || dtype;
+
+    const brandMap: Record<string, string> = {
+      'mikrotik': 'logo-mikrotik.svg',
+      'cisco': 'logo-cisco.svg',
+      'cisco_ios': 'logo-cisco.svg',
+      'cisco_xr': 'logo-cisco.svg',
+      'cisco_nxos': 'logo-cisco.svg',
+      'huawei': 'logo-huawei.svg',
+      'juniper': 'logo-juniper.svg',
+      'junos': 'logo-juniper.svg',
+      'hpe': 'logo-hpe.svg',
+      'aruba': 'logo-aruba.svg',
+      'hpe/aruba': 'logo-aruba.svg',
+      'ubiquiti': 'logo-ubiquiti.svg',
+      'ubnt': 'logo-ubiquiti.svg',
+      'fortinet': 'logo-fortinet.svg',
+      'fortigate': 'logo-fortinet.svg',
+      'paloalto': 'logo-paloalto.svg',
+      'palo_alto': 'logo-paloalto.svg',
+      'dell': 'logo-dell.svg',
+      'arista': 'logo-arista.svg',
+      'dlink': 'logo-dlink.svg',
+      'd-link': 'logo-dlink.svg',
+      'tplink': 'logo-tplink.svg',
+      'tp-link': 'logo-tplink.svg',
+      'zyxel': 'logo-zyxel.svg',
+      'extreme': 'logo-extreme.svg',
+      'netgear': 'logo-netgear.svg',
+      'brocade': 'logo-brocade.svg',
+      'f5': 'logo-f5.svg',
+      'ruckus': 'logo-ruckus.svg',
+    };
+
+    if (brandMap[identifier]) {
+      return basePath + brandMap[identifier];
+    }
+
+    return basePath + 'generic-router-colour.svg';
   }
 }

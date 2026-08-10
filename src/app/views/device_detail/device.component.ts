@@ -33,8 +33,8 @@ export class DeviceComponent implements OnInit, OnDestroy {
   public uname!: string;
   public tz!: string;
   public ispro: boolean = false;
-  public small_screen=false;
-  public show_dev_logs: boolean = false; 
+  public small_screen = false;
+  public show_dev_logs: boolean = false;
   public show_auth_logs: boolean = false;
   public show_acc_logs: boolean = false;
   public actice_tab_index: number = 0;
@@ -73,7 +73,7 @@ export class DeviceComponent implements OnInit, OnDestroy {
   public devsensors: any;
   public radiodata!: radiodata;
   public radio_devsensors!: any;
-  
+
   @ViewChild('dtInterfaces') dtInterfaces!: Table;
 
   public loading: boolean = true;
@@ -89,9 +89,48 @@ export class DeviceComponent implements OnInit, OnDestroy {
   public options: any;
   public is_radio: boolean = false;
   public dhcp_server_available: boolean = false;
+  public isMikroTik: boolean = false;
   public dhcp_server_data: any = {};
-  
+
+  public deviceExecutions: any[] = [];
+  public execsLoading: boolean = false;
+
   public interfaces: Array<any> = [];
+
+  public interfacesExportModalVisible: boolean = false;
+  public executionsExportModalVisible: boolean = false;
+
+  public interfaceExportColumns = [
+    { field: 'name', label: 'Name', selected: true },
+    { field: 'type', label: 'Type', selected: true },
+    { field: 'mac-address', label: 'MAC Address', selected: true },
+    { field: 'running', label: 'Running', selected: true },
+    { field: 'disabled', label: 'Disabled', selected: true },
+    { field: 'comment', label: 'Comment', selected: true },
+    { field: 'rx-byte', label: 'RX Bytes', selected: false },
+    { field: 'tx-byte', label: 'TX Bytes', selected: false },
+    { field: 'rx-packet', label: 'RX Packets', selected: false },
+    { field: 'tx-packet', label: 'TX Packets', selected: false },
+    { field: 'rx-error', label: 'RX Errors', selected: false },
+    { field: 'tx-error', label: 'TX Errors', selected: false }
+  ];
+
+  public executionExportColumns = [
+    { field: 'id', label: 'ID', selected: true },
+    { field: 'command', label: 'Command', selected: true },
+    { field: 'status', label: 'Status', selected: true },
+    { field: 'executed_at', label: 'Executed At', selected: true },
+    { field: 'user', label: 'User', selected: true },
+    { field: 'output', label: 'Output', selected: false }
+  ];
+
+  openInterfacesExportModal() {
+    this.interfacesExportModalVisible = true;
+  }
+
+  openExecutionsExportModal() {
+    this.executionsExportModalVisible = true;
+  }
 
   // AI Chat Helper State
   @ViewChild('chatScrollContainer') private chatScrollContainer!: ElementRef;
@@ -110,10 +149,12 @@ export class DeviceComponent implements OnInit, OnDestroy {
   public renameSessionId: number | null = null;
   public renameTitle: string = '';
 
+
+
   applyFilterGlobal($event: any, stringVal: string) {
     this.dtInterfaces.filterGlobal(($event.target as HTMLInputElement).value, stringVal);
   }
-  reload_dhcp_server(){
+  reload_dhcp_server() {
     this.get_DHCP_data();
   }
   speedChartOptions = {
@@ -140,7 +181,7 @@ export class DeviceComponent implements OnInit, OnDestroy {
 
   Chartoptions = {
     responsive: true,
-    _self :this,
+    _self: this,
     plugins: {
       tooltip: {
         callbacks: {
@@ -181,17 +222,17 @@ export class DeviceComponent implements OnInit, OnDestroy {
     maintainAspectRatio: true,
     scales: {
       x: {
-        
+
         title: {
           display: true,
           text: 'Time',
           color: '#333',
-      },
-      ticks: {
-        autoSkip: true,
-        maxTicksLimit: 30,
+        },
+        ticks: {
+          autoSkip: true,
+          maxTicksLimit: 30,
           color: '#333',
-      }
+        }
       },
       yA: {
         display: true,
@@ -206,7 +247,7 @@ export class DeviceComponent implements OnInit, OnDestroy {
         ticks: {
           color: "#17522f",
           callback: (value: any) => {
-            if(this.total_type=="pps")
+            if (this.total_type == "pps")
               return value + " pps";
             const units = ["bit", "Kib", "Mib", "Gib", "Tib"];
             var res = value;
@@ -236,8 +277,8 @@ export class DeviceComponent implements OnInit, OnDestroy {
         },
         ticks: {
           color: "#171951",
-          callback: (value: any) =>{
-            if(this.total_type=="pps")
+          callback: (value: any) => {
+            if (this.total_type == "pps")
               return value + " pps";
             const units = ["bit", "Kib", "Mib", "Gib", "Tib"];
             var res = value;
@@ -273,6 +314,8 @@ export class DeviceComponent implements OnInit, OnDestroy {
     }
     window.onresize = () => (this.small_screen = window.innerWidth <= 1200);
     this.devid = Number(this.route.snapshot.paramMap.get("id"));
+    const tabParam = this.route.snapshot.paramMap.get("tab");
+    if (tabParam) { this.actice_tab_index = Number(tabParam); }
     this.options = this.Chartoptions;
     // wait untill sessionloaded is set
     let interval = setInterval(() => {
@@ -435,13 +478,20 @@ export class DeviceComponent implements OnInit, OnDestroy {
       _self.devdata = res;
       _self.interfaces = res.interfaces;
       if ("is_radio" in res) _self.is_radio = res.is_radio;
-      _self.data_provider
-        .get_dev_sensors(_self.devid, _self.delta, _self.total_type)
-        .then((res) => {
-          _self.devsensors = res;
-          _self.loading = false;
-        });
-      if (_self.is_radio) _self.get_radio_data();
+      _self.isMikroTik = !res.device_type || res.device_type === 'mikrotik';
+
+      if (_self.isMikroTik) {
+        _self.data_provider
+          .get_dev_sensors(_self.devid, _self.delta, _self.total_type)
+          .then((res) => {
+            _self.devsensors = res;
+            _self.loading = false;
+          });
+        if (_self.is_radio) _self.get_radio_data();
+        _self.get_DHCP_data();
+      } else {
+        _self.loading = false;
+      }
     });
   }
   checkitem(item: any) {
@@ -483,44 +533,44 @@ export class DeviceComponent implements OnInit, OnDestroy {
   }
 
   get_radio_data() {
-    if(!this.ispro)
+    if (!this.ispro)
       return;
     var _self = this;
     _self.data_provider
-    .get_dev_radio_sensors(_self.devid, _self.delta)
-    .then((res) => {
-      _self.radio_devsensors = res;
-      _self.radio_loading = false;
-    });
+      .get_dev_radio_sensors(_self.devid, _self.delta)
+      .then((res) => {
+        _self.radio_devsensors = res;
+        _self.radio_loading = false;
+      });
   }
 
   get_DHCP_data() {
-    if(!this.ispro)
+    if (!this.ispro)
       return;
     var _self = this;
-    if(_self.reloading)
+    if (_self.reloading)
       return;
     _self.reloading = true;
     _self.data_provider
-    .get_dev_dhcp_info(_self.devid)
-    .then((res) => {
-      _self.dhcp_server_available = Boolean(res.length);
-      _self.dhcp_server_data = res;
-      // loop in dhcp_server_data and create a new object with the data for chart for each dhcp server
-      _self.reloading = false;
-      _self.dhcp_server_data.forEach((element:any) => {
-        if(element.pools.length>0){
-          var pooldata=element.pools[0];
-          element.chartpools = {
-            labels: ['Used', 'Free'],
-            datasets: [{
-              backgroundColor: [ '#E46651','#41B883'],
-              data: [pooldata.used_ips, pooldata.available_ips]
-            }]
-          };
-        }
+      .get_dev_dhcp_info(_self.devid)
+      .then((res) => {
+        _self.dhcp_server_available = Boolean(res.length);
+        _self.dhcp_server_data = res;
+        // loop in dhcp_server_data and create a new object with the data for chart for each dhcp server
+        _self.reloading = false;
+        _self.dhcp_server_data.forEach((element: any) => {
+          if (element.pools.length > 0) {
+            var pooldata = element.pools[0];
+            element.chartpools = {
+              labels: ['Used', 'Free'],
+              datasets: [{
+                backgroundColor: ['#E46651', '#41B883'],
+                data: [pooldata.used_ips, pooldata.available_ips]
+              }]
+            };
+          }
+        });
       });
-    });
   }
   reload_device(): void {
     this.initDeviceInfo();
@@ -529,9 +579,6 @@ export class DeviceComponent implements OnInit, OnDestroy {
     var _self = this;
     if (this.reloading) return;
     clearInterval(this.data_interval);
-    if(_self.ispro) {
-      _self.get_DHCP_data();
-    }
     this.updateData();
     this.data_interval = setInterval(() => {
       this.reloading = true;
@@ -539,26 +586,33 @@ export class DeviceComponent implements OnInit, OnDestroy {
         _self.devdata = res;
         if ("is_radio" in res) _self.is_radio = res.is_radio;
         _self.interfaces = res.interfaces;
-        _self.data_provider
-          .get_dev_sensors(_self.devid, _self.delta, _self.total_type)
-          .then((res) => {
-            _self.devsensors = res;
-            _self.loading = false;
-            _self.reloading = false;
+        _self.isMikroTik = !res.device_type || res.device_type === 'mikrotik';
 
-            if (_self.is_radio) _self.get_radio_data();
+        if (_self.isMikroTik) {
+          _self.data_provider
+            .get_dev_sensors(_self.devid, _self.delta, _self.total_type)
+            .then((res) => {
+              _self.devsensors = res;
+              _self.loading = false;
+              _self.reloading = false;
 
-          });
+              if (_self.is_radio) _self.get_radio_data();
+              _self.get_DHCP_data();
+            });
+        } else {
+          _self.loading = false;
+          _self.reloading = false;
+        }
       });
     }, 30000);
   }
-  show_history(itme:any) {
+  show_history(itme: any) {
     return
   }
-  objectlen(object:any){
+  objectlen(object: any) {
     return object ? Object.keys(object).length : 0;
   }
-  strangth_at_rate_extract(data:string){
+  strangth_at_rate_extract(data: string) {
     return data ? data.split(',') : [];
   }
 
@@ -584,6 +638,16 @@ export class DeviceComponent implements OnInit, OnDestroy {
       this.loadChatSessions();
     }
   }
+
+  loadAgentConfig() {
+    this.data_provider.getDeviceAgentConfig(this.devid).then((res: any) => {
+      const data = res.data || res.result?.data;
+      if (data) {
+        this.devdata['agent_modes'] = data.agent_modes;
+      }
+    });
+  }
+
 
   loadChatSessions() {
     this.loadingSessions = true;
@@ -738,6 +802,16 @@ export class DeviceComponent implements OnInit, OnDestroy {
     if (this.activeSessionId) {
       this.deleteSession(this.activeSessionId);
     }
+  }
+
+  loadExecutions() {
+    this.execsLoading = true;
+    this.data_provider.get_executions({ device_id: this.devid }).then((res: any) => {
+      this.deviceExecutions = res.data || [];
+      this.execsLoading = false;
+    }).catch(() => {
+      this.execsLoading = false;
+    });
   }
 
   ngOnDestroy() {

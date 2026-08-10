@@ -21,6 +21,8 @@ import { TooltipModule as PTooltipModule } from 'primeng/tooltip';
 import { BadgeModule } from "@coreui/angular";
 import { FormsModule } from "@angular/forms";
 import { MatMenuModule } from "@angular/material/menu";
+import { SharedModule } from "../../shared/shared.module";
+
 @NgModule({
   imports: [
     DevicesGroupRoutingModule,
@@ -41,6 +43,7 @@ import { MatMenuModule } from "@angular/material/menu";
     TooltipModule,
     MatMenuModule,
     ListGroupModule,
+    SharedModule
   ],
   declarations: [DevicesGroupComponent],
 })
