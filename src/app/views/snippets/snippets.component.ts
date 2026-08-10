@@ -81,6 +81,22 @@ export class SnippetsComponent implements OnInit, OnDestroy {
   public availbleMembers: any = [];
   public NewMemberRows: any = [];
   public SelectedNewMemberRows: any;
+  public CsvViewModalVisible: boolean = false;
+  public CsvViewData: any[] = [];
+  public CsvViewColumns: string[] = [];
+  public CsvViewIsText: boolean = false;
+  public CsvViewTextContent: string = '';
+  public textOutputExpanded: boolean = false;
+
+  public exportModalVisible: boolean = false;
+  public exportDataPayload: any[] = [];
+  public exportTitle: string = "Export Snippet Report";
+
+  openSnippetExportModal(data: any[], title: string = "Export Snippet Report") {
+    this.exportDataPayload = data || [];
+    this.exportTitle = title;
+    this.exportModalVisible = true;
+  }
 
   @ViewChild('dtNewMember') dtNewMember!: Table;
   @ViewChild('dtHistory') dtHistory!: Table;
@@ -91,6 +107,9 @@ export class SnippetsComponent implements OnInit, OnDestroy {
     description: "",
     id: 0,
     name: "",
+    brand: "mikrotik",
+    is_default: false,
+    is_config_mode: false,
   };
 
   public default_snippet: any = {
@@ -99,7 +118,12 @@ export class SnippetsComponent implements OnInit, OnDestroy {
     description: "",
     id: 0,
     name: "",
+    brand: "mikrotik",
+    is_default: false,
+    is_config_mode: false,
   };
+
+  public brands: any[] = [];
 
   public ip_scanner: any;
 
@@ -113,6 +137,9 @@ export class SnippetsComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.initGridTable();
+    this.data_provider.listBrands().then((res: any) => {
+      this.brands = Array.isArray(res) ? res : (res.data || res.result || []);
+    });
   }
 
   confirm_delete(item: any = "", del: boolean = false) {
@@ -236,6 +263,7 @@ export class SnippetsComponent implements OnInit, OnDestroy {
 
   submit(action: string) {
     var _self = this;
+    _self.saveSelectionToStorage(_self.current_snippet.id);
     this.data_provider
       .Exec_snipet(_self.current_snippet, _self.SelectedTaskItems)
       .then((res) => {
@@ -245,11 +273,71 @@ export class SnippetsComponent implements OnInit, OnDestroy {
     this.ExecSnipetModalVisible = false;
   }
 
+  getSelectionKey(snippetId: number): string {
+    return `snippet_selection_${this.uid}_${snippetId}`;
+  }
+
+  saveSelectionToStorage(snippetId: number): void {
+    const key = this.getSelectionKey(snippetId);
+    const data = {
+      selection_type: this.current_snippet['selection_type'],
+      SelectedTaskItems: this.SelectedTaskItems,
+      SelectedMembers: this.SelectedMembers
+    };
+    localStorage.setItem(key, JSON.stringify(data));
+  }
+
+  loadSelectionFromStorage(snippetId: number): boolean {
+    const key = this.getSelectionKey(snippetId);
+    const stored = localStorage.getItem(key);
+    if (stored) {
+      try {
+        const data = JSON.parse(stored);
+        this.current_snippet['selection_type'] = data.selection_type || 'devices';
+        this.SelectedTaskItems = data.SelectedTaskItems || [];
+        this.SelectedMembers = data.SelectedMembers || [];
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+    return false;
+  }
+
+  clearStoredSelection(): void {
+    const key = this.getSelectionKey(this.current_snippet.id);
+    localStorage.removeItem(key);
+    this.form_changed();
+  }
+
+  viewResult(item: any): void {
+    const result = item.result;
+    if (typeof result === 'string') {
+      this.CsvViewIsText = true;
+      this.CsvViewTextContent = result;
+      this.CsvViewData = [];
+      this.CsvViewColumns = [];
+    } else if (Array.isArray(result) && result.length > 0) {
+      this.CsvViewIsText = false;
+      this.CsvViewData = result;
+      this.CsvViewColumns = this.getColumns(result);
+      this.CsvViewTextContent = '';
+    } else {
+      this.CsvViewIsText = false;
+      this.CsvViewData = [];
+      this.CsvViewColumns = [];
+      this.CsvViewTextContent = '';
+    }
+    this.textOutputExpanded = false;
+    this.CsvViewModalVisible = true;
+  }
+
   Run_Snippet(item: any, action: string = "showadd") {
     this.current_snippet = item;
     this.current_snippet["task_type"] = "snipet_exec";
     this.current_snippet["selection_type"] = "devices";
     this.form_changed();
+    this.loadSelectionFromStorage(item.id);
     this.ExecSnipetModalVisible = true;
     this.ModalAction = "exec";
   }

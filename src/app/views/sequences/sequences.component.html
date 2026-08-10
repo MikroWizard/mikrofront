@@ -633,6 +633,7 @@
 
     </c-modal-body>
     <c-modal-footer>
+        <button (click)="clearStoredSelection()" cButton color="warning" class="me-auto">Clear history</button>
         <button (click)="submit_exec()" cButton color="primary">Execute</button>
         <button [cModalToggle]="ExecSequenceModal.id" cButton color="secondary">
             Close

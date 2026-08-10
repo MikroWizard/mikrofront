@@ -36,6 +36,13 @@
                   <p-columnFilter type="text" field="description" display="menu" class="ms-auto" />
                 </div>
               </th>
+              <th pSortableColumn="brand" pResizableColumn style="width: 100px;">
+                <div class="justify-between">
+                  Brand
+                  <p-sortIcon field="brand"></p-sortIcon>
+                  <p-columnFilter type="text" field="brand" display="menu" class="ms-auto" />
+                </div>
+              </th>
               <th pSortableColumn="created" pResizableColumn>
                 <div class="justify-between">
                   Created
@@ -55,6 +62,7 @@
                 {{item.name}}
               </td>
               <td>{{item.description}}</td>
+              <td><c-badge color="info" style="font-size: 0.7rem;" *ngIf="item.brand">{{item.brand}}</c-badge></td>
               <td class="small">{{item.created}}</td>
               <td class="text-center">
                 <button cButton color="primary" size="sm" (click)="Edit_Snippet(item,'edit')" class="me-1">
@@ -139,6 +147,7 @@
 
   </c-modal-body>
   <c-modal-footer>
+    <button (click)="clearStoredSelection()" cButton color="warning" class="me-auto">Clear history</button>
     <button (click)="submit('exec')" cButton color="primary">Execute</button>
     <button [cModalToggle]="ExecSnipetModal.id" cButton color="secondary">
       Close
@@ -250,8 +259,11 @@
             <td class="small">{{item.started}}</td>
             <td class="small">{{item.ended}}</td>
             <td class="text-center">
-              <button (click)="exportToCsv(item.result)" color="primary" pTooltip="Download CSV" size="sm" cButton>
-                <i class="fas fa-download"></i>
+              <button (click)="viewResult(item)" color="info" pTooltip="View Output" size="sm" cButton class="me-1">
+                <i class="fas fa-table"></i>
+              </button>
+              <button (click)="openSnippetExportModal(item.result, 'Export Snippet Execution Results')" color="primary" pTooltip="Export Report" size="sm" cButton>
+                <i class="fa-solid fa-file-export"></i>
               </button>
             </td>
           </tr>
@@ -266,6 +278,55 @@
     <button (click)="ExecutedDataModalVisible=!ExecutedDataModalVisible" cButton color="secondary">
       Close
     </button>
+  </c-modal-footer>
+</c-modal>
+
+<c-modal #CsvViewModal backdrop="static" size="xl" [(visible)]="CsvViewModalVisible" id="CsvViewModal">
+  <c-modal-header>
+    <h5 cModalTitle>Output</h5>
+    <button (click)="CsvViewModalVisible=false" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body>
+    <ng-container *ngIf="CsvViewIsText">
+      <div class="bg-dark text-light p-3 rounded" [style.max-height]="textOutputExpanded ? 'none' : '300px'"
+        style="overflow: auto; font-family: 'Courier New', Consolas, monospace;">
+        <pre style="white-space: pre-wrap; word-wrap: break-word; margin: 0; font-size: 0.85rem; font-family: inherit;">{{CsvViewTextContent}}</pre>
+      </div>
+      <div class="text-center mt-2">
+        <button cButton color="secondary" size="sm" (click)="textOutputExpanded = !textOutputExpanded">
+          {{ textOutputExpanded ? 'Collapse' : 'Expand' }}
+        </button>
+      </div>
+    </ng-container>
+    <ng-container *ngIf="!CsvViewIsText && CsvViewData.length > 0">
+      <p-table [value]="CsvViewData" [paginator]="true" [rows]="15" [resizableColumns]="true"
+        columnResizeMode="expand" [showGridlines]="true" [stripedRows]="true"
+        styleClass="p-datatable-sm p-datatable-gridlines p-datatable-striped" [scrollable]="true"
+        scrollHeight="500px" [rowsPerPageOptions]="[10,15,25,50,100]"
+        [currentPageReportTemplate]="'{first}-{last} of {totalRecords}'" [showCurrentPageReport]="true">
+        <ng-template pTemplate="header">
+          <tr>
+            <th *ngFor="let col of CsvViewColumns" pResizableColumn>{{col}}</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-row>
+          <tr>
+            <td *ngFor="let col of CsvViewColumns" class="small" style="padding: 0;">
+            <div class="p-1" style="white-space: pre-wrap; word-break: break-word; font-family: 'Courier New', Consolas, monospace; max-height: 150px; overflow: auto;">{{row[col]}}</div>
+          </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </ng-container>
+    <div *ngIf="!CsvViewIsText && CsvViewData.length === 0" class="text-center p-3 text-muted">
+      No output data available.
+    </div>
+  </c-modal-body>
+  <c-modal-footer>
+    <button (click)="openSnippetExportModal(CsvViewData, 'Export Snippet Output Report')" *ngIf="!CsvViewIsText && CsvViewData.length > 0" cButton color="primary">
+      <i class="fa-solid fa-file-export me-1"></i>Export Report
+    </button>
+    <button (click)="CsvViewModalVisible=false" cButton color="secondary">Close</button>
   </c-modal-footer>
 </c-modal>
 
@@ -299,6 +360,24 @@
         </div>
       </div>
     </c-input-group>
+    <c-input-group class="mb-3">
+      <div class="mb-2">
+        <select cSelect [(ngModel)]="current_snippet['brand']" class="form-select form-select-sm" style="width: 100%;">
+          <option *ngFor="let b of brands" [value]="b.brand">{{ b.display_name || b.brand }}</option>
+        </select>
+        <small class="text-muted">Brand / device type this snippet targets</small>
+      </div>
+    </c-input-group>
+    <div class="d-flex gap-3 mb-3">
+      <c-form-check class="form-check">
+        <input cFormCheckInput type="checkbox" [(ngModel)]="current_snippet['is_default']" />
+        <label cFormCheckLabel>Default for this brand</label>
+      </c-form-check>
+      <c-form-check class="form-check">
+        <input cFormCheckInput type="checkbox" [(ngModel)]="current_snippet['is_config_mode']" />
+        <label cFormCheckLabel>Config mode (Cisco-style configure terminal blocks)</label>
+      </c-form-check>
+    </div>
     <br />
   </c-modal-body>
   <c-modal-footer>
@@ -340,5 +419,12 @@
     </button>
   </c-modal-footer>
 </c-modal>
+
+<app-export-modal
+  [(visible)]="exportModalVisible"
+  [title]="exportTitle"
+  [allData]="exportDataPayload"
+  defaultFileName="snippet_report">
+</app-export-modal>
 
 <c-toaster position="fixed" placement="top-end"></c-toaster>

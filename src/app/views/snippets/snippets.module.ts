@@ -10,12 +10,15 @@ import {
   GridModule,
   ToastModule,
   ModalModule,
+  BadgeModule,
 } from "@coreui/angular";
 import { SnippetsRoutingModule } from "./snippets-routing.module";
 import { SnippetsComponent } from "./snippets.component";
 import { TableModule as PTableModule } from 'primeng/table';
 import { InputTextModule as PInputTextModule } from 'primeng/inputtext';
 import { TooltipModule as PTooltipModule } from 'primeng/tooltip';
+
+import { SharedModule } from "../../shared/shared.module";
 
 @NgModule({
   imports: [
@@ -31,7 +34,9 @@ import { TooltipModule as PTooltipModule } from 'primeng/tooltip';
     PTooltipModule,
     ModalModule,
     ToastModule,
+    BadgeModule,
     FormsModule,
+    SharedModule
   ],
   declarations: [SnippetsComponent],
 })

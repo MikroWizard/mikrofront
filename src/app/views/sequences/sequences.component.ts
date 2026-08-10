@@ -54,6 +54,7 @@ export class SequencesComponent implements OnInit {
     public NewMemberModalVisible: boolean = false;
     public SelectedNewMemberRows: any[] = [];
     public NewMemberRows: any[] = [];
+    public uid: number = 0;
     
     public loading: boolean = true;
 
@@ -79,6 +80,9 @@ export class SequencesComponent implements OnInit {
     constructor(public MikroWizardRPC: dataProvider) { }
 
     ngOnInit(): void {
+        this.MikroWizardRPC.getSessionInfo().then((res: any) => {
+            this.uid = res.uid;
+        });
         this.loadSequences();
         this.loadSnippets();
         this.loadAlerts();
@@ -330,7 +334,45 @@ export class SequencesComponent implements OnInit {
         this.current_sequence["selection_type"] = "devices";
         this.SelectedMembers = [];
         this.SelectedTaskItems = [];
+        this.loadSelectionFromStorage(item.id);
         this.ExecSequenceModalVisible = true;
+    }
+
+    getSelectionKey(sequenceId: number): string {
+        return `sequence_selection_${this.uid}_${sequenceId}`;
+    }
+
+    saveSelectionToStorage(sequenceId: number): void {
+        const key = this.getSelectionKey(sequenceId);
+        const data = {
+            selection_type: this.current_sequence['selection_type'],
+            SelectedTaskItems: this.SelectedTaskItems,
+            SelectedMembers: this.SelectedMembers
+        };
+        localStorage.setItem(key, JSON.stringify(data));
+    }
+
+    loadSelectionFromStorage(sequenceId: number): boolean {
+        const key = this.getSelectionKey(sequenceId);
+        const stored = localStorage.getItem(key);
+        if (stored) {
+            try {
+                const data = JSON.parse(stored);
+                this.current_sequence['selection_type'] = data.selection_type || 'devices';
+                this.SelectedTaskItems = data.SelectedTaskItems || [];
+                this.SelectedMembers = data.SelectedMembers || [];
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }
+        return false;
+    }
+
+    clearStoredSelection(): void {
+        const key = this.getSelectionKey(this.current_sequence.id);
+        localStorage.removeItem(key);
+        this.form_changed();
     }
 
     form_changed() {
@@ -376,7 +418,7 @@ export class SequencesComponent implements OnInit {
 
     onSelectedRowsNewMembers(rows: any): void {
         this.NewMemberRows = rows;
-        this.SelectedNewMemberRows = rows.map((m: any) => m.source);
+        this.SelectedNewMemberRows = rows.map((m: any) => m.source || m);
     }
 
     isObject(val: any): boolean {
@@ -400,6 +442,7 @@ export class SequencesComponent implements OnInit {
     }
 
     submit_exec() {
+        this.saveSelectionToStorage(this.SelectedSequence.id);
         const payload = {
             sequence_id: this.SelectedSequence.id,
             selection_type: this.current_sequence.selection_type,

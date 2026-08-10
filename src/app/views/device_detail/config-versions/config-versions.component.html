@@ -1,0 +1,176 @@
+<c-card class="mb-4 shadow-sm border-0">
+  <c-card-header class="bg-light py-3 border-bottom">
+    <div class="d-flex align-items-center justify-content-between">
+      <div class="d-flex align-items-center">
+        <i class="fa-solid fa-history me-2 text-warning" style="font-size: 1.1rem;"></i>
+        <h6 class="mb-0 fw-bold">Config Versions</h6>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <select cSelect [(ngModel)]="commandFilter" (change)="onCommandFilterChange()" style="width: 160px;" class="form-select form-select-sm">
+          <option *ngFor="let c of commandOptions" [value]="c.value">{{ c.label }}</option>
+        </select>
+        <c-spinner size="sm" *ngIf="loading"></c-spinner>
+      </div>
+    </div>
+  </c-card-header>
+  <c-card-body>
+
+    <!-- Latest attempt banner -->
+    <div class="alert alert-light border mb-3 py-2 px-3" *ngIf="latestAttempt">
+      <div class="d-flex align-items-center justify-content-between">
+        <small class="text-muted">
+          <i class="fa-solid fa-circle-check me-1" [ngClass]="{'text-success': latestAttempt.lastSeenC, 'text-muted': !latestAttempt.lastSeenC}"></i>
+          Latest version: <strong>#{{ latestAttempt.version_num }}</strong>
+          &mdash; last confirmed: <strong>{{ latestAttempt.lastSeenC || 'N/A' }}</strong>
+        </small>
+        <c-spinner size="sm" *ngIf="latestAttemptLoading"></c-spinner>
+      </div>
+    </div>
+
+    <!-- Compare bar -->
+    <div class="alert alert-warning border mb-3 py-2 px-3 d-flex align-items-center justify-content-between" *ngIf="ispro && compareitems.length > 0">
+      <div class="d-flex align-items-center gap-2">
+        <span><i class="fa-solid fa-code-compare me-1"></i> Compare:</span>
+        <c-badge *ngFor="let ci of compareitems; let i = index" color="dark" style="font-size: 0.75rem; cursor: pointer;" (click)="removeCompare(ci)">
+          v{{ ci.version_num }} &times;
+        </c-badge>
+        <span *ngIf="compareitems.length < 2" class="text-muted small">(select one more)</span>
+      </div>
+      <div class="d-flex gap-1">
+        <button *ngIf="ispro" cButton color="warning" size="sm" (click)="runCompare()" [disabled]="compareitems.length < 2">
+          <i class="fa-solid fa-code-compare me-1"></i>Compare Selected
+        </button>
+        <button cButton color="secondary" size="sm" (click)="clearCompare()">
+          <i class="fa-solid fa-xmark me-1"></i>Clear
+        </button>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-responsive">
+      <table class="table table-hover table-striped align-middle border">
+        <thead>
+          <tr class="table-light">
+            <th *ngIf="ispro" class="py-2 px-1 text-center" style="width: 40px;">#</th>
+            <th class="py-2 px-3 text-center" style="width: 60px;">#</th>
+            <th class="py-2 px-3">Size</th>
+            <th class="py-2 px-3">First Seen</th>
+            <th class="py-2 px-3">Last Confirmed</th>
+            <th class="py-2 px-3 text-end" style="width: 120px;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let v of versions" class="border-bottom" [class.table-warning]="v._selected">
+            <td *ngIf="ispro" class="px-1 text-center">
+              <input type="checkbox" [checked]="v._selected" (change)="addForCompare(v)" style="cursor: pointer;" />
+            </td>
+            <td class="px-3 text-center fw-semibold">
+              <c-badge color="dark" style="font-size: 0.8rem;">v{{ v.version_num }}</c-badge>
+            </td>
+            <td class="px-3 font-monospace small text-muted">{{ sizeFmt(v.size_bytes) }}</td>
+            <td class="px-3 small">{{ v.firstSeenC }}</td>
+            <td class="px-3 small">{{ v.lastSeenC }}</td>
+            <td class="px-3 text-end">
+              <div class="d-flex gap-1 justify-content-end">
+                <button cButton color="outline-info" size="sm" pTooltip="View normalized content" (click)="viewVersionContent(v)">
+                  <i class="fa-regular fa-eye"></i>
+                </button>
+                <button cButton color="outline-secondary" size="sm" pTooltip="View raw device output" (click)="viewRawContent(v)">
+                  <i class="fa-solid fa-file-lines"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="versions.length === 0 && !loading">
+            <td [attr.colspan]="ispro ? 6 : 5" class="text-center py-4 text-muted">
+              No config versions found for this device.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </c-card-body>
+</c-card>
+
+<!-- View Config Modal -->
+<c-modal #viewModal backdrop="static" size="xl" [visible]="viewModalVisible" (visibleChange)="viewModalVisible = $event" id="configViewModal">
+  <c-modal-header>
+    <h5 cModalTitle>
+      <i class="fa-regular fa-eye me-2 text-info"></i>
+      Config v{{ viewVersion?.version_num }} &mdash; Normalized Content
+    </h5>
+    <button (click)="viewModalVisible = false" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body>
+    <div class="bg-light rounded font-monospace p-3" style="max-height: 65vh; overflow: auto; font-size: 0.82rem; white-space: pre-wrap;">
+      <code>{{ viewContent }}</code>
+    </div>
+    <div class="d-flex justify-content-between mt-2">
+      <small class="text-muted">Size: {{ sizeFmt(viewVersion?.size_bytes) }} &middot; First seen: {{ viewVersion?.first_seen_at | date:'short' }}</small>
+      <button cButton color="outline-secondary" size="sm" (click)="copyContent(viewContent)">
+        <i class="fa-regular fa-copy me-1"></i>Copy to Clipboard
+      </button>
+    </div>
+  </c-modal-body>
+  <c-modal-footer>
+    <button (click)="viewModalVisible = false" cButton color="secondary">Close</button>
+  </c-modal-footer>
+</c-modal>
+
+<!-- View Raw Modal -->
+<c-modal #viewRawModal backdrop="static" size="xl" [visible]="viewRawModalVisible" (visibleChange)="viewRawModalVisible = $event" id="configRawModal">
+  <c-modal-header>
+    <h5 cModalTitle>
+      <i class="fa-solid fa-file-lines me-2 text-secondary"></i>
+      Raw Device Output
+    </h5>
+    <button (click)="viewRawModalVisible = false" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body>
+    <div class="bg-dark text-light rounded font-monospace p-3" style="max-height: 65vh; overflow: auto; font-size: 0.82rem; white-space: pre-wrap;">
+      <pre class="mb-0">{{ viewContentRaw }}</pre>
+    </div>
+    <div class="d-flex justify-content-end mt-2">
+      <button cButton color="outline-light" size="sm" (click)="copyContent(viewContentRaw)">
+        <i class="fa-regular fa-copy me-1"></i>Copy to Clipboard
+      </button>
+    </div>
+  </c-modal-body>
+  <c-modal-footer>
+    <button (click)="viewRawModalVisible = false" cButton color="secondary">Close</button>
+  </c-modal-footer>
+</c-modal>
+
+<!-- Diff Modal (PRO) -->
+<c-modal #diffModal backdrop="static" size="xl" [visible]="diffModalVisible" (visibleChange)="diffModalVisible = $event" id="configDiffModal">
+  <c-modal-header>
+    <h6 cModalTitle>
+      <i class="fa-solid fa-code-compare me-2 text-warning"></i>
+      Compare Config Versions
+    </h6>
+    <c-form-check (click)="toggleDiffType()" sizing="xl" class="mx-5" switch>
+      <h6>
+        <input cFormCheckInput [checked]="diffType==='unified'"
+          style="width: 2.5rem;margin-left: -2.8em;cursor: pointer;" type="checkbox" />
+        <label cFormCheckLabel style="padding-top: calc((1.8em - 1rem) / 2);">
+          <span *ngIf="diffType==='sided'">Sided compare</span>
+          <span *ngIf="diffType==='unified'">Unified compare</span>
+        </label>
+      </h6>
+    </c-form-check>
+    <button (click)="diffModalVisible = false" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body *ngIf="diffBefore && diffAfter">
+    <h6>
+      <c-badge color="secondary" style="font-size: 0.75rem;">v{{ diffBeforeInfo?.version_num }}</c-badge>
+      <span class="mx-1">vs</span>
+      <c-badge color="dark" style="font-size: 0.75rem;">v{{ diffAfterInfo?.version_num }}</c-badge>
+    </h6>
+    <ngx-unified-diff *ngIf="diffType==='unified'" class="ngx-diff-light-theme" [before]="diffBefore" [after]="diffAfter" />
+    <ngx-side-by-side-diff *ngIf="diffType==='sided'" class="ngx-diff-light-theme" [before]="diffBefore" [after]="diffAfter" />
+  </c-modal-body>
+  <c-modal-footer>
+    <button (click)="diffModalVisible = false" cButton color="info">Close</button>
+  </c-modal-footer>
+</c-modal>
