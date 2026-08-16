@@ -323,6 +323,10 @@ export class DevicesComponent implements OnInit, OnDestroy {
     this.selected_device["editform"]["port"] = ssl ? 8729 : 8728;
   }
 
+  onScanSslChange() {
+    this.ip_scanner["port"] = this.ip_scanner["ssl"] ? 8729 : 8728;
+  }
+
   save_device() {
     var _self = this;
     const editform = this.selected_device["editform"];
@@ -418,6 +422,7 @@ export class DevicesComponent implements OnInit, OnDestroy {
           port: "",
           user: "",
           password: "",
+          ssl: false,
         };
       }
       if (step == 2) {

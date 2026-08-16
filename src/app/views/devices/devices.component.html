@@ -323,7 +323,13 @@
       <c-input-group class="mb-3">
         <span cInputGroupText>Port</span>
         <input aria-label="end" cFormControl [valid]="checkvalid('port')" [(ngModel)]="ip_scanner['port']"
-          placeholder="8728" />
+          [placeholder]="ip_scanner['ssl'] ? '8729' : '8728'" />
+      </c-input-group>
+      <c-input-group class="mb-3 align-items-center">
+        <label class="form-label small m-0 me-3">SSL Support (API-SSL)</label>
+        <c-form-check sizing="lg" switch>
+          <input cFormCheckInput type="checkbox" [(ngModel)]="ip_scanner['ssl']" (change)="onScanSslChange()" />
+        </c-form-check>
       </c-input-group>
       <button cButton color="info" (click)="scanwizard(3,'ip')" class="mx-1" size="lg">Start Scanning</button>
     </div>
@@ -378,7 +384,7 @@
   </c-modal-body>
   <c-modal-footer>
     <small *ngIf="scan_type=='ip'">Empty username and password means system default
-      configuration</small>
+      configuration. Enabling SSL defaults the port to 8729.</small>
   </c-modal-footer>
 </c-modal>
 
