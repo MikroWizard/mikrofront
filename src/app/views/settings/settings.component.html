@@ -31,6 +31,9 @@
           <button class="tab-link" *ngIf="ispro" [class.active]="activeTab === 'alerts'" (click)="activeTab = 'alerts'">
             <i class="fa-solid fa-bell me-2"></i>Alert Channels
           </button>
+          <button class="tab-link" [class.active]="activeTab === 'ssl'" (click)="openSslTab()">
+            <i class="fa-solid fa-lock me-2"></i>SSL/TLS
+          </button>
         </div>
 
         <!-- Firmware Tab -->
@@ -386,6 +389,20 @@
                     placeholder="Same as your mikrowizard.com login" class="form-control" />
                   <small class="setting-help text-warning">🔑 <strong>Same username</strong> you use to login to
                     mikrowizard.com website</small>
+                </div>
+              </c-col>
+              <c-col md="6">
+                <div class="setting-group">
+                  <label class="setting-label">License Download</label>
+                  <div class="d-flex align-items-center gap-2 mt-2">
+                    <button cButton color="primary" size="sm" [disabled]="licenseRefreshing"
+                      (click)="refreshLicense()">
+                      <i class="fa-solid me-1" [ngClass]="licenseRefreshing ? 'fa-circle-notch fa-spin' : 'fa-arrows-rotate'"></i>
+                      {{ licenseRefreshing ? 'Reloading...' : 'Reload License' }}
+                    </button>
+                  </div>
+                  <small class="setting-help">Force a fresh download of your license from mikrowizard.com. Use this
+                    after renewing or upgrading your license online.</small>
                 </div>
               </c-col>
             </c-row>
@@ -1221,6 +1238,397 @@
           </div>
         </c-card-body>
 
+
+        <!-- SSL/TLS Tab -->
+        <c-card-body *ngIf="activeTab === 'ssl'" class="tab-content">
+          <!-- Port 443 Warning Banner -->
+          <div class="warning-banner mb-4" *ngIf="sslStatus && !sslStatus.port_443_available">
+            <i class="fa-solid fa-triangle-exclamation me-2"></i>
+            <div class="flex-grow-1">
+              <strong>Port 443 is not exposed.</strong> HTTPS requires port 443 to be mapped in the Docker container. Run the command below or click Copy to use it.
+              <br><small class="text-danger">This script recreates the container — no data will be lost. The persistent volume at /opt/mikrowizard/ is preserved.</small>
+            </div>
+          </div>
+          <div class="d-flex gap-2 mb-4" *ngIf="sslStatus && !sslStatus.port_443_available">
+            <code class="flex-grow-1 p-2 rounded" style="background:#1a1d28;font-size:0.82rem;word-break:break-all;color:#c4cdde;">sudo bash /opt/mikrowizard/recreate-ssl.sh</code>
+            <button cButton color="info" size="sm" (click)="copyMigrationCommand()">
+              <i class="fa-solid fa-copy me-1"></i>Copy
+            </button>
+            <button cButton color="light" size="sm" (click)="loadSslStatus()">
+              <i class="fa-solid fa-rotate me-1"></i>Check Again
+            </button>
+          </div>
+
+          <!-- SSL Status Card -->
+          <div class="status-section mb-4">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+              <h5 class="section-title mb-0">
+                <i class="fa-solid fa-shield-halved me-2" [class.text-success]="sslStatus?.https_configured" [class.text-danger]="!sslStatus?.https_configured"></i>SSL Status
+                <i class="fa-solid fa-info-circle ms-2 text-info help-icon"
+                  [cTooltip]="'Current SSL/TLS configuration status. HTTPS serves encrypted traffic on port 443. HTTP on port 80 remains available unless Force HTTPS is enabled.'"
+                  cTooltipPlacement="top"></i>
+              </h5>
+              <c-badge [color]="sslStatus?.https_configured ? 'success' : 'secondary'" class="fs-6">
+                {{ sslStatus?.https_configured ? 'Active' : 'Inactive' }}
+              </c-badge>
+            </div>
+            <c-row *ngIf="sslStatus?.certificate?.installed" class="g-3">
+              <c-col md="6">
+                <div class="setting-group mb-2">
+                  <label class="setting-label">Domain</label>
+                  <span>{{ sslStatus.certificate.domain || '-' }}</span>
+                </div>
+              </c-col>
+              <c-col md="6">
+                <div class="setting-group mb-2">
+                  <label class="setting-label">Issuer</label>
+                  <span>{{ sslStatus.certificate.issuer || '-' }}</span>
+                </div>
+              </c-col>
+              <c-col md="6">
+                <div class="setting-group mb-2">
+                  <label class="setting-label">Source</label>
+                  <c-badge [color]="sslStatus.certificate.source === 'letsencrypt' ? 'success' : 'info'">
+                    {{ sslStatus.certificate.source === 'letsencrypt' ? 'Let\'s Encrypt' : 'Manual' }}
+                  </c-badge>
+                </div>
+              </c-col>
+              <c-col md="6">
+                <div class="setting-group mb-2">
+                  <label class="setting-label">Expires</label>
+                  <span [class.text-success]="sslStatus.certificate.days_remaining > 30"
+                        [class.text-warning]="sslStatus.certificate.days_remaining <= 30 && sslStatus.certificate.days_remaining > 7"
+                        [class.text-danger]="sslStatus.certificate.days_remaining <= 7">
+                    {{ sslStatus.certificate.not_after ? (sslStatus.certificate.not_after | date:'mediumDate') : '-' }}
+                    <c-badge [color]="sslStatus.certificate.days_remaining > 30 ? 'success' : (sslStatus.certificate.days_remaining > 7 ? 'warning' : 'danger')" class="ms-2">
+                      {{ sslStatus.certificate.days_remaining }} days
+                    </c-badge>
+                  </span>
+                </div>
+              </c-col>
+              <c-col md="12">
+                <div class="setting-group mb-0">
+                  <label class="setting-label">Subject Alternative Names</label>
+                  <small>{{ (sslStatus.certificate.san || []).join(', ') || '-' }}</small>
+                </div>
+              </c-col>
+            </c-row>
+            <div *ngIf="sslWarmingUp" class="text-center py-3">
+              <c-spinner size="sm" class="me-2"></c-spinner>
+              <span class="text-muted">SSL service is starting up, please wait...</span>
+            </div>
+            <div *ngIf="!sslWarmingUp && !sslStatus?.certificate?.installed && !sslLoading" class="text-muted py-3">
+              <i class="fa-solid fa-circle-info me-2"></i>No SSL certificate installed. Use Let's Encrypt or upload a manual certificate below.
+            </div>
+            <div *ngIf="!sslWarmingUp && sslLoading" class="text-center py-3">
+              <c-spinner size="sm" class="me-2"></c-spinner> Loading SSL status...
+            </div>
+          </div>
+
+          <!-- Let's Encrypt Card -->
+          <div class="config-section mb-4">
+            <h5 class="section-title mb-3">
+              <i class="fa-solid fa-leaf me-2 text-success"></i>Let's Encrypt
+              <i class="fa-solid fa-info-circle ms-2 text-info help-icon"
+                [cTooltip]="'Let’s Encrypt provides free, automated SSL certificates trusted by all browsers. Certificates auto-renew every 60 days via Certbot.'"
+                cTooltipPlacement="top"></i>
+            </h5>
+            <div class="info-banner mb-3" *ngIf="!sslStatus?.certbot_installed && sslStatus">
+              <i class="fa-solid fa-circle-info me-2"></i>
+              <span class="flex-grow-1">Certbot is not installed. Click the button below to install it inside the container.</span>
+              <button cButton color="info" size="sm" (click)="installCertbot()" [disabled]="sslActionInProgress" class="ms-3">
+                <c-spinner *ngIf="sslActionInProgress" size="sm" class="me-1"></c-spinner>
+                <i *ngIf="!sslActionInProgress" class="fa-solid fa-download me-1"></i>Install Certbot
+              </button>
+            </div>
+
+            <c-row class="g-3">
+              <c-col md="8">
+                <div class="setting-group">
+                  <label class="setting-label">Domain(s)</label>
+                  <div *ngFor="let d of leDomains; let i = index; trackBy: trackByIndex" class="d-flex gap-2 mb-2">
+                    <input cFormControl [(ngModel)]="leDomains[i]" placeholder="example.com" class="form-control" />
+                    <button *ngIf="leDomains.length > 1" cButton color="danger" size="sm" variant="outline" (click)="removeLeDomain(i)">
+                      <i class="fa-solid fa-xmark"></i>
+                    </button>
+                  </div>
+                  <button cButton color="light" size="sm" variant="outline" (click)="addLeDomain()">
+                    <i class="fa-solid fa-plus me-1"></i>Add Domain
+                  </button>
+                  <span class="setting-help">Enter all domains the certificate should cover. First domain is primary.</span>
+                </div>
+              </c-col>
+              <c-col md="4">
+                <div class="setting-group">
+                  <label class="setting-label">Email
+                    <i class="fa-solid fa-info-circle ms-1 text-info help-icon"
+                      [cTooltip]="'Used by Let’s Encrypt for expiry notifications and account recovery.'"
+                      cTooltipPlacement="top"></i>
+                  </label>
+                  <input cFormControl [(ngModel)]="leEmail" placeholder="admin@example.com" class="form-control" type="email" />
+                </div>
+              </c-col>
+            </c-row>
+
+            <c-row class="g-3 mt-1">
+              <c-col md="6">
+                <div class="setting-group">
+                  <label class="setting-label">Challenge Method</label>
+                  <select cSelect [(ngModel)]="leMethod" class="form-select">
+                    <option value="http">HTTP-01 (requires port 80 public access)</option>
+                    <option value="dns">DNS-01 API (requires DNS provider token)</option>
+                    <option value="dns-manual">DNS-01 Manual (add TXT records yourself)</option>
+                  </select>
+                  <span class="setting-help" *ngIf="leMethod === 'http'">Uses HTTP challenge on port 80. Your server must be reachable from the internet.</span>
+                  <span class="setting-help" *ngIf="leMethod === 'dns'">Uses DNS TXT record verification via API. Works without public port 80 access.</span>
+                  <span class="setting-help" *ngIf="leMethod === 'dns-manual'">Certbot generates a TXT record. You add it to your DNS provider manually, then click Continue.</span>
+                </div>
+              </c-col>
+              <c-col md="6" *ngIf="leMethod === 'dns'">
+                <div class="setting-group">
+                  <label class="setting-label">DNS Provider</label>
+                  <select cSelect [(ngModel)]="leDnsProvider" class="form-select">
+                    <option value="cloudflare">Cloudflare</option>
+                    <option value="digitalocean">DigitalOcean</option>
+                    <option value="route53">AWS Route 53</option>
+                    <option value="google">Google Cloud DNS</option>
+                    <option value="linode">Linode</option>
+                    <option value="ovh">OVH</option>
+                  </select>
+                </div>
+              </c-col>
+            </c-row>
+
+            <c-row class="g-3 mt-1" *ngIf="leMethod === 'dns'">
+              <c-col md="12">
+                <div class="setting-group">
+                  <label class="setting-label">API Token / Credentials</label>
+                  <input cFormControl [(ngModel)]="leDnsToken" placeholder="dns_provider_api_token" class="form-control" type="password" />
+                  <span class="setting-help">The API token for your DNS provider. Used once for verification and never stored.</span>
+                </div>
+              </c-col>
+            </c-row>
+
+            <div class="d-flex gap-2 mt-3">
+              <button cButton color="success" size="sm" (click)="leMethod === 'dns-manual' ? startDnsManual() : requestLetsEncrypt()" [disabled]="sslActionInProgress">
+                <c-spinner *ngIf="sslActionInProgress" size="sm" class="me-1"></c-spinner>
+                <i *ngIf="!sslActionInProgress" class="fa-solid fa-certificate me-1"></i>{{ leMethod === 'dns-manual' ? 'Start DNS Challenge' : 'Request Certificate' }}
+              </button>
+              <button *ngIf="leMethod !== 'dns-manual'" cButton color="info" size="sm" variant="outline" (click)="renewLetsEncrypt()"
+                [disabled]="sslActionInProgress || !sslStatus?.certificate?.installed || sslStatus?.certificate?.source !== 'letsencrypt'">
+                <i class="fa-solid fa-rotate me-1"></i>Renew Certificate
+              </button>
+              <button *ngIf="leMethod !== 'dns-manual'" cButton color="warning" size="sm" variant="outline" (click)="confirmDeleteLeCert()"
+                [disabled]="sslActionInProgress || !sslStatus?.certificate?.installed || sslStatus?.certificate?.source !== 'letsencrypt'">
+                <i class="fa-solid fa-trash-can me-1"></i>Delete Certificate
+              </button>
+            </div>
+
+            <!-- Manual DNS TXT Records -->
+            <div *ngIf="leDnsManualRecords.length > 0" class="mt-3 p-3 rounded" style="background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.25);">
+              <h6 class="fw-semibold mb-2">
+                <i class="fa-solid fa-clipboard-list me-2 text-indigo"></i>DNS TXT Records to Add
+              </h6>
+              <p class="text-muted small mb-3">Add the following record(s) to your DNS provider, then click Continue to verify.</p>
+              <div *ngFor="let rec of leDnsManualRecords" class="mb-3 p-2 rounded" style="background:#1a1d28;border:1px solid #323a4a;">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <small class="text-muted">Record Name (Host)</small>
+                  <button cButton color="light" size="sm" variant="ghost" (click)="copyToClipboard(rec.record)" style="padding:0 4px;">
+                    <i class="fa-solid fa-copy" style="font-size:0.7rem;"></i>
+                  </button>
+                </div>
+                <code style="font-size:0.8rem;word-break:break-all;color:#6fe0b0;">{{ rec.record }}</code>
+                <div class="d-flex justify-content-between align-items-center mt-2 mb-1">
+                  <small class="text-muted">Type</small>
+                  <small class="text-muted">TXT Value</small>
+                </div>
+                <div class="d-flex gap-2">
+                  <c-badge color="info">TXT</c-badge>
+                  <code class="flex-grow-1" style="font-size:0.8rem;word-break:break-all;color:#c4cdde;">{{ rec.value }}</code>
+                  <button cButton color="light" size="sm" variant="ghost" (click)="copyToClipboard(rec.value)" style="padding:0 4px;">
+                    <i class="fa-solid fa-copy" style="font-size:0.7rem;"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="warning-banner mb-3">
+                <i class="fa-solid fa-clock me-2"></i>
+                <span>DNS changes may take a few minutes to propagate. Wait 1-2 minutes after adding the record before clicking Continue.</span>
+              </div>
+              <div class="d-flex gap-2">
+                <button cButton color="success" size="sm" (click)="continueDnsManual()" [disabled]="sslActionInProgress">
+                  <c-spinner *ngIf="sslActionInProgress" size="sm" class="me-1"></c-spinner>
+                  <i *ngIf="!sslActionInProgress" class="fa-solid fa-check me-1"></i>Continue & Verify
+                </button>
+                <button cButton color="secondary" size="sm" variant="outline" (click)="cancelDnsManual()" [disabled]="sslActionInProgress">
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Manual Certificate Card -->
+          <div class="config-section mb-4">
+            <h5 class="section-title mb-3">
+              <i class="fa-solid fa-file-certificate me-2 text-info"></i>Manual Certificate
+              <i class="fa-solid fa-info-circle ms-2 text-info help-icon"
+                [cTooltip]="'Paste your PEM-encoded certificate and private key. If your key is encrypted with a passphrase, decrypt it first: openssl rsa -in encrypted.key -out decrypted.key'"
+                cTooltipPlacement="top"></i>
+            </h5>
+            <div class="info-banner mb-3">
+              <i class="fa-solid fa-lightbulb me-2"></i>
+              <span>Paste your certificate and private key in PEM format. The chain/intermediate certificate is optional but recommended.</span>
+            </div>
+
+            <c-row class="g-3">
+              <c-col md="12">
+                <div class="setting-group">
+                  <label class="setting-label">Certificate (PEM)</label>
+                  <textarea cFormControl [(ngModel)]="manualCertPem" rows="5" placeholder="-----BEGIN CERTIFICATE-----&#10;...&#10;-----END CERTIFICATE-----" class="form-control" style="font-family:monospace;font-size:0.8rem;"></textarea>
+                </div>
+              </c-col>
+              <c-col md="12">
+                <div class="setting-group">
+                  <label class="setting-label">Private Key (PEM)</label>
+                  <textarea cFormControl [(ngModel)]="manualKeyPem" rows="5" placeholder="-----BEGIN PRIVATE KEY-----&#10;...&#10;-----END PRIVATE KEY-----" class="form-control" style="font-family:monospace;font-size:0.8rem;"></textarea>
+                </div>
+              </c-col>
+              <c-col md="12">
+                <div class="setting-group">
+                  <label class="setting-label">Chain / Intermediate (PEM, optional)</label>
+                  <textarea cFormControl [(ngModel)]="manualChainPem" rows="3" placeholder="-----BEGIN CERTIFICATE-----&#10;...&#10;-----END CERTIFICATE-----" class="form-control" style="font-family:monospace;font-size:0.8rem;"></textarea>
+                </div>
+              </c-col>
+            </c-row>
+
+            <button cButton color="info" size="sm" class="mt-3" (click)="installManualCert()" [disabled]="sslActionInProgress">
+              <c-spinner *ngIf="sslActionInProgress" size="sm" class="me-1"></c-spinner>
+              <i *ngIf="!sslActionInProgress" class="fa-solid fa-upload me-1"></i>Install Certificate
+            </button>
+          </div>
+
+          <!-- Generate CSR Card -->
+          <div class="config-section mb-4">
+            <h5 class="section-title mb-3">
+              <i class="fa-solid fa-key me-2 text-warning"></i>Generate CSR
+              <i class="fa-solid fa-info-circle ms-2 text-info help-icon"
+                [cTooltip]="'Generate a Certificate Signing Request to submit to your Certificate Authority. Keep the private key secure.'"
+                cTooltipPlacement="top"></i>
+            </h5>
+            <c-row class="g-3">
+              <c-col md="6">
+                <div class="setting-group">
+                  <label class="setting-label">Domain (CN)</label>
+                  <input cFormControl [(ngModel)]="csrDomain" placeholder="mikrowizard.example.com" class="form-control" />
+                </div>
+              </c-col>
+              <c-col md="3">
+                <div class="setting-group">
+                  <label class="setting-label">Country (2 letters)</label>
+                  <input cFormControl [(ngModel)]="csrCountry" placeholder="US" class="form-control" maxlength="2" />
+                </div>
+              </c-col>
+              <c-col md="3">
+                <div class="setting-group">
+                  <label class="setting-label">State</label>
+                  <input cFormControl [(ngModel)]="csrState" placeholder="California" class="form-control" />
+                </div>
+              </c-col>
+              <c-col md="4">
+                <div class="setting-group">
+                  <label class="setting-label">City</label>
+                  <input cFormControl [(ngModel)]="csrCity" placeholder="San Francisco" class="form-control" />
+                </div>
+              </c-col>
+              <c-col md="4">
+                <div class="setting-group">
+                  <label class="setting-label">Organization</label>
+                  <input cFormControl [(ngModel)]="csrOrg" placeholder="My Company" class="form-control" />
+                </div>
+              </c-col>
+              <c-col md="4">
+                <div class="setting-group">
+                  <label class="setting-label">Email</label>
+                  <input cFormControl [(ngModel)]="csrEmail" placeholder="admin@example.com" class="form-control" type="email" />
+                </div>
+              </c-col>
+              <c-col md="12">
+                <div class="setting-group">
+                  <label class="setting-label">Key Size</label>
+                  <select cSelect [(ngModel)]="csrKeySize" class="form-select">
+                    <option value="2048">RSA 2048</option>
+                    <option value="4096">RSA 4096</option>
+                  </select>
+                </div>
+              </c-col>
+            </c-row>
+
+            <button cButton color="warning" size="sm" class="mt-3" (click)="generateCsr()" [disabled]="sslActionInProgress">
+              <c-spinner *ngIf="sslActionInProgress" size="sm" class="me-1"></c-spinner>
+              <i *ngIf="!sslActionInProgress" class="fa-solid fa-gear me-1"></i>Generate CSR
+            </button>
+
+            <div *ngIf="csrOutput" class="mt-3">
+              <div class="smtp-log-panel">
+                <div class="smtp-log-header">
+                  <i class="fa-solid fa-file-lines me-1"></i>CSR Output
+                </div>
+                <div class="smtp-log-body" style="max-height:300px;">
+                  <pre style="color:#c4cdde;font-size:0.75rem;padding:10px;margin:0;white-space:pre-wrap;word-break:break-all;">{{ csrOutput }}</pre>
+                </div>
+              </div>
+              <div class="mt-2">
+                <button cButton color="info" size="sm" (click)="copyToClipboard(csrOutput)">
+                  <i class="fa-solid fa-copy me-1"></i>Copy CSR
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Advanced Card -->
+          <div class="config-section mb-4">
+            <h5 class="section-title mb-3">
+              <i class="fa-solid fa-gears me-2 text-secondary"></i>Advanced
+            </h5>
+
+            <div class="switch-item mb-3">
+              <div class="switch-content">
+                <div class="switch-info">
+                  <h6 class="switch-title">Force HTTPS Redirect
+                    <i class="fa-solid fa-question-circle ms-1 text-info help-icon"
+                      [cTooltip]="'When enabled, all HTTP requests on port 80 redirect to HTTPS on port 443. ACME challenges on /.well-known/ always remain accessible on port 80 for certificate renewal.'"
+                      cTooltipPlacement="top"></i>
+                  </h6>
+                  <p class="switch-description">Redirect all HTTP traffic to HTTPS automatically
+                    <br><small class="text-warning" *ngIf="!sslStatus?.https_configured">⚠️ Install a certificate before enabling this</small>
+                    <small class="text-success" *ngIf="sslStatus?.https_configured">✅ HTTPS is configured and ready</small>
+                  </p>
+                </div>
+                <c-form-check [switch]="true" sizing="lg">
+                  <input cFormCheckInput type="checkbox" [(ngModel)]="forceSslEnabled" (change)="toggleForceSsl()"
+                    [disabled]="sslActionInProgress || !sslStatus?.https_configured" />
+                  <label cFormCheckLabel></label>
+                </c-form-check>
+              </div>
+            </div>
+
+            <div class="d-flex gap-2 mb-3">
+              <button cButton color="light" size="sm" variant="outline" (click)="testNginxConfig()">
+                <i class="fa-solid fa-flask me-1"></i>Test Configuration
+              </button>
+              <button cButton color="light" size="sm" variant="outline" (click)="reloadNginx()" [disabled]="sslActionInProgress">
+                <i class="fa-solid fa-arrows-rotate me-1"></i>Reload Nginx
+              </button>
+            </div>
+
+            <div *ngIf="sslStatus?.https_configured">
+              <button cButton color="danger" size="sm" variant="outline" (click)="confirmDisableHttps()" [disabled]="sslActionInProgress">
+                <i class="fa-solid fa-power-off me-1"></i>Disable HTTPS
+              </button>
+              <span class="setting-help text-danger mt-1">Removes SSL configuration. HTTP on port 80 will continue to work.</span>
+            </div>
+          </div>
+        </c-card-body>
+
         <!-- Loading State -->
         <c-card-body *ngIf="['system', 'email', 'ai', 'speedtest', 'alerts'].includes(activeTab) && SysConfigloading" class="text-center py-5">
           <c-spinner size="sm" class="mb-3"></c-spinner>
@@ -1340,6 +1748,79 @@
       <i class="fa-solid fa-rotate-right me-1"></i>Try Again
     </button>
     <button *ngIf="smtpTestStep === 3 && smtpTestStatus === 'error'" (click)="closeSmtpTestModal()" cButton color="secondary">Close</button>
+  </c-modal-footer>
+</c-modal>
+
+<c-modal #SslErrorModal backdrop="static" [(visible)]="sslErrorModalVisible" id="SslErrorModal" size="lg">
+  <c-modal-header>
+    <h5 cModalTitle>
+      <i class="fa-solid fa-circle-xmark me-2 text-danger"></i>{{ sslErrorTitle || 'SSL Operation Failed' }}
+    </h5>
+    <button (click)="sslErrorModalVisible = false" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body>
+    <div class="warning-banner mb-3">
+      <i class="fa-solid fa-triangle-exclamation me-2"></i>
+      <span>The operation did not complete successfully. Review the output below for details.</span>
+    </div>
+    <div class="smtp-log-panel">
+      <div class="smtp-log-header">
+        <i class="fa-solid fa-terminal me-1"></i>Command Output
+      </div>
+      <div class="smtp-log-body" style="max-height: 400px;">
+        <pre style="color:#c4cdde;font-size:0.78rem;padding:10px;margin:0;white-space:pre-wrap;word-break:break-all;">{{ sslErrorOutput }}</pre>
+      </div>
+    </div>
+  </c-modal-body>
+  <c-modal-footer>
+    <button (click)="copyToClipboard(sslErrorOutput)" cButton color="info">
+      <i class="fa-solid fa-copy me-1"></i>Copy Output
+    </button>
+    <button (click)="sslErrorModalVisible = false" cButton color="secondary">Close</button>
+  </c-modal-footer>
+</c-modal>
+
+<c-modal #LeDeleteConfirmModal backdrop="static" [(visible)]="leDeleteModalVisible" id="LeDeleteConfirmModal">
+  <c-modal-header>
+    <h5 cModalTitle>
+      <i class="fa-solid fa-triangle-exclamation me-2 text-danger"></i>Delete Let's Encrypt Certificate
+    </h5>
+    <button (click)="leDeleteModalVisible = false" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body>
+    <div class="warning-banner mb-3">
+      <i class="fa-solid fa-exclamation-triangle me-2"></i>
+      <span>This will permanently delete the SSL certificate and disable HTTPS. Users will only be able to access via HTTP.</span>
+    </div>
+    <p class="text-muted">Are you sure you want to delete the certificate for <strong>{{ sslStatus?.certificate?.domain || 'this domain' }}</strong>?</p>
+  </c-modal-body>
+  <c-modal-footer>
+    <button (click)="deleteLetsEncrypt()" cButton color="danger">
+      <i class="fa-solid fa-trash-can me-1"></i>Yes, Delete Certificate
+    </button>
+    <button (click)="leDeleteModalVisible = false" cButton color="secondary">Cancel</button>
+  </c-modal-footer>
+</c-modal>
+
+<c-modal #DisableHttpsConfirmModal backdrop="static" [(visible)]="disableHttpsModalVisible" id="DisableHttpsConfirmModal">
+  <c-modal-header>
+    <h5 cModalTitle>
+      <i class="fa-solid fa-triangle-exclamation me-2 text-danger"></i>Disable HTTPS
+    </h5>
+    <button (click)="disableHttpsModalVisible = false" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body>
+    <div class="warning-banner mb-3">
+      <i class="fa-solid fa-exclamation-triangle me-2"></i>
+      <span>This will remove the SSL configuration. Users will only be able to access via plain HTTP on port 80. The certificate files will NOT be deleted.</span>
+    </div>
+    <p class="text-muted">Are you sure you want to disable HTTPS?</p>
+  </c-modal-body>
+  <c-modal-footer>
+    <button (click)="disableHttps()" cButton color="danger">
+      <i class="fa-solid fa-power-off me-1"></i>Yes, Disable HTTPS
+    </button>
+    <button (click)="disableHttpsModalVisible = false" cButton color="secondary">Cancel</button>
   </c-modal-footer>
 </c-modal>
 

@@ -9,6 +9,7 @@ import {
 import { dataProvider } from "../../providers/mikrowizard/data";
 import { Router } from "@angular/router";
 import { loginChecker } from "../../providers/login_checker";
+import { LicenseService } from "../../providers/license.service";
 import { Table } from 'primeng/table';
 import { ToasterComponent } from "@coreui/angular";
 import { AppToastComponent } from "../toast-simple/toast.component";
@@ -24,6 +25,7 @@ export class SettingsComponent implements OnInit {
   public uid: number = 0;
   public uname: string = '';
   public ispro:boolean=false;
+  public licenseRefreshing: boolean = false;
   public filterText: string = '';
   public filters: any = {};
   public firms: any = {};
@@ -31,6 +33,43 @@ export class SettingsComponent implements OnInit {
   public activeTab: string = 'firmware';
 
   @ViewChild('dt') dt!: Table;
+
+  // SSL/TLS state
+  public sslLoading: boolean = false;
+  public sslPollingInterval: any = null;
+  public sslStatus: any = null;
+  public sslActionInProgress: boolean = false;
+  public sslWarmingUp: boolean = false;
+  private sslWarmupRetries: number = 0;
+
+  public leDomains: string[] = [''];
+  public leEmail: string = '';
+  public leMethod: string = 'http';
+  public leDnsProvider: string = 'cloudflare';
+  public leDnsToken: string = '';
+
+  public leDnsManualRecords: any[] = [];
+
+  public manualCertPem: string = '';
+  public manualKeyPem: string = '';
+  public manualChainPem: string = '';
+
+  public csrDomain: string = '';
+  public csrCountry: string = '';
+  public csrState: string = '';
+  public csrCity: string = '';
+  public csrOrg: string = '';
+  public csrEmail: string = '';
+  public csrKeySize: string = '2048';
+  public csrOutput: string = '';
+
+  public sslErrorModalVisible: boolean = false;
+  public sslErrorTitle: string = '';
+  public sslErrorOutput: string = '';
+
+  public leDeleteModalVisible: boolean = false;
+  public disableHttpsModalVisible: boolean = false;
+  public forceSslEnabled: boolean = false;
   
   // Search functionality properties
   public firmwareSearch: string = '';
@@ -45,7 +84,8 @@ export class SettingsComponent implements OnInit {
     private data_provider: dataProvider,
     private router: Router,
     private TimeZones: TimeZones,
-    private login_checker: loginChecker
+    private login_checker: loginChecker,
+    private licenseService: LicenseService
   ) {
     var _self = this;
     if (!this.login_checker.isLoggedIn()) {
@@ -213,6 +253,29 @@ export class SettingsComponent implements OnInit {
       {}
     );
     componentRef.instance["closeButton"] = props.closeButton;
+  }
+
+  refreshLicense() {
+    var _self = this;
+    this.licenseRefreshing = true;
+    this.data_provider.refreshLicense().then((res: any) => {
+      _self.licenseRefreshing = false;
+      if (res && res.status === 'success') {
+        _self.show_toast(
+          "License",
+          res.downloaded ? "License downloaded and updated successfully" : "License refreshed successfully",
+          "success"
+        );
+        if (res.license) {
+          _self.licenseService.setLicenseState(res.license);
+        }
+      } else {
+        _self.show_toast("License", (res && res.err) || "License refresh failed", "danger");
+      }
+    }).catch((err: any) => {
+      _self.licenseRefreshing = false;
+      _self.show_toast("License", (err && (err.err || err.error)) || "License refresh failed", "danger");
+    });
   }
 
   saveFirmwareSetting() {
@@ -705,4 +768,442 @@ export class SettingsComponent implements OnInit {
   }
 
   private _self_ref: any = null;
+
+  // ---- SSL/TLS Management ----
+
+  openSslTab(): void {
+    this.activeTab = 'ssl';
+    this.loadSslStatus();
+    this.clearSslPolling();
+    this.sslPollingInterval = setInterval(() => {
+      if (this.activeTab === 'ssl') {
+        this.loadSslStatus(true);
+      }
+    }, 30000);
+  }
+
+  clearSslPolling(): void {
+    if (this.sslPollingInterval) {
+      clearInterval(this.sslPollingInterval);
+      this.sslPollingInterval = null;
+    }
+  }
+
+  loadSslStatus(silent: boolean = false): void {
+    if (!silent) {
+      this.sslLoading = true;
+    }
+    this.data_provider.ssl_status().then((res: any) => {
+      this.sslLoading = false;
+      this.sslWarmingUp = false;
+      this.sslWarmupRetries = 0;
+      this.sslStatus = res;
+      this.forceSslEnabled = res.force_ssl || false;
+    }).catch((err: any) => {
+      this.sslLoading = false;
+      if (this.isSslAgentWarmingUp(err)) {
+        this.sslWarmingUp = true;
+        if (this.sslWarmupRetries < 12) {
+          this.sslWarmupRetries++;
+          setTimeout(() => this.loadSslStatus(true), 5000);
+        } else {
+          this.sslWarmupRetries = 0;
+          this.sslWarmingUp = false;
+          this.show_toast('SSL Status', 'SSL service is still starting. It will be available shortly.', 'info');
+        }
+        return;
+      }
+      if (!silent) {
+        this.show_toast('SSL Status', 'Failed to load SSL status: ' + (err?.error || err), 'danger');
+      }
+    });
+  }
+
+  isSslAgentWarmingUp(err: any): boolean {
+    const m = (typeof err === 'string') ? err : (err?.error || err?.message || '');
+    return m === 'ssl_agent_unreachable' || m === 'ssl_agent_timeout' || m === 'ssl_agent_error';
+  }
+
+  addLeDomain(): void {
+    this.leDomains.push('');
+  }
+
+  trackByIndex(index: number): number {
+    return index;
+  }
+
+  removeLeDomain(i: number): void {
+    if (this.leDomains.length > 1) {
+      this.leDomains.splice(i, 1);
+    }
+  }
+
+  requestLetsEncrypt(): void {
+    const domains = this.leDomains.filter(d => d.trim() !== '');
+    if (domains.length === 0) {
+      this.show_toast('Let\'s Encrypt', 'Please enter at least one domain', 'warning');
+      return;
+    }
+    if (!this.leEmail || this.leEmail.indexOf('@') === -1) {
+      this.show_toast('Let\'s Encrypt', 'Please enter a valid email address', 'warning');
+      return;
+    }
+    if (this.leMethod === 'dns' && !this.leDnsToken) {
+      this.show_toast('Let\'s Encrypt', 'DNS API token is required for DNS-01 challenge', 'warning');
+      return;
+    }
+
+    this.sslActionInProgress = true;
+    const payload: any = {
+      domains: domains,
+      email: this.leEmail,
+      method: this.leMethod,
+    };
+    if (this.leMethod === 'dns') {
+      payload.dns_provider = this.leDnsProvider;
+      if (this.leDnsProvider === 'cloudflare') {
+        payload.dns_credentials = { dns_cloudflare_api_token: this.leDnsToken };
+      } else {
+        payload.dns_credentials = { api_token: this.leDnsToken };
+      }
+    }
+
+    this.data_provider.ssl_letsencrypt_request(payload).then((res: any) => {
+      this.sslActionInProgress = false;
+      this.show_toast('Let\'s Encrypt', 'Certificate obtained successfully!', 'success');
+      this.loadSslStatus();
+    }).catch((err: any) => {
+      this.sslActionInProgress = false;
+      const errData = err?.error || err || {};
+      const title = errData.error || 'Certificate Request Failed';
+      const output = errData.output || errData.detail || JSON.stringify(err, null, 2);
+      this.showSslError(title, output);
+    });
+  }
+
+  renewLetsEncrypt(): void {
+    if (!this.sslStatus?.certificate?.installed) {
+      this.show_toast('Let\'s Encrypt', 'No certificate installed to renew', 'warning');
+      return;
+    }
+    this.sslActionInProgress = true;
+    const payload: any = {};
+    if (this.sslStatus.certificate.domain) {
+      payload.domain = this.sslStatus.certificate.domain;
+    }
+    this.data_provider.ssl_letsencrypt_renew(payload).then((res: any) => {
+      this.sslActionInProgress = false;
+      this.show_toast('Let\'s Encrypt', 'Certificate renewed successfully!', 'success');
+      this.loadSslStatus();
+    }).catch((err: any) => {
+      this.sslActionInProgress = false;
+      const errData = err?.error || err || {};
+      const title = errData.error || 'Certificate Renewal Failed';
+      const output = errData.output || errData.detail || JSON.stringify(err, null, 2);
+      this.showSslError(title, output);
+    });
+  }
+
+  confirmDeleteLeCert(): void {
+    this.leDeleteModalVisible = true;
+  }
+
+  deleteLetsEncrypt(): void {
+    this.leDeleteModalVisible = false;
+    if (!this.sslStatus?.certificate?.domain) {
+      this.show_toast('Let\'s Encrypt', 'No certificate domain found', 'warning');
+      return;
+    }
+    this.sslActionInProgress = true;
+    this.data_provider.ssl_letsencrypt_delete({ domain: this.sslStatus.certificate.domain }).then(() => {
+      this.sslActionInProgress = false;
+      this.show_toast('Let\'s Encrypt', 'Certificate deleted', 'success');
+      this.forceSslEnabled = false;
+      this.loadSslStatus();
+    }).catch((err: any) => {
+      this.sslActionInProgress = false;
+      const errData = err?.error || err || {};
+      const title = errData.error || 'Certificate Deletion Failed';
+      const output = errData.output || errData.detail || JSON.stringify(err, null, 2);
+      this.showSslError(title, output);
+    });
+  }
+
+  installManualCert(): void {
+    if (!this.manualCertPem || !this.manualKeyPem) {
+      this.show_toast('Manual Certificate', 'Certificate and private key are required', 'warning');
+      return;
+    }
+    if (this.manualCertPem.indexOf('BEGIN CERTIFICATE') === -1) {
+      this.show_toast('Manual Certificate', 'Invalid certificate format. Must be PEM with BEGIN CERTIFICATE header', 'warning');
+      return;
+    }
+    if (this.manualKeyPem.indexOf('BEGIN') === -1 || this.manualKeyPem.indexOf('PRIVATE KEY') === -1) {
+      this.show_toast('Manual Certificate', 'Invalid private key format. Must be PEM with BEGIN PRIVATE KEY header', 'warning');
+      return;
+    }
+
+    this.sslActionInProgress = true;
+    this.data_provider.ssl_install_cert({
+      cert_pem: this.manualCertPem,
+      key_pem: this.manualKeyPem,
+      chain_pem: this.manualChainPem,
+    }).then((res: any) => {
+      this.sslActionInProgress = false;
+      this.show_toast('Manual Certificate', 'Certificate installed successfully!', 'success');
+      this.manualCertPem = '';
+      this.manualKeyPem = '';
+      this.manualChainPem = '';
+      this.loadSslStatus();
+    }).catch((err: any) => {
+      this.sslActionInProgress = false;
+      const errData = err?.error || err || {};
+      const title = errData.error || 'Certificate Installation Failed';
+      const output = errData.output || errData.detail || JSON.stringify(err, null, 2);
+      this.showSslError(title, output);
+    });
+  }
+
+  generateCsr(): void {
+    if (!this.csrDomain) {
+      this.show_toast('Generate CSR', 'Domain is required', 'warning');
+      return;
+    }
+    if (this.csrCountry && this.csrCountry.length !== 2) {
+      this.show_toast('Generate CSR', 'Country must be exactly 2 letters (e.g. US)', 'warning');
+      return;
+    }
+
+    this.sslActionInProgress = true;
+    this.data_provider.ssl_generate_csr({
+      domain: this.csrDomain,
+      country: this.csrCountry,
+      state: this.csrState,
+      city: this.csrCity,
+      org: this.csrOrg,
+      email: this.csrEmail,
+      key_size: this.csrKeySize,
+    }).then((res: any) => {
+      this.sslActionInProgress = false;
+      this.csrOutput = res.csr || '';
+      this.show_toast('Generate CSR', 'CSR generated successfully!', 'success');
+    }).catch((err: any) => {
+      this.sslActionInProgress = false;
+      const errData = err?.error || err || {};
+      const title = errData.error || 'CSR Generation Failed';
+      const output = errData.output || errData.detail || JSON.stringify(err, null, 2);
+      this.showSslError(title, output);
+    });
+  }
+
+  toggleForceSsl(): void {
+    if (this.forceSslEnabled && !this.sslStatus?.https_configured) {
+      this.show_toast('Force HTTPS', 'Install a certificate before enabling Force HTTPS', 'warning');
+      this.forceSslEnabled = false;
+      return;
+    }
+    this.sslActionInProgress = true;
+    this.data_provider.ssl_force_ssl({ enabled: this.forceSslEnabled }).then(() => {
+      this.sslActionInProgress = false;
+      this.show_toast('Force HTTPS', this.forceSslEnabled ? 'HTTP redirect enabled' : 'HTTP redirect disabled', 'success');
+    }).catch((err: any) => {
+      this.sslActionInProgress = false;
+      this.forceSslEnabled = !this.forceSslEnabled;
+      const errData = err?.error || err || {};
+      const title = errData.error || 'Force HTTPS Failed';
+      const output = errData.output || errData.detail || JSON.stringify(err, null, 2);
+      this.showSslError(title, output);
+    });
+  }
+
+  confirmDisableHttps(): void {
+    this.disableHttpsModalVisible = true;
+  }
+
+  disableHttps(): void {
+    this.disableHttpsModalVisible = false;
+    this.sslActionInProgress = true;
+    this.data_provider.ssl_disable().then(() => {
+      this.sslActionInProgress = false;
+      this.forceSslEnabled = false;
+      this.show_toast('HTTPS', 'HTTPS disabled', 'info');
+      this.loadSslStatus();
+    }).catch((err: any) => {
+      this.sslActionInProgress = false;
+      const errData = err?.error || err || {};
+      const title = errData.error || 'Disable HTTPS Failed';
+      const output = errData.output || errData.detail || JSON.stringify(err, null, 2);
+      this.showSslError(title, output);
+    });
+  }
+
+  testNginxConfig(): void {
+    this.data_provider.ssl_nginx_test().then((res: any) => {
+      if (res.valid) {
+        this.show_toast('Nginx Config', 'Configuration syntax is valid', 'success');
+      } else {
+        this.showSslError('Nginx Config Test Failed', res.output || 'Unknown error');
+      }
+    }).catch((err: any) => {
+      const errData = err?.error || err || {};
+      this.showSslError('Nginx Config Test Failed', errData.output || errData.detail || JSON.stringify(err, null, 2));
+    });
+  }
+
+  reloadNginx(): void {
+    this.sslActionInProgress = true;
+    this.data_provider.ssl_nginx_reload().then((res: any) => {
+      this.sslActionInProgress = false;
+      if (res.success) {
+        this.show_toast('Nginx', 'Nginx reloaded successfully', 'success');
+      } else {
+        this.showSslError('Nginx Reload Failed', res.output || 'Unknown error');
+      }
+    }).catch((err: any) => {
+      this.sslActionInProgress = false;
+      const errData = err?.error || err || {};
+      this.showSslError('Nginx Reload Failed', errData.output || errData.detail || JSON.stringify(err, null, 2));
+    });
+  }
+
+  copyMigrationCommand(): void {
+    this.data_provider.ssl_migration_script().then((res: any) => {
+      if (res.script) {
+        this.copyToClipboard(res.script);
+        this.show_toast('Copied', 'Migration script copied. Paste and run on your server.', 'success');
+      }
+    }).catch(() => {
+      const cmd = 'sudo bash /opt/mikrowizard/recreate-ssl.sh';
+      this.copyToClipboard(cmd);
+      this.show_toast('Copied', 'Command copied. Run: ' + cmd, 'info');
+    });
+  }
+
+  copyToClipboard(text: string): void {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(() => {}).catch(() => {});
+    }
+  }
+
+  showSslError(title: string, output: string): void {
+    this.sslErrorTitle = title;
+    this.sslErrorOutput = output || 'No output available.';
+    this.sslErrorModalVisible = true;
+  }
+
+  startDnsManual(): void {
+    const domains = this.leDomains.filter(d => d.trim() !== '');
+    if (domains.length === 0) {
+      this.show_toast('Manual DNS', 'Please enter at least one domain', 'warning');
+      return;
+    }
+    if (!this.leEmail || this.leEmail.indexOf('@') === -1) {
+      this.show_toast('Manual DNS', 'Please enter a valid email address', 'warning');
+      return;
+    }
+    this.sslActionInProgress = true;
+    this.data_provider.ssl_dns_manual_start({ domains, email: this.leEmail }).then((res: any) => {
+      this.sslActionInProgress = false;
+      this.show_toast('Manual DNS', 'Challenge started. Waiting for TXT records...', 'info');
+      this.pollDnsManualStatus();
+    }).catch((err: any) => {
+      this.sslActionInProgress = false;
+      const errData = err?.error || err || {};
+      this.showSslError(errData.error || 'DNS Challenge Failed', errData.output || errData.detail || JSON.stringify(err, null, 2));
+    });
+  }
+
+  pollDnsManualStatus(): void {
+    this.data_provider.ssl_dns_manual_status().then((res: any) => {
+      if (res.records && res.records.length > 0) {
+        this.leDnsManualRecords = res.records;
+        this.show_toast('Manual DNS', 'TXT records ready. Add them to your DNS provider and click Continue.', 'info');
+        return;
+      }
+      if (res.state === 'error') {
+        this.showSslError('DNS Challenge Failed', res.error || 'Certbot exited with error. Check the SSL agent logs.');
+        return;
+      }
+      if (res.state === 'success') {
+        this.leDnsManualRecords = [];
+        this.show_toast('Manual DNS', 'Certificate obtained successfully!', 'success');
+        this.loadSslStatus();
+        return;
+      }
+      setTimeout(() => this.pollDnsManualStatus(), 3000);
+    }).catch((err: any) => {
+      const errData = err?.error || err || {};
+      this.showSslError(errData.error || 'DNS Status Check Failed', errData.detail || JSON.stringify(err, null, 2));
+    });
+  }
+
+  continueDnsManual(): void {
+    this.sslActionInProgress = true;
+    this.data_provider.ssl_dns_manual_continue().then(() => {
+      this.show_toast('Manual DNS', 'DNS records submitted for verification. Polling for result...', 'info');
+      this.pollDnsManualResult();
+    }).catch((err: any) => {
+      this.sslActionInProgress = false;
+      const errData = err?.error || err || {};
+      this.showSslError(errData.error || 'DNS Continue Failed', errData.detail || JSON.stringify(err, null, 2));
+    });
+  }
+
+  pollDnsManualResult(): void {
+    this.data_provider.ssl_dns_manual_status().then((res: any) => {
+      if (res.state === 'success') {
+        this.sslActionInProgress = false;
+        this.leDnsManualRecords = [];
+        this.show_toast('Manual DNS', 'Certificate obtained successfully!', 'success');
+        this.loadSslStatus();
+        return;
+      }
+      if (res.state === 'error') {
+        this.sslActionInProgress = false;
+        this.showSslError('DNS Challenge Failed', res.error || 'Certbot verification failed. Check DNS TXT records and try again.');
+        return;
+      }
+      setTimeout(() => this.pollDnsManualResult(), 3000);
+    }).catch((err: any) => {
+      this.sslActionInProgress = false;
+      const errData = err?.error || err || {};
+      this.showSslError(errData.error || 'DNS Verification Failed', errData.detail || JSON.stringify(err, null, 2));
+    });
+  }
+
+  cancelDnsManual(): void {
+    this.leDnsManualRecords = [];
+    this.sslActionInProgress = false;
+  }
+
+  installCertbot(): void {
+    this.sslActionInProgress = true;
+    this.data_provider.ssl_install_certbot().then(() => {
+      this.show_toast('Certbot', 'Installation started...', 'info');
+      this.pollCertbotInstall();
+    }).catch((err: any) => {
+      this.sslActionInProgress = false;
+      const errData = err?.error || err || {};
+      this.showSslError('Certbot Installation Failed', errData.detail || JSON.stringify(err, null, 2));
+    });
+  }
+
+  pollCertbotInstall(): void {
+    this.data_provider.ssl_install_certbot_status().then((res: any) => {
+      if (res.state === 'success' || res.installed) {
+        this.sslActionInProgress = false;
+        this.show_toast('Certbot', 'Certbot installed successfully!', 'success');
+        this.loadSslStatus();
+        return;
+      }
+      if (res.state === 'error') {
+        this.sslActionInProgress = false;
+        this.showSslError('Certbot Installation Failed', res.error || 'Unknown error');
+        return;
+      }
+      setTimeout(() => this.pollCertbotInstall(), 3000);
+    }).catch(() => {
+      setTimeout(() => this.pollCertbotInstall(), 3000);
+    });
+  }
 }
