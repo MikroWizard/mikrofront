@@ -215,7 +215,7 @@
   [(visible)]="exportModalVisible"
   title="Export Syslog Report"
   [allData]="source"
-  [filteredData]="table ? table.filteredValue : source"
+  [filteredData]="table?.filteredValue || source"
   [customColumns]="exportColumns"
   [fetchFn]="fetchExportData"
   dateField="created"

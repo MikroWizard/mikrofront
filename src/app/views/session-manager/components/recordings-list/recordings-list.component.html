@@ -154,7 +154,7 @@
   [(visible)]="exportModalVisible"
   title="Export Session Recordings Report"
   [allData]="recordings"
-  [filteredData]="dtRecordings ? dtRecordings.filteredValue : recordings"
+  [filteredData]="dtRecordings?.filteredValue || recordings"
   [customColumns]="exportColumns"
   [fetchFn]="fetchExportData"
   dateField="created_at"

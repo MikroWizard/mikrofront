@@ -704,7 +704,7 @@
   [(visible)]="interfacesExportModalVisible"
   title="Export Interfaces Report"
   [allData]="interfaces"
-  [filteredData]="dtInterfaces.filteredValue || interfaces"
+  [filteredData]="dtInterfaces?.filteredValue || interfaces"
   [customColumns]="interfaceExportColumns"
   defaultFileName="device_interfaces_report">
 </app-export-modal>

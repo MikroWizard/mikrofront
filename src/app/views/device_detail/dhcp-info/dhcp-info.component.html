@@ -263,7 +263,7 @@
     [(visible)]="leasesExportModalVisible"
     title="Export DHCP Leases Report"
     [allData]="item['lease_table'] || []"
-    [filteredData]="dtLeases.filteredValue || item['lease_table']"
+    [filteredData]="dtLeases?.filteredValue || item['lease_table']"
     [customColumns]="leaseExportColumns"
     defaultFileName="dhcp_leases_report">
   </app-export-modal>
@@ -273,7 +273,7 @@
   [(visible)]="historyExportModalVisible"
   title="Export DHCP History Report"
   [allData]="dhcp_history || []"
-  [filteredData]="dtHistory.filteredValue || dhcp_history"
+  [filteredData]="dtHistory?.filteredValue || dhcp_history"
   [customColumns]="historyExportColumns"
   dateField="eventtime"
   defaultFileName="dhcp_history_report">

@@ -257,7 +257,7 @@
   [(visible)]="exportModalVisible"
   title="Export Session History Report"
   [allData]="sessions"
-  [filteredData]="dtSessions ? dtSessions.filteredValue : sessions"
+  [filteredData]="dtSessions?.filteredValue || sessions"
   [customColumns]="exportColumns"
   [fetchFn]="fetchExportData"
   dateField="started"

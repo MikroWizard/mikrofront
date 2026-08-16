@@ -311,7 +311,7 @@
   [(visible)]="exportModalVisible"
   title="Export Device Logs Report"
   [allData]="source"
-  [filteredData]="table ? table.filteredValue : source"
+  [filteredData]="table?.filteredValue || source"
   [customColumns]="exportColumns"
   [fetchFn]="fetchExportData"
   dateField="eventtime"

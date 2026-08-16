@@ -164,7 +164,7 @@ Command History</h5>
   [(visible)]="exportModalVisible"
   title="Export Command Logs Report"
   [allData]="commandLogs"
-  [filteredData]="dtCommands ? dtCommands.filteredValue : commandLogs"
+  [filteredData]="dtCommands?.filteredValue || commandLogs"
   [customColumns]="exportColumns"
   [fetchFn]="fetchExportData"
   dateField="timestamp"
