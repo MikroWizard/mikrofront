@@ -12,7 +12,11 @@ import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 export class ConnectionManagerComponent implements OnInit {
   activeSessions: { id: string, device: any, protocol: string, webfigUrl?: SafeResourceUrl }[] = [];
   activeTabIndex = 0;
-  
+
+  public sidebarAutoHide = false;
+  public sidebarHint = false;
+  private sidebarHintTimer: any;
+
   // Modals state
   showPingModal = false;
   showLogsModal = false;
@@ -36,7 +40,25 @@ export class ConnectionManagerComponent implements OnInit {
     private router: Router,
     private data_provider: dataProvider,
     private sanitizer: DomSanitizer
-  ) {}
+  ) {
+    try {
+      this.sidebarAutoHide = localStorage.getItem('mikrowizard_cm_sidebar_autohide') === '1';
+    } catch (e) {}
+  }
+
+  toggleSidebarAutoHide() {
+    this.sidebarAutoHide = !this.sidebarAutoHide;
+    try {
+      localStorage.setItem('mikrowizard_cm_sidebar_autohide', this.sidebarAutoHide ? '1' : '0');
+    } catch (e) {}
+    if (this.sidebarAutoHide) {
+      this.sidebarHint = true;
+      if (this.sidebarHintTimer) clearTimeout(this.sidebarHintTimer);
+      this.sidebarHintTimer = setTimeout(() => { this.sidebarHint = false; }, 3000);
+    } else {
+      this.sidebarHint = false;
+    }
+  }
 
   ngOnInit() {
     this.route.params.subscribe(params => {

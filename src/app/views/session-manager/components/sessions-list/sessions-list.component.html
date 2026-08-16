@@ -80,7 +80,10 @@
           <div class="fw-semibold">{{item.device_name || item.device_id}}</div>
           <small class="text-muted">{{item.device_ip}}</small>
         </td>
-        <td><i class="fas fa-user me-1 text-muted"></i>{{item.user_name || item.user_id}}</td>
+        <td>
+          <div class="fw-semibold">{{item.user_name || item.user_id}}</div>
+          <small class="text-muted" *ngIf="item.username">{{item.username}}</small>
+        </td>
         <td>
           <c-badge [color]="item.protocol === 'ssh' ? 'dark' : 'info'">{{item.protocol}}</c-badge>
         </td>
@@ -297,7 +300,10 @@
       </ng-template>
       <ng-template pTemplate="body" let-item>
         <tr>
-          <td><i class="fas fa-user me-1 text-muted"></i>{{item.user_name || item.user_id}}</td>
+          <td>
+            <div class="fw-semibold">{{item.user_name || item.user_id}}</div>
+            <small class="text-muted" *ngIf="item.username">{{item.username}}</small>
+          </td>
           <td><c-badge [color]="item.role === 'observer' ? 'info' : 'warning'">{{item.role}}</c-badge></td>
           <td><small class="text-muted">{{item.token?.substring(0, 12)}}...</small></td>
           <td><small>{{item.joined_fmt}}</small></td>

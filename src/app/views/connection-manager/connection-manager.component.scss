@@ -92,6 +92,63 @@
 .cm-sidebar-body::-webkit-scrollbar-track { background: var(--cm-sidebar-bg); }
 .cm-sidebar-body::-webkit-scrollbar-thumb { background: #4f5d73; border-radius: 3px; }
 
+/* ─── Sidebar Auto-hide (taskbar style) ─── */
+.cm-sidebar-edge {
+  display: none;
+  flex-shrink: 0;
+  width: 16px;
+  z-index: 30;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.7);
+  background: linear-gradient(to right, rgba(60, 75, 100, 0.35), rgba(60, 75, 100, 0.05));
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.cm-sidebar-edge i {
+  font-size: 0.7rem;
+  pointer-events: none;
+}
+
+.cm-layout.sidebar-auto-hide {
+  position: relative;
+}
+
+.cm-layout.sidebar-auto-hide .cm-sidebar-edge {
+  display: flex;
+}
+
+.cm-layout.sidebar-auto-hide .cm-sidebar-edge:hover {
+  color: #4e9af1;
+}
+
+.cm-sidebar-edge.pulse {
+  animation: cm-sidebar-edge-pulse 1.2s ease-in-out 2;
+}
+
+@keyframes cm-sidebar-edge-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(78, 154, 241, 0); }
+  50% { box-shadow: 0 0 12px 3px rgba(78, 154, 241, 0.55); }
+}
+
+.cm-layout.sidebar-auto-hide .cm-sidebar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 260px;
+  z-index: 20;
+  transform: translateX(-100%);
+  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.45);
+  transition: transform 0.25s ease, background-color 0.3s, border-color 0.3s;
+}
+
+.cm-layout.sidebar-auto-hide .cm-sidebar-edge:hover + .cm-sidebar,
+.cm-layout.sidebar-auto-hide .cm-sidebar:hover {
+  transform: translateX(0);
+}
+
 /* ─── Right Main Panel ─── */
 .cm-main {
   flex: 1;

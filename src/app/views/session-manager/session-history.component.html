@@ -90,7 +90,10 @@
                   <div class="fw-semibold">{{item.device_name || item.device_id}}</div>
                   <small class="text-muted">{{item.device_ip}}</small>
                 </td>
-                <td><i class="fas fa-user me-1 text-muted"></i>{{item.user_name || item.user_id}}</td>
+                <td>
+                  <div class="fw-semibold">{{item.user_name || item.user_id}}</div>
+                  <small class="text-muted" *ngIf="item.username">{{item.username}}</small>
+                </td>
                 <td>
                   <c-badge [color]="item.protocol === 'ssh' ? 'dark' : 'info'">{{item.protocol}}</c-badge>
                 </td>
@@ -102,7 +105,7 @@
                     <span class="badge bg-info">{{item.participants.length}} Participants</span>
                     <div *ngIf="item.participants.length <= 5" class="small text-muted mt-1">
                       <div *ngFor="let p of item.participants" class="mb-1">
-                        <strong>{{p.name}}</strong> ({{p.role}})
+                        <strong>{{p.name}}</strong> <small *ngIf="p.username" class="text-muted">&#64;{{p.username}}</small> ({{p.role}})
                       </div>
                     </div>
                   </div>
@@ -176,6 +179,7 @@
             <div class="p-3 bg-white border rounded shadow-sm">
               <small class="text-muted d-block text-uppercase fw-semibold mb-1">Owner User</small>
               <div class="fw-bold">{{selectedSession.user_name || selectedSession.user_id}}</div>
+              <small class="text-muted" *ngIf="selectedSession.username">{{selectedSession.username}}</small>
             </div>
           </c-col>
           <c-col sm="4" class="mb-3">
@@ -216,7 +220,7 @@
             <li class="list-group-item d-flex align-items-center"
               style="flex-direction: column;align-items: flex-start !important"
               *ngFor="let p of selectedSession.participants">
-              <strong>{{p.name}} ({{p.role}})</strong>
+              <strong>{{p.name}} <small *ngIf="p.username" class="text-muted">&#64;{{p.username}}</small> ({{p.role}})</strong>
               <small><i class="fas fa-network-wired me-1"></i>{{p.ip}}</small>
               <small><i class="fas fa-desktop me-1"></i>{{p.agent}}</small>
             </li>

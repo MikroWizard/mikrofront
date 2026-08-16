@@ -1,4 +1,9 @@
-<div class="cm-layout" [class.cm-dark-theme]="isDarkMode">
+<div class="cm-layout" [class.cm-dark-theme]="isDarkMode" [class.sidebar-auto-hide]="sidebarAutoHide">
+
+  <!-- Hover handle to reveal the sidebar when auto-hidden -->
+  <div class="cm-sidebar-edge" [class.pulse]="sidebarHint" title="Hover to show connections">
+    <i class="fa-solid fa-chevron-right"></i>
+  </div>
 
   <!-- ═══════════════ LEFT SIDEBAR: Device Tree ═══════════════ -->
   <div class="cm-sidebar">
@@ -7,6 +12,9 @@
         <i class="fa-solid fa-sitemap me-2" style="color: #4e9af1;"></i>Connections
       </span>
       <div>
+        <button class="btn btn-sm p-0 me-2" style="color: rgba(255,255,255,0.5);" [title]="sidebarAutoHide ? 'Pin Sidebar' : 'Auto-hide Sidebar'" (click)="toggleSidebarAutoHide()">
+          <i class="fa-solid fa-thumbtack" style="font-size: 0.8rem;" [style.color]="sidebarAutoHide ? '#4e9af1' : ''"></i>
+        </button>
         <button class="btn btn-sm p-0 me-2" style="color: rgba(255,255,255,0.5);" title="Toggle Night Mode" (click)="toggleTheme()">
           <i class="fa-solid" [class.fa-moon]="!isDarkMode" [class.fa-sun]="isDarkMode" style="font-size: 0.8rem;"></i>
         </button>

@@ -84,7 +84,10 @@
                 <div class="fw-semibold">{{item.device_name || item.device_id}}</div>
                 <small class="text-muted">{{item.device_ip}}</small>
               </td>
-              <td><i class="fas fa-user me-1 text-muted"></i>{{item.user_name || item.user_id}}</td>
+              <td>
+                <div class="fw-semibold">{{item.user_name || item.user_id}}</div>
+                <small class="text-muted" *ngIf="item.username">{{item.username}}</small>
+              </td>
               <td>
                 <c-badge [color]="(item.protocol === 'webfig' || item.stype === 'webfig') ? 'warning' : (item.protocol === 'ssh' ? 'dark' : 'info')">
                   <i [class]="(item.protocol === 'webfig' || item.stype === 'webfig') ? 'fas fa-globe me-1' : 'fas fa-terminal me-1'"></i>
@@ -99,7 +102,7 @@
                   <span class="badge bg-info">{{item.participants.length}} Online</span>
                   <div *ngIf="item.participants.length <= 5" class="small text-muted mt-1">
                     <div *ngFor="let p of item.participants" class="mb-1">
-                      <strong>{{p.name}}</strong> ({{p.role}})
+                      <strong>{{p.name}}</strong> <small *ngIf="p.username" class="text-muted">&#64;{{p.username}}</small> ({{p.role}})
                       <br><small><i class="fas fa-network-wired me-1"></i>{{p.ip}}</small>
                     </div>
                   </div>
@@ -287,7 +290,10 @@
       </ng-template>
       <ng-template pTemplate="body" let-item>
         <tr>
-          <td><i class="fas fa-user me-1 text-muted"></i>{{item.user_name || item.user_id}}</td>
+          <td>
+            <div class="fw-semibold">{{item.user_name || item.user_id}}</div>
+            <small class="text-muted" *ngIf="item.username">{{item.username}}</small>
+          </td>
           <td><c-badge [color]="item.role === 'observer' ? 'info' : 'warning'">{{item.role}}</c-badge></td>
           <td><small class="text-muted">{{item.token?.substring(0, 12)}}...</small></td>
           <td><small>{{item.joined_fmt}}</small></td>
