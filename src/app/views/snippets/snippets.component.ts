@@ -5,6 +5,8 @@ import {
   Inject,
   Renderer2,
   ViewChild,
+  ViewChildren,
+  QueryList,
   ElementRef,
   TemplateRef,
 } from "@angular/core";
@@ -15,6 +17,8 @@ import { loginChecker } from "../../providers/login_checker";
 import { HttpClient, HttpParams } from "@angular/common/http";
 import { formatInTimeZone } from "date-fns-tz";
 import { Table } from 'primeng/table';
+import { ToasterComponent } from '@coreui/angular';
+import { AppToastComponent } from '../toast-simple/toast.component';
 
 
 @Component({
@@ -25,6 +29,19 @@ export class SnippetsComponent implements OnInit, OnDestroy {
   public uname!: string;
   public tz!: string;
   public ispro: boolean = false;
+
+  @ViewChildren(ToasterComponent) viewChildren!: QueryList<ToasterComponent>;
+  toasterForm = {
+    placement: 'top-end',
+    delay: 5000,
+  };
+
+  show_toast(title: string, body: string, color: string) {
+    const { ...props } = { ...this.toasterForm, color, title, body };
+    if (this.viewChildren && this.viewChildren.first) {
+      this.viewChildren.first.addToast(AppToastComponent, props);
+    }
+  }
 
   constructor(
     private data_provider: dataProvider,
@@ -267,10 +284,18 @@ export class SnippetsComponent implements OnInit, OnDestroy {
     this.data_provider
       .Exec_snipet(_self.current_snippet, _self.SelectedTaskItems)
       .then((res) => {
+        if (res && typeof res === 'object' && !Array.isArray(res) &&
+            (res.status === 'failed' || res.result === 'failed')) {
+          _self.show_toast("Error", res.err || res.error || "Execution failed", "danger");
+          return;
+        }
+        _self.ExecSnipetModalVisible = false;
         _self.initGridTable();
+        _self.show_toast("Success", "Snippet execution started", "success");
+      })
+      .catch((err) => {
+        _self.show_toast("Error", err && (err.err || err.message || err) || "Execution failed", "danger");
       });
-
-    this.ExecSnipetModalVisible = false;
   }
 
   getSelectionKey(snippetId: number): string {
@@ -348,8 +373,15 @@ export class SnippetsComponent implements OnInit, OnDestroy {
 
   save_snippet() {
     this.data_provider.save_snippet(this.current_snippet).then((res) => {
+      if (res && res.result === 'failed') {
+        this.show_toast("Error", res.err || "Snippet save failed", "danger");
+        return;
+      }
       this.EditModalVisible = false;
       this.initGridTable();
+      this.show_toast("Success", "Snippet saved", "success");
+    }).catch((err) => {
+      this.show_toast("Error", err && (err.err || err.message || err) || "Snippet save failed", "danger");
     });
   }
 

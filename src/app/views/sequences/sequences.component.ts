@@ -1,6 +1,7 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild, ViewChildren, QueryList } from '@angular/core';
 import { dataProvider } from "../../providers/mikrowizard/data";
-import { ToastComponent } from '@coreui/angular';
+import { ToasterComponent } from '@coreui/angular';
+import { AppToastComponent } from '../toast-simple/toast.component';
 import { NgxSuperSelectOptions } from "ngx-super-select";
 import { Table } from 'primeng/table';
 
@@ -13,6 +14,19 @@ export class SequencesComponent implements OnInit {
 
     public sequences: any[] = [];
     public source: any[] = [];
+
+    @ViewChildren(ToasterComponent) viewChildren!: QueryList<ToasterComponent>;
+    toasterForm = {
+        placement: 'top-end',
+        delay: 5000,
+    };
+
+    show_toast(title: string, body: string, color: string) {
+        const { ...props } = { ...this.toasterForm, color, title, body };
+        if (this.viewChildren && this.viewChildren.first) {
+            this.viewChildren.first.addToast(AppToastComponent, props);
+        }
+    }
 
     @ViewChild('dt') table!: Table;
     @ViewChild('dtMembers') tableMembers!: Table;
@@ -173,9 +187,16 @@ export class SequencesComponent implements OnInit {
         if (payload.conditions_json && typeof payload.conditions_json !== 'string') {
             payload.conditions_json = JSON.stringify(payload.conditions_json);
         }
-        this.MikroWizardRPC.save_sequence(payload).then(() => {
+        this.MikroWizardRPC.save_sequence(payload).then((res: any) => {
+            if (res && res.result === 'failed') {
+                this.show_toast("Error", res.err || "Sequence save failed", "danger");
+                return;
+            }
             this.EditSequenceModalVisible = false;
             this.loadSequences();
+            this.show_toast("Success", "Sequence saved", "success");
+        }).catch((err: any) => {
+            this.show_toast("Error", err && (err.err || err.message || err) || "Sequence save failed", "danger");
         });
     }
 
@@ -449,8 +470,15 @@ export class SequencesComponent implements OnInit {
             members: this.SelectedTaskItems
         };
         this.MikroWizardRPC.exec_sequence(payload).then((res: any) => {
+            if (res && typeof res === 'object' && !Array.isArray(res) &&
+                (res.status === 'failed' || res.result === 'failed')) {
+                this.show_toast("Error", res.err || res.error || "Sequence execution failed", "danger");
+                return;
+            }
             this.ExecSequenceModalVisible = false;
-            // Optionally show success toast or refresh history
+            this.show_toast("Success", "Sequence execution started", "success");
+        }).catch((err: any) => {
+            this.show_toast("Error", err && (err.err || err.message || err) || "Sequence execution failed", "danger");
         });
     }
 }

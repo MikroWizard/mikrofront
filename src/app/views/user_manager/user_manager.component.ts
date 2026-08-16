@@ -657,6 +657,9 @@ export class UserManagerComponent implements OnInit {
             "danger"
           );
         }
+        else if (!res || res.status !== 'success') {
+          _self.show_toast("Error", res && res.err ? res.err : "Something went wrong", "danger");
+        }
         else {
           _self.initGridTable();
           _self.EditTaskModalVisible = false;
