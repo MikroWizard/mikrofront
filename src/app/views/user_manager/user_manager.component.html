@@ -33,6 +33,10 @@
           </ul>
 
           <div class="ms-auto d-flex align-items-center gap-2">
+            <span *ngIf="ispro && pamSeats" class="badge text-bg-light border px-2 py-1" style="font-size: 0.75rem;">
+              <i class="fa-solid fa-user-shield me-1 text-primary"></i>
+              PAM seats: {{ pamSeats.used }} of {{ pamSeats.total }} used
+            </span>
             <span class="p-input-icon-left">
               <i class="pi pi-search"></i>
               <input type="text" pInputText placeholder="Search users..." (input)="applyFilterGlobal($event, 'contains')"
@@ -127,254 +131,616 @@
 <c-modal-header>
 
 
-  <c-modal #EditTaskModal backdrop="static" size="lg" [(visible)]="EditTaskModalVisible" id="EditTaskModal">
-    <c-modal-header>
-      <h5 *ngIf="SelectedUser['action']=='edit'" cModalTitle><i class="fa-solid fa-user-pen me-1"></i>Edit:
-        {{SelectedUser['username']}}</h5>
-      <h5 *ngIf="SelectedUser['action']=='add'" cModalTitle><i class="fa-solid fa-user-plus me-1"></i>Add User</h5>
+  <c-modal #EditTaskModal backdrop="static" size="lg" [(visible)]="EditTaskModalVisible" id="EditTaskModal" class="user-management-modal">
+    <c-modal-header class="user-modal-header py-2 px-3 border-bottom d-flex align-items-center justify-content-between bg-white">
+      <div class="d-flex align-items-center gap-2">
+        <div class="user-modal-avatar">
+          <i class="fa-solid fa-user-pen text-primary" *ngIf="SelectedUser['action']=='edit'"></i>
+          <i class="fa-solid fa-user-plus text-success" *ngIf="SelectedUser['action']=='add'"></i>
+        </div>
+        <div>
+          <div class="d-flex align-items-center gap-2">
+            <h5 *ngIf="SelectedUser['action']=='edit'" class="mb-0 fw-bold fs-6">Edit User: {{ SelectedUser['username'] }}</h5>
+            <h5 *ngIf="SelectedUser['action']=='add'" class="mb-0 fw-bold fs-6">Create New User</h5>
+            <span class="badge" [ngClass]="{
+              'bg-primary': SelectedUser['role'] === 'admin',
+              'bg-info': SelectedUser['role'] === 'customer',
+              'bg-warning': SelectedUser['role'] === 'customer_inactive',
+              'bg-danger': SelectedUser['role'] === 'disabled'
+            }" style="text-transform: capitalize; font-size: 0.72rem;">
+              {{ SelectedUser['role'] || 'admin' }}
+            </span>
+          </div>
+          <small class="text-muted d-none d-sm-inline" *ngIf="SelectedUser['action']=='edit'">Manage credentials, capability permissions, and device access</small>
+          <small class="text-muted d-none d-sm-inline" *ngIf="SelectedUser['action']=='add'">Configure account details, capability permissions, and device access</small>
+        </div>
+      </div>
       <button [cModalToggle]="EditTaskModal.id" cButtonClose></button>
     </c-modal-header>
-    <c-modal-body class="p-3">
-      <!-- User Details -->
-      <div class="user-form-section mb-4">
-        <div class="section-header mb-3">
-          <h6 class="section-title mb-1"><i class="fa-solid fa-user me-2"></i>Basic Information</h6>
-          <small class="text-muted">Enter the user's personal details and login credentials</small>
-        </div>
-        <c-row class="g-3">
-          <c-col xs="12" md="6">
-            <input cFormControl placeholder="Username (required for login)" [(ngModel)]="SelectedUser['username']"
-              class="form-input" title="Unique username for system login" />
-          </c-col>
-          <c-col xs="12" md="6">
-            <input cFormControl placeholder="Email Address (for notifications)" [(ngModel)]="SelectedUser['email']"
-              class="form-input" type="email" title="Valid email address for system notifications" />
-          </c-col>
-          <c-col xs="12" md="4">
-            <input cFormControl placeholder="First Name (optional)" [(ngModel)]="SelectedUser['first_name']"
-              class="form-input" title="User's first name" />
-          </c-col>
-          <c-col xs="12" md="4">
-            <input cFormControl placeholder="Last Name (optional)" [(ngModel)]="SelectedUser['last_name']"
-              class="form-input" title="User's last name" />
-          </c-col>
-          <c-col xs="12" md="4">
-            <select cSelect [(ngModel)]="SelectedUser['role']" class="form-select" title="User Role">
-              <option value="admin">Admin</option>
-              <option value="customer">Customer</option>
-              <option value="customer_inactive" *ngIf="SelectedUser['role'] === 'customer_inactive'">Customer Inactive</option>
-              <option value="disabled" *ngIf="SelectedUser['role'] === 'disabled'">Disabled</option>
-            </select>
-          </c-col>
-          <c-col xs="12" md="12">
-            <input type="password" cFormControl placeholder="Password (min 6 characters)"
-              [(ngModel)]="SelectedUser['password']" class="form-input" title="Secure password for user login" />
-          </c-col>
-        </c-row>
-        
-        <c-row class="mt-3" *ngIf="SelectedUser['role'] === 'customer'">
-          <c-col xs="12">
-            <c-alert color="info" class="d-flex align-items-center mb-0 py-2">
-              <i class="fa-solid fa-circle-info me-2 text-info"></i>
-              <div *ngIf="SelectedUser['email'] && SelectedUser['email'].trim()">
-                Customer has email configured. An activation link will be sent to <strong>{{SelectedUser['email']}}</strong>. The account will be created as <em>inactive</em> until verified.
-              </div>
-              <div *ngIf="!SelectedUser['email'] || !SelectedUser['email'].trim()">
-                No email configured. The customer account will be activated automatically upon saving.
-              </div>
-            </c-alert>
-          </c-col>
-        </c-row>
-      </div>
 
-      <!-- System Permissions -->
-      <div class="permissions-section mb-4" *ngIf="SelectedUser['role'] !== 'customer' && SelectedUser['role'] !== 'customer_inactive'">
-        <div class="section-header mb-3">
-          <h6 class="section-title mb-1"><i class="fa-solid fa-shield-halved me-2"></i>System Access Levels</h6>
-          <small class="text-muted">Control what system features this user can access and modify</small>
-        </div>
-        <div class="permission-legend mb-2">
-          <span class="legend-item"><span class="legend-color bg-info"></span>R = Read Only</span>
-          <span class="legend-item"><span class="legend-color bg-warning"></span>W = Read & Write</span>
-          <span class="legend-item"><span class="legend-color bg-success"></span>F = Full Control</span>
-          <span class="legend-item"><span class="legend-color bg-secondary"></span>× = No Access</span>
-        </div>
-        <div class="permissions-compact">
-          <div *ngFor='let perm of adminperms | keyvalue' class="perm-row">
-            <span class="perm-label">{{ perm.key.replace('_', ' ') }}</span>
-            <div class="perm-controls">
-              <button cButton size="sm" variant="outline" color="info" [active]="adminperms[perm.key]=='read'"
-                (click)="setRadioValue(perm.key,'read')" title="Read Only Access">R</button>
-              <button cButton size="sm" variant="outline" color="warning" [active]="adminperms[perm.key]=='write'"
-                (click)="setRadioValue(perm.key,'write')" title="Read & Write Access">W</button>
-              <button cButton size="sm" variant="outline" color="success" [active]="adminperms[perm.key]=='full'"
-                (click)="setRadioValue(perm.key,'full')" title="Full Control Access">F</button>
-              <button cButton size="sm" variant="outline" color="secondary" [active]="adminperms[perm.key]=='none'"
-                (click)="setRadioValue(perm.key,'none')" title="No Access">×</button>
+    <!-- Modal Navigation Tabs -->
+    <div class="user-modal-tabs border-bottom d-flex align-items-center px-3 bg-light">
+      <button type="button" class="user-tab-btn" [class.active]="activeModalTab === 'general'" (click)="setModalTab('general')">
+        <i class="fa-solid fa-user-gear me-2"></i>Profile & Security
+      </button>
+
+      <button type="button" *ngIf="SelectedUser['role'] !== 'customer' && SelectedUser['role'] !== 'customer_inactive'" class="user-tab-btn" [class.active]="activeModalTab === 'permissions'" (click)="setModalTab('permissions')">
+        <i class="fa-solid fa-shield-halved me-2"></i>Platform Permissions
+        <span class="badge bg-primary-subtle text-primary border border-primary-subtle ms-1" style="font-size: 0.68rem;">
+          {{ getOverallStats().granted }} / {{ getOverallStats().total }}
+        </span>
+      </button>
+
+      <button type="button" *ngIf="SelectedUser['role'] !== 'customer' && SelectedUser['role'] !== 'customer_inactive'" class="user-tab-btn" [class.active]="activeModalTab === 'devices'" (click)="setModalTab('devices')">
+        <i class="fa-solid fa-network-wired me-2"></i>Device Access
+        <span class="badge bg-secondary-subtle text-secondary border ms-1" style="font-size: 0.68rem;">
+          {{ userperms?.length || 0 }}
+        </span>
+      </button>
+    </div>
+
+    <c-modal-body class="p-3 user-modal-body">
+      <!-- TAB 1: Profile & Security -->
+      <div *ngIf="activeModalTab === 'general'" class="tab-pane-fade">
+        <div class="card border mb-3 shadow-xs">
+          <div class="card-header bg-light py-2 px-3 d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-2">
+              <i class="fa-solid fa-id-card text-primary"></i>
+              <span class="fw-semibold text-dark small">Account Identity & Credentials</span>
             </div>
+            <span class="badge bg-light text-secondary border">Step 1 of 3</span>
           </div>
-        </div>
-      </div>
-
-      <!-- Device Permissions -->
-      <div class="device-permissions-section" *ngIf="SelectedUser['role'] !== 'customer' && SelectedUser['role'] !== 'customer_inactive'">
-        <div class="section-header mb-3">
-          <h6 class="section-title mb-1"><i class="fa-solid fa-network-wired me-2"></i>Device Access Control</h6>
-          <small class="text-muted">Grant access to specific device groups with defined permission levels</small>
-        </div>
-
-        <!-- Add New Permission -->
-        <div class="add-permission-card mb-3">
-          <div class="add-header">
-            <i class="fa-solid fa-plus-circle text-primary me-2"></i>
-            <span class="fw-semibold">Add Device Access</span>
-          </div>
-          <c-row class="g-2 mt-2">
-            <c-col xs="12" md="4">
-              <div class="search-select-wrapper">
-                <label class="search-label">Device Group</label>
-                <input cFormControl [(ngModel)]="devgroupSearch" (input)="filterDevGroups($event)"
-                  (focus)="showDevGroupDropdown = true" (blur)="hideDevGroupDropdown()"
-                  placeholder="Search and select device group..." class="search-input compact-select"
-                  autocomplete="off" />
-                <div *ngIf="showDevGroupDropdown && filteredDevGroups.length > 0" class="search-dropdown">
-                  <div *ngFor="let group of filteredDevGroups" class="search-option"
-                    (mousedown)="selectDevGroup(group)">
-                    {{group.name}}
-                  </div>
+          <div class="card-body p-3">
+            <c-row class="g-3">
+              <c-col xs="12" md="6">
+                <label class="form-label small fw-semibold text-secondary mb-1">Username <span class="text-danger">*</span></label>
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-user"></i></span>
+                  <input cFormControl placeholder="Username (required for login)" [(ngModel)]="SelectedUser['username']"
+                    class="form-control" />
                 </div>
-                <div *ngIf="showDevGroupDropdown && filteredDevGroups.length === 0 && devgroupSearch"
-                  class="search-no-results">
-                  No groups found
+              </c-col>
+              <c-col xs="12" md="6">
+                <label class="form-label small fw-semibold text-secondary mb-1">Email Address</label>
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-envelope"></i></span>
+                  <input cFormControl placeholder="user@company.com" [(ngModel)]="SelectedUser['email']"
+                    class="form-control" type="email" />
                 </div>
-              </div>
-            </c-col>
-            <c-col xs="12" md="3">
-              <div class="search-select-wrapper">
-                <label class="search-label">Permission Level</label>
-                <input cFormControl [(ngModel)]="permissionSearch" (input)="filterPermissions($event)"
-                  (focus)="showPermissionDropdown = true" (blur)="hidePermissionDropdown()"
-                  placeholder="Search and select permission..." class="search-input compact-select"
-                  autocomplete="off" />
-                <div *ngIf="showPermissionDropdown && filteredPermissions.length > 0" class="search-dropdown">
-                  <div *ngFor="let perm of filteredPermissions" class="search-option"
-                    (mousedown)="selectPermission(perm)">
-                    {{perm.name}}
-                  </div>
+              </c-col>
+              <c-col xs="12" md="6">
+                <label class="form-label small fw-semibold text-secondary mb-1">First Name</label>
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text bg-light text-muted"><i class="fa-regular fa-id-badge"></i></span>
+                  <input cFormControl placeholder="First Name (optional)" [(ngModel)]="SelectedUser['first_name']"
+                    class="form-control" />
                 </div>
-                <div *ngIf="showPermissionDropdown && filteredPermissions.length === 0 && permissionSearch"
-                  class="search-no-results">
-                  No permissions found
+              </c-col>
+              <c-col xs="12" md="6">
+                <label class="form-label small fw-semibold text-secondary mb-1">Last Name</label>
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text bg-light text-muted"><i class="fa-regular fa-id-badge"></i></span>
+                  <input cFormControl placeholder="Last Name (optional)" [(ngModel)]="SelectedUser['last_name']"
+                    class="form-control" />
                 </div>
-              </div>
-            </c-col>
-            <c-col xs="12" md="3" *ngIf="ispro && SelectedUser['action']=='edit'">
-              <div class="search-select-wrapper">
-                <label class="search-label">Terminal Policy</label>
-                <input cFormControl [(ngModel)]="policySearch" (input)="filterPolicies($event)"
-                  (focus)="showPolicyDropdown = true" (blur)="hidePolicyDropdown()"
-                  placeholder="Search policy..." class="search-input compact-select" autocomplete="off" />
-                <div *ngIf="showPolicyDropdown && filteredPolicies.length > 0" class="search-dropdown">
-                  <div *ngFor="let p of filteredPolicies" class="search-option" (mousedown)="selectPolicy(p)">
-                    {{p.name}}
-                  </div>
+              </c-col>
+              <c-col xs="12" md="6">
+                <label class="form-label small fw-semibold text-secondary mb-1">System Role <span class="text-danger">*</span></label>
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-user-tag"></i></span>
+                  <select cSelect [(ngModel)]="SelectedUser['role']" class="form-select">
+                    <option value="admin">Admin (Full System & Device Access)</option>
+                    <option value="customer">Customer (Customer Portal Access)</option>
+                    <option value="customer_inactive" *ngIf="SelectedUser['role'] === 'customer_inactive'">Customer Inactive</option>
+                    <option value="disabled" *ngIf="SelectedUser['role'] === 'disabled'">Disabled (Access Blocked)</option>
+                  </select>
                 </div>
-                <div *ngIf="showPolicyDropdown && filteredPolicies.length === 0 && policySearch"
-                  class="search-no-results">No policies found</div>
-              </div>
-            </c-col>
-            <c-col xs="12" md="2" class="d-flex align-items-end">
-              <button *ngIf="SelectedUser['action']=='edit'" cButton color="success" size="sm" class="w-100 add-btn"
-                (click)="add_user_perm()" [disabled]="!devgroup || !permission">
-                <i class="fa-solid fa-plus me-1"></i>Add Access
-              </button>
-              <button *ngIf="SelectedUser['action']=='add'" cButton color="success" size="sm" class="w-100 add-btn"
-                (click)="add_new_user_perm()" [disabled]="!devgroup || !permission">
-                <i class="fa-solid fa-plus me-1"></i>Add Access
-              </button>
-            </c-col>
-          </c-row>
-        </div>
-
-        <!-- Current Permissions -->
-        <div class="current-permissions">
-          <div class="permissions-header">
-            <h6 class="mb-1"><i class="fa-solid fa-list-check me-2 text-success"></i>Current Device Access</h6>
-            <span class="badge bg-info">{{userperms.length}} permission(s)</span>
-          </div>
-
-          <div *ngIf="userperms.length>0" class="permissions-list mt-2">
-            <div *ngFor="let perm of userperms; let i = index" class="permission-item">
-              <div class="perm-number">{{i + 1}}</div>
-              <div class="perm-info" style="flex:1">
-                <div class="perm-main">
-                  <i class="fa-solid fa-server me-1 text-primary"></i>
-                  <span class="group-name">{{perm.group_name}}</span>
-                </div>
-                <div class="perm-detail" style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-                  <span><i class="fa-solid fa-key me-1 text-warning"></i>{{perm.perm_name}}</span>
-                  <button *ngIf="SelectedUser['action']=='edit'" cButton color="warning" size="sm" variant="outline"
-                    class="p-0 border-0" style="width:20px;height:20px;" (click)="editUserPerm(perm)"
-                    title="Change Permission">
-                    <i class="fa-solid fa-edit" style="font-size:0.7rem;"></i>
+              </c-col>
+              <c-col xs="12" md="6">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <label class="form-label small fw-semibold text-secondary mb-0">Password <span *ngIf="SelectedUser['action']=='add'" class="text-danger">*</span></label>
+                  <button type="button" class="btn btn-link btn-xs p-0 text-decoration-none" (click)="generateRandomPassword()" style="font-size: 0.76rem;">
+                    <i class="fa-solid fa-key me-1"></i>Generate Password
                   </button>
-                  <span *ngIf="ispro && SelectedUser['action']=='edit'" class="text-muted mx-1">|</span>
-                  <span *ngIf="ispro && SelectedUser['action']=='edit'" style="display:flex;align-items:center;gap:4px;">
-                    <span *ngIf="getGroupPolicy(perm.group_id)" class="text-info small">
-                      <i class="fa-solid fa-shield-halved me-1"></i>{{getGroupPolicyName(perm.group_id)}}
-                    </span>
-                    <span *ngIf="getGroupPolicyBrandCoverage(perm.group_id).length > 0" class="d-inline-flex gap-1">
-                      <c-badge *ngFor="let c of getGroupPolicyBrandCoverage(perm.group_id)" color="primary" style="text-transform: capitalize; font-size:0.6rem;">{{c.brand}}: {{c.policy_name}}</c-badge>
-                    </span>
-                    <span *ngIf="!getGroupPolicy(perm.group_id)" class="text-muted small">— Terminal: None —</span>
-                    <button cButton color="warning" size="sm" variant="outline"
-                      class="p-0 border-0" style="width:20px;height:20px;" (click)="editUserPolicy(perm)"
-                      title="Change Terminal Policy">
-                      <i class="fa-solid fa-edit" style="font-size:0.7rem;"></i>
-                    </button>
-                  </span>
                 </div>
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-lock"></i></span>
+                  <input [type]="showPassword ? 'text' : 'password'" cFormControl placeholder="Password (min 6 characters)"
+                    [(ngModel)]="SelectedUser['password']" class="form-control" />
+                  <button type="button" class="btn btn-outline-secondary" (click)="toggleShowPassword()" title="Toggle password visibility">
+                    <i class="fa-regular" [ngClass]="showPassword ? 'fa-eye-slash' : 'fa-eye'"></i>
+                  </button>
+                </div>
+                <small class="text-muted d-block mt-1" style="font-size: 0.72rem;" *ngIf="SelectedUser['action']=='edit'">Leave blank to keep existing password.</small>
+              </c-col>
+            </c-row>
+
+            <c-row class="mt-3" *ngIf="SelectedUser['role'] === 'customer'">
+              <c-col xs="12">
+                <c-alert color="info" class="d-flex align-items-center mb-0 py-2 border-info-subtle">
+                  <i class="fa-solid fa-circle-info me-2 text-info fs-5"></i>
+                  <div class="small" *ngIf="SelectedUser['email'] && SelectedUser['email'].trim()">
+                    Customer has email configured. An activation link will be sent to <strong>{{SelectedUser['email']}}</strong>. The account will be created as <em>inactive</em> until verified.
+                  </div>
+                  <div class="small" *ngIf="!SelectedUser['email'] || !SelectedUser['email'].trim()">
+                    No email configured. The customer account will be activated automatically upon saving.
+                  </div>
+                </c-alert>
+              </c-col>
+            </c-row>
+          </div>
+        </div>
+
+        <!-- PAM / Terminal Access Card (if Pro & edit) -->
+        <div class="card border mb-3 shadow-xs pam-access-card" *ngIf="ispro && SelectedUser['action']=='edit'">
+          <div class="card-header bg-light py-2 px-3 d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-2">
+              <i class="fa-solid fa-terminal text-danger"></i>
+              <span class="fw-semibold text-dark small">Privileged Access Management (PAM)</span>
+            </div>
+            <span class="badge" [ngClass]="SelectedUser['pam'] ? 'bg-success' : 'bg-secondary'" style="font-size: 0.68rem;">
+              {{ SelectedUser['pam'] ? 'Seat Assigned' : 'No Terminal Access' }}
+            </span>
+          </div>
+          <div class="card-body p-3">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+              <div>
+                <div class="fw-semibold small text-dark">Vault Terminal & Web TTY Access</div>
+                <div class="text-muted small">Grants ability to open SSH/RDP/Telnet/Web TTY sessions through the secure vault.</div>
+                <span *ngIf="pamSeats" class="text-secondary small mt-1 d-inline-block" style="font-size: 0.72rem;">
+                  <i class="fa-solid fa-circle-info me-1 text-primary"></i>Platform PAM seat allocation: <strong>{{ pamSeats.used }} of {{ pamSeats.total }}</strong> used
+                </span>
               </div>
-              <button *ngIf="SelectedUser['action']=='edit'" cButton color="danger" size="sm" variant="outline"
-                (click)="confirm_delete_perm(perm)" title="Remove this permission" class="remove-btn">
-                <i class="fa-solid fa-trash-can"></i>
+              <c-form-check sizing="xl" switch class="mb-0">
+                <input cFormCheckInput type="checkbox" [checked]="SelectedUser['pam']" (change)="togglePamAccess($event)" />
+              </c-form-check>
+            </div>
+            <div *ngIf="pamToggleErr" class="text-danger small mt-2">
+              <i class="fa-solid fa-triangle-exclamation me-1"></i>{{ pamToggleErr }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Navigation Jump Cards (For Admin Role) -->
+        <div class="card border bg-light-subtle shadow-xs" *ngIf="SelectedUser['role'] !== 'customer' && SelectedUser['role'] !== 'customer_inactive'">
+          <div class="card-body p-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+              <span class="fw-bold small text-dark d-block mb-1"><i class="fa-solid fa-layer-group me-1 text-primary"></i>Additional Configuration Sections</span>
+              <small class="text-muted">Configure granular capability permissions and device group assignments.</small>
+            </div>
+            <div class="d-flex gap-2">
+              <button type="button" class="btn btn-outline-primary btn-sm" (click)="setModalTab('permissions')">
+                <i class="fa-solid fa-shield-halved me-1"></i>Platform Permissions ({{ getOverallStats().granted }})
+              </button>
+              <button type="button" class="btn btn-outline-secondary btn-sm" (click)="setModalTab('devices')">
+                <i class="fa-solid fa-network-wired me-1"></i>Device Access ({{ userperms?.length || 0 }})
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: Platform Permissions -->
+      <div *ngIf="activeModalTab === 'permissions'" class="tab-pane-fade">
+        <div class="permissions-section mb-0">
+          <div class="section-header mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+              <h6 class="section-title mb-1"><i class="fa-solid fa-shield-halved me-2 text-primary"></i>System Access Levels</h6>
+              <small class="text-muted">Configure granular capability permissions across the platform</small>
+            </div>
+            <!-- System Posture Stats -->
+            <div class="perm-posture-pills d-flex align-items-center gap-1 flex-wrap">
+              <span class="posture-pill posture-full" [class.is-zero]="getOverallStats().full === 0" pTooltip="Full Control Count" tooltipPosition="top">
+                <i class="fa-solid fa-circle-check me-1"></i>{{ getOverallStats().full }} Full
+              </span>
+              <span class="posture-pill posture-write" [class.is-zero]="getOverallStats().write === 0" pTooltip="Read & Write Count" tooltipPosition="top">
+                <i class="fa-solid fa-pen me-1"></i>{{ getOverallStats().write }} Write
+              </span>
+              <span class="posture-pill posture-read" [class.is-zero]="getOverallStats().read === 0" pTooltip="Read-Only Count" tooltipPosition="top">
+                <i class="fa-solid fa-eye me-1"></i>{{ getOverallStats().read }} Read
+              </span>
+              <span class="posture-pill posture-none" [class.is-zero]="getOverallStats().none === 0" pTooltip="Denied Count" tooltipPosition="top">
+                <i class="fa-solid fa-ban me-1"></i>{{ getOverallStats().none }} Denied
+              </span>
+            </div>
+          </div>
+
+          <!-- Template & Preset Action Bar -->
+          <div class="perm-template-bar p-2 mb-3 rounded border bg-white d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <span class="fw-semibold text-secondary small"><i class="fa-solid fa-wand-magic-sparkles me-1 text-primary"></i>Template:</span>
+              <c-dropdown variant="btn-group">
+                <button cButton size="sm" variant="outline" color="primary" cDropdownToggle class="template-dropdown-btn">
+                  <span class="fw-semibold">{{ selectedTemplate || 'Choose a Template...' }}</span>
+                </button>
+                <ul cDropdownMenu class="perm-template-dropdown shadow">
+                  <li *ngFor="let tpl of permTemplates; trackBy: trackByTemplateName" class="dropdown-item-wrapper">
+                    <a cDropdownItem (click)="applyTemplate(tpl.name)" class="d-flex justify-content-between align-items-start py-2">
+                      <div>
+                        <div class="d-flex align-items-center gap-1">
+                          <span class="fw-bold">{{ tpl.name }}</span>
+                          <c-badge *ngIf="tpl.isCustom" color="info" size="sm" class="custom-badge">Custom</c-badge>
+                          <c-badge *ngIf="!tpl.isCustom" color="light" size="sm" class="border text-dark">Built-in</c-badge>
+                        </div>
+                        <small class="text-muted d-block mt-1">{{ tpl.description }}</small>
+                      </div>
+                      <button *ngIf="tpl.isCustom" (click)="deleteCustomTemplate(tpl.name, $event)" class="btn btn-sm btn-link text-danger p-0 ms-2" title="Delete custom template">
+                        <i class="fa-regular fa-trash-can"></i>
+                      </button>
+                    </a>
+                  </li>
+                </ul>
+              </c-dropdown>
+
+              <!-- Drift warning indicator -->
+              <div *ngIf="selectedTemplate && getDriftCount() > 0" class="drift-indicator d-flex align-items-center gap-2">
+                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning px-2 py-1">
+                  <i class="fa-solid fa-triangle-exclamation me-1"></i>{{ getDriftCount() }} Custom Override(s)
+                </span>
+                <button cButton size="sm" color="warning" variant="outline" (click)="revertAllDrift()" pTooltip="Reset all permissions back to {{ selectedTemplate }} baseline" tooltipPosition="top" class="btn-xs">
+                  <i class="fa-solid fa-rotate-left me-1"></i>Revert Drift
+                </button>
+              </div>
+            </div>
+
+            <div class="d-flex align-items-center gap-1">
+              <button cButton size="sm" variant="outline" color="secondary" (click)="openSaveTemplateModal()" title="Save current configuration as a reusable template">
+                <i class="fa-regular fa-bookmark me-1"></i>Save as Template
+              </button>
+              <c-dropdown variant="btn-group">
+                <button cButton size="sm" variant="outline" color="dark" cDropdownToggle title="Bulk Actions">
+                  <i class="fa-solid fa-sliders me-1"></i>Bulk
+                </button>
+                <ul cDropdownMenu class="shadow-sm">
+                  <li><a cDropdownItem (click)="expandAllCategories()"><i class="fa-solid fa-angles-down me-2 text-muted"></i>Expand All</a></li>
+                  <li><a cDropdownItem (click)="collapseAllCategories()"><i class="fa-solid fa-angles-up me-2 text-muted"></i>Collapse All</a></li>
+                  <li><hr class="dropdown-divider"></li>
+                  <li><a cDropdownItem (click)="setGlobalLevel('full')"><i class="fa-solid fa-check-double me-2 text-success"></i>Set All to Full Control</a></li>
+                  <li><a cDropdownItem (click)="setGlobalLevel('read')"><i class="fa-solid fa-eye me-2 text-info"></i>Set All to Read Only</a></li>
+                  <li><a cDropdownItem (click)="setGlobalLevel('none')"><i class="fa-solid fa-ban me-2 text-danger"></i>Revoke All (No Access)</a></li>
+                </ul>
+              </c-dropdown>
+            </div>
+          </div>
+
+          <!-- Filter & Search Toolbar -->
+          <div class="perm-toolbar mb-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div class="perm-search flex-grow-1">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="text" [(ngModel)]="permSearch" placeholder="Search permissions (e.g. 'vault', 'backup', 'devices')..." class="form-control form-control-sm" />
+              <button *ngIf="permSearch" (click)="permSearch=''" class="perm-search-clear"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <div class="perm-level-filter-pills d-flex align-items-center gap-1">
+              <button type="button" class="btn btn-sm perm-filter-btn" [class.active]="permFilterLevel === 'all'" (click)="setPermFilterLevel('all')">
+                All <span class="badge text-bg-light border ms-1">{{ getOverallStats().total }}</span>
+              </button>
+              <button type="button" class="btn btn-sm perm-filter-btn" [class.active]="permFilterLevel === 'granted'" (click)="setPermFilterLevel('granted')">
+                Granted <span class="badge text-bg-light border ms-1">{{ getOverallStats().granted }}</span>
+              </button>
+              <button type="button" class="btn btn-sm perm-filter-btn" [class.active]="permFilterLevel === 'denied'" (click)="setPermFilterLevel('denied')">
+                Denied <span class="badge text-bg-light border ms-1">{{ getOverallStats().none }}</span>
+              </button>
+              <button *ngIf="selectedTemplate && getDriftCount() > 0" type="button" class="btn btn-sm perm-filter-btn perm-filter-overrides" [class.active]="permFilterLevel === 'overrides'" (click)="setPermFilterLevel('overrides')">
+                Overrides <span class="badge text-bg-warning ms-1">{{ getDriftCount() }}</span>
               </button>
             </div>
           </div>
 
-          <div *ngIf="userperms.length==0" class="empty-permissions">
-            <div class="empty-icon">
-              <i class="fa-solid fa-shield-xmark text-muted"></i>
+          <!-- Categorized Permission Accordions -->
+          <div class="permissions-compact">
+            <div *ngFor="let category of filteredCategories(); trackBy: trackByCategory" class="perm-category card mb-2 shadow-sm border">
+              <div class="perm-category-header card-header d-flex align-items-center justify-content-between py-2 px-3 bg-light">
+                <div class="perm-category-title d-flex align-items-center gap-2 cursor-pointer flex-grow-1" (click)="toggleCategory(category.key)">
+                  <i [ngClass]="category.icon" class="text-primary fs-6"></i>
+                  <span class="fw-bold text-dark">{{ category.label }}</span>
+                  <span class="category-count-badge text-muted small">({{ category.perms.length }})</span>
+                </div>
+
+                <div class="d-flex align-items-center gap-2">
+                  <!-- Category Micro-Stats Breakdown -->
+                  <div class="category-micro-stats d-none d-md-flex align-items-center gap-1">
+                    <ng-container *ngIf="getCategoryStats(category.key).isBinaryOnly">
+                      <span *ngIf="getCategoryStats(category.key).none === 0" class="cat-badge badge-full">
+                        <i class="fa-solid fa-check me-1"></i>All Granted
+                      </span>
+                      <span *ngIf="getCategoryStats(category.key).granted === 0" class="cat-badge badge-none">
+                        <i class="fa-solid fa-ban me-1"></i>All Denied
+                      </span>
+                      <ng-container *ngIf="getCategoryStats(category.key).none > 0 && getCategoryStats(category.key).granted > 0">
+                        <span class="cat-badge badge-read">
+                          {{ getCategoryStats(category.key).granted }} Granted
+                        </span>
+                        <span class="cat-badge badge-none">
+                          {{ getCategoryStats(category.key).none }} Denied
+                        </span>
+                      </ng-container>
+                    </ng-container>
+
+                    <ng-container *ngIf="!getCategoryStats(category.key).isBinaryOnly">
+                      <span *ngIf="getCategoryStats(category.key).full === getCategoryStats(category.key).total" class="cat-badge badge-full">
+                        <i class="fa-solid fa-check me-1"></i>All Full
+                      </span>
+                      <span *ngIf="getCategoryStats(category.key).none === getCategoryStats(category.key).total" class="cat-badge badge-none">
+                        <i class="fa-solid fa-ban me-1"></i>All Denied
+                      </span>
+                      <ng-container *ngIf="getCategoryStats(category.key).full !== getCategoryStats(category.key).total && getCategoryStats(category.key).none !== getCategoryStats(category.key).total">
+                        <span *ngIf="getCategoryStats(category.key).full > 0" class="cat-badge badge-full">
+                          {{ getCategoryStats(category.key).full }} Full
+                        </span>
+                        <span *ngIf="getCategoryStats(category.key).write > 0" class="cat-badge badge-write">
+                          {{ getCategoryStats(category.key).write }} Write
+                        </span>
+                        <span *ngIf="getCategoryStats(category.key).read > 0" class="cat-badge badge-read">
+                          {{ getCategoryStats(category.key).read }} Read
+                        </span>
+                        <span *ngIf="getCategoryStats(category.key).none > 0" class="cat-badge badge-none">
+                          {{ getCategoryStats(category.key).none }} Denied
+                        </span>
+                      </ng-container>
+                    </ng-container>
+                  </div>
+
+                  <!-- Category Bulk Buttons -->
+                  <div class="perm-category-setall btn-group">
+                    <ng-container *ngIf="getCategoryStats(category.key).isBinaryOnly">
+                      <button type="button" class="btn btn-outline-success btn-xs" title="Grant access to all in this category" (click)="setCategoryLevel(category.key, 'read')">Grant All</button>
+                      <button type="button" class="btn btn-outline-secondary btn-xs" title="Revoke all in this category" (click)="setCategoryLevel(category.key, 'none')">Deny</button>
+                    </ng-container>
+                    <ng-container *ngIf="!getCategoryStats(category.key).isBinaryOnly">
+                      <button type="button" class="btn btn-outline-success btn-xs" title="Set Category to Full Control" (click)="setCategoryLevel(category.key, 'full')">All Full</button>
+                      <button type="button" class="btn btn-outline-info btn-xs" title="Set Category to Read Only" (click)="setCategoryLevel(category.key, 'read')">All Read</button>
+                      <button type="button" class="btn btn-outline-secondary btn-xs" title="Revoke all in this category" (click)="setCategoryLevel(category.key, 'none')">Deny</button>
+                    </ng-container>
+                  </div>
+
+                  <i class="fa-solid ms-1 perm-category-chevron text-muted cursor-pointer" (click)="toggleCategory(category.key)" [ngClass]="collapsedCategories[category.key] ? 'fa-chevron-down' : 'fa-chevron-up'"></i>
+                </div>
+              </div>
+
+              <div *ngIf="!collapsedCategories[category.key]" class="perm-category-body card-body p-2">
+                <div *ngFor="let perm of category.perms; trackBy: trackByPerm" class="perm-row d-flex align-items-center justify-content-between p-2 mb-1 rounded border" [class.perm-row-override]="isOverridden(perm.key)">
+                  <div class="perm-label-wrap d-flex flex-column flex-grow-1 pe-3">
+                    <div class="d-flex align-items-center gap-2">
+                      <span class="perm-label fw-semibold text-dark">{{ perm.label }}</span>
+                      <i class="fa-regular fa-circle-question perm-help text-muted cursor-pointer" [pTooltip]="perm.description" tooltipPosition="top"></i>
+                      <!-- Drift badge per row -->
+                      <span *ngIf="isOverridden(perm.key)" class="badge bg-warning-subtle text-warning-emphasis border border-warning px-1 py-0 d-inline-flex align-items-center gap-1" style="font-size: 0.68rem;">
+                        <span>Diff: Template has '{{ getTemplateLevel(perm.key) }}'</span>
+                        <i class="fa-solid fa-rotate-left cursor-pointer ms-1" pTooltip="Revert back to template's '{{ getTemplateLevel(perm.key) }}'" tooltipPosition="top" (click)="revertPermDrift(perm.key, $event)"></i>
+                      </span>
+                    </div>
+                    <small class="text-muted perm-sub-desc d-none d-sm-block">{{ perm.description }}</small>
+                  </div>
+
+                  <!-- Modern Dynamic Segmented Pill Control -->
+                  <div class="perm-segmented-control" [class.perm-segmented-binary]="perm.type === 'binary'" [class.perm-segmented-tristate]="perm.type === 'tristate_full'" role="group" aria-label="Permission Access Level">
+                    <button *ngFor="let opt of getPermOptions(perm)" type="button" class="perm-segment"
+                      [ngClass]="isOptionActive(perm, opt.value) ? opt.activeClass : ''"
+                      (click)="setRadioValue(perm, opt.value)"
+                      [title]="opt.title || opt.label">
+                      <span class="segment-dot"></span>{{ opt.label }}
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div class="empty-text">
-              <strong>No device access granted</strong>
-              <p class="mb-0 text-muted">Add permissions above to grant access to device groups</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: Device Access -->
+      <div *ngIf="activeModalTab === 'devices'" class="tab-pane-fade">
+        <div class="device-permissions-section mb-0">
+          <div class="section-header mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+              <h6 class="section-title mb-1"><i class="fa-solid fa-network-wired me-2 text-primary"></i>Device Access Control</h6>
+              <small class="text-muted">Grant access to specific device groups with defined permission levels and terminal policies</small>
+            </div>
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1" style="font-size: 0.74rem;">
+              {{ userperms?.length || 0 }} Group Assignment(s)
+            </span>
+          </div>
+
+          <!-- Add New Permission Card -->
+          <div class="add-permission-card mb-3 p-3 rounded-3 border bg-white shadow-xs">
+            <div class="d-flex align-items-center gap-2 mb-3">
+              <div class="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; font-size: 0.85rem;">
+                <i class="fa-solid fa-plus"></i>
+              </div>
+              <div>
+                <span class="fw-bold text-dark small d-block">Assign New Device Group Access</span>
+                <small class="text-muted" style="font-size: 0.72rem;">Select target group, permission level, and terminal policy</small>
+              </div>
+            </div>
+
+            <c-row class="g-2">
+              <c-col xs="12" [md]="(ispro && SelectedUser['action']=='edit') ? 4 : 5">
+                <div class="search-select-wrapper">
+                  <label class="search-label small fw-semibold text-secondary mb-1">
+                    <i class="fa-solid fa-server me-1 text-primary"></i>Device Group <span class="text-danger">*</span>
+                  </label>
+                  <div class="input-group input-group-sm">
+                    <input cFormControl [(ngModel)]="devgroupSearch" (input)="filterDevGroups($event)"
+                      (focus)="showDevGroupDropdown = true; filterDevGroups()" (blur)="hideDevGroupDropdown()"
+                      placeholder="Select device group..." class="form-control form-control-sm"
+                      autocomplete="off" />
+                    <button *ngIf="devgroupSearch" type="button" class="btn btn-outline-secondary btn-sm" (click)="clearDevGroup()" title="Clear">
+                      <i class="fa-solid fa-times"></i>
+                    </button>
+                  </div>
+                  <div *ngIf="showDevGroupDropdown && filteredDevGroups.length > 0" class="search-dropdown shadow-lg">
+                    <div *ngFor="let group of filteredDevGroups" class="search-option d-flex align-items-center gap-2"
+                      (mousedown)="selectDevGroup(group)">
+                      <i class="fa-solid fa-server text-primary small"></i>
+                      <span class="fw-medium text-dark">{{group.name}}</span>
+                    </div>
+                  </div>
+                  <div *ngIf="showDevGroupDropdown && filteredDevGroups.length === 0 && devgroupSearch"
+                    class="search-no-results">
+                    No matching groups found
+                  </div>
+                </div>
+              </c-col>
+
+              <c-col xs="12" [md]="(ispro && SelectedUser['action']=='edit') ? 3 : 4">
+                <div class="search-select-wrapper">
+                  <label class="search-label small fw-semibold text-secondary mb-1">
+                    <i class="fa-solid fa-shield-halved me-1 text-warning"></i>Permission Level <span class="text-danger">*</span>
+                  </label>
+                  <div class="input-group input-group-sm">
+                    <input cFormControl [(ngModel)]="permissionSearch" (input)="filterPermissions($event)"
+                      (focus)="showPermissionDropdown = true; filterPermissions()" (blur)="hidePermissionDropdown()"
+                      placeholder="Select permission..." class="form-control form-control-sm"
+                      autocomplete="off" />
+                    <button *ngIf="permissionSearch" type="button" class="btn btn-outline-secondary btn-sm" (click)="clearPermission()" title="Clear">
+                      <i class="fa-solid fa-times"></i>
+                    </button>
+                  </div>
+                  <div *ngIf="showPermissionDropdown && filteredPermissions.length > 0" class="search-dropdown shadow-lg">
+                    <div *ngFor="let perm of filteredPermissions" class="search-option d-flex align-items-center justify-content-between gap-2"
+                      (mousedown)="selectPermission(perm)">
+                      <div class="d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-key text-warning small"></i>
+                        <span class="fw-medium text-dark">{{perm.name}}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div *ngIf="showPermissionDropdown && filteredPermissions.length === 0 && permissionSearch"
+                    class="search-no-results">
+                    No matching permissions found
+                  </div>
+                </div>
+              </c-col>
+
+              <c-col xs="12" md="3" *ngIf="ispro && SelectedUser['action']=='edit'">
+                <div class="search-select-wrapper">
+                  <label class="search-label small fw-semibold text-secondary mb-1">
+                    <i class="fa-solid fa-terminal me-1 text-danger"></i>Terminal Policy
+                  </label>
+                  <div class="input-group input-group-sm">
+                    <input cFormControl [(ngModel)]="policySearch" (input)="filterPolicies($event)"
+                      (focus)="showPolicyDropdown = true; filterPolicies()" (blur)="hidePolicyDropdown()"
+                      placeholder="Select policy (Optional)..." class="form-control form-control-sm" autocomplete="off" />
+                    <button *ngIf="policySearch" type="button" class="btn btn-outline-secondary btn-sm" (click)="clearPolicy()" title="Clear">
+                      <i class="fa-solid fa-times"></i>
+                    </button>
+                  </div>
+                  <div *ngIf="showPolicyDropdown && filteredPolicies.length > 0" class="search-dropdown shadow-lg">
+                    <div *ngFor="let p of filteredPolicies" class="search-option d-flex align-items-center gap-2" (mousedown)="selectPolicy(p)">
+                      <i class="fa-solid fa-shield-halved text-info small"></i>
+                      <span class="fw-medium text-dark">{{p.name}}</span>
+                    </div>
+                  </div>
+                  <div *ngIf="showPolicyDropdown && filteredPolicies.length === 0 && policySearch"
+                    class="search-no-results">No matching policies found</div>
+                </div>
+              </c-col>
+
+              <c-col xs="12" [md]="(ispro && SelectedUser['action']=='edit') ? 2 : 3" class="d-flex align-items-end">
+                <button *ngIf="SelectedUser['action']=='edit'" cButton color="primary" size="sm" class="w-100 add-btn d-flex align-items-center justify-content-center gap-1"
+                  (click)="add_user_perm()" [disabled]="!devgroup?.id || !permission?.id">
+                  <i class="fa-solid fa-plus"></i>
+                  <span>Add Access</span>
+                </button>
+                <button *ngIf="SelectedUser['action']=='add'" cButton color="primary" size="sm" class="w-100 add-btn d-flex align-items-center justify-content-center gap-1"
+                  (click)="add_new_user_perm()" [disabled]="!devgroup?.id || !permission?.id">
+                  <i class="fa-solid fa-plus"></i>
+                  <span>Add Access</span>
+                </button>
+              </c-col>
+            </c-row>
+          </div>
+
+          <!-- Current Assigned Device Access List -->
+          <div class="current-permissions border rounded-3 bg-white shadow-xs overflow-hidden">
+            <div class="permissions-header bg-light py-2 px-3 border-bottom d-flex justify-content-between align-items-center">
+              <div class="d-flex align-items-center gap-2">
+                <i class="fa-solid fa-list-check text-success"></i>
+                <span class="fw-bold text-dark small">Assigned Device Access</span>
+              </div>
+              <span class="badge bg-secondary-subtle text-secondary border">{{userperms.length}} assigned</span>
+            </div>
+
+            <div *ngIf="userperms.length > 0" class="permissions-list">
+              <div *ngFor="let perm of userperms; let i = index" class="assigned-device-card d-flex align-items-center justify-content-between p-3 border-bottom">
+                <div class="d-flex align-items-center gap-3 flex-grow-1">
+                  <div class="device-group-avatar rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center flex-shrink-0" style="width: 34px; height: 34px;">
+                    <i class="fa-solid fa-server"></i>
+                  </div>
+                  <div class="d-flex flex-column gap-1">
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                      <span class="group-name fw-bold text-dark fs-6">{{ perm.group_name }}</span>
+                      
+                      <!-- Permission Badge with Resolved Name -->
+                      <span class="badge d-inline-flex align-items-center gap-1 px-2 py-1" [ngClass]="getPermBadgeClass(perm)">
+                        <i class="fa-solid fa-shield-halved"></i>
+                        <span>{{ getPermDisplayName(perm) }}</span>
+                      </span>
+                      
+                      <button *ngIf="SelectedUser['action']=='edit'" type="button" class="btn btn-outline-secondary btn-xs"
+                        (click)="editUserPerm(perm)" title="Change Permission Level">
+                        <i class="fa-solid fa-pen-to-square me-1"></i>Change
+                      </button>
+                    </div>
+
+                    <!-- Terminal Policy Details -->
+                    <div *ngIf="ispro && SelectedUser['action']=='edit'" class="d-flex align-items-center gap-2 flex-wrap" style="font-size: 0.76rem;">
+                      <span class="text-secondary fw-semibold"><i class="fa-solid fa-terminal text-muted me-1"></i>Terminal Policy:</span>
+                      <span *ngIf="getGroupPolicy(perm.group_id)" class="text-info fw-bold">
+                        {{ getGroupPolicyName(perm.group_id) }}
+                      </span>
+                      <span *ngIf="getGroupPolicyBrandCoverage(perm.group_id).length > 0" class="d-inline-flex gap-1">
+                        <c-badge *ngFor="let c of getGroupPolicyBrandCoverage(perm.group_id)" color="primary" style="text-transform: capitalize; font-size: 0.65rem;">{{ c.brand }}: {{ c.policy_name }}</c-badge>
+                      </span>
+                      <span *ngIf="!getGroupPolicy(perm.group_id)" class="text-muted">— None —</span>
+                      <button type="button" class="btn btn-outline-info btn-xs ms-1"
+                        (click)="editUserPolicy(perm)" title="Configure Terminal Policy">
+                        <i class="fa-solid fa-shield-halved me-1"></i>Policy
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <button *ngIf="SelectedUser['action']=='edit'" class="btn btn-outline-danger btn-sm ms-3 d-inline-flex align-items-center gap-1"
+                  (click)="confirm_delete_perm(perm)" title="Remove access to this device group">
+                  <i class="fa-solid fa-trash-can"></i>
+                  <span class="d-none d-md-inline">Remove</span>
+                </button>
+              </div>
+            </div>
+
+            <div *ngIf="userperms.length === 0" class="empty-permissions p-4 text-center">
+              <div class="empty-icon text-muted mb-2 fs-2">
+                <i class="fa-solid fa-shield-xmark"></i>
+              </div>
+              <strong class="d-block text-dark small">No device access assigned</strong>
+              <p class="mb-0 text-muted small">Select a device group and permission level above to grant access.</p>
             </div>
           </div>
         </div>
       </div>
 
     </c-modal-body>
-    <c-modal-footer class="d-flex justify-content-between flex-wrap gap-2 p-2">
+    <c-modal-footer class="d-flex justify-content-between flex-wrap gap-2 p-2 bg-light border-top">
       <div>
         <button *ngIf="SelectedUser['role']!='disabled'" (click)="SelectedUser['role']='disabled'" cButton
-          color="danger" size="sm">
-          <i class="fa-solid fa-user-slash me-1"></i><span class="d-none d-sm-inline">Deactivate</span>
+          color="danger" variant="outline" size="sm">
+          <i class="fa-solid fa-user-slash me-1"></i><span class="d-none d-sm-inline">Deactivate User</span>
         </button>
-        <button *ngIf="SelectedUser['role']=='disabled'" (click)="SelectedUser['role']=SelectedUser['previous_role'] || 'admin'" cButton color="success"
+        <button *ngIf="SelectedUser['role']=='disabled'" (click)="SelectedUser['role']=SelectedUser['previous_role'] || 'admin'" cButton color="success" variant="outline"
           size="sm">
-          <i class="fa-solid fa-user-check me-1"></i><span class="d-none d-sm-inline">Activate</span>
+          <i class="fa-solid fa-user-check me-1"></i><span class="d-none d-sm-inline">Activate User</span>
         </button>
       </div>
       <div class="d-flex gap-2">
+        <button [cModalToggle]="EditTaskModal.id" cButton color="secondary" size="sm">
+          <i class="fa-solid fa-times me-1"></i>Cancel
+        </button>
         <button *ngIf="SelectedUser['action']=='add'" (click)="submit('add')" cButton color="primary" size="sm">
-          <i class="fa-solid fa-plus me-1"></i>Add
+          <i class="fa-solid fa-plus me-1"></i>Create User
         </button>
         <button *ngIf="SelectedUser['action']=='edit'" (click)="submit('edit')" cButton color="primary" size="sm">
-          <i class="fa-solid fa-save me-1"></i>Save
-        </button>
-        <button [cModalToggle]="EditTaskModal.id" cButton color="secondary" size="sm">
-          <i class="fa-solid fa-times me-1"></i>Close
+          <i class="fa-solid fa-save me-1"></i>Save Changes
         </button>
       </div>
     </c-modal-footer>
@@ -626,14 +992,46 @@
     </c-modal-footer>
   </c-modal>
 
+  <c-modal #SaveTemplateModal backdrop="static" [(visible)]="saveTemplateModalVisible" id="SaveTemplateModal">
+    <c-modal-header>
+      <h5 cModalTitle><i class="fa-solid fa-bookmark me-2 text-primary"></i>Save Current Permissions as Template</h5>
+      <button [cModalToggle]="SaveTemplateModal.id" cButtonClose></button>
+    </c-modal-header>
+    <c-modal-body>
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Template Name <span class="text-danger">*</span></label>
+        <input cFormControl placeholder="e.g. NOC Level 2, Field Technician" [(ngModel)]="newTemplateName" class="form-input" />
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Description</label>
+        <textarea cFormControl rows="2" placeholder="Describe the intended scope and role for this template..." [(ngModel)]="newTemplateDesc" class="form-input"></textarea>
+      </div>
+      <div class="p-2 border rounded bg-light">
+        <span class="small fw-bold text-secondary d-block mb-1">Included Configuration Summary:</span>
+        <div class="d-flex gap-2 flex-wrap">
+          <span class="badge bg-success-subtle text-success border border-success">{{ getOverallStats().full }} Full</span>
+          <span class="badge bg-warning-subtle text-warning-emphasis border border-warning">{{ getOverallStats().write }} Write</span>
+          <span class="badge bg-info-subtle text-info border border-info">{{ getOverallStats().read }} Read</span>
+          <span class="badge bg-secondary-subtle text-secondary border">{{ getOverallStats().none }} Denied</span>
+        </div>
+      </div>
+    </c-modal-body>
+    <c-modal-footer>
+      <button cButton color="primary" (click)="saveNewTemplate()" [disabled]="!newTemplateName || !newTemplateName.trim()">
+        <i class="fa-solid fa-save me-1"></i>Save Template
+      </button>
+      <button [cModalToggle]="SaveTemplateModal.id" cButton color="secondary">Cancel</button>
+    </c-modal-footer>
+  </c-modal>
+
   <app-export-modal
-  [(visible)]="exportModalVisible"
-  title="Export Users Report"
-  [allData]="source"
-  [filteredData]="dt?.filteredValue || getFilteredUsers()"
-  [customColumns]="exportColumns"
-  dateField="created_at"
-  defaultFileName="users_report">
-</app-export-modal>
+    [(visible)]="exportModalVisible"
+    title="Export Users Report"
+    [allData]="source"
+    [filteredData]="dt?.filteredValue || getFilteredUsers()"
+    [customColumns]="exportColumns"
+    dateField="created_at"
+    defaultFileName="users_report">
+  </app-export-modal>
 
 <c-toaster position="fixed" placement="top-end"></c-toaster>

@@ -7,11 +7,13 @@ import {
   ButtonGroupModule,
   ButtonModule,
   CardModule,
+  DropdownModule,
   FormModule,
   GridModule,
   ModalModule,
   ToastModule,
   AlertModule,
+  TooltipModule,
 } from "@coreui/angular";
 import { MatSelectModule } from "@angular/material/select";
 import { NgxMatSelectSearchModule } from "ngx-mat-select-search";
@@ -20,7 +22,7 @@ import { UserManagerRoutingModule } from "./user_manager-routing.module";
 import { UserManagerComponent } from "./user_manager.component";
 import { TableModule } from 'primeng/table';
 import { InputTextModule } from 'primeng/inputtext';
-import { TooltipModule } from 'primeng/tooltip';
+import { TooltipModule as PTooltipModule } from 'primeng/tooltip';
 
 import { SharedModule } from "../../shared/shared.module";
 
@@ -35,8 +37,10 @@ import { SharedModule } from "../../shared/shared.module";
     FormModule,
     ButtonModule,
     ButtonGroupModule,
+    DropdownModule,
     TableModule,
     InputTextModule,
+    PTooltipModule,
     TooltipModule,
     ModalModule,
     FormsModule,
