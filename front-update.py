@@ -13,6 +13,7 @@ import json
 import shutil
 from cryptography.fernet import Fernet 
 import sys
+import signal
 from logging.handlers import RotatingFileHandler
 
 
@@ -128,6 +129,27 @@ def _ensure_certbot():
                    capture_output=True)
     return False
 
+def kill_ssl_agent():
+    me = os.getpid()
+    killed = False
+    for entry in os.listdir("/proc"):
+        if not entry.isdigit() or int(entry) == me:
+            continue
+        try:
+            with open("/proc/%s/cmdline" % entry, "rb") as f:
+                cmdline = f.read().decode(errors="ignore")
+        except OSError:
+            continue
+        if "/ssl-agent.py" in cmdline:
+            try:
+                os.kill(int(entry), signal.SIGTERM)
+                log.info("Sent SIGTERM to ssl-agent pid %s", entry)
+                killed = True
+            except OSError as e:
+                log.warning("Failed to kill ssl-agent pid %s: %s", entry, e)
+    return killed
+
+
 def start_ssl_agent():
     if not os.path.exists("/ssl-agent.py"):
         return False
@@ -208,7 +230,7 @@ def extract_zip_reload(filename,dst):
             log.info("Updating ssl-agent.py...")
             shutil.move(ssl_agent_src, "/ssl-agent.py")
             os.chmod("/ssl-agent.py", 0o755)
-            subprocess.run(["pkill", "-f", "/ssl-agent.py"], check=False)
+            kill_ssl_agent()
             time.sleep(1)
             start_ssl_agent()
     except Exception as e:
