@@ -19,7 +19,7 @@
           </c-col>
           <c-col xs="auto">
             <button cButton color="success" (click)="openAddDeviceModal()" class="mx-1" size="sm"
-              style="color: #fff;"><i class="fa-solid fa-plus"></i> Bulk Add </button>
+              style="color: #fff;" [disabled]="licenseBlocked"><i class="fa-solid fa-plus"></i> Bulk Add </button>
             <button *ngIf="deviceTab !== 'nonmikrotik'" cButton color="dark" (click)="scanwizard(1,'')" [cModalToggle]="ScannerModal.id" class="mx-1"
               size="sm" style="color: #fff;"><i class="fa-solid fa-magnifying-glass"></i> Scan</button>
             <button cButton color="primary" (click)="show_exec()" class="mx-1" size="sm" style="color: #fff;"><i

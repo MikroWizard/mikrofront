@@ -197,9 +197,9 @@
           <div class="p-2 mb-2 rounded-3 position-relative" [ngClass]="{
                  'bg-success bg-opacity-10 border-start border-4 border-success': (stats?.license_info?.status === 'Pro' || stats?.license_info?.status === 'Free') && stats?.license !== false,
                  'bg-danger bg-opacity-10 border-start border-4 border-danger': stats?.license_info?.status === 'expired' || stats?.license_info?.status === 'connection_error' || stats?.license === false,
-                 'bg-warning bg-opacity-10 border-start border-4 border-warning': stats?.license_info?.action_required === 'set_username' && stats?.license !== false
+                 'bg-warning bg-opacity-10 border-start border-4 border-warning': stats?.license_info?.status === 'over_limit' || (stats?.license_info?.action_required === 'set_username' && stats?.license !== false)
                }" style="box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
-               
+                
             <div class="d-flex justify-content-between align-items-center">
                <strong class="mb-0 text-dark d-flex align-items-center" style="font-size: 0.9rem;">
                  <i class="fa-solid flex-shrink-0 me-2" [ngClass]="{
@@ -207,6 +207,7 @@
                    'fa-leaf text-success': stats?.license_info?.status === 'Free' && stats?.license !== false,
                    'fa-triangle-exclamation text-danger': stats?.license_info?.status === 'connection_error',
                    'fa-circle-xmark text-danger': stats?.license_info?.status === 'expired',
+                   'fa-triangle-exclamation text-warning': stats?.license_info?.status === 'over_limit',
                    'fa-user-xmark text-warning': stats?.license_info?.action_required === 'set_username' && stats?.license !== false,
                    'fa-id-card text-danger': stats?.license === false
                  }"></i>
@@ -215,6 +216,7 @@
                     <span *ngIf="stats?.license_info?.status === 'Pro'">Pro License Active</span>
                     <span *ngIf="stats?.license_info?.status === 'Free'">Free License Active</span>
                     <span *ngIf="stats?.license_info?.status === 'expired'">License Expired</span>
+                    <span *ngIf="stats?.license_info?.status === 'over_limit'">Device Limit Reached</span>
                     <span *ngIf="stats?.license_info?.status === 'connection_error'">Connection Error</span>
                     <span *ngIf="stats?.license_info?.status === 'no_username'">No Username</span>
                  </ng-container>
@@ -222,6 +224,7 @@
                <span *ngIf="stats?.license !== false && (stats?.license_info?.status === 'Pro' || stats?.license_info?.status === 'Free')" class="badge fw-bold shadow-sm" [ngClass]="stats?.license_info?.status === 'Pro' ? 'bg-warning text-dark' : 'bg-secondary'">
                  {{ stats?.license_info?.status | uppercase }}
                </span>
+               <span *ngIf="stats?.license_info?.status === 'over_limit'" class="badge bg-warning text-dark fw-bold shadow-sm">OVER LIMIT</span>
                <span *ngIf="stats?.license === false" class="badge bg-danger fw-bold shadow-sm">UNREGISTERED</span>
             </div>
 
@@ -235,16 +238,46 @@
                 </ng-container>
               </p>
               
-              <div class="d-flex gap-1" *ngIf="stats?.license_info?.status !== 'connection_error'">
+              <div class="d-flex gap-1 align-items-center" *ngIf="stats?.license_info?.status !== 'connection_error'">
                 <a *ngIf="stats?.license === false || stats?.license_info?.action_required === 'set_username'" 
                    href="https://mikrowizard.com/register-new-mikrowizard/" target="_blank" 
                    class="btn btn-sm btn-danger py-0 px-2 rounded-pill fw-semibold shadow-sm animate-pulse" 
                    style="font-size: 0.7rem;"><i class="fa-solid fa-id-card me-1"></i> Register Serial</a>
                 
-                <a *ngIf="stats?.license !== false && stats?.license_info?.action_required === 'renew_license'" 
+                <a *ngIf="stats?.license !== false && (stats?.license_info?.action_required === 'renew_license' || stats?.license_info?.status === 'over_limit')" 
                    href="https://mikrowizard.com/register-new-mikrowizard/" target="_blank" 
                    class="btn btn-sm btn-danger py-0 px-2 rounded-pill fw-semibold shadow-sm" 
                    style="font-size: 0.7rem;"><i class="fa-solid fa-cart-shopping me-1"></i> Renew</a>
+
+                <button class="btn btn-sm btn-light py-0 px-2 rounded-pill fw-semibold shadow-sm border-0"
+                   [disabled]="licenseRefreshing" (click)="refreshLicense()"
+                   style="font-size: 0.7rem; background-color: #e2e8f0; color: #334155;">
+                  <i class="fa-solid me-1" [ngClass]="licenseRefreshing ? 'fa-circle-notch fa-spin' : 'fa-arrows-rotate'"></i>
+                  {{ licenseRefreshing ? 'Reloading...' : 'Reload License' }}
+                </button>
+
+                <span *ngIf="licenseRefreshMsg && !licenseRefreshing"
+                   class="badge rounded-pill fw-semibold text-white"
+                   [ngClass]="licenseRefreshMsg.color === 'success' ? 'bg-success' : 'bg-danger'"
+                   style="font-size: 0.65rem; padding: 3px 7px;">
+                  <i class="fa-solid me-1" [ngClass]="licenseRefreshMsg.color === 'success' ? 'fa-check' : 'fa-xmark'"></i>
+                  {{ licenseRefreshMsg.text }}
+                </span>
+              </div>
+            </div>
+
+            <!-- License usage vs limit -->
+            <div class="mt-2" *ngIf="stats?.license_usage">
+              <div class="d-flex justify-content-between align-items-center small mb-1" *ngIf="stats?.license_info?.expiration_date">
+                <span class="text-dark opacity-75">Expires</span>
+                <span class="fw-semibold">{{ stats?.license_info?.expiration_date }}</span>
+              </div>
+              <div class="d-flex justify-content-between align-items-center small" *ngFor="let dim of licenseDims">
+                <span class="text-dark opacity-75"><i class="fa-solid me-1" [ngClass]="dim.icon"></i>{{ dim.label }}</span>
+                <span class="fw-semibold" [ngClass]="dim.used >= dim.total ? 'text-danger' : (dim.used >= dim.total * 0.85 ? 'text-warning' : 'text-dark')">
+                  {{ dim.used }} of {{ dim.total }} used
+                  <i *ngIf="dim.used >= dim.total" class="fa-solid fa-triangle-exclamation text-danger ms-1"></i>
+                </span>
               </div>
             </div>
           </div>
@@ -321,7 +354,7 @@
     </c-card>
   </c-col>
   <c-col xl="6" lg="12" class="d-flex flex-column" style="min-height: 160px!important;">
-    <c-card class="flex-grow-1" style="padding: 0!important;margin: 0!important;">
+    <c-card class="flex-grow-1 d-flex flex-column justify-content-center" style="padding: 0!important;margin: 0!important;">
       <div *ngIf="!stats" style="padding: 20px;">
         <div class="placeholder-glow">
           <div class="placeholder col-4" style="height: 150px; float: left; margin-right: 20px;"></div>
@@ -335,7 +368,7 @@
       <c-carousel *ngIf="stats" [dark]="true" [animate]="false" [wrap]="false" [interval]="1000000">
         <c-carousel-indicators></c-carousel-indicators>
         <c-carousel-inner>
-          <c-carousel-item style="display: flex;" *ngFor="let slide of stats['blog']; index as i;">
+          <c-carousel-item style="display: flex; align-items: center;" *ngFor="let slide of stats['blog']; index as i;">
             <img [src]="slide.media_content" alt="{{slide.title}}" class="d-block" loading="lazy" style=" float: left;"
               height="150px" />
             <div style="padding: 20px;">

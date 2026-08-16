@@ -2,11 +2,15 @@ import { Component, OnInit, OnDestroy, EventEmitter, Output } from '@angular/cor
 import { Router } from '@angular/router';
 import { dataProvider } from '../../providers/mikrowizard/data';
 import { User } from '../../providers/mikrowizard/user';
+import { LicenseService } from '../../providers/license.service';
 
 @Component({
   selector: 'app-connection-manager-layout',
   templateUrl: './connection-manager-layout.component.html',
-  styleUrls: ['./connection-manager-layout.component.scss']
+  styleUrls: ['./connection-manager-layout.component.scss'],
+  host: {
+    '[class.topbar-auto-hide]': 'topbarAutoHide'
+  }
 })
 export class ConnectionManagerLayoutComponent implements OnInit, OnDestroy {
   @Output() UserModalEvent = new EventEmitter<any>();
@@ -19,13 +23,34 @@ export class ConnectionManagerLayoutComponent implements OnInit, OnDestroy {
   public lname: string;
   public tasks: any = [];
   public timer: any;
+  public topbarAutoHide = false;
+  public topbarHint = false;
+  private topbarHintTimer: any;
 
   constructor(
     private router: Router,
-    private data_provider: dataProvider
+    private data_provider: dataProvider,
+    private licenseService: LicenseService
   ) {
     const session_info: string = localStorage.getItem('current_user') || "[]";
     this.current_user = JSON.parse(session_info);
+    try {
+      this.topbarAutoHide = localStorage.getItem('mikrowizard_cm_topbar_autohide') === '1';
+    } catch (e) {}
+  }
+
+  toggleTopbarAutoHide() {
+    this.topbarAutoHide = !this.topbarAutoHide;
+    try {
+      localStorage.setItem('mikrowizard_cm_topbar_autohide', this.topbarAutoHide ? '1' : '0');
+    } catch (e) {}
+    if (this.topbarAutoHide) {
+      this.topbarHint = true;
+      if (this.topbarHintTimer) clearTimeout(this.topbarHintTimer);
+      this.topbarHintTimer = setTimeout(() => { this.topbarHint = false; }, 3000);
+    } else {
+      this.topbarHint = false;
+    }
   }
 
   ngOnInit(): void {
@@ -39,6 +64,9 @@ export class ConnectionManagerLayoutComponent implements OnInit, OnDestroy {
     if (this.current_user && this.current_user.role === 'customer') {
       return;
     }
+    this.data_provider.getSessionInfo().then((res: any) => {
+      this.licenseService.setLicenseState(res['license']);
+    }).catch(() => {});
     this.get_running_tasks();
     this.timer = setInterval(() => {
       this.get_running_tasks();

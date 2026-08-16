@@ -2,6 +2,7 @@ import { Component, OnInit } from "@angular/core";
 import { UntypedFormControl, UntypedFormGroup } from "@angular/forms";
 import { dataProvider } from "../../providers/mikrowizard/data";
 import { loginChecker } from "../../providers/login_checker";
+import { LicenseService } from "../../providers/license.service";
 import { Router } from "@angular/router";
 import { formatInTimeZone } from "date-fns-tz";
 
@@ -16,11 +17,14 @@ export class DashboardComponent implements OnInit {
   public copy_msg: any = false;
   public ConfirmModalVisible: boolean = false;
   public action: string = "";
+  public licenseRefreshing: boolean = false;
+  public licenseRefreshMsg: any = false;
   front_version=require('../../../../package.json').version;
   constructor(
     private data_provider: dataProvider,
     private router: Router,
-    private login_checker: loginChecker
+    private login_checker: loginChecker,
+    private licenseService: LicenseService
   ) {
     var _self = this;
     if (!this.login_checker.isLoggedIn()) {
@@ -165,6 +169,16 @@ export class DashboardComponent implements OnInit {
   public delta: string = "5m";
   public stats: any = false;
 
+  public get licenseDims(): Array<{ label: string; icon: string; used: number; total: number }> {
+    const u = this.stats && this.stats['license_usage'];
+    if (!u) return [];
+    return [
+      { label: 'MikroTik devices', icon: 'fa-server', used: u.mikrotik?.used || 0, total: u.mikrotik?.total || 0 },
+      { label: 'Non-MikroTik devices', icon: 'fa-network-wired', used: u.other?.used || 0, total: u.other?.total || 0 },
+      { label: 'PAM seats', icon: 'fa-user-shield', used: u.pam_seats?.used || 0, total: u.pam_seats?.total || 0 },
+    ];
+  }
+
   ngOnInit(): void {
     this.options = this.Chartoptions;
     this.initStats();
@@ -188,6 +202,27 @@ export class DashboardComponent implements OnInit {
     var _self = this;
     this.data_provider.dashboard_stats(true,this.front_version).then((res) => {
       _self.stats = res;
+    });
+  }
+
+  refreshLicense() {
+    var _self = this;
+    this.licenseRefreshing = true;
+    this.licenseRefreshMsg = false;
+    this.data_provider.refreshLicense().then((res) => {
+      if (res && res.status === 'success') {
+        _self.licenseRefreshMsg = { color: 'success', text: 'License updated' };
+        if (res.license) {
+          _self.licenseService.setLicenseState(res.license);
+        }
+        _self.initStats();
+      } else {
+        _self.licenseRefreshMsg = { color: 'danger', text: 'Reload failed' };
+      }
+      _self.licenseRefreshing = false;
+    }).catch((err) => {
+      _self.licenseRefreshMsg = { color: 'danger', text: 'Reload failed' };
+      _self.licenseRefreshing = false;
     });
   }
 

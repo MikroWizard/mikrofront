@@ -4,6 +4,7 @@ import { loginChecker } from '../../providers/login_checker';
 import { User } from '../../providers/mikrowizard/user';
 import { navItems, customerNavItems } from './_nav';
 import { dataProvider } from '../../providers/mikrowizard/data';
+import { LicenseService } from '../../providers/license.service';
 import { arch } from 'os';
 import { DomSanitizer } from '@angular/platform-browser';
 import { disconnect } from 'process';
@@ -49,6 +50,7 @@ export class DefaultLayoutComponent implements OnInit {
     private router: Router,
     private login_checker: loginChecker,
 		private data_provider: dataProvider,
+    private licenseService: LicenseService,
     private _sanitizer: DomSanitizer
 
   ) {
@@ -314,6 +316,7 @@ export class DefaultLayoutComponent implements OnInit {
     } else {
       this.data_provider.getSessionInfo().then((res) => {
         _self.ispro=res['ISPRO']
+        _self.licenseService.setLicenseState(res['license']);
         _self.navItems=_self.navItems.filter((item:any) => {
           if (item.attributes){
             if('free' in item.attributes && _self.ispro){

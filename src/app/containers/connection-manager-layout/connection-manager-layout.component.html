@@ -1,31 +1,44 @@
+<!-- Hover handle to reveal the top bar when auto-hidden -->
+<div class="cm-top-edge" [class.pulse]="topbarHint" title="Hover to show menu">
+  <i class="fa-solid fa-chevron-down"></i>
+</div>
+
 <!-- MikroWizard Connection Manager Header -->
-<div class="cm-header-bar d-flex align-items-center justify-content-between px-3" style="height: 52px; background-color: #1a1a2e; border-bottom: 1px solid #2d2d4e; flex-shrink: 0;">
-  <!-- Left: Brand + Title -->
-  <div class="d-flex align-items-center gap-3">
-    <a routerLink="/dashboard" class="d-flex align-items-center text-decoration-none me-3">
-      <img src="assets/img/brand/logo-MIkroWizard-small-color.svg" width="32" height="32" alt="MikroWizard" />
-    </a>
-    <div class="vr" style="opacity: 0.2; height: 28px;"></div>
-    <div class="d-flex align-items-center">
-      <i class="fa-solid fa-network-wired me-2" style="color: #4e9af1; font-size: 1rem;"></i>
-      <span class="fw-semibold" style="color: #e0e0f0; font-size: 0.95rem; letter-spacing: 0.5px;">Connection Manager</span>
+<div class="cm-top">
+  <div class="cm-header-bar d-flex align-items-center justify-content-between px-3" style="height: 52px; background-color: #1a1a2e; border-bottom: 1px solid #2d2d4e; flex-shrink: 0;">
+    <!-- Left: Brand + Title -->
+    <div class="d-flex align-items-center gap-3">
+      <a routerLink="/dashboard" class="d-flex align-items-center text-decoration-none me-3">
+        <img src="assets/img/brand/logo-MIkroWizard-small-color.svg" width="32" height="32" alt="MikroWizard" />
+      </a>
+      <div class="vr" style="opacity: 0.2; height: 28px;"></div>
+      <div class="d-flex align-items-center">
+        <i class="fa-solid fa-network-wired me-2" style="color: #4e9af1; font-size: 1rem;"></i>
+        <span class="fw-semibold" style="color: #e0e0f0; font-size: 0.95rem; letter-spacing: 0.5px;">Connection Manager</span>
+      </div>
+    </div>
+
+    <!-- Right: Actions -->
+    <div class="d-flex align-items-center gap-2">
+      <button class="btn btn-sm p-0 me-2" style="color: rgba(255,255,255,0.6);" [title]="topbarAutoHide ? 'Pin Top Bar' : 'Auto-hide Top Bar'" (click)="toggleTopbarAutoHide()">
+        <i class="fa-solid fa-thumbtack" style="font-size: 0.8rem;" [style.color]="topbarAutoHide ? '#4e9af1' : ''"></i>
+      </button>
+      <ng-container *ngTemplateOutlet="taskDropdown"></ng-container>
+      <div class="vr mx-2" style="opacity: 0.2; height: 20px;"></div>
+      <ng-container *ngTemplateOutlet="userDropdown"></ng-container>
+
+      <a routerLink="/dashboard" class="btn btn-sm ms-3" style="background-color: rgba(255,255,255,0.07); color: #a0a0c0; border: 1px solid rgba(255,255,255,0.1); font-size: 0.8rem;">
+        <i class="fa-solid fa-arrow-left me-1"></i> Dashboard
+      </a>
     </div>
   </div>
 
-  <!-- Right: Actions -->
-  <div class="d-flex align-items-center gap-2">
-    <ng-container *ngTemplateOutlet="taskDropdown"></ng-container>
-    <div class="vr mx-2" style="opacity: 0.2; height: 20px;"></div>
-    <ng-container *ngTemplateOutlet="userDropdown"></ng-container>
-
-    <a routerLink="/dashboard" class="btn btn-sm ms-3" style="background-color: rgba(255,255,255,0.07); color: #a0a0c0; border: 1px solid rgba(255,255,255,0.1); font-size: 0.8rem;">
-      <i class="fa-solid fa-arrow-left me-1"></i> Dashboard
-    </a>
-  </div>
+  <!-- Global license banner -->
+  <app-license-banner></app-license-banner>
 </div>
 
 <!-- Main router outlet -->
-<div style="height: calc(100vh - 52px); overflow: hidden;">
+<div class="cm-outlet">
   <router-outlet></router-outlet>
 </div>
 

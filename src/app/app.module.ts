@@ -11,6 +11,7 @@ import { NgScrollbarModule } from 'ngx-scrollbar';
 import { provideHttpClient, withInterceptorsFromDi, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { LicenseService } from './providers/license.service';
 import { LicenseInterceptor } from './providers/license-interceptor.service';
+import { LicenseBannerComponent } from './shared/components/license-banner/license-banner.component';
 
 // Import routing module
 import { AppRoutingModule } from './app-routing.module';
@@ -61,7 +62,7 @@ const APP_CONTAINERS = [
 export function loginStatusProviderFactory(provider: loginChecker) {
   return () => provider.load();
 }
-@NgModule({ declarations: [AppComponent, ...APP_CONTAINERS],
+@NgModule({ declarations: [AppComponent, ...APP_CONTAINERS, LicenseBannerComponent],
     bootstrap: [AppComponent], imports: [BrowserModule,
         BrowserAnimationsModule,
         AppRoutingModule,

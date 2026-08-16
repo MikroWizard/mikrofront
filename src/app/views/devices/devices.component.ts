@@ -9,6 +9,7 @@ import {
 import { dataProvider } from "../../providers/mikrowizard/data";
 import { Router, ActivatedRoute } from "@angular/router";
 import { loginChecker } from "../../providers/login_checker";
+import { LicenseService } from "../../providers/license.service";
 import {
   ToasterComponent
 } from "@coreui/angular";
@@ -38,11 +39,16 @@ export class DevicesComponent implements OnInit, OnDestroy {
   public configVersionsModalVisible: boolean = false;
   public selectedConfigDevice: any = {};
 
+  public get licenseBlocked(): boolean {
+    return this.licenseService.isBlocked();
+  }
+
   constructor( 
     private data_provider: dataProvider,
     private route: ActivatedRoute,
     private router: Router,
-    private login_checker: loginChecker
+    private login_checker: loginChecker,
+    private licenseService: LicenseService
   ) {
     var _self = this;
     if (!this.login_checker.isLoggedIn()) {

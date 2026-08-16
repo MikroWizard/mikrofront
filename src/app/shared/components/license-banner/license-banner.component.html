@@ -1,0 +1,32 @@
+<div class="license-banner" *ngIf="(state$ | async) as st"
+  [class.d-none]="st.status !== 'expired' && st.status !== 'invalid' && st.status !== 'over_limit'">
+  <div class="alert d-flex align-items-center flex-wrap gap-2 mb-2 border-0 shadow-sm"
+    [ngClass]="st.status === 'over_limit' ? 'alert-warning' : 'alert-danger'">
+    <i class="fa-solid flex-shrink-0"
+      [ngClass]="st.status === 'over_limit' ? 'fa-triangle-exclamation text-warning' : 'fa-circle-xmark text-danger'"></i>
+
+    <div class="flex-grow-1">
+      <ng-container *ngIf="st.status === 'over_limit'">
+        <strong>Device limit exceeded</strong>
+        <span class="ms-1 small">
+          MikroTik: {{ st.counts?.mikrotik || 0 }} / {{ st.limits?.mikrotik || 0 }} ·
+          Non-MikroTik: {{ st.counts?.other || 0 }} / {{ st.limits?.other || 0 }}
+        </span>
+        <div class="small text-muted">Delete devices to get back under your limit, or renew/upgrade your license.</div>
+      </ng-container>
+      <ng-container *ngIf="st.status === 'expired' || st.status === 'invalid'">
+        <strong>License expired</strong>
+        <span class="ms-1 small">Your Pro license is no longer active. Renew to restore Pro features.</span>
+      </ng-container>
+    </div>
+
+    <div class="d-flex gap-1">
+      <button *ngIf="st.status === 'over_limit'" cButton color="warning" size="sm" (click)="goToDevices()">
+        <i class="fa-solid fa-server me-1"></i>Go to Devices
+      </button>
+      <a href="https://mikrowizard.com/register-new-mikrowizard/" target="_blank" cButton color="danger" size="sm">
+        <i class="fa-solid fa-cart-shopping me-1"></i>Renew
+      </a>
+    </div>
+  </div>
+</div>
