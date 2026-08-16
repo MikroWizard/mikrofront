@@ -692,15 +692,51 @@
               <c-col md="4">
                 <div class="setting-group">
                   <label class="setting-label">API Key</label>
-                  <input cFormControl [(ngModel)]="sysconfigs['ai_api_key']['value']" placeholder="Enter API Key (hidden)" class="form-control" type="password" id="aiApiKeyInput" />
+                  <input cFormControl [(ngModel)]="sysconfigs['ai_api_key']['value']" placeholder="•••••••• (Leave blank to keep current key)" class="form-control" type="password" id="aiApiKeyInput" />
                 </div>
               </c-col>
 
               <!-- Model Name (non-OpenRouter providers) -->
               <c-col md="4" *ngIf="sysconfigs['ai_provider']['value'] !== 'openrouter'">
                 <div class="setting-group">
-                  <label class="setting-label">Model Name <small class="text-muted">(Optional Override)</small></label>
-                  <input cFormControl [(ngModel)]="sysconfigs['ai_model']['value']" placeholder="e.g. gemini-2.5-flash" class="form-control" id="aiModelInput" />
+                  <label class="setting-label">Model Name <small class="text-muted">(Preset or Custom)</small></label>
+                  <input cFormControl [(ngModel)]="sysconfigs['ai_model']['value']" list="modelPresetsList" placeholder="e.g. gemini-3.7-flash" class="form-control" id="aiModelInput" />
+                  <datalist id="modelPresetsList">
+                    <option *ngFor="let p of (providerModelPresets[sysconfigs['ai_provider']['value']] || [])" [value]="p.id">{{ p.name }}</option>
+                  </datalist>
+                </div>
+              </c-col>
+            </c-row>
+
+            <!-- Reasoning & Advanced Tuning Controls -->
+            <c-row class="g-3 mt-1">
+              <c-col md="4">
+                <div class="setting-group">
+                  <label class="setting-label">Reasoning / Thinking Mode</label>
+                  <select cSelect [(ngModel)]="sysconfigs['ai_reasoning_effort']['value']" class="form-select" id="aiReasoningEffortSelect">
+                    <option value="auto">⚡ Auto (Balanced Reasoning - Recommended)</option>
+                    <option value="high">🧠 High (Deep Step-by-Step Analysis)</option>
+                    <option value="medium">⚖️ Medium (Standard Thinking)</option>
+                    <option value="low">🏃 Low (Minimal Thinking / Fast Response)</option>
+                    <option value="off">🚫 Off (Standard Generation)</option>
+                  </select>
+                  <small class="text-muted">Controls reasoning depth for Gemini 3, OpenAI o-series, Claude 3.7 & DeepSeek R1.</small>
+                </div>
+              </c-col>
+
+              <c-col md="4">
+                <div class="setting-group">
+                  <label class="setting-label">Temperature <small class="text-muted">(0.0 to 1.0)</small></label>
+                  <input cFormControl type="number" min="0" max="1" step="0.1" [(ngModel)]="sysconfigs['ai_temperature']['value']" class="form-control" id="aiTemperatureInput" />
+                  <small class="text-muted">0.0 is strict & deterministic for network diagnostics. Higher is more creative.</small>
+                </div>
+              </c-col>
+
+              <c-col md="4">
+                <div class="setting-group">
+                  <label class="setting-label">Max Output Tokens</label>
+                  <input cFormControl type="number" min="512" max="32768" step="512" [(ngModel)]="sysconfigs['ai_max_tokens']['value']" class="form-control" id="aiMaxTokensInput" />
+                  <small class="text-muted">Default 4096. Upper limit for response token length.</small>
                 </div>
               </c-col>
             </c-row>

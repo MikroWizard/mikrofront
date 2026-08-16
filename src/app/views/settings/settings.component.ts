@@ -344,15 +344,38 @@ export class SettingsComponent implements OnInit {
     });
   }
 
+  providerModelPresets: { [key: string]: { id: string; name: string }[] } = {
+    'gemini': [
+      { id: 'gemini-3.7-flash', name: '⚡ Gemini 3.7 Flash (Recommended)' },
+      { id: 'gemini-3.1-pro', name: '🧠 Gemini 3.1 Pro (Flagship Reasoning)' },
+      { id: 'gemini-2.5-flash', name: '⚡ Gemini 2.5 Flash (Fast Multimodal)' },
+      { id: 'gemini-2.0-flash', name: '⚡ Gemini 2.0 Flash (Legacy Fast)' },
+      { id: 'gemini-1.5-pro', name: '📊 Gemini 1.5 Pro (Legacy Pro)' },
+    ],
+    'openai': [
+      { id: 'gpt-4o-mini', name: '⚡ GPT-4o-mini (Recommended - Fast)' },
+      { id: 'gpt-4o', name: '🧠 GPT-4o (Flagship Multimodal)' },
+      { id: 'o3-mini', name: '🔬 o3-mini (High-Speed Reasoning)' },
+      { id: 'o1', name: '🔬 o1 (Deep Reasoning)' },
+    ],
+    'anthropic': [
+      { id: 'claude-3-7-sonnet-20250219', name: '⚡ Claude 3.7 Sonnet (Recommended)' },
+      { id: 'claude-3-5-haiku-20241022', name: '⚡ Claude 3.5 Haiku (Fast)' },
+      { id: 'claude-3-5-sonnet-20241022', name: '🧠 Claude 3.5 Sonnet (Previous Flagship)' },
+    ],
+    'deepseek': [
+      { id: 'deepseek-chat', name: '⚡ DeepSeek-V3 Chat (Recommended)' },
+      { id: 'deepseek-reasoner', name: '🔬 DeepSeek-R1 (Deep Reasoning)' },
+    ]
+  };
+
   onProviderChange(newProvider: string): void {
     if (!this.sysconfigs || !this.sysconfigs['ai_model']) return;
     
-    // Set sensible defaults when switching providers so the user knows what to type
-    // and so old provider models don't bleed into the new one causing errors
     const defaults: {[key: string]: string} = {
-      'gemini': 'gemini-2.5-flash',
+      'gemini': 'gemini-3.7-flash',
       'openai': 'gpt-4o-mini',
-      'anthropic': 'claude-3-5-sonnet-20241022',
+      'anthropic': 'claude-3-7-sonnet-20250219',
       'deepseek': 'deepseek-chat',
       'openrouter': ''
     };
@@ -378,20 +401,30 @@ export class SettingsComponent implements OnInit {
       _self.sysconfigs["default_password"]["value"] = "";
 
       // Initialize AI configurations
-      const aiKeys = ['ai_provider', 'ai_api_key', 'ai_model', 'ai_system_instruction', 'ai_openrouter_mode', 'ai_openrouter_models'];
+      const aiKeys = ['ai_provider', 'ai_api_key', 'ai_model', 'ai_system_instruction', 'ai_reasoning_effort', 'ai_temperature', 'ai_max_tokens', 'ai_openrouter_mode', 'ai_openrouter_models'];
       aiKeys.forEach(k => {
         if (!(k in _self.sysconfigs) || !_self.sysconfigs[k] || typeof _self.sysconfigs[k] !== 'object') {
           if (k === 'ai_provider') _self.sysconfigs[k] = { value: 'gemini' };
+          else if (k === 'ai_model') _self.sysconfigs[k] = { value: 'gemini-3.7-flash' };
+          else if (k === 'ai_reasoning_effort') _self.sysconfigs[k] = { value: 'auto' };
+          else if (k === 'ai_temperature') _self.sysconfigs[k] = { value: 0 };
+          else if (k === 'ai_max_tokens') _self.sysconfigs[k] = { value: 4096 };
           else if (k === 'ai_openrouter_mode') _self.sysconfigs[k] = { value: 'auto' };
           else if (k === 'ai_openrouter_models') _self.sysconfigs[k] = { value: ['', '', ''] };
           else _self.sysconfigs[k] = { value: '' };
         } else if (!('value' in _self.sysconfigs[k])) {
           if (k === 'ai_provider') _self.sysconfigs[k]['value'] = 'gemini';
+          else if (k === 'ai_model') _self.sysconfigs[k]['value'] = 'gemini-3.7-flash';
+          else if (k === 'ai_reasoning_effort') _self.sysconfigs[k]['value'] = 'auto';
+          else if (k === 'ai_temperature') _self.sysconfigs[k]['value'] = 0;
+          else if (k === 'ai_max_tokens') _self.sysconfigs[k]['value'] = 4096;
           else if (k === 'ai_openrouter_mode') _self.sysconfigs[k]['value'] = 'auto';
           else if (k === 'ai_openrouter_models') _self.sysconfigs[k]['value'] = ['', '', ''];
           else _self.sysconfigs[k]['value'] = '';
         } else if (k === 'ai_provider' && !_self.sysconfigs[k]['value']) {
           _self.sysconfigs[k]['value'] = 'gemini';
+        } else if (k === 'ai_reasoning_effort' && !_self.sysconfigs[k]['value']) {
+          _self.sysconfigs[k]['value'] = 'auto';
         } else if (k === 'ai_openrouter_mode' && !_self.sysconfigs[k]['value']) {
           _self.sysconfigs[k]['value'] = 'auto';
         } else if (k === 'ai_openrouter_models') {
