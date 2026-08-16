@@ -6,3 +6,17 @@
 .nvimrc
 .angular/
 /dist/
+__pycache__/
+*.tar.gz
+.vscode/
+old.diff.save
+check.py
+new-front-update-payload.py
+update_active_sessions.js
+update_active_sessions_2.js
+update_command_logs.js
+update_command_logs_2.js
+update_session_history.js
+update_session_history_2.js
+AGENTS.md
+.cursorrules
