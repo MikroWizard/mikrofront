@@ -183,6 +183,37 @@ export class dataProvider {
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/dev/dhcp-server/get", data);
     }
+    make_dhcp_lease_static(id: number, leaseId: string) {
+        var data = {
+            'devid': id,
+            'id': leaseId
+        };
+        return this.MikroWizardRPC.sendJsonRequest("/api/dev/dhcp-server/lease/make-static", data);
+    }
+    make_dhcp_lease_dynamic(id: number, leaseId: string) {
+        var data = {
+            'devid': id,
+            'id': leaseId
+        };
+        return this.MikroWizardRPC.sendJsonRequest("/api/dev/dhcp-server/lease/make-dynamic", data);
+    }
+    add_dhcp_lease(id: number, item: any) {
+        var data = {
+            'devid': id,
+            'address': item.address,
+            'mac-address': item.mac || item['mac-address'],
+            'server': item.server || 'all',
+            'comment': item.comment || ''
+        };
+        return this.MikroWizardRPC.sendJsonRequest("/api/dev/dhcp-server/lease/add", data);
+    }
+    remove_dhcp_lease(id: number, leaseId: string) {
+        var data = {
+            'devid': id,
+            'id': leaseId
+        };
+        return this.MikroWizardRPC.sendJsonRequest("/api/dev/dhcp-server/lease/remove", data);
+    }
     get_dev_ifstat(id: number, delta: string = "5m", iface: string = "ether1", type: string = "bps") {
         var data = {
             'devid': id,
@@ -556,6 +587,19 @@ export class dataProvider {
             'uid': id
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/user/delete", data);
+    }
+    togglePam(uid: string, enable: boolean) {
+        var data = {
+            'uid': uid,
+            'enable': enable
+        }
+        return this.MikroWizardRPC.sendJsonRequest("/api/user/pam/toggle", data);
+    }
+    getPamSeats() {
+        return this.MikroWizardRPC.sendJsonRequest("/api/user/pam/seats", {});
+    }
+    refreshLicense() {
+        return this.MikroWizardRPC.sendJsonRequest("/api/license/refresh", {});
     }
     check_firmware(devids: any) {
         var data = {
@@ -1271,5 +1315,61 @@ export class dataProvider {
     // ---- Sequence History Export (PRO) ----
     export_sequence_history(seq_id: number) {
         return this.MikroWizardRPC.sendJsonRequest("/api/snippet/sequence/history/export", { id: seq_id });
+    }
+
+    // ---- SSL/TLS Management ----
+    ssl_status() {
+        return this.MikroWizardRPC.sendJsonRequest("/api/ssl/status", {});
+    }
+    ssl_generate_csr(data: any) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/ssl/generate-csr", data);
+    }
+    ssl_install_cert(data: any) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/ssl/install-cert", data);
+    }
+    ssl_letsencrypt_request(data: any) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/ssl/letsencrypt/request", data);
+    }
+    ssl_letsencrypt_renew(data: any) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/ssl/letsencrypt/renew", data);
+    }
+    ssl_letsencrypt_revoke(data: any) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/ssl/letsencrypt/revoke", data);
+    }
+    ssl_letsencrypt_delete(data: any) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/ssl/letsencrypt/delete", data);
+    }
+    ssl_force_ssl(data: any) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/ssl/force-ssl", data);
+    }
+    ssl_disable() {
+        return this.MikroWizardRPC.sendJsonRequest("/api/ssl/disable", {});
+    }
+    ssl_nginx_test() {
+        return this.MikroWizardRPC.sendJsonRequest("/api/ssl/nginx/test", {});
+    }
+    ssl_nginx_reload() {
+        return this.MikroWizardRPC.sendJsonRequest("/api/ssl/nginx/reload", {});
+    }
+    ssl_nginx_config(data: any) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/ssl/nginx/config", data);
+    }
+    ssl_migration_script() {
+        return this.MikroWizardRPC.sendJsonRequest("/api/ssl/migration-script", {});
+    }
+    ssl_install_certbot() {
+        return this.MikroWizardRPC.sendJsonRequest("/api/ssl/install-certbot", {});
+    }
+    ssl_install_certbot_status() {
+        return this.MikroWizardRPC.sendJsonRequest("/api/ssl/install-certbot/status", {});
+    }
+    ssl_dns_manual_start(data: any) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/ssl/letsencrypt/dns-manual/start", data);
+    }
+    ssl_dns_manual_status() {
+        return this.MikroWizardRPC.sendJsonRequest("/api/ssl/letsencrypt/dns-manual/status", {});
+    }
+    ssl_dns_manual_continue() {
+        return this.MikroWizardRPC.sendJsonRequest("/api/ssl/letsencrypt/dns-manual/continue", {});
     }
 }

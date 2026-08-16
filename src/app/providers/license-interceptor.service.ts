@@ -22,7 +22,11 @@ export class LicenseInterceptor implements HttpInterceptor {
     'snippet/sequence/list',
     'cloner/list',
     '/api/pssvault/get',
-    'snippet/syslogregex/list'
+    'snippet/syslogregex/list',
+    '/api/pam/',
+    '/api/non-mikrotik/',
+    '/api/terminal/',
+    '/api/policy/'
   ];
 
   constructor(private licenseService: LicenseService) { }
@@ -40,8 +44,8 @@ export class LicenseInterceptor implements HttpInterceptor {
             body &&
             body.result &&
             typeof body.result === 'object' &&
-            body.result.err === 'License Expired' &&
-            body.result.status === 'failed'
+            body.result.status === 'failed' &&
+            (body.result.err === 'License Expired' || body.result.error === 'License Expired')
           ) {
             this.licenseService.setExpired(true);
           } else {
