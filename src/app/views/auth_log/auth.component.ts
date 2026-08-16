@@ -289,7 +289,8 @@ export class AuthComponent implements OnInit, OnDestroy {
           d.stype = "local";
           d.duration = "Local Access";
         } else {
-          d.stype = d.by === 'Web-Proxy' || d.by === 'proxy' ? 'web-proxy' : 'radius';
+          d.stype = d.by === 'Web-Proxy' || d.by === 'proxy' ? 'web-proxy'
+            : (d.by === 'Terminal-Gateway' ? 'terminal-gateway' : 'radius');
           if (!d.ended || d.ended === 0) {
             d.duration = "live";
           } else {

@@ -27,6 +27,8 @@ export class TerminalTabComponent implements OnInit, OnDestroy {
   public error = '';
   public showSettings = false;
   public isDisconnected = false;
+  public gatewayNotInstalled = false;
+  public gatewayDocUrl = 'https://mikrowizard.com/docs/installing-terminal-gatway-addon/';
   
   public settings: TerminalSettings;
 
@@ -176,6 +178,18 @@ export class TerminalTabComponent implements OnInit, OnDestroy {
         this.error = res.error || 'Failed to initialize terminal session';
         return;
       }
+      if (res && res.status === 'pam_required') {
+        this.loading = false;
+        this.error = res.error || 'PAM access is not enabled for this user. Please ask your admin to enable a PAM seat.';
+        return;
+      }
+      if (res && res.status === 'gateway_not_installed') {
+        this.loading = false;
+        this.gatewayNotInstalled = true;
+        this.gatewayDocUrl = res.doc_url || this.gatewayDocUrl;
+        this.error = res.error || 'Terminal Gateway is not installed.';
+        return;
+      }
       this.isDisconnected = false;
       this.sessionId = res.session_id; // Save session ID for sharing
       if (res.protocol) {
@@ -307,19 +321,85 @@ export class TerminalTabComponent implements OnInit, OnDestroy {
     }
   }
 
+  public contextMenuVisible = false;
+  public contextMenuX = 0;
+  public contextMenuY = 0;
+  public hasSelection = false;
+
   public onContextMenu(event: MouseEvent) {
+    event.preventDefault();
+    this.hasSelection = !!(this.term && this.term.hasSelection());
+    this.contextMenuX = event.clientX;
+    this.contextMenuY = event.clientY;
+    this.contextMenuVisible = true;
+  }
+
+  public closeContextMenu() {
+    this.contextMenuVisible = false;
+  }
+
+  public copySelection() {
     if (this.term && this.term.hasSelection()) {
       const selection = this.term.getSelection();
       if (selection) {
-        navigator.clipboard.writeText(selection).then(() => {
-          // Optional: visually indicate copied, e.g. clear selection
+        this.copyToClipboard(selection).then(() => {
           this.term.clearSelection();
         }).catch(err => {
           console.error('Failed to copy text: ', err);
         });
-        event.preventDefault();
       }
     }
+    this.closeContextMenu();
+  }
+
+  public pasteToTerminal() {
+    if (navigator.clipboard && navigator.clipboard.readText) {
+      navigator.clipboard.readText().then((text: string) => {
+        if (text && this.term) {
+          this.term.paste(text);
+        }
+      }).catch(err => {
+        console.error('Failed to read clipboard: ', err);
+      });
+    } else {
+      this.focusTerminal();
+    }
+    this.closeContextMenu();
+  }
+
+  public selectAll() {
+    if (this.term) {
+      this.term.selectAll();
+    }
+    this.closeContextMenu();
+  }
+
+  private copyToClipboard(text: string): Promise<void> {
+    if (navigator.clipboard && window.isSecureContext) {
+      return navigator.clipboard.writeText(text);
+    }
+    return new Promise((resolve, reject) => {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.left = '-9999px';
+      textarea.style.top = '0';
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      try {
+        const ok = document.execCommand('copy');
+        document.body.removeChild(textarea);
+        if (ok) {
+          resolve();
+        } else {
+          reject(new Error('execCommand copy failed'));
+        }
+      } catch (e) {
+        document.body.removeChild(textarea);
+        reject(e);
+      }
+    });
   }
 
   public sessionId: string = '';

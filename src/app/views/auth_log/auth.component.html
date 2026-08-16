@@ -202,6 +202,8 @@
                   class="fa-solid fa-user-tie"></i>
                 <i *ngIf="item.stype=='radius'" pTooltip="radius user" style="color: #096114; margin-right: 3px;"
                   class="fa-solid fa-server"></i>
+                <i *ngIf="item.stype=='terminal-gateway'" pTooltip="terminal gateway" style="color: #0d6efd; margin-right: 3px;"
+                  class="fa-solid fa-terminal"></i>
                 {{item.name}}
               </td>
               <td>{{item.devip}}</td>
@@ -218,7 +220,7 @@
                   pTooltip="Watch Live WebFig Session (Monitor Mode)" (click)="openLiveMonitorModal(item, $event)">
                   <i class="fas fa-eye me-1"></i>Watch Live
                 </button>
-                <button *ngIf="item.recording_path || (item.by==='Web-Proxy' && item.sessionid)" cButton size="sm" color="info" variant="outline" class="ms-2 py-0 px-2"
+                <button *ngIf="item.recording_path || (item.by==='Web-Proxy' && item.sessionid && !item.sessionid.startsWith('sessionid')) || (item.by==='Terminal-Gateway' && item.sessionid)" cButton size="sm" color="info" variant="outline" class="ms-2 py-0 px-2"
                   pTooltip="Play Session Recording" (click)="openRecordingModal(item, $event)">
                   <i class="fas fa-play me-1"></i>Play
                 </button>
@@ -289,7 +291,7 @@
               <div class="col-8 small">{{selectedLog.created}}</div>
             </div>
 
-            <div *ngIf="selectedLog.recording_path || (selectedLog.by==='Web-Proxy' && selectedLog.sessionid)" class="mt-4">
+            <div *ngIf="selectedLog.recording_path || (selectedLog.by==='Web-Proxy' && selectedLog.sessionid && !selectedLog.sessionid.startsWith('sessionid')) || (selectedLog.by==='Terminal-Gateway' && selectedLog.sessionid)" class="mt-4">
               <button cButton color="info" class="w-100 text-white" (click)="openRecordingModal(selectedLog, $event)">
                 <i class="fas fa-play me-2"></i>Play Session Recording
               </button>

@@ -12,7 +12,21 @@
     {{ errorMessage }}
   </div>
 
-  <div id="terminal-container" [hidden]="errorMessage || isConnecting">
+  <div *ngIf="gatewayNotInstalled" class="alert alert-info border-0 shadow-sm p-4 text-center mt-3">
+    <div class="mb-3">
+      <i class="fa-solid fa-server fa-3x text-info"></i>
+    </div>
+    <h5 class="fw-bold text-dark">Terminal Gateway Not Installed</h5>
+    <p class="text-muted mx-auto mb-3" style="max-width: 500px;">
+      The MikroWizard Terminal Gateway addon is required to start terminal sessions.
+      Please ask your administrator to install it.
+    </p>
+    <a [href]="gatewayDocUrl" target="_blank" class="btn btn-info fw-semibold text-white px-3">
+      <i class="fa-solid fa-book me-1"></i> Installation Tutorial
+    </a>
+  </div>
+
+  <div id="terminal-container" [hidden]="errorMessage || gatewayNotInstalled || isConnecting">
     <button class="gear-btn" (click)="showSettings = true" title="Terminal Settings">&#9881;</button>
     <div #terminalContainer style="width: 100%; height: 100%;"></div>
   </div>

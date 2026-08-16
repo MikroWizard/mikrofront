@@ -23,6 +23,8 @@ export class TerminalComponent implements OnInit, AfterViewInit, OnDestroy {
   isConnecting: boolean = true;
   isDisconnected: boolean = false;
   errorMessage: string = '';
+  gatewayNotInstalled: boolean = false;
+  gatewayDocUrl: string = 'https://mikrowizard.com/docs/installing-terminal-gatway-addon/';
 
   showSettings: boolean = false;
   settings: TerminalSettings = { ...DEFAULT_TERMINAL_SETTINGS };
@@ -71,6 +73,14 @@ export class TerminalComponent implements OnInit, AfterViewInit, OnDestroy {
           this.sessionId = res.session_id;
           this.isConnecting = false;
           setTimeout(() => this.initTerminal(), 100);
+        } else if (res && res.status === 'pam_required') {
+          this.errorMessage = res.error || 'PAM access is not enabled for this user. Please ask your admin to enable a PAM seat.';
+          this.isConnecting = false;
+        } else if (res && res.status === 'gateway_not_installed') {
+          this.gatewayNotInstalled = true;
+          this.gatewayDocUrl = res.doc_url || this.gatewayDocUrl;
+          this.errorMessage = res.error || 'Terminal Gateway is not installed.';
+          this.isConnecting = false;
         } else {
           this.errorMessage = 'Failed to initialize session: invalid response';
           this.isConnecting = false;

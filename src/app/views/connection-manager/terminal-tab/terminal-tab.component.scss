@@ -66,3 +66,90 @@
   background-color: rgba(10, 10, 15, 0.8);
   z-index: 10;
 }
+
+.terminal-install-card {
+  max-width: 480px;
+  padding: 2rem;
+  background-color: #14141c;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+}
+
+.mw-context-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9998;
+  background: transparent;
+}
+
+.mw-context-menu {
+  position: fixed;
+  z-index: 9999;
+  min-width: 200px;
+  background: #fff;
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+}
+
+.mw-context-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mw-context-device {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mw-context-items {
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+}
+
+.mw-context-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  padding: 8px 10px;
+  font-size: 0.85rem;
+  color: #333;
+  border-radius: 4px;
+  cursor: pointer;
+
+  &:hover {
+    background: #f0f2f5;
+  }
+
+  &.disabled,
+  &:disabled {
+    color: #b0b0b0;
+    cursor: not-allowed;
+
+    &:hover {
+      background: transparent;
+    }
+  }
+}
+
+.mw-context-divider {
+  height: 1px;
+  background: #e6e6e6;
+  margin: 4px 0;
+}

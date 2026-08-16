@@ -108,12 +108,47 @@
       <div class="mt-2 text-white">Connecting to {{device?.name}}...</div>
     </div>
     
-    <div *ngIf="error" class="terminal-overlay text-danger">
+    <div *ngIf="gatewayNotInstalled" class="terminal-overlay">
+      <div class="terminal-install-card text-center">
+        <i class="fa-solid fa-server fa-3x text-info mb-3"></i>
+        <h5 class="fw-bold text-white mb-2">Terminal Gateway Not Installed</h5>
+        <p class="mx-auto mb-3" style="max-width: 420px; color: #e6e6eb;">
+          The MikroWizard Terminal Gateway addon is required to start terminal sessions.
+          Please ask your administrator to install it.
+        </p>
+        <a [href]="gatewayDocUrl" target="_blank" class="btn btn-info fw-semibold text-white">
+          <i class="fa-solid fa-book me-1"></i> Installation Tutorial
+        </a>
+      </div>
+    </div>
+
+    <div *ngIf="error && !gatewayNotInstalled" class="terminal-overlay text-danger">
       <i class="fa-solid fa-circle-exclamation fa-2x mb-2"></i>
       <div>{{error}}</div>
     </div>
     
     <div #terminalContainer class="xterm-container" [hidden]="loading || error"></div>
+  </div>
+
+  <div *ngIf="contextMenuVisible" class="mw-context-overlay" (click)="closeContextMenu()" (contextmenu)="closeContextMenu(); $event.preventDefault()"></div>
+  <div *ngIf="contextMenuVisible">
+    <div class="mw-context-menu" [ngStyle]="{'left.px': contextMenuX, 'top.px': contextMenuY}">
+      <div class="mw-context-header" style="background-color: #4e9af1;">
+        <span class="mw-context-device">Terminal</span>
+      </div>
+      <div class="mw-context-items">
+        <button class="mw-context-item" [class.disabled]="!hasSelection" [disabled]="!hasSelection" (click)="copySelection()">
+          <i class="fa-regular fa-copy me-2"></i> Copy
+        </button>
+        <button class="mw-context-item" (click)="pasteToTerminal()">
+          <i class="fa-regular fa-paste me-2"></i> Paste
+        </button>
+        <div class="mw-context-divider"></div>
+        <button class="mw-context-item" (click)="selectAll()">
+          <i class="fa-solid fa-object-group me-2"></i> Select All
+        </button>
+      </div>
+    </div>
   </div>
 </div>
 
