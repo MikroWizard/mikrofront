@@ -115,6 +115,7 @@ export class NonMikrotikComponent implements OnInit, OnChanges {
     this.editData = { ...dev };
     this.editData.password = '';
     this.editData.enable_password = '';
+    this.editData.clear_enable_password = false;
     this.editGroupSearch = '';
     this.filteredEditGroups = [];
     this.showEditGroupDropdown = false;
@@ -166,7 +167,20 @@ export class NonMikrotikComponent implements OnInit, OnChanges {
     });
   }
 
+  templateHasEscalation(data: any): boolean {
+    if (!data || !data.template_id) return false;
+    const t = this.brandTemplates.find((x: any) => x.id == data.template_id);
+    return !!(t && t.privilege_escalation && t.privilege_escalation.command);
+  }
+
   saveEdit() {
+    if (!this.templateHasEscalation(this.editData)) {
+      this.editData.enable_password = '';
+      this.editData.clear_enable_password = true;
+    }
+    if (this.editData.clear_enable_password) {
+      this.editData.enable_password = '';
+    }
     this.data_provider.editNonMikrotikDevice(this.editData).then((res: any) => {
       if (res.status === 'success') {
         this.show_toast('Success', 'Device updated', 'success');
@@ -191,6 +205,9 @@ export class NonMikrotikComponent implements OnInit, OnChanges {
   }
 
   addDevice() {
+    if (!this.templateHasEscalation(this.addData)) {
+      this.addData.enable_password = '';
+    }
     this.data_provider.addNonMikrotikDevice(this.addData).then((res: any) => {
       if (res.status === 'success') {
         this.show_toast('Success', 'Device added', 'success');

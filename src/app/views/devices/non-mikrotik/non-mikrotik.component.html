@@ -124,12 +124,12 @@
         </c-col>
         <c-col xs="12" md="6">
           <label class="form-label small">{{addData.ssh_auth_mode === 'key' ? 'SSH Private Key' : 'Password'}}</label>
-          <input *ngIf="addData.ssh_auth_mode !== 'key'" cFormControl size="sm" type="password" [(ngModel)]="addData.password" />
+          <input *ngIf="addData.ssh_auth_mode !== 'key'" cFormControl size="sm" type="password" autocomplete="new-password" [(ngModel)]="addData.password" />
           <textarea *ngIf="addData.ssh_auth_mode === 'key'" cFormControl size="sm" rows="3" [(ngModel)]="addData.password" placeholder="-----BEGIN PRIVATE KEY-----..."></textarea>
         </c-col>
-        <c-col xs="12" md="6">
+        <c-col xs="12" md="6" *ngIf="templateHasEscalation(addData)">
           <label class="form-label small">Enable Password</label>
-          <input cFormControl size="sm" type="password" [(ngModel)]="addData.enable_password" />
+          <input cFormControl size="sm" type="password" autocomplete="new-password" [(ngModel)]="addData.enable_password" />
         </c-col>
         <c-col xs="12" md="6">
           <label class="form-label small">Connection Protocol</label>
@@ -241,7 +241,7 @@
         <c-col xs="12" md="6">
           <label class="form-label small">{{editData.ssh_auth_mode === 'key' ? 'SSH Private Key' : 'Password'}}</label>
           <c-input-group size="sm" *ngIf="editData.ssh_auth_mode !== 'key'">
-            <input cFormControl [type]="show_pass ? 'text' : 'password'" [(ngModel)]="editData.password" placeholder="Leave blank to keep current" />
+            <input cFormControl [type]="show_pass ? 'text' : 'password'" autocomplete="new-password" [(ngModel)]="editData.password" placeholder="Leave blank to keep current" />
             <button cButton *ngIf="!ispro" (click)="show_pass = !show_pass" color="secondary" variant="outline">
               <i *ngIf="show_pass" class="fa-solid fa-eye"></i>
               <i *ngIf="!show_pass" class="fa-solid fa-eye-slash"></i>
@@ -252,6 +252,15 @@
             </button>
           </c-input-group>
           <textarea *ngIf="editData.ssh_auth_mode === 'key'" cFormControl size="sm" rows="3" [(ngModel)]="editData.password" placeholder="Leave blank to keep current. -----BEGIN PRIVATE KEY-----..."></textarea>
+        </c-col>
+        <c-col xs="12" md="6" *ngIf="templateHasEscalation(editData)">
+          <label class="form-label small">Enable Password</label>
+          <input cFormControl size="sm" type="password" autocomplete="new-password" [disabled]="editData.clear_enable_password" [(ngModel)]="editData.enable_password" placeholder="Leave blank to keep current" />
+          <small class="text-muted d-block" *ngIf="editData.has_enable && !editData.clear_enable_password">Enable password is already set (leave blank to keep it)</small>
+          <div class="form-check form-switch mt-2" *ngIf="editData.has_enable">
+            <input class="form-check-input" type="checkbox" id="clearEnablePass" [(ngModel)]="editData.clear_enable_password" />
+            <label class="form-check-label small" for="clearEnablePass">Remove enable password</label>
+          </div>
         </c-col>
         <c-col xs="12" md="6">
           <label class="form-label small">Connection Protocol</label>
