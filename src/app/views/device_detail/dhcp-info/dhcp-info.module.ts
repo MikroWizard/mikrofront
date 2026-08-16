@@ -1,5 +1,6 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 
 import {
   ButtonGroupModule,
@@ -37,6 +38,7 @@ import { SharedModule } from '../../../shared/shared.module';
       CardModule,
       AlertModule,
       CommonModule,
+      FormsModule,
       GridModule,
       ProgressModule,
       FormModule,

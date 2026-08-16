@@ -78,6 +78,9 @@
       <c-card class="mb-1 h-100">
         <c-card-body>
           <div class="mb-3 d-flex justify-content-end align-items-center">
+            <button cButton color="success" size="sm" class="me-2" (click)="openAddLeaseModal()">
+              <i class="fa-solid fa-plus me-1"></i> Add Static Lease
+            </button>
             <span class="p-input-icon-left table-search-input me-2">
               <i class="pi pi-search"></i>
               <input type="text" pInputText placeholder="Search leases..."
@@ -148,7 +151,7 @@
                     </span>
                   </div>
                 </th>
-                <th style="width: 60px" class="text-center" pResizableColumn>Actions</th>
+                <th style="width: 140px" class="text-center" pResizableColumn>Actions</th>
               </tr>
             </ng-template>
             <ng-template pTemplate="body" let-lease>
@@ -168,9 +171,17 @@
                 </td>
                 <td><small class="font-monospace">{{lease['mac-address']}}</small></td>
                 <td class="text-center">
-                  <button cButton color="info" size="sm" (click)="show_history(lease)" pTooltip="View History">
-                    <i class="fa-solid fa-clock-rotate-left"></i>
-                  </button>
+                  <div class="btn-group" role="group">
+                    <button *ngIf="lease.dynamic" cButton color="primary" size="sm" (click)="makeStatic(lease)" pTooltip="Make Static" tooltipPosition="top">
+                      <i class="fa-solid fa-anchor"></i>
+                    </button>
+                    <button *ngIf="!lease.dynamic" cButton color="danger" size="sm" (click)="confirmRemoveLease(lease)" pTooltip="Remove Static Lease" tooltipPosition="top">
+                      <i class="fa-solid fa-trash"></i>
+                    </button>
+                    <button cButton color="info" size="sm" (click)="show_history(lease)" pTooltip="View History" tooltipPosition="top">
+                      <i class="fa-solid fa-clock-rotate-left"></i>
+                    </button>
+                  </div>
                 </td>
               </tr>
             </ng-template>
@@ -252,7 +263,7 @@
     [(visible)]="leasesExportModalVisible"
     title="Export DHCP Leases Report"
     [allData]="item['lease_table'] || []"
-    [filteredData]="dtLeases?.filteredValue || item['lease_table']"
+    [filteredData]="dtLeases.filteredValue || item['lease_table']"
     [customColumns]="leaseExportColumns"
     defaultFileName="dhcp_leases_report">
   </app-export-modal>
@@ -262,8 +273,68 @@
   [(visible)]="historyExportModalVisible"
   title="Export DHCP History Report"
   [allData]="dhcp_history || []"
-  [filteredData]="dtHistory?.filteredValue || dhcp_history"
+  [filteredData]="dtHistory.filteredValue || dhcp_history"
   [customColumns]="historyExportColumns"
   dateField="eventtime"
   defaultFileName="dhcp_history_report">
 </app-export-modal>
+
+<!-- Add Static Lease Modal -->
+<c-modal #AddLeaseModal backdrop="static" [(visible)]="add_lease_modal" id="AddLeaseModal" *ngIf="add_lease_modal">
+  <c-modal-header>
+    <h6 cModalTitle><i class="fa-solid fa-plus me-2"></i>Add Static DHCP Lease</h6>
+    <button (click)="closeAddLeaseModal()" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body>
+    <div class="mb-3">
+      <label class="form-label">MAC Address <span class="text-danger">*</span></label>
+      <input type="text" class="form-control" [(ngModel)]="newLease.mac" placeholder="e.g. 00:11:22:33:44:55" />
+    </div>
+    <div class="mb-3">
+      <label class="form-label">IP Address <span class="text-danger">*</span></label>
+      <input type="text" class="form-control" [(ngModel)]="newLease.address" placeholder="e.g. 192.168.88.50" />
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Server</label>
+      <select class="form-select" [(ngModel)]="newLease.server">
+        <option value="all">all</option>
+        <ng-container *ngFor="let s of dhcp_server_data">
+          <option [value]="s.dhcp_server">{{s.dhcp_server}}</option>
+        </ng-container>
+      </select>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Comment</label>
+      <input type="text" class="form-control" [(ngModel)]="newLease.comment" placeholder="Optional comment" />
+    </div>
+    <div *ngIf="actionError" class="alert alert-danger py-2 mb-0">
+      {{actionError}}
+    </div>
+  </c-modal-body>
+  <c-modal-footer>
+    <button cButton color="secondary" (click)="closeAddLeaseModal()">Cancel</button>
+    <button cButton color="primary" [disabled]="submitting" (click)="submitAddLease()">
+      <i class="fa-solid fa-spinner fa-spin me-1" *ngIf="submitting"></i> Save Lease
+    </button>
+  </c-modal-footer>
+</c-modal>
+
+<!-- Confirm Delete Modal -->
+<c-modal #ConfirmDeleteModal backdrop="static" [(visible)]="confirm_delete_modal" id="ConfirmDeleteModal" *ngIf="confirm_delete_modal">
+  <c-modal-header>
+    <h6 cModalTitle><i class="fa-solid fa-triangle-exclamation text-warning me-2"></i>Remove Static Lease</h6>
+    <button (click)="closeConfirmDeleteModal()" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body>
+    <p class="mb-0">Are you sure you want to remove the static lease for <strong>{{targetLease?.['mac-address']}}</strong> ({{targetLease?.address}})?</p>
+    <div *ngIf="actionError" class="alert alert-danger py-2 mt-3 mb-0">
+      {{actionError}}
+    </div>
+  </c-modal-body>
+  <c-modal-footer>
+    <button cButton color="secondary" (click)="closeConfirmDeleteModal()">Cancel</button>
+    <button cButton color="danger" [disabled]="submitting" (click)="submitRemoveLease()">
+      <i class="fa-solid fa-spinner fa-spin me-1" *ngIf="submitting"></i> Remove
+    </button>
+  </c-modal-footer>
+</c-modal>

@@ -380,7 +380,7 @@
       </c-tab-pane>
       <c-tab-pane>
         <ng-container *ngIf="dhcp_server_available">
-          <app-dhcp-info [tz]="tz" [dhcp_server_data]="dhcp_server_data" [small_screen]="small_screen"></app-dhcp-info>
+          <app-dhcp-info [tz]="tz" [dhcp_server_data]="dhcp_server_data" [small_screen]="small_screen" [devid]="devid" (onRefresh)="get_DHCP_data()"></app-dhcp-info>
         </ng-container>
       </c-tab-pane>
       <c-tab-pane style="width: 100%;padding-top: 10px;background-color: #fff;" *ngIf="isMikroTik">
@@ -704,7 +704,7 @@
   [(visible)]="interfacesExportModalVisible"
   title="Export Interfaces Report"
   [allData]="interfaces"
-  [filteredData]="dtInterfaces?.filteredValue || interfaces"
+  [filteredData]="dtInterfaces.filteredValue || interfaces"
   [customColumns]="interfaceExportColumns"
   defaultFileName="device_interfaces_report">
 </app-export-modal>
