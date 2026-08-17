@@ -25,7 +25,7 @@ export class TemplateManagerComponent implements OnInit {
 
   public brandModalVisible: boolean = false;
   public isEditingBrand: boolean = false;
-  public brandEditData: any = { brand: '', display_name: '', is_active: true };
+  public brandEditData: any = { brand: '', display_name: '', is_system: false };
 
   @ViewChildren(ToasterComponent) viewChildren!: QueryList<ToasterComponent>;
 
@@ -76,14 +76,14 @@ export class TemplateManagerComponent implements OnInit {
   }
 
   loadTemplates() {
-    this.data_provider.listTemplates({ include_inactive: true }).then((res: any) => {
+    this.data_provider.listTemplates({}).then((res: any) => {
       this.templates = (res.data || res || []);
     });
   }
 
   get emptyTemplate() {
     return {
-      display_name: '', brand: '', os_type: '', is_active: true,
+      display_name: '', brand: '', os_type: '', is_system: false,
       prompt: { login_pattern: '', password_pattern: '', patterns: [] },
       privilege_escalation: { command: '', password_prompt: '', success_pattern: '' },
       pagination: { enabled: false, key: '', prompt: '' },
@@ -102,6 +102,7 @@ export class TemplateManagerComponent implements OnInit {
 
   openEditModal(t: any) {
     const d: any = JSON.parse(JSON.stringify(t));
+    d.is_system = !!t.is_system;
     d.prompt = d.prompt || { login_pattern: '', password_pattern: '', patterns: [] };
     d.privilege_escalation = d.privilege_escalation || { command: '', password_prompt: '', success_pattern: '' };
     d.pagination = d.pagination || { enabled: false, key: '', prompt: '' };
@@ -143,15 +144,6 @@ export class TemplateManagerComponent implements OnInit {
         this.loadTemplates();
       } else {
         this.show_toast('Error', res.err || 'Failed to delete', 'danger');
-      }
-    });
-  }
-
-  toggleActive(t: any) {
-    this.data_provider.updateTemplate({ id: t.id, is_active: !t.is_active }).then((res: any) => {
-      if (res.status === 'success') {
-        t.is_active = !t.is_active;
-        this.show_toast('Success', `Template ${t.is_active ? 'enabled' : 'disabled'}`, 'success');
       }
     });
   }
@@ -199,7 +191,7 @@ export class TemplateManagerComponent implements OnInit {
 
   openBrandCreateModal() {
     this.isEditingBrand = false;
-    this.brandEditData = { brand: '', display_name: '', is_active: true };
+    this.brandEditData = { brand: '', display_name: '', is_system: false };
     this.brandModalVisible = true;
   }
 
@@ -208,7 +200,6 @@ export class TemplateManagerComponent implements OnInit {
     this.brandEditData = {
       brand: b.brand,
       display_name: b.display_name,
-      is_active: b.is_active,
       is_system: b.is_system,
     };
     this.brandModalVisible = true;
@@ -216,6 +207,10 @@ export class TemplateManagerComponent implements OnInit {
 
   saveBrand() {
     const data = this.brandEditData;
+    if (data.is_system) {
+      this.show_toast('Warning', 'System brands cannot be modified', 'warning');
+      return;
+    }
     if (!data.brand || !data.display_name) {
       this.show_toast('Error', 'Brand slug and display name required', 'warning');
       return;
@@ -231,7 +226,7 @@ export class TemplateManagerComponent implements OnInit {
         }
       });
     } else {
-      this.data_provider.updateBrand({ brand: data.brand, display_name: data.display_name, is_active: data.is_active }).then((res: any) => {
+      this.data_provider.updateBrand({ brand: data.brand, display_name: data.display_name }).then((res: any) => {
         if (res.status === 'success') {
           this.show_toast('Success', 'Brand updated', 'success');
           this.brandModalVisible = false;
@@ -255,21 +250,6 @@ export class TemplateManagerComponent implements OnInit {
         this.loadBrands();
       } else {
         this.show_toast('Error', res.err || 'Failed to delete brand', 'danger');
-      }
-    });
-  }
-
-  toggleBrandActive(b: any) {
-    if (b.is_system) {
-      this.show_toast('Info', 'System brand — toggle from the Edit dialog', 'info');
-      return;
-    }
-    this.data_provider.updateBrand({ brand: b.brand, is_active: !b.is_active }).then((res: any) => {
-      if (res.status === 'success') {
-        b.is_active = !b.is_active;
-        this.show_toast('Success', `Brand ${b.is_active ? 'enabled' : 'disabled'}`, 'success');
-      } else {
-        this.show_toast('Error', res.err || 'Failed to toggle brand', 'danger');
       }
     });
   }

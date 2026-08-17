@@ -172,7 +172,14 @@ export class DevicesComponent implements OnInit, OnDestroy {
     enabled: true,
     multiSorting: true,
   };
-  public ip_scanner: any;
+  public ip_scanner: any = {
+    start: "",
+    end: "",
+    port: "",
+    user: "",
+    password: "",
+    ssl: false,
+  };
 
   applyFilterGlobal($event: any, stringVal: string) {
     this.table.filterGlobal(($event.target as HTMLInputElement).value, stringVal);
@@ -429,6 +436,16 @@ export class DevicesComponent implements OnInit, OnDestroy {
         _self.scan_type = "";
         if (type == "ip") {
           _self.scan_type = "ip";
+          if (!_self.ip_scanner) {
+            _self.ip_scanner = {
+              start: "",
+              end: "",
+              port: "",
+              user: "",
+              password: "",
+              ssl: false,
+            };
+          }
         } else if (type == "chip") {
           _self.scan_type = "mac";
         }
@@ -470,7 +487,7 @@ export class DevicesComponent implements OnInit, OnDestroy {
             });
         }
       }
-      if ("error" in res && res.error.indexOf("Unauthorized")) {
+      if ("error" in res && res.error && res.error.indexOf("Unauthorized") !== -1) {
         _self.show_toast(
           "Error",
           "You are not authorized to perform this action",
