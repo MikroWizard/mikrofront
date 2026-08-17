@@ -353,7 +353,13 @@ def generate_ssl_server_config(domain, cert_path, key_path):
     root /usr/share/nginx/html;
 
     location / {
-        try_files $uri $uri/ /index.html =404;
+        try_files $uri $uri/ /index.html;
+    }
+
+    location = /index.html {
+        add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0" always;
+        add_header Pragma "no-cache" always;
+        add_header Expires "0" always;
     }
 
     location /terminal-ws/ {
