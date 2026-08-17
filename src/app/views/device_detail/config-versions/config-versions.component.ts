@@ -34,7 +34,7 @@ export class ConfigVersionsComponent implements OnInit, OnChanges {
   public viewVersion: any = null;
 
   public diffModalVisible: boolean = false;
-  public diffType: string = "unified";
+  public diffType: string = "sided";
   public diffBefore: string = "";
   public diffAfter: string = "";
   public diffBeforeInfo: any = null;
@@ -168,16 +168,46 @@ export class ConfigVersionsComponent implements OnInit, OnChanges {
       this.show_toast("Info", "Select two versions to compare", "info");
       return;
     }
-    const a = this.compareitems[0]; const b = this.compareitems[1];
-    this.data_provider.get_config_version(a.id).then((r1: any) => {
-      this.data_provider.get_config_version(b.id).then((r2: any) => {
-        this.diffBefore = (r1.data && r1.data.content) || "";
-        this.diffAfter = (r2.data && r2.data.content) || "";
-        this.diffBeforeInfo = { version_num: a.version_num, first_seen_at: a.firstSeenC };
-        this.diffAfterInfo = { version_num: b.version_num, first_seen_at: b.firstSeenC };
-        this.diffModalVisible = true;
-      });
+    // Sort chronologically: older version as before, newer version as after
+    const sorted = [...this.compareitems].sort((a: any, b: any) => {
+      if (a.version_num && b.version_num && a.version_num !== b.version_num) {
+        return a.version_num - b.version_num;
+      }
+      const tA = new Date(a.first_seen_at || 0).getTime();
+      const tB = new Date(b.first_seen_at || 0).getTime();
+      if (!isNaN(tA) && !isNaN(tB) && tA !== tB) return tA - tB;
+      return (a.id || 0) - (b.id || 0);
     });
+    this.compareitems = sorted;
+    const a = this.compareitems[0];
+    const b = this.compareitems[1];
+
+    Promise.all([
+      this.data_provider.get_config_version(a.id),
+      this.data_provider.get_config_version(b.id)
+    ]).then(([r1, r2]: [any, any]) => {
+      const c1 = ((r1 && r1.data && r1.data.content) || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+      const c2 = ((r2 && r2.data && r2.data.content) || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+      this.diffBefore = c1;
+      this.diffAfter = c2;
+      this.diffBeforeInfo = { version_num: a.version_num, first_seen_at: a.firstSeenC };
+      this.diffAfterInfo = { version_num: b.version_num, first_seen_at: b.firstSeenC };
+      this.diffModalVisible = true;
+    }).catch(() => {
+      this.show_toast("Error", "Failed to load version contents for comparison", "danger");
+    });
+  }
+
+  swapCompare() {
+    if (this.compareitems.length >= 2) {
+      this.compareitems = [this.compareitems[1], this.compareitems[0]];
+      const tmpContent = this.diffBefore;
+      this.diffBefore = this.diffAfter;
+      this.diffAfter = tmpContent;
+      const tmpInfo = this.diffBeforeInfo;
+      this.diffBeforeInfo = this.diffAfterInfo;
+      this.diffAfterInfo = tmpInfo;
+    }
   }
 
   toggleDiffType() {

@@ -1,0 +1,256 @@
+// ngx-diff layout, alignment, and theme overrides
+
+ngx-side-by-side-diff,
+ngx-unified-diff {
+  display: block;
+  width: 100%;
+}
+
+.sbs-diff,
+.ufd-diff {
+  display: flex !important;
+  flex-direction: row !important;
+  width: 100% !important;
+  font-family: Consolas, "Liberation Mono", Menlo, Courier, monospace !important;
+  font-size: 12.5px !important;
+  border: 1px solid #d0d7de !important;
+  border-radius: 0 0 6px 6px !important;
+  background: #ffffff !important;
+  box-sizing: border-box !important;
+}
+
+// Side-by-Side Diff Layout
+.sbs-diff {
+  .sbs-diff-margin {
+    flex: 0 0 46px !important;
+    width: 46px !important;
+    min-width: 46px !important;
+    max-width: 46px !important;
+    background-color: #f6f8fa !important;
+    border-right: 1px solid #d0d7de !important;
+    user-select: none !important;
+    box-sizing: border-box !important;
+  }
+
+  div.sbs-diff-margin:last-of-type {
+    border-left: 2px solid #bbc0c6 !important;
+  }
+
+  .sbs-diff-content {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    width: 0 !important;
+    position: relative !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    background-color: #ffffff !important;
+  }
+
+  .sbs-diff-content-wrapper {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    min-width: 100% !important;
+    width: max-content !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+}
+
+// Unified Diff Layout
+.ufd-diff {
+  .ufd-diff-margin {
+    flex: 0 0 92px !important;
+    width: 92px !important;
+    min-width: 92px !important;
+    max-width: 92px !important;
+    background-color: #f6f8fa !important;
+    border-right: 1px solid #d0d7de !important;
+    user-select: none !important;
+    box-sizing: border-box !important;
+  }
+
+  .ufd-diff-content {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    width: 0 !important;
+    position: relative !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    background-color: #ffffff !important;
+  }
+
+  .ufd-diff-content-wrapper {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    min-width: 100% !important;
+    width: max-content !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+}
+
+// Line Height & Alignment Guarantees
+.sbs-diff,
+.ufd-diff {
+  .line-selector {
+    height: 22px !important;
+    min-height: 22px !important;
+    max-height: 22px !important;
+    line-height: 22px !important;
+    font-size: 11.5px !important;
+    padding: 0 6px !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    color: #6e7781 !important;
+    border: none !important;
+  }
+
+  .sbs-diff-before,
+  .sbs-diff-after {
+    height: 22px !important;
+    line-height: 22px !important;
+    font-size: 11.5px !important;
+    width: 100% !important;
+    text-align: right !important;
+    box-sizing: border-box !important;
+  }
+
+  .ufd-diff-old,
+  .ufd-diff-new {
+    height: 22px !important;
+    line-height: 22px !important;
+    font-size: 11.5px !important;
+    width: 38px !important;
+    text-align: right !important;
+    box-sizing: border-box !important;
+    border: none !important;
+  }
+
+  .line-content {
+    height: 22px !important;
+    min-height: 22px !important;
+    max-height: 22px !important;
+    line-height: 22px !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    align-items: center !important;
+    border: none !important;
+  }
+
+  .sbs-diff-text,
+  .ufd-diff-text {
+    height: 22px !important;
+    line-height: 22px !important;
+    font-size: 12.5px !important;
+    white-space: pre !important;
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+    box-sizing: border-box !important;
+    display: block !important;
+    flex-grow: 1 !important;
+    color: #1f2328 !important;
+
+    // Crucial fix: prevents blank/null lines from collapsing to 0 height
+    &:empty::before {
+      content: "\00a0" !important;
+      display: inline-block !important;
+      visibility: hidden !important;
+    }
+  }
+
+  .dmp-margin-bottom-spacer {
+    height: 22px !important;
+    min-height: 22px !important;
+    background-color: #f6f8fa !important;
+    border: none !important;
+
+    &.line-content {
+      background-color: #ffffff !important;
+    }
+  }
+}
+
+// Diff Color Schemes (GitHub / VS Code inspired)
+.sbs-diff-delete.line-content,
+.ufd-diff-delete.line-content {
+  background-color: #ffebe9 !important;
+  color: #24292f !important;
+}
+
+.sbs-diff-delete.line-selector,
+.ufd-diff-delete.line-selector {
+  background-color: #ffd7d5 !important;
+  color: #cf222e !important;
+  font-weight: 600 !important;
+}
+
+.sbs-diff-insert.line-content,
+.ufd-diff-insert.line-content {
+  background-color: #e6ffec !important;
+  color: #24292f !important;
+}
+
+.sbs-diff-insert.line-selector,
+.ufd-diff-insert.line-selector {
+  background-color: #ccffd8 !important;
+  color: #1a7f37 !important;
+  font-weight: 600 !important;
+}
+
+.sbs-diff-equal.line-content,
+.ufd-diff-equal.line-content {
+  background-color: #ffffff !important;
+}
+
+.sbs-diff-equal.line-selector,
+.ufd-diff-equal.line-selector {
+  background-color: #f6f8fa !important;
+}
+
+.line-selector.selected,
+.line-content.selected {
+  background-color: #ddf4ff !important;
+}
+
+// Diff Title / Summary Bar
+.sbs-diff-title-bar,
+.ufd-diff-title-bar {
+  display: flex !important;
+  align-items: center !important;
+  padding: 6px 14px !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif !important;
+  font-size: 12px !important;
+  background-color: #f6f8fa !important;
+  border: 1px solid #d0d7de !important;
+  border-bottom: none !important;
+  border-top-left-radius: 6px !important;
+  border-top-right-radius: 6px !important;
+
+  .sbs-diff-summary-lines-added,
+  .ufd-diff-summary-lines-added {
+    color: #1a7f37 !important;
+    font-weight: 600 !important;
+    margin-right: 12px !important;
+  }
+
+  .sbs-diff-summary-lines-removed,
+  .ufd-diff-summary-lines-removed {
+    color: #cf222e !important;
+    font-weight: 600 !important;
+  }
+}
+
+.sbs-diff-no-changes-text,
+.ufd-diff-no-changes-text {
+  padding: 24px !important;
+  text-align: center !important;
+  font-size: 14px !important;
+  color: #656d76 !important;
+  background-color: #ffffff !important;
+}

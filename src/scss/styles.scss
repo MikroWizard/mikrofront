@@ -25,5 +25,8 @@ $enable-rtl: true;
 // animations
 @import "animations";
 
+// Diff styles
+@import "diff";
+
 @import "~@angular/material/prebuilt-themes/indigo-pink.css";
 @import "primeicons/primeicons.css";

@@ -143,34 +143,46 @@
 </c-modal>
 
 <!-- Diff Modal (PRO) -->
-<c-modal #diffModal backdrop="static" size="xl" [visible]="diffModalVisible" (visibleChange)="diffModalVisible = $event" id="configDiffModal">
+<c-modal #diffModal backdrop="static" [fullscreen]="true" [visible]="diffModalVisible" (visibleChange)="diffModalVisible = $event" id="configDiffModal">
   <c-modal-header>
-    <h6 cModalTitle>
-      <i class="fa-solid fa-code-compare me-2 text-warning"></i>
-      Compare Config Versions
-    </h6>
-    <c-form-check (click)="toggleDiffType()" sizing="xl" class="mx-5" switch>
-      <h6>
-        <input cFormCheckInput [checked]="diffType==='unified'"
-          style="width: 2.5rem;margin-left: -2.8em;cursor: pointer;" type="checkbox" />
-        <label cFormCheckLabel style="padding-top: calc((1.8em - 1rem) / 2);">
-          <span *ngIf="diffType==='sided'">Sided compare</span>
-          <span *ngIf="diffType==='unified'">Unified compare</span>
-        </label>
+    <div class="d-flex align-items-center gap-2">
+      <h6 cModalTitle class="mb-0">
+        <i class="fa-solid fa-code-compare me-2 text-warning"></i>
+        Compare Config Versions
       </h6>
-    </c-form-check>
+    </div>
+    <div class="d-flex align-items-center gap-3 ms-auto me-3">
+      <c-button-group size="sm">
+        <button cButton [color]="diffType === 'sided' ? 'primary' : 'secondary'" [variant]="diffType === 'sided' ? undefined : 'outline'" (click)="diffType = 'sided'">
+          <i class="fa-solid fa-columns me-1"></i> Side by Side
+        </button>
+        <button cButton [color]="diffType === 'unified' ? 'primary' : 'secondary'" [variant]="diffType === 'unified' ? undefined : 'outline'" (click)="diffType = 'unified'">
+          <i class="fa-solid fa-bars-staggered me-1"></i> Unified
+        </button>
+      </c-button-group>
+    </div>
     <button (click)="diffModalVisible = false" cButtonClose></button>
   </c-modal-header>
-  <c-modal-body *ngIf="diffBefore && diffAfter">
-    <h6>
-      <c-badge color="secondary" style="font-size: 0.75rem;">v{{ diffBeforeInfo?.version_num }}</c-badge>
-      <span class="mx-1">vs</span>
-      <c-badge color="dark" style="font-size: 0.75rem;">v{{ diffAfterInfo?.version_num }}</c-badge>
-    </h6>
+  <c-modal-body *ngIf="diffBefore !== null && diffAfter !== null">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3 p-2 bg-light rounded border">
+      <div class="d-flex align-items-center flex-wrap gap-2">
+        <span class="badge bg-danger px-2 py-1"><i class="fa-solid fa-minus me-1"></i>Original (Before)</span>
+        <c-badge color="secondary" style="font-size: 0.8rem;">v{{ diffBeforeInfo?.version_num }}</c-badge>
+        <span class="text-muted small">({{ diffBeforeInfo?.first_seen_at }})</span>
+      </div>
+      <button cButton color="secondary" variant="outline" size="sm" (click)="swapCompare()" title="Swap comparison order">
+        <i class="fa-solid fa-arrow-right-arrow-left me-1"></i> Swap
+      </button>
+      <div class="d-flex align-items-center flex-wrap gap-2">
+        <span class="badge bg-success px-2 py-1"><i class="fa-solid fa-plus me-1"></i>Modified (After)</span>
+        <c-badge color="dark" style="font-size: 0.8rem;">v{{ diffAfterInfo?.version_num }}</c-badge>
+        <span class="text-muted small">({{ diffAfterInfo?.first_seen_at }})</span>
+      </div>
+    </div>
     <ngx-unified-diff *ngIf="diffType==='unified'" class="ngx-diff-light-theme" [before]="diffBefore" [after]="diffAfter" />
     <ngx-side-by-side-diff *ngIf="diffType==='sided'" class="ngx-diff-light-theme" [before]="diffBefore" [after]="diffAfter" />
   </c-modal-body>
   <c-modal-footer>
-    <button (click)="diffModalVisible = false" cButton color="info">Close</button>
+    <button (click)="diffModalVisible = false" cButton color="secondary">Close</button>
   </c-modal-footer>
 </c-modal>
