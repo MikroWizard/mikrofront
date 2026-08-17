@@ -27,10 +27,11 @@
                         title="Remove from comparison"></i>
                     </c-badge>
                   </div>
-                  <button *ngIf="compareitems.length > 1" (click)="start_compare()" cButton color="success" size="sm">
-                    <i class="fa-solid fa-code-compare me-1"></i>Compare
+                  <button *ngIf="compareitems.length > 1" (click)="start_compare()" [disabled]="compareLoading" cButton color="success" size="sm">
+                    <i *ngIf="compareLoading" class="fa-solid fa-spinner fa-spin me-1"></i>
+                    <i *ngIf="!compareLoading" class="fa-solid fa-code-compare me-1"></i>Compare
                   </button>
-                  <button (click)="clearAllCompare()" cButton color="secondary" size="sm" variant="outline">
+                  <button (click)="clearAllCompare()" [disabled]="compareLoading" cButton color="secondary" size="sm" variant="outline">
                     <i class="fa-solid fa-trash me-1"></i>Clear
                   </button>
                 </div>
@@ -51,7 +52,23 @@
           <c-card class="border-0 bg-light">
             <c-card-body class="py-3">
               <c-row class="g-3 align-items-end">
-                <c-col xs="12" md="4">
+                <c-col xs="12" md="3">
+                  <div class="filter-group">
+                    <label class="form-label fw-semibold mb-2">
+                      <i class="fa-solid fa-layer-group me-1 text-primary"></i>Source Type
+                    </label>
+                    <mat-form-field appearance="outline" class="w-100">
+                      <mat-select [(ngModel)]="filters['source']" (ngModelChange)="reinitgrid('source', $event)">
+                        <mat-option value="backup">Backups Only (Default)</mat-option>
+                        <mat-option value="all">All Sources</mat-option>
+                        <mat-option value="snippet">Snippets Only</mat-option>
+                        <mat-option value="sequence">Sequences Only</mat-option>
+                        <mat-option value="command">Commands / Show Run</mat-option>
+                      </mat-select>
+                    </mat-form-field>
+                  </div>
+                </c-col>
+                <c-col xs="12" md="3">
                   <div class="filter-group">
                     <label class="form-label fw-semibold mb-2">
                       <i class="fa-solid fa-calendar-days me-1 text-primary"></i>Start Date
@@ -64,7 +81,7 @@
                     </mat-form-field>
                   </div>
                 </c-col>
-                <c-col xs="12" md="4">
+                <c-col xs="12" md="3">
                   <div class="filter-group">
                     <label class="form-label fw-semibold mb-2">
                       <i class="fa-solid fa-calendar-days me-1 text-primary"></i>End Date
@@ -77,7 +94,7 @@
                     </mat-form-field>
                   </div>
                 </c-col>
-                <c-col xs="12" md="4" *ngIf="ispro">
+                <c-col xs="12" md="3" *ngIf="ispro">
                   <div class="filter-group">
                     <label class="form-label fw-semibold mb-2">
                       <i class="fa-solid fa-magnifying-glass me-1 text-primary"></i>Config Search
@@ -106,7 +123,7 @@
         <p-table #dt [value]="source" [paginator]="true" [rows]="10" [showCurrentPageReport]="true"
           [rowsPerPageOptions]="[10, 25, 50]" [resizableColumns]="true" columnResizeMode="expand" [showGridlines]="true"
           [stripedRows]="true" styleClass="p-datatable-sm p-datatable-gridlines p-datatable-striped"
-          [globalFilterFields]="['devname', 'devip', 'createdC', 'filesize']" [loading]="loading">
+          [globalFilterFields]="['devname', 'devip', 'createdC', 'filesize', 'source', 'source_name', 'command']" [loading]="loading">
 
           <ng-template pTemplate="header">
             <tr>
@@ -131,6 +148,15 @@
                   <span>
                     <p-sortIcon field="devip"></p-sortIcon>
                     <p-columnFilter type="text" field="devip" display="menu" class="ms-auto" />
+                  </span>
+                </div>
+              </th>
+              <th pSortableColumn="source" pResizableColumn style="min-width: 170px;">
+                <div class="justify-between">
+                  <span>Source / Command</span>
+                  <span>
+                    <p-sortIcon field="source"></p-sortIcon>
+                    <p-columnFilter type="text" field="source" display="menu" class="ms-auto" />
                   </span>
                 </div>
               </th>
@@ -161,6 +187,33 @@
               <td class="text-center">{{item.index}}</td>
               <td>{{item.devname}}</td>
               <td>{{item.devip}}</td>
+              <td>
+                <div class="d-flex flex-column gap-1">
+                  <div class="d-flex align-items-center flex-wrap gap-1">
+                    <c-badge *ngIf="item.source === 'backup' || !item.source" color="primary">
+                      <i class="fa-solid fa-database me-1"></i>Backup
+                    </c-badge>
+                    <c-badge *ngIf="item.source === 'snippet'" color="info">
+                      <i class="fa-solid fa-code me-1"></i>Snippet
+                    </c-badge>
+                    <c-badge *ngIf="item.source === 'sequence'" color="dark" style="background-color: #6f42c1 !important;">
+                      <i class="fa-solid fa-sitemap me-1"></i>Sequence
+                    </c-badge>
+                    <c-badge *ngIf="item.source === 'command'" color="warning">
+                      <i class="fa-solid fa-terminal me-1"></i>Command
+                    </c-badge>
+                    <c-badge *ngIf="item.source === 'manual'" color="secondary">
+                      <i class="fa-solid fa-hand me-1"></i>Manual
+                    </c-badge>
+                    <span *ngIf="item.source_name" class="fw-semibold text-truncate small" style="max-width: 140px;" [title]="item.source_name">
+                      {{item.source_name}}
+                    </span>
+                  </div>
+                  <small *ngIf="item.command" class="text-muted text-truncate font-monospace" style="max-width: 220px;" [title]="item.command">
+                    <code>{{item.command}}</code>
+                  </small>
+                </div>
+              </td>
               <td>{{item.createdC}}</td>
               <td>{{item.filesize}}</td>
               <td class="text-center">
@@ -178,7 +231,8 @@
                     {{isInCompareList(item) ? 'Added' : 'Compare'}}
                   </button>
                   <button *ngIf="ispro" cButton color="warning" size="sm" variant="outline"
-                    (click)="restore_backup(false, false, item)" title="Restore this backup">
+                    (click)="restore_backup(false, false, item)" [disabled]="item.source && item.source !== 'backup'"
+                    [title]="item.source && item.source !== 'backup' ? 'Restore is only available for configuration backups' : 'Restore this backup'">
                     <i class="fa-solid fa-rotate-left me-1"></i>
                     Restore
                   </button>
@@ -189,7 +243,7 @@
 
           <ng-template pTemplate="emptymessage">
             <tr>
-              <td colspan="6" class="text-center p-4">No backups found.</td>
+              <td colspan="7" class="text-center p-4">No backups found.</td>
             </tr>
           </ng-template>
         </p-table>
@@ -228,34 +282,46 @@
 
 <c-modal #CompareModal backdrop="static" [(visible)]="CompareModalVisible" [fullscreen]="true" id="CompareModal">
   <c-modal-header>
-    <h6 cModalTitle>Comparing Configs </h6>
-    <c-form-check (click)="switch_compare_type()" sizing="xl" class="mx-5" switch>
-      <h6>
-        <input cFormCheckInput [checked]="compare_type=='unified'"
-          style="width: 2.5rem;margin-left: -2.8em;cursor: pointer;" type="checkbox" />
-
-        <label cFormCheckLabel style="padding-top: calc((1.8em - 1rem) / 2);">
-          <span *ngIf="compare_type=='sided'">Sided compare</span>
-          <span *ngIf="compare_type=='unified'">Unified compare</span>
-        </label>
-      </h6>
-    </c-form-check>
+    <div class="d-flex align-items-center gap-2">
+      <h6 cModalTitle class="mb-0"><i class="fa-solid fa-code-compare me-2 text-primary"></i>Comparing Configurations</h6>
+    </div>
+    <div class="d-flex align-items-center gap-3 ms-auto me-3">
+      <c-button-group size="sm">
+        <button cButton [color]="compare_type === 'sided' ? 'primary' : 'secondary'" [variant]="compare_type === 'sided' ? undefined : 'outline'" (click)="compare_type = 'sided'">
+          <i class="fa-solid fa-columns me-1"></i> Side by Side
+        </button>
+        <button cButton [color]="compare_type === 'unified' ? 'primary' : 'secondary'" [variant]="compare_type === 'unified' ? undefined : 'outline'" (click)="compare_type = 'unified'">
+          <i class="fa-solid fa-bars-staggered me-1"></i> Unified
+        </button>
+      </c-button-group>
+    </div>
     <button [cModalToggle]="CompareModal.id" cButtonClose></button>
   </c-modal-header>
-  <c-modal-body *ngIf="comparecontents.length>1">
-    <h5>
-      Comparing <c-badge color="dark" style="font-size: 0.8rem;">{{compareitems[0].id}}:{{compareitems[0].devname}}
-        {{compareitems[0].createdC}} </c-badge> With
-      <c-badge color="dark" style="font-size: 0.8rem;">{{compareitems[1].id}}:{{compareitems[1].devname}}
-        {{compareitems[1].createdC}} </c-badge>
-    </h5>
+  <c-modal-body *ngIf="comparecontents.length > 1 && compareitems.length > 1">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3 p-2 bg-light rounded border">
+      <div class="d-flex align-items-center flex-wrap gap-2">
+        <span class="badge bg-danger px-2 py-1"><i class="fa-solid fa-minus me-1"></i>Original (Before)</span>
+        <strong>#{{compareitems[0].id}}</strong>
+        <span class="text-dark fw-semibold">{{compareitems[0].devname}}</span>
+        <span class="text-muted small">({{compareitems[0].createdC}})</span>
+      </div>
+      <button cButton color="secondary" variant="outline" size="sm" (click)="swap_compare()" title="Swap comparison order">
+        <i class="fa-solid fa-arrow-right-arrow-left me-1"></i> Swap
+      </button>
+      <div class="d-flex align-items-center flex-wrap gap-2">
+        <span class="badge bg-success px-2 py-1"><i class="fa-solid fa-plus me-1"></i>Modified (After)</span>
+        <strong>#{{compareitems[1].id}}</strong>
+        <span class="text-dark fw-semibold">{{compareitems[1].devname}}</span>
+        <span class="text-muted small">({{compareitems[1].createdC}})</span>
+      </div>
+    </div>
     <ngx-unified-diff *ngIf="compare_type=='unified'" class="ngx-diff-light-theme" [before]="comparecontents[0]"
       [after]="comparecontents[1]" />
     <ngx-side-by-side-diff *ngIf="compare_type=='sided'" class="ngx-diff-light-theme" [before]="comparecontents[0]"
       [after]="comparecontents[1]" />
   </c-modal-body>
   <c-modal-footer>
-    <button [cModalToggle]="CompareModal.id" cButton color="info">
+    <button [cModalToggle]="CompareModal.id" cButton color="secondary">
       Close
     </button>
   </c-modal-footer>

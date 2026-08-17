@@ -127,6 +127,7 @@ export class SnippetsComponent implements OnInit, OnDestroy {
     brand: "mikrotik",
     is_default: false,
     is_config_mode: false,
+    store_in_backup: false,
   };
 
   public default_snippet: any = {
@@ -138,6 +139,7 @@ export class SnippetsComponent implements OnInit, OnDestroy {
     brand: "mikrotik",
     is_default: false,
     is_config_mode: false,
+    store_in_backup: false,
   };
 
   public brands: any[] = [];
@@ -181,9 +183,9 @@ export class SnippetsComponent implements OnInit, OnDestroy {
       this.EditModalVisible = true;
       this.ModalAction = "add";
     } else {
-      this.current_snippet = item;
+      this.current_snippet = { ...item, store_in_backup: item.store_in_backup || false };
       this.EditModalVisible = true;
-      this.lineNum = this.current_snippet["content"].match(/\n/g).length;
+      this.lineNum = this.current_snippet["content"] ? (this.current_snippet["content"].match(/\n/g) || []).length : 0;
 
       this.ModalAction = "edit";
     }
@@ -358,7 +360,7 @@ export class SnippetsComponent implements OnInit, OnDestroy {
   }
 
   Run_Snippet(item: any, action: string = "showadd") {
-    this.current_snippet = item;
+    this.current_snippet = { ...item, store_in_backup: item.store_in_backup || false };
     this.current_snippet["task_type"] = "snipet_exec";
     this.current_snippet["selection_type"] = "devices";
     this.form_changed();

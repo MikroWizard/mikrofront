@@ -368,7 +368,7 @@
         <small class="text-muted">Brand / device type this snippet targets</small>
       </div>
     </c-input-group>
-    <div class="d-flex gap-3 mb-3">
+    <div class="d-flex gap-3 mb-3 flex-wrap">
       <c-form-check class="form-check">
         <input cFormCheckInput type="checkbox" [(ngModel)]="current_snippet['is_default']" />
         <label cFormCheckLabel>Default for this brand</label>
@@ -376,6 +376,10 @@
       <c-form-check class="form-check">
         <input cFormCheckInput type="checkbox" [(ngModel)]="current_snippet['is_config_mode']" />
         <label cFormCheckLabel>Config mode (Cisco-style configure terminal blocks)</label>
+      </c-form-check>
+      <c-form-check class="form-check">
+        <input cFormCheckInput type="checkbox" [(ngModel)]="current_snippet['store_in_backup']" />
+        <label cFormCheckLabel>Store execution in Backups</label>
       </c-form-check>
     </div>
     <br />

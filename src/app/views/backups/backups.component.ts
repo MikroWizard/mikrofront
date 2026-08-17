@@ -24,7 +24,8 @@ export class BackupsComponent implements OnInit {
 	public CompareModalVisible: boolean = false;
 	public compareitems:any=[];
 	public comparecontents:any=[];
-	public compare_type="unified";
+	public compare_type: string = "sided";
+	public compareLoading: boolean = false;
 	public copy_msg:boolean=false;
 	public confirmationText: string = '';
 
@@ -35,6 +36,9 @@ export class BackupsComponent implements OnInit {
 		{ field: 'devip', label: 'Device IP', selected: true },
 		{ field: 'createdC', label: 'Created At', selected: true },
 		{ field: 'filesize', label: 'File Size', selected: true },
+		{ field: 'source', label: 'Source', selected: true },
+		{ field: 'source_name', label: 'Source Name', selected: true },
+		{ field: 'command', label: 'Command', selected: true },
 		{ field: 'checksum', label: 'Checksum', selected: false }
 	];
 
@@ -103,7 +107,10 @@ export class BackupsComponent implements OnInit {
 		this.devid = Number(this.route.snapshot.paramMap.get("devid"));
 		if (this.devid > 0) {
 			this.filters["devid"] = this.devid;
-		  }
+		}
+		if (!this.filters["source"]) {
+			this.filters["source"] = "backup";
+		}
 		this.initGridTable();
 	}
 
@@ -212,23 +219,53 @@ export class BackupsComponent implements OnInit {
 		this.currentBackup = null;
 	}
 
-	start_compare(){
-		var _self=this;
-		this.comparecontents=[]
-		this.compareitems.forEach((element:any) => {
-			_self.data_provider.get_backup(element.id).then((res) => {
-				if('content' in res){
-					if(res.content.length>300000){
-						this.comparecontents=[];
-						this.show_toast('Error', 'The file is too big for comparing, Try accessing and comparing locally', 'danger')
-						return;
-					}
-					_self.comparecontents.push(res.content);
-				}
-				if(_self.comparecontents.length==_self.compareitems.length)
-					_self.CompareModalVisible=true;
-			});
+	start_compare() {
+		if (this.compareitems.length < 2) {
+			this.show_toast('Info', 'Select two backups to compare', 'info');
+			return;
+		}
+
+		// Sort chronologically: older backup as [0] (Before / Original), newer as [1] (After / Modified)
+		const sorted = [...this.compareitems].sort((a: any, b: any) => {
+			const dateA = new Date(a.created).getTime();
+			const dateB = new Date(b.created).getTime();
+			if (!isNaN(dateA) && !isNaN(dateB) && dateA !== dateB) return dateA - dateB;
+			return (a.id || 0) - (b.id || 0);
 		});
+		this.compareitems = sorted;
+
+		this.comparecontents = [];
+		this.compareLoading = true;
+
+		const p1 = this.data_provider.get_backup(this.compareitems[0].id);
+		const p2 = this.data_provider.get_backup(this.compareitems[1].id);
+
+		Promise.all([p1, p2]).then(([res1, res2]: [any, any]) => {
+			this.compareLoading = false;
+			if (!res1 || !('content' in res1) || !res2 || !('content' in res2)) {
+				this.show_toast('Error', 'Error loading backup files for comparison', 'danger');
+				return;
+			}
+			if (res1.content.length > 500000 || res2.content.length > 500000) {
+				this.show_toast('Error', 'The file is too big for comparing, Try accessing and comparing locally', 'danger');
+				return;
+			}
+			// Normalize line endings to avoid false diffs
+			const c1 = (res1.content || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+			const c2 = (res2.content || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+			this.comparecontents = [c1, c2];
+			this.CompareModalVisible = true;
+		}).catch(() => {
+			this.compareLoading = false;
+			this.show_toast('Error', 'Error loading backup files for comparison', 'danger');
+		});
+	}
+
+	swap_compare() {
+		if (this.compareitems.length >= 2 && this.comparecontents.length >= 2) {
+			this.compareitems = [this.compareitems[1], this.compareitems[0]];
+			this.comparecontents = [this.comparecontents[1], this.comparecontents[0]];
+		}
 	}
 
 	add_for_compare(item:any){
@@ -262,6 +299,7 @@ export class BackupsComponent implements OnInit {
 		if (field == "start") this.filters["start_time"] = $event.target.value;
 		else if (field == "end") this.filters["end_time"] = $event.target.value;
 		else if (field == "search") this.filters["search"] = $event;
+		else if (field == "source") this.filters["source"] = $event;
 		this.initGridTable();
 	}
 	
@@ -269,7 +307,10 @@ export class BackupsComponent implements OnInit {
 		var _self=this;
 		this.data_provider.get_backups(this.filters).then((res) => {
 			let index = 1;
-			this.source = res.map((d: any) => {
+			this.source = (res || []).map((d: any) => {
+				d.source = d.source || "backup";
+				d.source_name = d.source_name || "";
+				d.command = d.command || "";
 				d.index = index;
 				d.createdC = formatInTimeZone(
 					d.created.split(".")[0] + ".000Z",

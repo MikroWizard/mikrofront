@@ -152,6 +152,7 @@ export class SequencesComponent implements OnInit {
             action_type: 'alert_set',
             alert_id: null,
             snippet_id: null,
+            store_in_backup: false,
             conditions: []
         });
     }
@@ -169,6 +170,7 @@ export class SequencesComponent implements OnInit {
                 name: '',
                 source_snippet_id: null,
                 store_all_history: false,
+                store_source_in_backup: false,
                 is_active: true,
                 conditions_json: []
             };
@@ -177,6 +179,9 @@ export class SequencesComponent implements OnInit {
             // deep copy
             this.current_sequence = JSON.parse(JSON.stringify(item));
             if (!this.current_sequence.conditions_json) this.current_sequence.conditions_json = [];
+            if (this.current_sequence.store_source_in_backup === undefined) {
+                this.current_sequence.store_source_in_backup = false;
+            }
             this.ModalAction = 'edit';
         }
         this.EditSequenceModalVisible = true;
@@ -353,6 +358,7 @@ export class SequencesComponent implements OnInit {
         this.SelectedSequence = item;
         this.current_sequence = { ...item };
         this.current_sequence["selection_type"] = "devices";
+        this.current_sequence["store_in_backup"] = false;
         this.SelectedMembers = [];
         this.SelectedTaskItems = [];
         this.loadSelectionFromStorage(item.id);
@@ -368,7 +374,8 @@ export class SequencesComponent implements OnInit {
         const data = {
             selection_type: this.current_sequence['selection_type'],
             SelectedTaskItems: this.SelectedTaskItems,
-            SelectedMembers: this.SelectedMembers
+            SelectedMembers: this.SelectedMembers,
+            store_in_backup: this.current_sequence['store_in_backup'] || false
         };
         localStorage.setItem(key, JSON.stringify(data));
     }
@@ -382,6 +389,7 @@ export class SequencesComponent implements OnInit {
                 this.current_sequence['selection_type'] = data.selection_type || 'devices';
                 this.SelectedTaskItems = data.SelectedTaskItems || [];
                 this.SelectedMembers = data.SelectedMembers || [];
+                this.current_sequence['store_in_backup'] = data.store_in_backup || false;
                 return true;
             } catch (e) {
                 return false;
@@ -467,7 +475,8 @@ export class SequencesComponent implements OnInit {
         const payload = {
             sequence_id: this.SelectedSequence.id,
             selection_type: this.current_sequence.selection_type,
-            members: this.SelectedTaskItems
+            members: this.SelectedTaskItems,
+            store_in_backup: this.current_sequence['store_in_backup'] || false
         };
         this.MikroWizardRPC.exec_sequence(payload).then((res: any) => {
             if (res && typeof res === 'object' && !Array.isArray(res) &&

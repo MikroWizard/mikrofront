@@ -5,6 +5,7 @@ import { HighlightLineNumbers } from "ngx-highlightjs/line-numbers";
 import { HighlightJsModule } from 'ngx-highlight-js';
 import {
   ButtonModule,
+  ButtonGroupModule,
   CardModule,
   GridModule,
   CollapseModule,
@@ -39,6 +40,7 @@ import { SharedModule } from "../../shared/shared.module";
     FormModule,
     FormsModule,
     ButtonModule,
+    ButtonGroupModule,
     TableModule,
     InputTextModule,
     TooltipModule,
