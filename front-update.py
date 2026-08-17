@@ -129,6 +129,16 @@ def _ensure_certbot():
                    capture_output=True)
     return False
 
+
+def _reap_zombies():
+    try:
+        while True:
+            pid, _ = os.waitpid(-1, os.WNOHANG)
+            if pid <= 0:
+                break
+    except OSError:
+        pass
+
 def kill_ssl_agent():
     me = os.getpid()
     killed = False
@@ -422,6 +432,7 @@ def main():
     try:
         _ensure_ssl_conf_files()
         while True:
+            _reap_zombies()
             _rotate_old_logs()
 
             agent_up = False

@@ -95,6 +95,11 @@ load_token()
 
 def check_auth():
     token = request.headers.get("X-SSL-Agent-Token", "")
+    if not token:
+        return False
+    if token == AUTH_TOKEN:
+        return True
+    load_token()
     return token == AUTH_TOKEN
 
 
