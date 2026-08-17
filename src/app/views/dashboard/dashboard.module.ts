@@ -13,6 +13,7 @@ import {
   BadgeModule,
   ModalModule,
   CarouselModule,
+  TooltipModule,
 } from "@coreui/angular";
 
 import { ChartjsModule } from "@coreui/angular-chartjs";
@@ -38,6 +39,7 @@ import { ClipboardModule } from "@angular/cdk/clipboard";
     BadgeModule,
     ClipboardModule,
     ModalModule,
+    TooltipModule,
   ],
   declarations: [DashboardComponent],
 })

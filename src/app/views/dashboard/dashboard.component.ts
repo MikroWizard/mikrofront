@@ -14,12 +14,18 @@ export class DashboardComponent implements OnInit {
   public uid: number;
   public uname: string;
   public tz: string;
+  public ispro: boolean = false;
   public copy_msg: any = false;
   public ConfirmModalVisible: boolean = false;
+  public proPendingModalVisible: boolean = false;
   public action: string = "";
   public licenseRefreshing: boolean = false;
   public licenseRefreshMsg: any = false;
   front_version=require('../../../../package.json').version;
+
+  public get isPendingProActivation(): boolean {
+    return !this.ispro && (this.stats?.license_info?.status === 'Pro' || this.stats?.license === 'Pro');
+  }
   constructor(
     private data_provider: dataProvider,
     private router: Router,
@@ -36,6 +42,7 @@ export class DashboardComponent implements OnInit {
       _self.uid = res.uid;
       _self.uname = res.name;
       _self.tz = res.tz;
+      _self.ispro = res.ISPRO;
       const userId = _self.uid;
     });
     //get datagrid data
@@ -209,7 +216,24 @@ export class DashboardComponent implements OnInit {
     var _self = this;
     this.licenseRefreshing = true;
     this.licenseRefreshMsg = false;
-    this.data_provider.refreshLicense().then((res) => {
+    if (!this.ispro) {
+      this.data_provider.dashboard_stats(true, this.front_version).then((res) => {
+        _self.stats = res;
+        _self.licenseRefreshMsg = { color: 'success', text: 'License updated' };
+        _self.licenseRefreshing = false;
+        setTimeout(() => {
+          _self.licenseRefreshMsg = false;
+        }, 4000);
+      }).catch(() => {
+        _self.licenseRefreshMsg = { color: 'danger', text: 'Reload failed' };
+        _self.licenseRefreshing = false;
+        setTimeout(() => {
+          _self.licenseRefreshMsg = false;
+        }, 4000);
+      });
+      return;
+    }
+    this.data_provider.refreshLicense().then((res: any) => {
       if (res && res.status === 'success') {
         _self.licenseRefreshMsg = { color: 'success', text: 'License updated' };
         if (res.license) {
@@ -217,12 +241,32 @@ export class DashboardComponent implements OnInit {
         }
         _self.initStats();
       } else {
-        _self.licenseRefreshMsg = { color: 'danger', text: 'Reload failed' };
+        _self.data_provider.dashboard_stats(true, _self.front_version).then((sRes) => {
+          _self.stats = sRes;
+          _self.licenseRefreshMsg = { color: 'success', text: 'License updated' };
+        }).catch(() => {
+          _self.licenseRefreshMsg = { color: 'danger', text: 'Reload failed' };
+        });
       }
       _self.licenseRefreshing = false;
-    }).catch((err) => {
-      _self.licenseRefreshMsg = { color: 'danger', text: 'Reload failed' };
-      _self.licenseRefreshing = false;
+      setTimeout(() => {
+        _self.licenseRefreshMsg = false;
+      }, 4000);
+    }).catch(() => {
+      _self.data_provider.dashboard_stats(true, _self.front_version).then((sRes) => {
+        _self.stats = sRes;
+        _self.licenseRefreshMsg = { color: 'success', text: 'License updated' };
+        _self.licenseRefreshing = false;
+        setTimeout(() => {
+          _self.licenseRefreshMsg = false;
+        }, 4000);
+      }).catch(() => {
+        _self.licenseRefreshMsg = { color: 'danger', text: 'Reload failed' };
+        _self.licenseRefreshing = false;
+        setTimeout(() => {
+          _self.licenseRefreshMsg = false;
+        }, 4000);
+      });
     });
   }
 

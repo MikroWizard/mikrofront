@@ -195,75 +195,100 @@
 
           <!-- License Info Banner -->
           <div class="p-2 mb-2 rounded-3 position-relative" [ngClass]="{
-                 'bg-success bg-opacity-10 border-start border-4 border-success': (stats?.license_info?.status === 'Pro' || stats?.license_info?.status === 'Free') && stats?.license !== false,
-                 'bg-danger bg-opacity-10 border-start border-4 border-danger': stats?.license_info?.status === 'expired' || stats?.license_info?.status === 'connection_error' || stats?.license === false,
-                 'bg-warning bg-opacity-10 border-start border-4 border-warning': stats?.license_info?.status === 'over_limit' || (stats?.license_info?.action_required === 'set_username' && stats?.license !== false)
+                 'bg-warning bg-opacity-10 border-start border-4 border-warning': isPendingProActivation || stats?.license_info?.status === 'over_limit' || (stats?.license_info?.action_required === 'set_username' && stats?.license !== false),
+                 'bg-success bg-opacity-10 border-start border-4 border-success': !isPendingProActivation && (stats?.license_info?.status === 'Pro' || stats?.license_info?.status === 'Free') && stats?.license !== false,
+                 'bg-danger bg-opacity-10 border-start border-4 border-danger': stats?.license_info?.status === 'expired' || stats?.license_info?.status === 'connection_error' || stats?.license === false
                }" style="box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
                 
-            <div class="d-flex justify-content-between align-items-center">
-               <strong class="mb-0 text-dark d-flex align-items-center" style="font-size: 0.9rem;">
+            <!-- Header Row: Title & Badge -->
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-1 mb-1">
+               <div class="d-flex align-items-center">
                  <i class="fa-solid flex-shrink-0 me-2" [ngClass]="{
-                   'fa-crown text-warning': stats?.license_info?.status === 'Pro' && stats?.license !== false,
+                   'fa-crown text-warning': (stats?.license_info?.status === 'Pro' || stats?.license === 'Pro') && stats?.license !== false,
                    'fa-leaf text-success': stats?.license_info?.status === 'Free' && stats?.license !== false,
                    'fa-triangle-exclamation text-danger': stats?.license_info?.status === 'connection_error',
                    'fa-circle-xmark text-danger': stats?.license_info?.status === 'expired',
                    'fa-triangle-exclamation text-warning': stats?.license_info?.status === 'over_limit',
                    'fa-user-xmark text-warning': stats?.license_info?.action_required === 'set_username' && stats?.license !== false,
                    'fa-id-card text-danger': stats?.license === false
-                 }"></i>
-                 <span *ngIf="stats?.license === false">Serial Registration Required</span>
-                 <ng-container *ngIf="stats?.license !== false">
-                    <span *ngIf="stats?.license_info?.status === 'Pro'">Pro License Active</span>
-                    <span *ngIf="stats?.license_info?.status === 'Free'">Free License Active</span>
-                    <span *ngIf="stats?.license_info?.status === 'expired'">License Expired</span>
-                    <span *ngIf="stats?.license_info?.status === 'over_limit'">Device Limit Reached</span>
-                    <span *ngIf="stats?.license_info?.status === 'connection_error'">Connection Error</span>
-                    <span *ngIf="stats?.license_info?.status === 'no_username'">No Username</span>
-                 </ng-container>
-               </strong>
-               <span *ngIf="stats?.license !== false && (stats?.license_info?.status === 'Pro' || stats?.license_info?.status === 'Free')" class="badge fw-bold shadow-sm" [ngClass]="stats?.license_info?.status === 'Pro' ? 'bg-warning text-dark' : 'bg-secondary'">
-                 {{ stats?.license_info?.status | uppercase }}
-               </span>
-               <span *ngIf="stats?.license_info?.status === 'over_limit'" class="badge bg-warning text-dark fw-bold shadow-sm">OVER LIMIT</span>
-               <span *ngIf="stats?.license === false" class="badge bg-danger fw-bold shadow-sm">UNREGISTERED</span>
+                 }" style="font-size: 0.95rem;"></i>
+                 <strong class="mb-0 text-dark" style="font-size: 0.85rem;">
+                   <span *ngIf="stats?.license === false">Serial Registration Required</span>
+                   <ng-container *ngIf="stats?.license !== false">
+                      <span *ngIf="isPendingProActivation">Pro Purchased</span>
+                      <span *ngIf="!isPendingProActivation && stats?.license_info?.status === 'Pro'">Pro License Active</span>
+                      <span *ngIf="stats?.license_info?.status === 'Free'">Free License Active</span>
+                      <span *ngIf="stats?.license_info?.status === 'expired'">License Expired</span>
+                      <span *ngIf="stats?.license_info?.status === 'over_limit'">Device Limit Reached</span>
+                      <span *ngIf="stats?.license_info?.status === 'connection_error'">Connection Error</span>
+                      <span *ngIf="stats?.license_info?.status === 'no_username'">No Username</span>
+                   </ng-container>
+                 </strong>
+               </div>
+
+               <div class="d-flex align-items-center gap-1 ms-auto">
+                 <span *ngIf="isPendingProActivation" class="badge bg-warning text-dark fw-bold shadow-sm text-nowrap" style="font-size: 0.68rem;"
+                       [cTooltip]="'Purchase successful! Pro update will auto-download (~1h) or restart mikroman container to fetch now.'">
+                   <i class="fa-solid fa-clock-rotate-left me-1"></i>PENDING DOWNLOAD
+                 </span>
+                 <span *ngIf="!isPendingProActivation && stats?.license !== false && (stats?.license_info?.status === 'Pro' || stats?.license_info?.status === 'Free')"
+                       class="badge fw-bold shadow-sm text-nowrap" style="font-size: 0.68rem;"
+                       [ngClass]="stats?.license_info?.status === 'Pro' ? 'bg-warning text-dark' : 'bg-secondary'">
+                   {{ stats?.license_info?.status | uppercase }}
+                 </span>
+                 <span *ngIf="stats?.license_info?.status === 'over_limit'" class="badge bg-warning text-dark fw-bold shadow-sm text-nowrap" style="font-size: 0.68rem;">OVER LIMIT</span>
+                 <span *ngIf="stats?.license === false" class="badge bg-danger fw-bold shadow-sm text-nowrap" style="font-size: 0.68rem;">UNREGISTERED</span>
+               </div>
             </div>
 
-            <div class="d-flex justify-content-between align-items-center mt-1">
-              <p class="mb-0 text-dark opacity-100" style="font-size: 0.75rem; line-height: 1.2; font-weight: 500;">
-                <ng-container *ngIf="stats?.license === false">
-                  {{ stats?.username === 'admin' || !stats?.username ? 'License Username is not set in settings.' : 'Serial number not submitted or validated.' }} Please register your device.
-                </ng-container>
-                <ng-container *ngIf="stats?.license !== false">
-                  {{ stats?.license_info?.message || (stats?.license_info?.status === 'connection_error' ? 'Cannot connect to server to verify license.' : 'License details unavailable.') }}
-                </ng-container>
-              </p>
-              
-              <div class="d-flex gap-1 align-items-center" *ngIf="stats?.license_info?.status !== 'connection_error'">
-                <a *ngIf="stats?.license === false || stats?.license_info?.action_required === 'set_username'" 
-                   href="https://mikrowizard.com/register-new-mikrowizard/" target="_blank" 
-                   class="btn btn-sm btn-danger py-0 px-2 rounded-pill fw-semibold shadow-sm animate-pulse" 
-                   style="font-size: 0.7rem;"><i class="fa-solid fa-id-card me-1"></i> Register Serial</a>
-                
-                <a *ngIf="stats?.license !== false && (stats?.license_info?.action_required === 'renew_license' || stats?.license_info?.status === 'over_limit')" 
-                   href="https://mikrowizard.com/register-new-mikrowizard/" target="_blank" 
-                   class="btn btn-sm btn-danger py-0 px-2 rounded-pill fw-semibold shadow-sm" 
-                   style="font-size: 0.7rem;"><i class="fa-solid fa-cart-shopping me-1"></i> Renew</a>
-
-                <button class="btn btn-sm btn-light py-0 px-2 rounded-pill fw-semibold shadow-sm border-0"
-                   [disabled]="licenseRefreshing" (click)="refreshLicense()"
-                   style="font-size: 0.7rem; background-color: #e2e8f0; color: #334155;">
-                  <i class="fa-solid me-1" [ngClass]="licenseRefreshing ? 'fa-circle-notch fa-spin' : 'fa-arrows-rotate'"></i>
-                  {{ licenseRefreshing ? 'Reloading...' : 'Reload License' }}
-                </button>
-
-                <span *ngIf="licenseRefreshMsg && !licenseRefreshing"
-                   class="badge rounded-pill fw-semibold text-white"
-                   [ngClass]="licenseRefreshMsg.color === 'success' ? 'bg-success' : 'bg-danger'"
-                   style="font-size: 0.65rem; padding: 3px 7px;">
-                  <i class="fa-solid me-1" [ngClass]="licenseRefreshMsg.color === 'success' ? 'fa-check' : 'fa-xmark'"></i>
-                  {{ licenseRefreshMsg.text }}
+            <!-- Message Description -->
+            <div class="text-dark opacity-100 my-1" style="font-size: 0.74rem; line-height: 1.35; font-weight: 500;">
+              <ng-container *ngIf="stats?.license === false">
+                {{ stats?.username === 'admin' || !stats?.username ? 'License Username is not set in settings.' : 'Serial number not submitted or validated.' }} Please register your device.
+              </ng-container>
+              <ng-container *ngIf="stats?.license !== false">
+                <span *ngIf="isPendingProActivation">
+                  Purchase confirmed! Pro package download pending (~1 hr or restart container to force).
                 </span>
-              </div>
+                <span *ngIf="!isPendingProActivation">
+                  {{ stats?.license_info?.message || (stats?.license_info?.status === 'connection_error' ? 'Cannot connect to server to verify license.' : 'License details unavailable.') }}
+                </span>
+              </ng-container>
+            </div>
+
+            <!-- Action Buttons Row -->
+            <div class="d-flex align-items-center justify-content-end gap-1 flex-wrap mt-1" *ngIf="stats?.license_info?.status !== 'connection_error'">
+              <button *ngIf="isPendingProActivation"
+                 (click)="proPendingModalVisible = true"
+                 class="btn btn-sm btn-warning py-1 px-2 rounded-pill fw-semibold shadow-sm text-dark d-inline-flex align-items-center"
+                 style="font-size: 0.68rem; line-height: 1;">
+                <i class="fa-solid fa-circle-info me-1"></i> Activation Info
+              </button>
+
+              <a *ngIf="stats?.license === false || stats?.license_info?.action_required === 'set_username'" 
+                 href="https://mikrowizard.com/register-new-mikrowizard/" target="_blank" 
+                 class="btn btn-sm btn-danger py-1 px-2 rounded-pill fw-semibold shadow-sm animate-pulse d-inline-flex align-items-center" 
+                 style="font-size: 0.68rem; line-height: 1;"><i class="fa-solid fa-id-card me-1"></i> Register Serial</a>
+              
+              <a *ngIf="!isPendingProActivation && stats?.license !== false && (stats?.license_info?.action_required === 'renew_license' || stats?.license_info?.status === 'over_limit')" 
+                 href="https://mikrowizard.com/register-new-mikrowizard/" target="_blank" 
+                 class="btn btn-sm btn-danger py-1 px-2 rounded-pill fw-semibold shadow-sm d-inline-flex align-items-center" 
+                 style="font-size: 0.68rem; line-height: 1;"><i class="fa-solid fa-cart-shopping me-1"></i> Renew</a>
+
+              <button class="btn btn-sm btn-light py-1 px-2 rounded-pill fw-semibold shadow-sm border-0 d-inline-flex align-items-center"
+                 [disabled]="licenseRefreshing" (click)="refreshLicense()"
+                 style="font-size: 0.68rem; line-height: 1; background-color: #e2e8f0; color: #334155;">
+                <i class="fa-solid me-1" [ngClass]="licenseRefreshing ? 'fa-circle-notch fa-spin' : 'fa-arrows-rotate'"></i>
+                {{ licenseRefreshing ? 'Reloading...' : 'Reload License' }}
+              </button>
+
+              <span *ngIf="licenseRefreshMsg && !licenseRefreshing"
+                 class="badge rounded-pill fw-semibold text-white d-inline-flex align-items-center"
+                 [ngClass]="licenseRefreshMsg.color === 'success' ? 'bg-success' : 'bg-danger'"
+                 style="font-size: 0.65rem; padding: 3px 7px;">
+                <i class="fa-solid me-1" [ngClass]="licenseRefreshMsg.color === 'success' ? 'fa-check' : 'fa-xmark'"></i>
+                {{ licenseRefreshMsg.text }}
+              </span>
             </div>
 
             <!-- License usage vs limit -->
@@ -415,5 +440,46 @@
     <button [cModalToggle]="ConfirmModal.id" cButton color="secondary">
       Close
     </button>
+  </c-modal-footer>
+</c-modal>
+
+<c-modal #ProPendingModal backdrop="static" size="lg" [(visible)]="proPendingModalVisible" id="ProPendingModal">
+  <c-modal-header>
+    <h5 cModalTitle class="d-flex align-items-center text-warning mb-0">
+      <i class="fa-solid fa-crown me-2"></i>Pro License Purchased — Activation Guide
+    </h5>
+    <button [cModalToggle]="ProPendingModal.id" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body>
+    <div class="alert alert-success d-flex align-items-center mb-3">
+      <i class="fa-solid fa-circle-check fs-4 me-3 text-success"></i>
+      <div>
+        <h6 class="mb-0 fw-bold">Pro License Verified Successfully!</h6>
+        <div class="small">Your purchase was verified with mikrowizard.com.</div>
+      </div>
+    </div>
+    <p class="mb-3">
+      Your server is currently running the <strong>Free Edition</strong>. The Pro package and features are scheduled to be downloaded automatically.
+    </p>
+    <div class="card border-0 bg-light p-3 mb-3">
+      <h6 class="fw-bold mb-2"><i class="fa-solid fa-bolt text-primary me-2"></i>How to activate Pro:</h6>
+      <ul class="mb-0 ps-3 small" style="line-height: 1.8;">
+        <li>
+          <strong>Option 1 (Automatic):</strong> The background updater checks periodically and will automatically download and activate the Pro package within approximately <strong>1 hour</strong>.
+        </li>
+        <li>
+          <strong>Option 2 (Immediate / Faster):</strong> You can force an immediate check and download by restarting the <code>mikroman</code> container (it checks and updates automatically on startup):
+          <div class="mt-1 bg-dark text-white p-2 rounded font-monospace" style="font-size: 0.8rem;">
+            sudo docker container restart mikroman
+          </div>
+        </li>
+      </ul>
+    </div>
+    <div class="text-muted small">
+      <i class="fa-solid fa-info-circle me-1"></i> Once the Pro update is applied and the server restarts, all Pro features (PAM terminal sessions, AI assistant, speed test servers, email settings, and raised limits) will unlock automatically.
+    </div>
+  </c-modal-body>
+  <c-modal-footer>
+    <button [cModalToggle]="ProPendingModal.id" cButton color="primary">Got it</button>
   </c-modal-footer>
 </c-modal>

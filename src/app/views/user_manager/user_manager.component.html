@@ -25,7 +25,7 @@
                 <i class="fa-solid fa-user-shield me-1"></i> Staff
               </a>
             </li>
-            <li class="nav-item">
+            <li class="nav-item" *ngIf="ispro">
               <a class="nav-link cursor-pointer" [class.active]="selectedRoleFilter === 'customers'" (click)="setRoleFilter('customers')" style="cursor: pointer; font-weight: 500;">
                 <i class="fa-solid fa-user-tag me-1"></i> Customers
               </a>
@@ -230,8 +230,8 @@
                   <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-user-tag"></i></span>
                   <select cSelect [(ngModel)]="SelectedUser['role']" class="form-select">
                     <option value="admin">Admin (Full System & Device Access)</option>
-                    <option value="customer">Customer (Customer Portal Access)</option>
-                    <option value="customer_inactive" *ngIf="SelectedUser['role'] === 'customer_inactive'">Customer Inactive</option>
+                    <option value="customer" *ngIf="ispro">Customer (Customer Portal Access)</option>
+                    <option value="customer_inactive" *ngIf="ispro && SelectedUser['role'] === 'customer_inactive'">Customer Inactive</option>
                     <option value="disabled" *ngIf="SelectedUser['role'] === 'disabled'">Disabled (Access Blocked)</option>
                   </select>
                 </div>

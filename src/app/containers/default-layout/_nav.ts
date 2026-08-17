@@ -220,6 +220,7 @@ export const navItems: INavData[] = [
     name: 'AI Chat Audit Logs',
     url: '/ai-chat-logs',
     icon: 'fa-solid fa-comments',
+    attributes: { 'pro': true }
   },
   {
     title: true,

@@ -19,13 +19,13 @@
           <button class="tab-link" [class.active]="activeTab === 'system'" (click)="activeTab = 'system'">
             <i class="fa-solid fa-server me-2"></i>System Configuration
           </button>
-          <button class="tab-link" [class.active]="activeTab === 'email'" (click)="activeTab = 'email'">
+          <button class="tab-link" *ngIf="ispro" [class.active]="activeTab === 'email'" (click)="activeTab = 'email'">
             <i class="fa-solid fa-envelope me-2"></i>Email Settings
           </button>
-          <button class="tab-link" [class.active]="activeTab === 'ai'" (click)="activeTab = 'ai'">
+          <button class="tab-link" *ngIf="ispro" [class.active]="activeTab === 'ai'" (click)="activeTab = 'ai'">
             <i class="fa-solid fa-robot me-2"></i>AI Assistant
           </button>
-          <button class="tab-link" [class.active]="activeTab === 'speedtest'" (click)="activeTab = 'speedtest'">
+          <button class="tab-link" *ngIf="ispro" [class.active]="activeTab === 'speedtest'" (click)="activeTab = 'speedtest'">
             <i class="fa-solid fa-gauge-high me-2"></i>Speed Test Servers
           </button>
           <button class="tab-link" *ngIf="ispro" [class.active]="activeTab === 'alerts'" (click)="activeTab = 'alerts'">
@@ -580,7 +580,7 @@
         </c-card-body>
 
         <!-- Email Tab -->
-        <c-card-body *ngIf="activeTab === 'email' && !SysConfigloading" class="tab-content">
+        <c-card-body *ngIf="activeTab === 'email' && !SysConfigloading && ispro" class="tab-content">
           <!-- SMTP Email Settings -->
           <div class="config-section mb-4">
             <h5 class="section-title mb-3">
@@ -657,7 +657,7 @@
         </c-card-body>
 
         <!-- AI Assistant Tab -->
-        <c-card-body *ngIf="activeTab === 'ai' && !SysConfigloading" class="tab-content">
+        <c-card-body *ngIf="activeTab === 'ai' && !SysConfigloading && ispro" class="tab-content">
           <!-- AI Support Chatbot Settings -->
           <div class="config-section mb-4">
             <h5 class="section-title mb-3">
@@ -1065,7 +1065,7 @@
         </c-card-body>
 
         <!-- Speed Test Tab -->
-        <c-card-body *ngIf="activeTab === 'speedtest' && !SysConfigloading" class="tab-content">
+        <c-card-body *ngIf="activeTab === 'speedtest' && !SysConfigloading && ispro" class="tab-content">
           <div class="config-section mb-4">
             <h5 class="section-title mb-3">
               <i class="fa-solid fa-gauge-high me-2 text-primary"></i>Speed Test Servers
