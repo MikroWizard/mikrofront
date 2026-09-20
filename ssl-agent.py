@@ -54,6 +54,35 @@ NGINX_REDIRECT_CONFIG = os.path.join(CONF_DIR, "nginx-ssl-redirect.conf")
 AUTH_TOKEN = None
 
 
+def _reset_ssl_config():
+    try:
+        with open(NGINX_SSL_CONFIG, "w") as f:
+            f.write("# SSL server disabled\n")
+    except Exception as e:
+        log.warning("Could not reset %s: %s", NGINX_SSL_CONFIG, e)
+
+
+def _ensure_conf_files():
+    try:
+        os.makedirs(CONF_DIR, exist_ok=True)
+        os.makedirs(os.path.join(CONF_DIR, "logs"), exist_ok=True)
+        os.makedirs(LETSENCRYPT_DIR, exist_ok=True)
+        os.makedirs(LETSENCRYPT_WORK, exist_ok=True)
+        os.makedirs(LETSENCRYPT_LOGS, exist_ok=True)
+        os.makedirs(MANUAL_DIR, exist_ok=True)
+        if not os.path.exists(NGINX_REDIRECT_CONFIG):
+            with open(NGINX_REDIRECT_CONFIG, "w") as f:
+                f.write("# SSL redirect disabled\n")
+        if not os.path.exists(NGINX_SSL_CONFIG):
+            with open(NGINX_SSL_CONFIG, "w") as f:
+                f.write("# SSL server disabled\n")
+    except Exception as e:
+        log.warning("Could not initialize conf files: %s", e)
+
+
+_ensure_conf_files()
+
+
 def load_token():
     global AUTH_TOKEN
     for old_path in ("/conf/ssl-agent-token", "/opt/mikrowizard/ssl-agent-token", "/tmp/mw-ssl-agent-token"):
@@ -540,7 +569,7 @@ def install_cert():
 
     test_result = nginx_test()
     if not test_result["valid"]:
-        os.remove(NGINX_SSL_CONFIG)
+        _reset_ssl_config()
         return jsonify({"error": "nginx config test failed", "output": test_result["output"]}), 400
 
     reload_result = nginx_reload()
@@ -631,7 +660,7 @@ def letsencrypt_request():
         f.write(config_content)
     test_result = nginx_test()
     if not test_result["valid"]:
-        os.remove(NGINX_SSL_CONFIG)
+        _reset_ssl_config()
         return jsonify({"error": "nginx config test failed after cert install", "output": test_result["output"]}), 400
     nginx_reload()
 
@@ -671,8 +700,7 @@ def letsencrypt_revoke():
     result = run_cmd(cmd, timeout=60)
     if not result["success"]:
         return jsonify({"error": "Certificate revocation failed", "output": result["stderr"] or result["stdout"]}), 500
-    if os.path.exists(NGINX_SSL_CONFIG):
-        os.remove(NGINX_SSL_CONFIG)
+    _reset_ssl_config()
     with open(NGINX_REDIRECT_CONFIG, "w") as f:
         f.write("# SSL redirect disabled\n")
     nginx_reload()
@@ -691,8 +719,7 @@ def letsencrypt_delete():
     cmd = [certbot_bin, "delete", "--config-dir", LETSENCRYPT_DIR, "--work-dir", LETSENCRYPT_WORK,
            "--logs-dir", LETSENCRYPT_LOGS, "--cert-name", domain, "--non-interactive"]
     result = run_cmd(cmd, timeout=60)
-    if os.path.exists(NGINX_SSL_CONFIG):
-        os.remove(NGINX_SSL_CONFIG)
+    _reset_ssl_config()
     with open(NGINX_REDIRECT_CONFIG, "w") as f:
         f.write("# SSL redirect disabled\n")
     nginx_reload()
@@ -703,7 +730,8 @@ def letsencrypt_delete():
 def force_ssl_toggle():
     data = request.get_json() or {}
     enabled = data.get("enabled", False)
-    if enabled and not os.path.exists(NGINX_SSL_CONFIG):
+    cert_info = get_cert_info()
+    if enabled and not (cert_info and cert_info.get("installed")):
         return jsonify({"error": "No SSL certificate installed. Install a certificate first."}), 400
     if enabled:
         redirect_config = """server {
@@ -732,8 +760,7 @@ def force_ssl_toggle():
 
 @app.route("/disable", methods=["POST"])
 def disable_ssl():
-    if os.path.exists(NGINX_SSL_CONFIG):
-        os.remove(NGINX_SSL_CONFIG)
+    _reset_ssl_config()
     with open(NGINX_REDIRECT_CONFIG, "w") as f:
         f.write("# SSL redirect disabled\n")
     nginx_reload()
@@ -833,7 +860,7 @@ def _run_certbot_dns_manual(cmd, domains):
                 with open(DNS_HOOK_STATE, "w") as f:
                     f.write("success")
             else:
-                os.remove(NGINX_SSL_CONFIG)
+                _reset_ssl_config()
                 with open(DNS_HOOK_STATE, "w") as f:
                     f.write("error\nnginx test failed:\n" + test_result["output"][:1000])
         else:
@@ -1013,7 +1040,7 @@ docker run -d --restart unless-stopped \\
     --name "$CONTAINER" \\
     -p 80:80 -p 443:443 \\
     -v /opt/mikrowizard/:/conf/ \\
-    mikrofront-updated /bin/sh -c "cron; /usr/bin/python3 /ssl-agent.py & nginx -g 'daemon off;'"
+    mikrofront-updated
 
 sleep 3
 if docker ps --filter "name=$CONTAINER" --filter "status=running" | grep -q "$CONTAINER"; then
