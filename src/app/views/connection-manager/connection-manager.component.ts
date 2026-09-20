@@ -10,7 +10,7 @@ import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
   styleUrls: ['./connection-manager.component.scss']
 })
 export class ConnectionManagerComponent implements OnInit {
-  activeSessions: { id: string, device: any, protocol: string, webfigUrl?: SafeResourceUrl }[] = [];
+  activeSessions: { id: string, device: any, protocol: string, webfigUrl?: SafeResourceUrl, winboxUrl?: SafeResourceUrl, rawWinboxUrl?: string, token?: string, sessionId?: string }[] = [];
   activeTabIndex = 0;
 
   public sidebarAutoHide = false;
@@ -34,6 +34,13 @@ export class ConnectionManagerComponent implements OnInit {
   cmdLoading = false;
   selectedDeviceForTool: any = null;
   isToolRunning = false;
+
+  // Gateway Notice Modal
+  showGatewayNoticeModal = false;
+  gatewayNoticeType: 'not_installed' | 'update_required' = 'not_installed';
+  gatewayNoticeTitle = '';
+  gatewayNoticeMessage = '';
+  gatewayNoticeDocUrl = '';
 
   constructor(
     private route: ActivatedRoute,
@@ -132,18 +139,58 @@ export class ConnectionManagerComponent implements OnInit {
   }
 
   createNewSession(device: any, protocol: string) {
-      const session: any = { 
-        id: 'session_' + new Date().getTime() + '_' + device.id + '_' + protocol,
-        device: device,
-        protocol: protocol
-      };
-      
-      if (protocol === 'webfig') {
-          session.webfigUrl = this.getWebfigUrl(device);
-      }
-      
-      this.activeSessions.push(session);
-      this.activeTabIndex = this.activeSessions.length - 1;
+    if (protocol === 'winbox' || protocol === 'webbox') {
+      this.data_provider.MikroWizardRPC.sendJsonRequest('/api/terminal/init', {
+        device_id: device.id,
+        protocol: 'winbox',
+        connection_type: 'winbox'
+      }).then((res: any) => {
+        if (res && res.token) {
+          const rawUrl = res.web_url || ('/terminal-ws/winbox.html?token=' + res.token);
+          const session: any = {
+            id: 'session_' + new Date().getTime() + '_' + device.id + '_winbox',
+            device: device,
+            protocol: 'winbox',
+            rawWinboxUrl: rawUrl,
+            winboxUrl: this.sanitizer.bypassSecurityTrustResourceUrl(rawUrl),
+            sessionId: res.session_id,
+            token: res.token
+          };
+          this.activeSessions.push(session);
+          this.activeTabIndex = this.activeSessions.length - 1;
+        } else if (res && res.status === 'gateway_update_required') {
+          this.gatewayNoticeType = 'update_required';
+          this.gatewayNoticeTitle = 'Terminal Gateway Update Required';
+          this.gatewayNoticeMessage = res.error || 'Your Terminal Gateway container is outdated and does not support WebBox. Please update the Terminal Gateway Docker container to the latest version to use this feature.';
+          this.gatewayNoticeDocUrl = res.doc_url || 'https://mikrowizard.com/docs/updating-terminal-gateway-addon/';
+          this.showGatewayNoticeModal = true;
+        } else if (res && res.status === 'gateway_not_installed') {
+          this.gatewayNoticeType = 'not_installed';
+          this.gatewayNoticeTitle = 'Terminal Gateway Not Installed';
+          this.gatewayNoticeMessage = res.error || 'The MikroWizard Terminal Gateway addon is required to start WebBox sessions. Please ask your administrator to install it.';
+          this.gatewayNoticeDocUrl = res.doc_url || 'https://mikrowizard.com/docs/installing-terminal-gatway-addon/';
+          this.showGatewayNoticeModal = true;
+        } else {
+          alert(res?.error || 'Failed to initialize WebBox session.');
+        }
+      }).catch(() => {
+        alert('Failed to initialize WebBox session.');
+      });
+      return;
+    }
+
+    const session: any = { 
+      id: 'session_' + new Date().getTime() + '_' + device.id + '_' + protocol,
+      device: device,
+      protocol: protocol
+    };
+    
+    if (protocol === 'webfig') {
+        session.webfigUrl = this.getWebfigUrl(device);
+    }
+    
+    this.activeSessions.push(session);
+    this.activeTabIndex = this.activeSessions.length - 1;
   }
 
   getWebfigUrl(device: any): SafeResourceUrl {
@@ -171,6 +218,13 @@ export class ConnectionManagerComponent implements OnInit {
             }
           }
         });
+      } catch (e) {}
+    }
+    if (sess && (sess.protocol === 'winbox' || sess.protocol === 'webbox')) {
+      try {
+        if (sess.token) {
+          navigator.sendBeacon(`/terminal-ws/api/winbox/kill?token=${encodeURIComponent(sess.token)}`);
+        }
       } catch (e) {}
     }
     this.activeSessions.splice(index, 1);

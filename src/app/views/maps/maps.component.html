@@ -86,17 +86,47 @@
   <c-modal-body>
     <p>Choose how to access the device:</p>
     <div class="d-grid gap-2">
-      <button *ngIf="ispro" cButton color="primary" (click)="openProxyAccess()">
-        <i class="fas fa-shield-alt"></i> Proxy Access , through Mikrowizard server
+      <button *ngIf="ispro && isMikrotik(currentDeviceInfo)" cButton color="primary" class="d-flex align-items-center justify-content-center gap-2" (click)="openWebboxAccess()">
+        <i class="fa-solid fa-desktop"></i>
+        <span><strong>WebBox</strong> — Remote WinBox GUI (PAM)</span>
       </button>
-      <button cButton color="secondary" (click)="openDirectAccess()">
-        <i class="fas fa-external-link-alt"></i> Direct Access 
+      <button *ngIf="ispro" cButton color="info" class="text-white d-flex align-items-center justify-content-center gap-2" (click)="openProxyAccess()">
+        <i class="fas fa-shield-alt"></i>
+        <span>Proxy Access, through Mikrowizard server</span>
+      </button>
+      <button cButton color="secondary" class="d-flex align-items-center justify-content-center gap-2" (click)="openDirectAccess()">
+        <i class="fas fa-external-link-alt"></i>
+        <span>Direct Access</span>
       </button>
     </div>
   </c-modal-body>
   <c-modal-footer>
     <button cButton color="secondary" (click)="closeWebAccessModal()">Cancel</button>
   </c-modal-footer>
+</c-modal>
+
+<!-- Gateway Notice Modal (Install / Update Required) -->
+<c-modal #GatewayNoticeModal backdrop="static" [(visible)]="showGatewayNoticeModal" id="mapsGatewayNoticeModal">
+  <c-modal-header [ngClass]="gatewayNoticeType === 'update_required' ? 'bg-warning text-dark' : 'bg-info text-white'">
+    <h6 cModalTitle class="m-0">
+      <i class="fa-solid me-2" [ngClass]="gatewayNoticeType === 'update_required' ? 'fa-triangle-exclamation' : 'fa-server'"></i>
+      {{ gatewayNoticeTitle }}
+    </h6>
+    <button cButtonClose (click)="showGatewayNoticeModal=false"></button>
+  </c-modal-header>
+  <c-modal-body class="p-4 text-center">
+    <div class="mb-3">
+      <i class="fa-solid fa-3x" [ngClass]="gatewayNoticeType === 'update_required' ? 'fa-arrow-up-right-from-square text-warning' : 'fa-server text-info'"></i>
+    </div>
+    <h5 class="fw-bold mb-2">{{ gatewayNoticeTitle }}</h5>
+    <p class="text-muted mb-4">{{ gatewayNoticeMessage }}</p>
+    <div class="d-flex justify-content-center gap-2">
+      <a [href]="gatewayNoticeDocUrl" target="_blank" class="btn btn-primary px-3">
+        <i class="fa-solid fa-book-open me-1"></i> Update Instructions
+      </a>
+      <button cButton color="secondary" (click)="showGatewayNoticeModal=false">Close</button>
+    </div>
+  </c-modal-body>
 </c-modal>
 
 <!-- Reset Map Confirmation Modal -->

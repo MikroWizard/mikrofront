@@ -55,7 +55,8 @@
               <!-- Tab Icon based on protocol -->
               <i class="fa-solid tab-icon me-2" 
                  [class.fa-globe]="session.protocol === 'webfig'"
-                 [class.fa-terminal]="session.protocol !== 'webfig'"
+                 [class.fa-desktop]="session.protocol === 'winbox' || session.protocol === 'webbox'"
+                 [class.fa-terminal]="session.protocol !== 'webfig' && session.protocol !== 'winbox' && session.protocol !== 'webbox'"
                  style="font-size: 0.75rem;"></i>
               <span style="max-width: 160px; overflow: hidden; text-overflow: ellipsis;">
                 {{ session.device.name || session.device.ip }} <small class="text-muted ms-1" style="font-size: 0.65rem; text-transform: uppercase;">({{ session.protocol }})</small>
@@ -71,9 +72,18 @@
       <!-- Tab Content Area -->
       <div class="cm-content h-100">
         <div *ngFor="let session of activeSessions; let i = index" 
-             [hidden]="activeTabIndex !== i"
-             class="h-100 w-100">
+             class="cm-tab-pane"
+             [class.cm-tab-hidden]="activeTabIndex !== i">
             
+            <!-- WebBox Session (Remote WinBox GUI) -->
+            <div *ngIf="session.protocol === 'winbox' || session.protocol === 'webbox'" class="w-100 h-100 position-relative">
+              <iframe [src]="session.winboxUrl"
+                      class="w-100 h-100 border-0 bg-dark"
+                      style="border-radius: 4px;"
+                      allow="clipboard-read; clipboard-write; fullscreen">
+              </iframe>
+            </div>
+
             <!-- WebFig Session: render in iframe -->
             <iframe *ngIf="session.protocol === 'webfig'"
                     [src]="session.webfigUrl"
@@ -83,7 +93,7 @@
 
             <!-- Terminal Session (SSH/Telnet) -->
             <app-terminal-tab
-              *ngIf="session.protocol !== 'webfig'"
+              *ngIf="session.protocol !== 'webfig' && session.protocol !== 'winbox' && session.protocol !== 'webbox'"
               [device]="session.device"
               [protocol]="session.protocol"
               (requestClose)="closeSession(i)"
@@ -337,3 +347,27 @@
   </c-modal-footer>
 </c-modal>
 
+
+<!-- Gateway Notice Modal (Install / Update Required) -->
+<c-modal #GatewayNoticeModal backdrop="static" [(visible)]="showGatewayNoticeModal" id="cmGatewayNoticeModal">
+  <c-modal-header [ngClass]="gatewayNoticeType === 'update_required' ? 'bg-warning text-dark' : 'bg-info text-white'">
+    <h6 cModalTitle class="m-0">
+      <i class="fa-solid me-2" [ngClass]="gatewayNoticeType === 'update_required' ? 'fa-triangle-exclamation' : 'fa-server'"></i>
+      {{ gatewayNoticeTitle }}
+    </h6>
+    <button cButtonClose (click)="showGatewayNoticeModal=false"></button>
+  </c-modal-header>
+  <c-modal-body class="p-4 text-center">
+    <div class="mb-3">
+      <i class="fa-solid fa-3x" [ngClass]="gatewayNoticeType === 'update_required' ? 'fa-arrow-up-right-from-square text-warning' : 'fa-server text-info'"></i>
+    </div>
+    <h5 class="fw-bold mb-2">{{ gatewayNoticeTitle }}</h5>
+    <p class="text-muted mb-4">{{ gatewayNoticeMessage }}</p>
+    <div class="d-flex justify-content-center gap-2">
+      <a [href]="gatewayNoticeDocUrl" target="_blank" class="btn btn-primary px-3">
+        <i class="fa-solid fa-book-open me-1"></i> Update Instructions
+      </a>
+      <button cButton color="secondary" (click)="showGatewayNoticeModal=false">Close</button>
+    </div>
+  </c-modal-body>
+</c-modal>

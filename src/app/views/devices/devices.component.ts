@@ -111,6 +111,11 @@ export class DevicesComponent implements OnInit, OnDestroy {
   public filteredDetailsResults: any[] = [];
   public showWebAccessModal: boolean = false;
   public currentDeviceInfo: any = null;
+  public showGatewayNoticeModal: boolean = false;
+  public gatewayNoticeType: 'not_installed' | 'update_required' = 'not_installed';
+  public gatewayNoticeTitle: string = '';
+  public gatewayNoticeMessage: string = '';
+  public gatewayNoticeDocUrl: string = '';
   public addDeviceModalVisible: boolean = false;
   public addDeviceStep: number = 1;
   public csvFile: File | null = null;
@@ -928,6 +933,46 @@ export class DevicesComponent implements OnInit, OnDestroy {
 
   closeWebAccessModal() {
     this.showWebAccessModal = false;
+  }
+
+  isMikrotik(device: any): boolean {
+    if (!device) return false;
+    return !device.device_type || device.device_type === 'mikrotik' || device.brand === 'mikrotik';
+  }
+
+  openWebboxAccess(device?: any) {
+    const dev = device || this.currentDeviceInfo;
+    if (!dev || !dev.id) return;
+    this.showWebAccessModal = false;
+
+    this.data_provider.MikroWizardRPC.sendJsonRequest('/api/terminal/init', {
+      device_id: dev.id,
+      protocol: 'winbox',
+      connection_type: 'winbox'
+    }).then((res: any) => {
+      if (res && res.token) {
+        const url = res.web_url || ('/terminal-ws/winbox.html?token=' + res.token);
+        window.open(url, '_blank');
+      } else if (res && res.status === 'gateway_update_required') {
+        this.gatewayNoticeType = 'update_required';
+        this.gatewayNoticeTitle = 'Terminal Gateway Update Required';
+        this.gatewayNoticeMessage = res.error || 'Your Terminal Gateway container is outdated and does not support WebBox. Please update the Terminal Gateway Docker container to the latest version to use this feature.';
+        this.gatewayNoticeDocUrl = res.doc_url || 'https://mikrowizard.com/docs/updating-terminal-gateway-addon/';
+        this.showGatewayNoticeModal = true;
+      } else if (res && res.status === 'gateway_not_installed') {
+        this.gatewayNoticeType = 'not_installed';
+        this.gatewayNoticeTitle = 'Terminal Gateway Not Installed';
+        this.gatewayNoticeMessage = res.error || 'The MikroWizard Terminal Gateway addon is required to start WebBox sessions. Please ask your administrator to install it.';
+        this.gatewayNoticeDocUrl = res.doc_url || 'https://mikrowizard.com/docs/installing-terminal-gatway-addon/';
+        this.showGatewayNoticeModal = true;
+      } else if (res && res.status === 'pam_required') {
+        this.show_toast('PAM Access Required', res.error || 'PAM access is not enabled for this user.', 'warning');
+      } else {
+        this.show_toast('Error', res?.error || 'Failed to start WebBox session.', 'danger');
+      }
+    }).catch((err: any) => {
+      this.show_toast('Error', 'Failed to initialize WebBox session.', 'danger');
+    });
   }
 
   openAddDeviceModal() {

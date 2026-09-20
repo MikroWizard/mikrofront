@@ -275,10 +275,12 @@ export class SessionsListComponent implements OnInit {
   }
 
   public isWebfigSession: boolean = false;
+  public sessionProtocol: string = 'terminal';
 
-  openShareModal(sessionId: string, isWebfig: boolean = false) {
+  openShareModal(sessionId: string, isWebfig: boolean = false, protocol: string = '') {
     this.shareSessionId = sessionId;
     this.isWebfigSession = isWebfig;
+    this.sessionProtocol = protocol || (isWebfig ? 'webfig' : 'terminal');
     this.shareUrl = '';
     this.shareToken = '';
     this.shareRole = 'observer';
@@ -321,47 +323,91 @@ export class SessionsListComponent implements OnInit {
       if (res.status === 'success') {
         this.shareUrl = res.share_url;
         this.shareToken = res.token;
+        if (res.protocol) {
+          this.sessionProtocol = res.protocol;
+        }
       } else {
         this.show_toast('Error', res.error || 'Failed to share session', 'danger');
       }
     });
   }
 
-  watchSession(sessionId: string, isWebfig: boolean = false) {
+  watchSession(sessionId: string, isWebfig: boolean = false, protocol: string = '') {
+    const newTab = window.open('about:blank', '_blank');
     const adminPass = Math.random().toString(36).slice(-8);
     const sharePromise = isWebfig
-      ? this.data_provider.shareWebfigSession(sessionId, 'observer', 'Admin Watch', 'guest', '', adminPass, false, false)
-      : this.data_provider.shareSession(sessionId, 'observer', 'Admin Watch', 'guest', '', adminPass, false, false);
+      ? this.data_provider.shareWebfigSession(sessionId, 'observer', '', 'admin', '', adminPass, false, false)
+      : this.data_provider.shareSession(sessionId, 'observer', '', 'admin', '', adminPass, false, false);
 
     sharePromise.then((res: any) => {
       if (res.status === 'success') {
-        const routePath = isWebfig ? '/#/webfig-share?token=' : '/#/terminal-share?token=';
-        window.open(this.origin + routePath + res.token + '&password=' + adminPass, '_blank');
+        const isWinbox = protocol === 'winbox' || protocol === 'webbox' || res.protocol === 'winbox' || res.protocol === 'webbox';
+        let routeUrl: string;
+        if (isWinbox) {
+          routeUrl = this.origin + '/terminal-ws/winbox.html?token=' + res.token + '&password=' + adminPass + '&role=observer';
+        } else if (isWebfig) {
+          routeUrl = this.origin + '/#/webfig-share?token=' + res.token + '&password=' + adminPass;
+        } else {
+          routeUrl = this.origin + '/#/terminal-share?token=' + res.token + '&password=' + adminPass;
+        }
+        if (newTab) {
+          newTab.location.href = routeUrl;
+        } else {
+          window.open(routeUrl, '_blank');
+        }
       } else {
+        if (newTab) newTab.close();
         this.show_toast('Error', res.error || 'Failed to watch session', 'danger');
       }
+    }).catch(() => {
+      if (newTab) newTab.close();
+      this.show_toast('Error', 'Failed to watch session', 'danger');
     });
   }
 
-  collaborateSession(sessionId: string, isWebfig: boolean = false) {
+  collaborateSession(sessionId: string, isWebfig: boolean = false, protocol: string = '') {
+    const newTab = window.open('about:blank', '_blank');
     const adminPass = Math.random().toString(36).slice(-8);
     const sharePromise = isWebfig
-      ? this.data_provider.shareWebfigSession(sessionId, 'collaborator', 'Admin Collab', 'guest', '', adminPass, false, false)
-      : this.data_provider.shareSession(sessionId, 'collaborator', 'Admin Collab', 'guest', '', adminPass, false, false);
+      ? this.data_provider.shareWebfigSession(sessionId, 'collaborator', '', 'admin', '', adminPass, false, false)
+      : this.data_provider.shareSession(sessionId, 'collaborator', '', 'admin', '', adminPass, false, false);
 
     sharePromise.then((res: any) => {
       if (res.status === 'success') {
-        const routePath = isWebfig ? '/#/webfig-share?token=' : '/#/terminal-share?token=';
-        window.open(this.origin + routePath + res.token + '&password=' + adminPass, '_blank');
+        const isWinbox = protocol === 'winbox' || protocol === 'webbox' || res.protocol === 'winbox' || res.protocol === 'webbox';
+        let routeUrl: string;
+        if (isWinbox) {
+          routeUrl = this.origin + '/terminal-ws/winbox.html?token=' + res.token + '&password=' + adminPass + '&role=collaborator';
+        } else if (isWebfig) {
+          routeUrl = this.origin + '/#/webfig-share?token=' + res.token + '&password=' + adminPass;
+        } else {
+          routeUrl = this.origin + '/#/terminal-share?token=' + res.token + '&password=' + adminPass;
+        }
+        if (newTab) {
+          newTab.location.href = routeUrl;
+        } else {
+          window.open(routeUrl, '_blank');
+        }
       } else {
+        if (newTab) newTab.close();
         this.show_toast('Error', res.error || 'Failed to collaborate on session', 'danger');
       }
+    }).catch(() => {
+      if (newTab) newTab.close();
+      this.show_toast('Error', 'Failed to collaborate on session', 'danger');
     });
   }
 
   copyShareUrl() {
-    const routePath = this.isWebfigSession ? '/#/webfig-share?token=' : '/#/terminal-share?token=';
-    const url = this.origin + routePath + this.shareToken;
+    const isWinbox = this.sessionProtocol === 'winbox' || this.sessionProtocol === 'webbox';
+    let url: string;
+    if (isWinbox) {
+      url = this.origin + '/terminal-ws/winbox.html?token=' + this.shareToken;
+    } else if (this.isWebfigSession) {
+      url = this.origin + '/#/webfig-share?token=' + this.shareToken;
+    } else {
+      url = this.origin + '/#/terminal-share?token=' + this.shareToken;
+    }
     if (this.sharePassword) {
       navigator.clipboard.writeText(url + '&password=' + this.sharePassword).then(() => {
         this.show_toast('Success', 'Share URL (with password) copied to clipboard', 'success');

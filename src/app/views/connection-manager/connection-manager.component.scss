@@ -261,6 +261,30 @@
   position: relative;
 }
 
+.cm-tab-pane {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  visibility: visible;
+  opacity: 1;
+  z-index: 1;
+  pointer-events: auto;
+
+  &:has(.modal.show),
+  &:has(.show) {
+    z-index: 1055 !important;
+  }
+
+  &.cm-tab-hidden {
+    visibility: hidden !important;
+    opacity: 0 !important;
+    z-index: 0 !important;
+    pointer-events: none !important;
+  }
+}
+
 .cm-content c-tab-content,
 .cm-content ::ng-deep .tab-content {
   height: 100%;

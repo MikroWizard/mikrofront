@@ -52,6 +52,14 @@
         <div class="mw-protocol-actions d-flex gap-1 ms-2 align-items-center">
           <i class="fa-star" [class.fa-solid]="dev.is_favorite" [class.fa-regular]="!dev.is_favorite" [class.text-warning]="dev.is_favorite" [class.text-secondary]="!dev.is_favorite" (click)="toggleFavorite(dev, $event)" style="cursor: pointer; font-size: 0.8rem; margin-right: 4px;" title="Toggle Favorite"></i>
         
+          <!-- WebBox (WinBox): only for MikroTik devices -->
+          <button class="btn btn-link p-0 mw-proto-btn"
+                  *ngIf="ispro && isMikrotik(dev)"
+                  (click)="connectProtocol(dev, 'winbox')"
+                  title="Open WebBox (Remote WinBox)">
+            <i class="fa-solid fa-desktop text-primary" style="font-size: 0.8rem;"></i>
+          </button>
+
           <!-- WebFig: only for MikroTik devices -->
           <button class="btn btn-link p-0 mw-proto-btn"
                   *ngIf="ispro && hasProtocol(dev, 'webfig')"

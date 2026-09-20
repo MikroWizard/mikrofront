@@ -15,7 +15,7 @@
     </button>
   </div>
 
-  <c-modal [visible]="showShareModal" (visibleChange)="showShareModal = $event" alignment="center">
+  <c-modal [backdrop]="false" [visible]="showShareModal" (visibleChange)="showShareModal = $event" alignment="center">
     <c-modal-header class="text-dark">
       <h5 cModalTitle>Share Session</h5>
       <button cButtonClose (click)="showShareModal = false"></button>

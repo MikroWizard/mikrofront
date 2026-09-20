@@ -89,9 +89,9 @@
                 <small class="text-muted" *ngIf="item.username">{{item.username}}</small>
               </td>
               <td>
-                <c-badge [color]="(item.protocol === 'webfig' || item.stype === 'webfig') ? 'warning' : (item.protocol === 'ssh' ? 'dark' : 'info')">
-                  <i [class]="(item.protocol === 'webfig' || item.stype === 'webfig') ? 'fas fa-globe me-1' : 'fas fa-terminal me-1'"></i>
-                  {{(item.protocol || item.stype || 'terminal') | uppercase}}
+                <c-badge [color]="(item.protocol === 'webfig' || item.stype === 'webfig') ? 'warning' : ((item.protocol === 'winbox' || item.protocol === 'webbox') ? 'success' : (item.protocol === 'ssh' ? 'dark' : 'info'))">
+                  <i [class]="(item.protocol === 'webfig' || item.stype === 'webfig') ? 'fas fa-globe me-1' : ((item.protocol === 'winbox' || item.protocol === 'webbox') ? 'fas fa-desktop me-1' : 'fas fa-terminal me-1')"></i>
+                  {{(item.protocol === 'winbox' || item.protocol === 'webbox' ? 'WEBBOX' : (item.protocol || item.stype || 'terminal')) | uppercase}}
                 </c-badge>
               </td>
               <td>
@@ -116,12 +116,17 @@
               <td style="width: 100px" class="text-center">
                 <!-- For WebFig: Quick button is Monitor Live -->
                 <button *ngIf="item.protocol === 'webfig' || item.stype === 'webfig'" cButton size="sm" color="warning" variant="outline" class="me-1"
-                  (click)="watchSession(item.id, true)" pTooltip="Monitor Live (Watch WebFig)">
+                  (click)="watchSession(item.id, true, 'webfig')" pTooltip="Monitor Live (Watch WebFig)">
+                  <i class="fas fa-desktop"></i>
+                </button>
+                <!-- For WebBox: Quick button is Join WebBox -->
+                <button *ngIf="item.protocol === 'winbox' || item.protocol === 'webbox'" cButton size="sm" color="success" variant="outline" class="me-1"
+                  (click)="collaborateSession(item.id, false, item.protocol)" pTooltip="Join WebBox Session">
                   <i class="fas fa-desktop"></i>
                 </button>
                 <!-- For Terminal: Quick button is Join Session -->
-                <button *ngIf="item.protocol !== 'webfig' && item.stype !== 'webfig'" cButton size="sm" color="info" variant="outline" class="me-1"
-                  (click)="collaborateSession(item.id, false)" pTooltip="Join Terminal Session">
+                <button *ngIf="item.protocol !== 'webfig' && item.stype !== 'webfig' && item.protocol !== 'winbox' && item.protocol !== 'webbox'" cButton size="sm" color="info" variant="outline" class="me-1"
+                  (click)="collaborateSession(item.id, false, item.protocol)" pTooltip="Join Terminal Session">
                   <i class="fas fa-right-to-bracket"></i>
                 </button>
 
@@ -130,14 +135,18 @@
                 </button>
                 <mat-menu #menu="matMenu">
                   <div cListGroup>
-                    <button size="sm" (click)="watchSession(item.id, item.protocol === 'webfig' || item.stype === 'webfig')" cListGroupItem style="padding: 6px 10px; border:none; cursor: pointer;">
-                      <i [class]="(item.protocol === 'webfig' || item.stype === 'webfig') ? 'fas fa-desktop text-warning me-2' : 'fas fa-eye text-primary me-2'"></i>
+                    <button size="sm" (click)="watchSession(item.id, item.protocol === 'webfig' || item.stype === 'webfig', item.protocol)" cListGroupItem style="padding: 6px 10px; border:none; cursor: pointer;">
+                      <i [class]="(item.protocol === 'webfig' || item.stype === 'webfig') ? 'fas fa-desktop text-warning me-2' : ((item.protocol === 'winbox' || item.protocol === 'webbox') ? 'fas fa-eye text-success me-2' : 'fas fa-eye text-primary me-2')"></i>
                       <small>{{(item.protocol === 'webfig' || item.stype === 'webfig') ? 'Monitor Live' : 'Watch'}}</small>
+                    </button>
+                    <button size="sm" (click)="collaborateSession(item.id, item.protocol === 'webfig' || item.stype === 'webfig', item.protocol)" cListGroupItem style="padding: 6px 10px; border:none; cursor: pointer;">
+                      <i class="fas fa-keyboard text-warning me-2"></i>
+                      <small>Collaborate</small>
                     </button>
                     <button size="sm" (click)="loadParticipants(item.id, item.protocol === 'webfig' || item.stype === 'webfig')" cListGroupItem style="padding: 6px 10px; border:none; cursor: pointer;">
                       <i class="fas fa-users text-info me-2"></i><small>Participants</small>
                     </button>
-                    <button size="sm" (click)="openShareModal(item.id, item.protocol === 'webfig' || item.stype === 'webfig')" cListGroupItem style="padding: 6px 10px; border:none; cursor: pointer;">
+                    <button size="sm" (click)="openShareModal(item.id, item.protocol === 'webfig' || item.stype === 'webfig', item.protocol)" cListGroupItem style="padding: 6px 10px; border:none; cursor: pointer;">
                       <i class="fas fa-share-alt text-success me-2"></i><small>Share</small>
                     </button>
                     <button *ngIf="item.status === 'active'" size="sm" (click)="confirmKillSession(item.id, item.protocol === 'webfig' || item.stype === 'webfig')" cListGroupItem style="padding: 6px 10px; border:none; cursor: pointer;">

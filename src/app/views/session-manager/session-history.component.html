@@ -95,7 +95,7 @@
                   <small class="text-muted" *ngIf="item.username">{{item.username}}</small>
                 </td>
                 <td>
-                  <c-badge [color]="item.protocol === 'ssh' ? 'dark' : 'info'">{{item.protocol}}</c-badge>
+                  <c-badge [color]="item.protocol === 'winbox' || item.protocol === 'webbox' ? 'success' : (item.protocol === 'ssh' ? 'dark' : 'info')">{{item.protocol === 'winbox' || item.protocol === 'webbox' ? 'WebBox' : (item.protocol || 'terminal')}}</c-badge>
                 </td>
                 <td>
                   <c-badge [color]="item.status === 'active' ? 'success' : 'secondary'">{{item.status}}</c-badge>
@@ -201,18 +201,6 @@
             </div>
           </c-col>
         </c-row>
-        <td>
-          <div *ngIf="selectedSession.participants && selectedSession.participants.length > 0">
-            <div *ngIf="selectedSession.participants.length <= 5" class="small text-muted mt-1">
-              <div *ngFor="let p of selectedSession.participants" class="mb-1">
-
-              </div>
-            </div>
-          </div>
-          <div *ngIf="!selectedSession.participants || selectedSession.participants.length === 0">
-            <span class="badge bg-secondary">0 Participants</span>
-          </div>
-        </td>
         <h6 class="mb-3 text-muted fw-bold text-uppercase border-bottom pb-2">Participants
           ({{selectedSession.participants?.length || 0}})</h6>
         <div *ngIf="selectedSession.participants?.length > 0; else noParticipants">

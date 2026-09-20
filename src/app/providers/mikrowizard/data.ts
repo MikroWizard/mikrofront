@@ -893,6 +893,10 @@ export class dataProvider {
         return this.MikroWizardRPC.sendJsonRequest("/api/terminal/favorites", { favorites: device_ids });
     }
 
+    getTerminalGatewayStatus() {
+        return this.MikroWizardRPC.sendHttpGetRequest("/api/terminal/gateway/status");
+    }
+
 
     customerGetTickets() {
         return this.MikroWizardRPC.sendHttpGetRequest("/api/customer/tickets");

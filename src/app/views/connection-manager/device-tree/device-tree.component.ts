@@ -154,6 +154,11 @@ export class DeviceTreeComponent implements OnInit {
     this.selectDevice(device);
   }
 
+  isMikrotik(device: any): boolean {
+    if (!device) return false;
+    return !device.device_type || device.device_type === 'mikrotik' || device.brand === 'mikrotik';
+  }
+
   connectProtocol(device: any, protocol: string) {
     this.selectDevice(device, protocol);
   }
@@ -167,7 +172,7 @@ export class DeviceTreeComponent implements OnInit {
       }
       
       // Defaults if not specified by backend
-      if (proto === 'webfig') return (device.device_type === 'mikrotik' || device.brand === 'mikrotik');
+      if (proto === 'webfig' || proto === 'winbox' || proto === 'webbox') return (!device.device_type || device.device_type === 'mikrotik' || device.brand === 'mikrotik');
       
       // Only default to ssh true for mikrotik devices without connection_types
       // If it's a non-mikrotik device without connection_types, assume ssh is available

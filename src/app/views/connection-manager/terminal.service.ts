@@ -38,11 +38,15 @@ const SETTINGS_STORAGE_KEY = 'mikrowizard_terminal_settings';
 export class TerminalService {
   constructor(private data_provider: dataProvider) {}
 
-  initSession(deviceId: number, brand?: string): Promise<SessionInitResponse> {
-    return this.data_provider.MikroWizardRPC.sendJsonRequest('/api/terminal/init', {
+  initSession(deviceId: number, brand?: string, protocol?: string): Promise<SessionInitResponse> {
+    const payload: any = {
       device_id: deviceId,
       device_brand: brand || 'mikrotik',
-    });
+    };
+    if (protocol) {
+      payload.protocol = protocol;
+    }
+    return this.data_provider.MikroWizardRPC.sendJsonRequest('/api/terminal/init', payload);
   }
 
   loadLocalSettings(): TerminalSettings {

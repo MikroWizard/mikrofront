@@ -89,7 +89,7 @@
           <small class="text-muted">{{item.device_ip}}</small>
         </td>
         <td><i class="fas fa-user me-1 text-muted"></i>{{item.user_name || item.user_id}}</td>
-        <td><c-badge [color]="item.protocol === 'ssh' ? 'dark' : 'info'">{{item.protocol}}</c-badge></td>
+        <td><c-badge [color]="item.protocol === 'winbox' || item.protocol === 'webbox' ? 'success' : (item.protocol === 'ssh' ? 'dark' : 'info')">{{item.protocol === 'winbox' || item.protocol === 'webbox' ? 'WebBox' : (item.protocol || 'terminal')}}</c-badge></td>
         <td><small>{{item.started_fmt}}</small></td>
         <td class="text-center">
           <button cButton size="sm" color="primary" variant="outline"
