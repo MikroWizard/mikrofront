@@ -28,10 +28,26 @@ export class DevicesComponent implements OnInit, OnDestroy {
   public uname!: string;
   public tz!: string;
   public ispro:boolean=false;
-  public deviceTab: string = 'mikrotik';
+  public deviceTab: string = 'all';
+
+  public get mikrotikCount(): number {
+    if (!this.source || !Array.isArray(this.source)) return 0;
+    return this.source.filter((d: any) => this.isMikrotik(d)).length;
+  }
+
+  public get nonMikrotikCount(): number {
+    if (!this.source || !Array.isArray(this.source)) return 0;
+    return this.source.filter((d: any) => !this.isMikrotik(d)).length;
+  }
+
   public get displayDevices(): any[] {
     if (!this.source || !Array.isArray(this.source)) return [];
-    return this.source.filter((d: any) => d.device_type === 'mikrotik' || !d.device_type);
+    if (this.deviceTab === 'mikrotik') {
+      return this.source.filter((d: any) => this.isMikrotik(d));
+    } else if (this.deviceTab === 'nonmikrotik') {
+      return this.source.filter((d: any) => !this.isMikrotik(d));
+    }
+    return this.source;
   }
 
   public deviceRecordingsModalVisible: boolean = false;
@@ -130,6 +146,7 @@ export class DevicesComponent implements OnInit, OnDestroy {
     protocol: '', port: '', enable_password: '', group_ids: '', mac: ''
   };
   public availableBrands: any[] = [];
+  public get brands(): any[] { return this.availableBrands; }
   public availableTemplates: any[] = [];
   public filteredTemplates: any[] = [];
   public validationResults: any[] = [];
@@ -144,6 +161,30 @@ export class DevicesComponent implements OnInit, OnDestroy {
   public selected_rows: any[] = []; // Used by p-table selection
   public Selectedrows: any[] = []; // Legacy ID array used by actions
   public rows: any = []; // For legacy internal use
+
+  // Unified Modal & Multi-device State
+  public unifiedModalVisible: boolean = false;
+  public unifiedModalMode: 'add' | 'edit' = 'add';
+  public unifiedCategory: 'mikrotik' | 'other' = 'mikrotik';
+  public savingUnifiedDevice: boolean = false;
+  public savingUnifiedStatus: string = '';
+  public brandTemplates: any[] = [];
+  public modalGroupSearch: string = '';
+  public filteredModalGroups: any[] = [];
+  public showModalGroupDropdown: boolean = false;
+
+  public addMikrotikData: any = {
+    ip: '', username: 'admin', password: '', port: 8728, ssl: false,
+    mikrotik_protocol: 'ssh', connection_port: 22, group_ids: []
+  };
+
+  public addNonMikrotikData: any = {
+    name: '', ip: '', device_type: 'generic', device_model: '',
+    username: '', password: '', enable_password: '', template_id: null,
+    protocol: 'ssh', port: 22, group_ids: [], ssh_auth_mode: 'credential'
+  };
+
+  public editNonMikrotikData: any = {};
 
   public deviceExportModalVisible: boolean = false;
   public deviceExportColumns = [
@@ -212,8 +253,73 @@ export class DevicesComponent implements OnInit, OnDestroy {
 
   onSelectionChange(value: any[]) {
     this.selected_rows = value;
-    this.Selectedrows = value.map(item => item.id);
+    this.Selectedrows = value ? value.map(item => item.id) : [];
     this.rows = value; // For legacy compat if needed
+  }
+
+  get selectedMikrotikCount(): number {
+    if (!this.selected_rows || !Array.isArray(this.selected_rows)) return 0;
+    return this.selected_rows.filter(d => this.isMikrotik(d)).length;
+  }
+
+  get selectedNonMikrotikCount(): number {
+    if (!this.selected_rows || !Array.isArray(this.selected_rows)) return 0;
+    return this.selected_rows.filter(d => !this.isMikrotik(d)).length;
+  }
+
+  triggerBatchAction(action: string) {
+    if (!this.selected_rows || this.selected_rows.length === 0) {
+      this.show_toast("Warning", "Please select at least one device first", "warning");
+      return;
+    }
+
+    const mikrotikDevices = this.selected_rows.filter(d => this.isMikrotik(d));
+    const nonMikrotikDevices = this.selected_rows.filter(d => !this.isMikrotik(d));
+
+    // Batch maintenance actions (firmware check, update, upgrade, reboot) are strictly MikroTik only
+    if (action !== 'delete') {
+      if (mikrotikDevices.length === 0) {
+        this.show_toast(
+          "Warning",
+          "Batch maintenance actions (Firmware / Reboot) are only available for MikroTik devices. For other brands, only Delete is supported.",
+          "warning"
+        );
+        return;
+      }
+
+      // Filter Selectedrows to only MikroTik devices
+      this.Selectedrows = mikrotikDevices.map(item => item.id);
+      if (mikrotikDevices.length === 1) {
+        this.selected_device = mikrotikDevices[0];
+      } else {
+        this.selected_device = { name: `${mikrotikDevices.length} MikroTik devices` };
+      }
+
+      if (nonMikrotikDevices.length > 0) {
+        this.show_toast(
+          "Notice",
+          `Only ${mikrotikDevices.length} MikroTik device(s) will be processed. ${nonMikrotikDevices.length} non-MikroTik device(s) are excluded.`,
+          "info"
+        );
+      }
+    } else {
+      // Universal batch delete: applies to all selected devices
+      this.Selectedrows = this.selected_rows.map(item => item.id);
+      if (this.selected_rows.length === 1) {
+        this.selected_device = this.selected_rows[0];
+      } else {
+        this.selected_device = { name: `${this.selected_rows.length} selected devices` };
+      }
+    }
+
+    this.ConfirmAction = action;
+    this.ConfirmModalVisible = true;
+  }
+
+  clearSelection() {
+    this.selected_rows = [];
+    this.Selectedrows = [];
+    this.rows = [];
   }
   
   ngOnInit(): void {
@@ -260,9 +366,13 @@ export class DevicesComponent implements OnInit, OnDestroy {
   single_device_action(dev: any, action: string) {
     this.selected_rows = [];
     this.Selectedrows = [dev["id"]];
+    this.selected_device = dev;
     switch (action) {
       case "edit":
         this.edit_device_form(dev);
+        break;
+      case "connect":
+        this.connectDevice(dev);
         break;
       case "firmware":
         this.check_firmware();
@@ -298,30 +408,346 @@ export class DevicesComponent implements OnInit, OnDestroy {
     }
   }
 
-  edit_device_form(dev: any) {
-    var _self = this;
-    this.selected_device = dev;
-    
-    let method = this.ispro ? this.data_provider.get_editform_pro(dev.id) : this.data_provider.get_editform(dev.id);
-    method.then((res) => {
-      if ("error" in res) {
-        if ("error" in res && res.error.indexOf("Unauthorized")) {
-          _self.show_toast(
-            "Error",
-            "You are not authorized to perform this action",
-            "danger"
-          );
-        }
-      } else {
-        this.selected_device["editform"] = res;
-        const types = res["connection_types"] || [];
-        res["mikrotik_protocol"] = types.includes("ssh") ? "ssh" : (types.includes("telnet") ? "telnet" : "ssh");
-        res["mikrotik_webfig"] = types.includes("webfig");
-        res["connection_port"] = res["connection_port"] || (res["mikrotik_protocol"] === "telnet" ? 23 : 22);
-        this.EditDevModalVisible = true;
-      }
-    });
+  setDeviceTab(tab: string) {
+    this.deviceTab = tab;
   }
+
+  getBrandIcon(device: any): string {
+    const basePath = './assets/Network-Icons-SVG/';
+    if (this.isMikrotik(device)) {
+      return basePath + 'logo-mikrotik.svg';
+    }
+    const brand = (device.brand || device.device_type || '').toLowerCase();
+    const brandMap: Record<string, string> = {
+      'cisco': 'logo-cisco.svg',
+      'cisco_ios': 'logo-cisco.svg',
+      'cisco_xr': 'logo-cisco.svg',
+      'cisco_nxos': 'logo-cisco.svg',
+      'huawei': 'logo-huawei.svg',
+      'juniper': 'logo-juniper.svg',
+      'junos': 'logo-juniper.svg',
+      'hpe': 'logo-hpe.svg',
+      'aruba': 'logo-aruba.svg',
+      'hpe/aruba': 'logo-aruba.svg',
+      'ubiquiti': 'logo-ubiquiti.svg',
+      'ubnt': 'logo-ubiquiti.svg',
+      'fortinet': 'logo-fortinet.svg',
+      'fortigate': 'logo-fortinet.svg',
+      'paloalto': 'logo-paloalto.svg',
+      'palo_alto': 'logo-paloalto.svg',
+      'dell': 'logo-dell.svg',
+      'arista': 'logo-arista.svg',
+      'dlink': 'logo-dlink.svg',
+      'd-link': 'logo-dlink.svg',
+      'tplink': 'logo-tplink.svg',
+      'tp-link': 'logo-tplink.svg',
+      'zyxel': 'logo-zyxel.svg',
+      'extreme': 'logo-extreme.svg',
+      'netgear': 'logo-netgear.svg',
+      'brocade': 'logo-brocade.svg',
+      'f5': 'logo-f5.svg',
+      'ruckus': 'logo-ruckus.svg',
+      'linux': 'generic-server-1.svg',
+      'windows': 'generic-server-2.svg',
+      'generic': 'generic-router-colour.svg'
+    };
+    if (brandMap[brand]) {
+      return basePath + brandMap[brand];
+    }
+    return basePath + 'generic-router-colour.svg';
+  }
+
+  hasProtocol(device: any, proto: string): boolean {
+    if (!device) return false;
+    const connTypes = device.connection_types;
+    if (connTypes && Array.isArray(connTypes) && connTypes.length > 0) {
+      if (connTypes.includes(proto)) return true;
+    }
+    const protos = device.protocols;
+    if (protos && Array.isArray(protos) && protos.length > 0) {
+      if (protos.includes(proto)) return true;
+    }
+    if (device.protocol && device.protocol.toLowerCase() === proto.toLowerCase()) {
+      return true;
+    }
+    if (this.isMikrotik(device)) {
+      if (proto === 'api') return true;
+      if (proto === 'ssh') {
+        return !connTypes || connTypes.includes('ssh') || !connTypes.includes('telnet');
+      }
+      if (proto === 'telnet') return connTypes && connTypes.includes('telnet');
+      if (proto === 'webfig') return connTypes && connTypes.includes('webfig');
+      if (proto === 'winbox' || proto === 'webbox') return true;
+    } else {
+      if (proto === 'ssh' && (!device.protocol || device.protocol === 'ssh')) return true;
+      if (proto === 'telnet' && device.protocol === 'telnet') return true;
+      if (proto === 'rdp' && (device.protocol === 'rdp' || device.device_type === 'windows')) return true;
+      if (proto === 'vnc' && device.protocol === 'vnc') return true;
+    }
+    return false;
+  }
+
+  connectDevice(device: any, protocol?: string) {
+    if (!this.ispro) {
+      this.show_toast('Pro Feature', 'Interactive terminal and PAM sessions require a MikroWizard Pro license.', 'warning');
+      return;
+    }
+    const navExtras: any = {};
+    if (protocol) {
+      navExtras.queryParams = { protocol };
+    }
+    this.router.navigate(['/connection-manager', device.id], navExtras);
+  }
+
+  getGroupName(gid: any): string {
+    if (!this.groups || !Array.isArray(this.groups)) return gid;
+    const g = this.groups.find((x: any) => x.id == gid);
+    return g ? g.name : gid;
+  }
+
+  isGroupSelected(gid: any, targetData: any): boolean {
+    return !!(targetData?.group_ids && targetData.group_ids.includes(gid));
+  }
+
+  filterModalGroups(event: any): void {
+    const query = (event?.target?.value || '').toLowerCase();
+    if (!query) {
+      this.filteredModalGroups = [...(this.groups || [])];
+      return;
+    }
+    this.filteredModalGroups = (this.groups || []).filter((g: any) =>
+      g.name && g.name.toLowerCase().includes(query)
+    );
+  }
+
+  onFocusModalGroups(targetData: any): void {
+    this.showModalGroupDropdown = true;
+    if (!this.modalGroupSearch) {
+      this.filteredModalGroups = [...(this.groups || [])];
+    } else {
+      const q = this.modalGroupSearch.toLowerCase();
+      this.filteredModalGroups = (this.groups || []).filter((g: any) =>
+        g.name && g.name.toLowerCase().includes(q)
+      );
+    }
+  }
+
+  clearModalGroupSearch(): void {
+    this.modalGroupSearch = '';
+    this.filteredModalGroups = [...(this.groups || [])];
+  }
+
+  toggleModalGroupDropdown(targetData: any): void {
+    this.showModalGroupDropdown = !this.showModalGroupDropdown;
+    if (this.showModalGroupDropdown) {
+      this.onFocusModalGroups(targetData);
+    }
+  }
+
+  closeModalGroupDropdown(): void {
+    this.showModalGroupDropdown = false;
+  }
+
+  toggleModalGroup(g: any, targetData: any): void {
+    if (!targetData.group_ids) {
+      targetData.group_ids = [];
+    }
+    const idx = targetData.group_ids.indexOf(g.id);
+    if (idx > -1) {
+      targetData.group_ids.splice(idx, 1);
+    } else {
+      targetData.group_ids.push(g.id);
+    }
+  }
+
+  selectAllFilteredModalGroups(targetData: any): void {
+    if (!targetData.group_ids) {
+      targetData.group_ids = [];
+    }
+    for (const g of this.filteredModalGroups) {
+      if (!targetData.group_ids.includes(g.id)) {
+        targetData.group_ids.push(g.id);
+      }
+    }
+  }
+
+  clearAllModalGroups(targetData: any): void {
+    if (targetData) {
+      targetData.group_ids = [];
+    }
+  }
+
+  selectModalGroup(g: any, targetData: any): void {
+    this.toggleModalGroup(g, targetData);
+  }
+
+  removeModalGroup(gid: any, targetData: any): void {
+    if (!targetData.group_ids) return;
+    const idx = targetData.group_ids.indexOf(gid);
+    if (idx > -1) {
+      targetData.group_ids.splice(idx, 1);
+    }
+  }
+
+  hideModalGroupDropdown(): void {
+    setTimeout(() => this.showModalGroupDropdown = false, 250);
+  }
+
+  onBrandChangeUnified() {
+    const devType = this.unifiedModalMode === 'add' ? this.addNonMikrotikData.device_type : this.editNonMikrotikData.device_type;
+    if (devType) {
+      this.data_provider.listTemplates({ brand_id: devType }).then((res: any) => {
+        this.brandTemplates = (res.data || res || []);
+        if (this.unifiedModalMode === 'add') {
+          if (this.brandTemplates.length && !this.addNonMikrotikData.template_id) {
+            this.addNonMikrotikData.template_id = this.brandTemplates[0].id;
+          }
+        } else {
+          if (this.brandTemplates.length && !this.editNonMikrotikData.template_id) {
+            this.editNonMikrotikData.template_id = this.brandTemplates[0].id;
+          }
+        }
+      });
+    } else {
+      this.brandTemplates = [];
+    }
+  }
+
+  templateHasEscalation(data: any): boolean {
+    if (!data || !data.template_id) return false;
+    const t = this.brandTemplates.find((x: any) => x.id == data.template_id);
+    return !!(t && t.privilege_escalation && t.privilege_escalation.command);
+  }
+
+  getAgentModeDisplay(data: any): string {
+    if (!data || !data['agent_modes']) return 'default';
+    const m = data['agent_modes'];
+    if (m.linux === 'none' && m.darwin === 'none' && m.freebsd === 'none') return 'none';
+    if (m.linux === 'strict' && m.darwin === 'strict' && m.freebsd === 'strict') return 'strict';
+    if (m.linux === 'strict' && m.darwin === 'compatible' && m.freebsd === 'compatible') return 'strict_compat';
+    return 'default';
+  }
+
+  setAgentModeOverride(val: string, data: any) {
+    let modes = null;
+    if (val === 'none') {
+      modes = { linux: 'none', darwin: 'none', freebsd: 'none' };
+    } else if (val === 'strict') {
+      modes = { linux: 'strict', darwin: 'strict', freebsd: 'strict' };
+    } else if (val === 'strict_compat') {
+      modes = { linux: 'strict', darwin: 'compatible', freebsd: 'compatible' };
+    }
+    data['agent_modes'] = modes;
+  }
+
+  openUnifiedAddModal() {
+    this.unifiedModalMode = 'add';
+    this.unifiedCategory = (this.deviceTab === 'nonmikrotik') ? 'other' : 'mikrotik';
+    this.show_pass = false;
+    this.savingUnifiedDevice = false;
+    this.savingUnifiedStatus = '';
+    this.modalGroupSearch = '';
+    this.filteredModalGroups = [];
+    this.addMikrotikData = {
+      ip: '', username: 'admin', password: '', port: 8728, ssl: false,
+      mikrotik_protocol: 'ssh', connection_port: 22, group_ids: []
+    };
+    this.addNonMikrotikData = {
+      name: '', ip: '', device_type: 'generic', device_model: '',
+      username: '', password: '', enable_password: '', template_id: null,
+      protocol: 'ssh', port: 22, group_ids: [], ssh_auth_mode: 'credential'
+    };
+    this.loadBrandsAndTemplates();
+    this.onBrandChangeUnified();
+    this.unifiedModalVisible = true;
+    this.EditDevModalVisible = true;
+  }
+
+  closeUnifiedModal() {
+    this.unifiedModalVisible = false;
+    this.EditDevModalVisible = false;
+    this.savingUnifiedDevice = false;
+  }
+
+  onCategoryChange() {
+    this.onBrandChangeUnified();
+  }
+
+  onMikrotikAddSslChange() {
+    this.addMikrotikData.port = this.addMikrotikData.ssl ? 8729 : 8728;
+  }
+
+  onMikrotikAddProtocolChange() {
+    const defaults: Record<string, number> = { ssh: 22, telnet: 23 };
+    const p = this.addMikrotikData.mikrotik_protocol;
+    if (p && defaults[p]) {
+      this.addMikrotikData.connection_port = defaults[p];
+    }
+  }
+
+  onNonMikrotikProtoChange() {
+    const defaults: Record<string, number> = { ssh: 22, telnet: 23, rdp: 3389, vnc: 5900 };
+    const target = this.unifiedModalMode === 'add' ? this.addNonMikrotikData : this.editNonMikrotikData;
+    const p = target.protocol;
+    if (p && defaults[p]) {
+      target.port = defaults[p];
+    }
+  }
+
+  edit_device_form(dev: any) {
+    this.selected_device = dev;
+    this.show_pass = false;
+    this.savingUnifiedDevice = false;
+    this.savingUnifiedStatus = '';
+    this.modalGroupSearch = '';
+    this.filteredModalGroups = [];
+    this.loadBrandsAndTemplates();
+
+    if (this.isMikrotik(dev)) {
+      this.unifiedCategory = 'mikrotik';
+      this.unifiedModalMode = 'edit';
+      let method = this.ispro ? this.data_provider.get_editform_pro(dev.id) : this.data_provider.get_editform(dev.id);
+      method.then((res: any) => {
+        if ("error" in res && res.error && res.error.indexOf("Unauthorized") > -1) {
+          this.show_toast("Error", "You are not authorized to perform this action", "danger");
+        } else {
+          this.selected_device["editform"] = res;
+          const types = res["connection_types"] || [];
+          res["mikrotik_protocol"] = types.includes("ssh") ? "ssh" : (types.includes("telnet") ? "telnet" : "ssh");
+          res["mikrotik_webfig"] = types.includes("webfig");
+          res["connection_port"] = res["connection_port"] || (res["mikrotik_protocol"] === "telnet" ? 23 : 22);
+          this.unifiedModalVisible = true;
+          this.EditDevModalVisible = true;
+        }
+      });
+    } else {
+      this.unifiedCategory = 'other';
+      this.unifiedModalMode = 'edit';
+      this.editNonMikrotikData = { ...dev };
+      this.editNonMikrotikData.password = '';
+      this.editNonMikrotikData.enable_password = '';
+      this.editNonMikrotikData.clear_enable_password = false;
+      
+      Promise.all([
+        this.data_provider.getNonMikrotikInfo(dev.id),
+        this.data_provider.listTemplates({ brand_id: dev.device_type || '' })
+      ]).then(([infoRes, templatesRes]: any) => {
+        if (infoRes && (infoRes.status === 'success' || infoRes.id)) {
+          const d = infoRes.data || infoRes;
+          this.editNonMikrotikData = { ...this.editNonMikrotikData, ...d };
+        }
+        this.brandTemplates = (templatesRes.data || templatesRes || []);
+        if (this.brandTemplates.length && !this.editNonMikrotikData.template_id) {
+          this.editNonMikrotikData.template_id = this.brandTemplates[0].id;
+        }
+        this.editNonMikrotikData.protocol = this.editNonMikrotikData.protocol || 'ssh';
+        this.editNonMikrotikData.port = this.editNonMikrotikData.port || (this.editNonMikrotikData.protocol === 'telnet' ? 23 : 22);
+        this.unifiedModalVisible = true;
+        this.EditDevModalVisible = true;
+      });
+    }
+  }
+
   onMikrotikProtocolChange() {
     const defaults: Record<string, number> = { ssh: 22, telnet: 23 };
     const protocol = this.selected_device["editform"]["mikrotik_protocol"];
@@ -355,9 +781,147 @@ export class DevicesComponent implements OnInit, OnDestroy {
     method.then((res) => {
         _self.show_toast("Success", "Device Saved", "success");
         this.initGridTable();
-        this.EditDevModalVisible = false;
+        this.closeUnifiedModal();
       });
   }
+
+  saveUnifiedDevice() {
+    if (this.unifiedModalMode === 'edit') {
+      if (this.unifiedCategory === 'mikrotik') {
+        this.save_device();
+      } else {
+        if (!this.templateHasEscalation(this.editNonMikrotikData)) {
+          this.editNonMikrotikData.enable_password = '';
+          this.editNonMikrotikData.clear_enable_password = true;
+        }
+        if (this.editNonMikrotikData.clear_enable_password) {
+          this.editNonMikrotikData.enable_password = '';
+        }
+        this.savingUnifiedDevice = true;
+        this.data_provider.editNonMikrotikDevice(this.editNonMikrotikData).then((res: any) => {
+          this.savingUnifiedDevice = false;
+          if (res.status === 'success' || !res.error) {
+            this.show_toast('Success', 'Device updated', 'success');
+            this.closeUnifiedModal();
+            this.initGridTable();
+          } else {
+            this.show_toast('Error', res.error || 'Failed to update device', 'danger');
+          }
+        }).catch(() => {
+          this.savingUnifiedDevice = false;
+          this.show_toast('Error', 'Failed to update device', 'danger');
+        });
+      }
+    } else {
+      // Add Mode
+      if (this.unifiedCategory === 'mikrotik') {
+        if (!this.addMikrotikData.ip || !this.addMikrotikData.username) {
+          this.show_toast('Validation', 'Please provide both IP and Username', 'warning');
+          return;
+        }
+        this.savingUnifiedDevice = true;
+        this.savingUnifiedStatus = 'Connecting to RouterOS API and scanning device...';
+        const singleDevice = [{
+          ip: this.addMikrotikData.ip,
+          username: this.addMikrotikData.username,
+          password: this.addMikrotikData.password,
+          port: this.addMikrotikData.port || (this.addMikrotikData.ssl ? 8729 : 8728),
+          group_ids: (this.addMikrotikData.group_ids || []).join(',')
+        }];
+        this.data_provider.bulk_add_devices(singleDevice).then((res: any) => {
+          if (res && res.taskId) {
+            this.pollUnifiedScanTask(res.taskId);
+          } else {
+            this.savingUnifiedDevice = false;
+            this.show_toast('Error', res?.error || 'Failed to start device validation', 'danger');
+          }
+        }).catch(() => {
+          this.savingUnifiedDevice = false;
+          this.show_toast('Error', 'API connection error', 'danger');
+        });
+      } else {
+        if (!this.addNonMikrotikData.ip || !this.addNonMikrotikData.name) {
+          this.show_toast('Validation', 'Please provide both Name and IP', 'warning');
+          return;
+        }
+        if (!this.templateHasEscalation(this.addNonMikrotikData)) {
+          this.addNonMikrotikData.enable_password = '';
+        }
+        this.savingUnifiedDevice = true;
+        this.data_provider.addNonMikrotikDevice(this.addNonMikrotikData).then((res: any) => {
+          this.savingUnifiedDevice = false;
+          if (res.status === 'success' || !res.error) {
+            this.show_toast('Success', 'Device added successfully', 'success');
+            this.closeUnifiedModal();
+            this.initGridTable();
+          } else {
+            this.show_toast('Error', res.error || 'Failed to add device', 'danger');
+          }
+        }).catch(() => {
+          this.savingUnifiedDevice = false;
+          this.show_toast('Error', 'Failed to add device', 'danger');
+        });
+      }
+    }
+  }
+
+  pollUnifiedScanTask(taskId: string) {
+    let attempts = 0;
+    const maxAttempts = 30;
+    const interval = setInterval(() => {
+      attempts++;
+      this.data_provider.bulk_add_status(taskId).then((res: any) => {
+        if (res.status === 'completed' || res.status === 'finished') {
+          clearInterval(interval);
+          this.savingUnifiedDevice = false;
+          if (res.result && res.result.failed > 0) {
+            this.show_toast('Validation Failed', 'Could not connect to MikroTik API. Check IP, API port, and credentials.', 'danger');
+          } else {
+            this.show_toast('Success', 'MikroTik router validated and added successfully', 'success');
+            this.closeUnifiedModal();
+            this.initGridTable();
+          }
+        } else if (res.status === 'failed') {
+          clearInterval(interval);
+          this.savingUnifiedDevice = false;
+          this.show_toast('Scan Error', res.error || 'Validation failed on server', 'danger');
+        } else if (attempts >= maxAttempts) {
+          clearInterval(interval);
+          this.savingUnifiedDevice = false;
+          this.show_toast('Notice', 'Device addition is taking longer than usual. Please refresh the table in a moment.', 'info');
+          this.closeUnifiedModal();
+          this.initGridTable();
+        }
+      }).catch(() => {
+        clearInterval(interval);
+        this.savingUnifiedDevice = false;
+        this.show_toast('Notice', 'Request sent to server. Refreshing device list...', 'info');
+        this.closeUnifiedModal();
+        this.initGridTable();
+      });
+    }, 1500);
+  }
+
+  get_nonmikrotik_pass() {
+    if (!this.editNonMikrotikData || !this.editNonMikrotikData.id) return;
+    this.editNonMikrotikData.password = 'Loading ...';
+    this.data_provider.get_device_pass(this.editNonMikrotikData.id).then((res: any) => {
+      const resultObj = res.result ? (res.result.result ? res.result : res) : res;
+      if (resultObj.result && resultObj.result.password) {
+        this.editNonMikrotikData.password = resultObj.result.password;
+        this.show_pass = true;
+      } else if (resultObj.password) {
+        this.editNonMikrotikData.password = resultObj.password;
+        this.show_pass = true;
+      } else if (res.password) {
+        this.editNonMikrotikData.password = res.password;
+        this.show_pass = true;
+      } else {
+        this.show_toast('Error', res.error || (res.result && res.result.err) || 'Failed to reveal password', 'danger');
+      }
+    });
+  }
+
   groupselected(item: any) {
     this.selected_group = item.target.value;
     if (this.selected_group != 0) {
@@ -367,10 +931,33 @@ export class DevicesComponent implements OnInit, OnDestroy {
   }
 
   filterGroupsSearch(event: any): void {
-    const query = event.target.value.toLowerCase();
-    this.filteredGroupSearch = this.groups.filter((g: any) =>
-      g.name.toLowerCase().includes(query)
+    const query = (event?.target?.value || '').toLowerCase();
+    if (!query) {
+      this.filteredGroupSearch = [...(this.groups || [])];
+      return;
+    }
+    this.filteredGroupSearch = (this.groups || []).filter((g: any) =>
+      g.name && g.name.toLowerCase().includes(query)
     );
+  }
+
+  onFocusGroupSearch(): void {
+    this.showGroupSearchDropdown = true;
+    if (!this.groupFilterSearch) {
+      this.filteredGroupSearch = [...(this.groups || [])];
+    } else {
+      const q = this.groupFilterSearch.toLowerCase();
+      this.filteredGroupSearch = (this.groups || []).filter((g: any) =>
+        g.name && g.name.toLowerCase().includes(q)
+      );
+    }
+  }
+
+  toggleGroupDropdown(): void {
+    this.showGroupSearchDropdown = !this.showGroupSearchDropdown;
+    if (this.showGroupSearchDropdown) {
+      this.onFocusGroupSearch();
+    }
   }
 
   selectGroupSearch(group: any): void {
@@ -379,29 +966,84 @@ export class DevicesComponent implements OnInit, OnDestroy {
     this.showGroupSearchDropdown = false;
     if (this.selected_group != 0) {
       this.router.navigate([".", { id: this.selected_group }]);
+    } else {
+      this.router.navigate([".", { id: 0 }]);
     }
     this.initGridTable();
   }
 
+  clearGroupFilter(): void {
+    this.selected_group = 0;
+    this.groupFilterSearch = '';
+    this.filteredGroupSearch = [...(this.groups || [])];
+    this.showGroupSearchDropdown = false;
+    this.router.navigate([".", { id: 0 }]);
+    this.initGridTable();
+  }
+
   hideGroupSearchDropdown(): void {
-    setTimeout(() => this.showGroupSearchDropdown = false, 200);
+    setTimeout(() => this.showGroupSearchDropdown = false, 250);
   }
 
   delete_device() {
     var _self = this;
     this.ConfirmModalVisible = false;
-    this.data_provider.delete_devices(this.Selectedrows).then((res) => {
-      if ("error" in res && res.error.indexOf("Unauthorized")) {
-        _self.show_toast(
-          "Error",
-          "You are not authorized to perform this action",
-          "danger"
-        );
+
+    if (!this.Selectedrows || this.Selectedrows.length === 0) {
+      return;
+    }
+
+    // Partition selected IDs into MikroTik and non-MikroTik
+    const mikrotikIds: number[] = [];
+    const nonMikrotikIds: number[] = [];
+
+    this.Selectedrows.forEach((id: number) => {
+      const dev = this.source.find((d: any) => d.id === id);
+      if (dev && !this.isMikrotik(dev)) {
+        nonMikrotikIds.push(id);
+      } else {
+        mikrotikIds.push(id);
       }
-      else{
-      _self.show_toast("Success", "Device Deleted", "success");
-      this.initGridTable();
+    });
+
+    const deletePromises: Promise<any>[] = [];
+
+    // Delete MikroTik devices using dev/delete API
+    if (mikrotikIds.length > 0) {
+      deletePromises.push(this.data_provider.delete_devices(mikrotikIds));
+    }
+
+    // Delete non-MikroTik devices using non-mikrotik/devices/delete API
+    if (nonMikrotikIds.length > 0) {
+      nonMikrotikIds.forEach((id: number) => {
+        deletePromises.push(this.data_provider.deleteNonMikrotikDevice({ id }));
+      });
+    }
+
+    Promise.all(deletePromises).then((results) => {
+      let hasError = false;
+      let errorMsg = '';
+      results.forEach(res => {
+        if (res && res.error) {
+          hasError = true;
+          errorMsg = res.error;
+        }
+      });
+
+      if (hasError && errorMsg.indexOf("Unauthorized") > -1) {
+        _self.show_toast("Error", "You are not authorized to perform this action", "danger");
+      } else if (hasError) {
+        _self.show_toast("Error", errorMsg || "Failed to delete some devices", "danger");
+      } else {
+        const totalDeleted = mikrotikIds.length + nonMikrotikIds.length;
+        _self.show_toast("Success", totalDeleted > 1 ? `${totalDeleted} Devices Deleted` : "Device Deleted", "success");
       }
+      _self.clearSelection();
+      _self.initGridTable();
+    }).catch(err => {
+      _self.show_toast("Error", "Failed to delete devices", "danger");
+      _self.clearSelection();
+      _self.initGridTable();
     });
   }
 
@@ -564,6 +1206,13 @@ export class DevicesComponent implements OnInit, OnDestroy {
   update_firmware() {
     var _self = this;
     this.ConfirmModalVisible = false;
+    if (this.source && this.Selectedrows) {
+      this.source.forEach((d: any) => {
+        if (this.Selectedrows.includes(d.id)) {
+          d.status = 'updating';
+        }
+      });
+    }
     this.data_provider
       .update_firmware(this.Selectedrows.toString())
       .then((res) => {
@@ -586,6 +1235,13 @@ export class DevicesComponent implements OnInit, OnDestroy {
   upgrade_firmware() {
     var _self = this;
     this.ConfirmModalVisible = false;
+    if (this.source && this.Selectedrows) {
+      this.source.forEach((d: any) => {
+        if (this.Selectedrows.includes(d.id)) {
+          d.status = 'updating';
+        }
+      });
+    }
     this.data_provider
       .upgrade_firmware(this.Selectedrows.toString())
       .then((res) => {
@@ -912,15 +1568,15 @@ export class DevicesComponent implements OnInit, OnDestroy {
   }
 
   openProxyAccess() {
+    this.showWebAccessModal = false;
     if (this.currentDeviceInfo?.id) {
-      window.open(`/api/proxy/init?devid=${this.currentDeviceInfo.id}`, '_blank');
+      this.connectDevice(this.currentDeviceInfo, 'webfig');
     } else {
       const ip = this.currentDeviceInfo?.ip;
       if (ip) {
         window.open(`/api/proxy/init?dev_ip=${ip}`, '_blank');
       }
     }
-    this.showWebAccessModal = false;
   }
 
   openDirectAccess() {
@@ -944,35 +1600,7 @@ export class DevicesComponent implements OnInit, OnDestroy {
     const dev = device || this.currentDeviceInfo;
     if (!dev || !dev.id) return;
     this.showWebAccessModal = false;
-
-    this.data_provider.MikroWizardRPC.sendJsonRequest('/api/terminal/init', {
-      device_id: dev.id,
-      protocol: 'winbox',
-      connection_type: 'winbox'
-    }).then((res: any) => {
-      if (res && res.token) {
-        const url = res.web_url || ('/terminal-ws/winbox.html?token=' + res.token);
-        window.open(url, '_blank');
-      } else if (res && res.status === 'gateway_update_required') {
-        this.gatewayNoticeType = 'update_required';
-        this.gatewayNoticeTitle = 'Terminal Gateway Update Required';
-        this.gatewayNoticeMessage = res.error || 'Your Terminal Gateway container is outdated and does not support WebBox. Please update the Terminal Gateway Docker container to the latest version to use this feature.';
-        this.gatewayNoticeDocUrl = res.doc_url || 'https://mikrowizard.com/docs/updating-terminal-gateway-addon/';
-        this.showGatewayNoticeModal = true;
-      } else if (res && res.status === 'gateway_not_installed') {
-        this.gatewayNoticeType = 'not_installed';
-        this.gatewayNoticeTitle = 'Terminal Gateway Not Installed';
-        this.gatewayNoticeMessage = res.error || 'The MikroWizard Terminal Gateway addon is required to start WebBox sessions. Please ask your administrator to install it.';
-        this.gatewayNoticeDocUrl = res.doc_url || 'https://mikrowizard.com/docs/installing-terminal-gatway-addon/';
-        this.showGatewayNoticeModal = true;
-      } else if (res && res.status === 'pam_required') {
-        this.show_toast('PAM Access Required', res.error || 'PAM access is not enabled for this user.', 'warning');
-      } else {
-        this.show_toast('Error', res?.error || 'Failed to start WebBox session.', 'danger');
-      }
-    }).catch((err: any) => {
-      this.show_toast('Error', 'Failed to initialize WebBox session.', 'danger');
-    });
+    this.connectDevice(dev, 'webbox');
   }
 
   openAddDeviceModal() {

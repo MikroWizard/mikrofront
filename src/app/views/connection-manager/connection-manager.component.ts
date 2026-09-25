@@ -70,19 +70,34 @@ export class ConnectionManagerComponent implements OnInit {
   ngOnInit() {
     this.route.params.subscribe(params => {
       if (params['id']) {
-        this.loadDeviceDetails(params['id']);
+        const protocol = this.route.snapshot.queryParams['protocol'] || '';
+        this.loadDeviceDetails(params['id'], protocol);
+      }
+    });
+
+    this.route.queryParams.subscribe(qParams => {
+      const devId = this.route.snapshot.params['id'];
+      if (devId && qParams['protocol']) {
+        const protocol = qParams['protocol'];
+        const existingIndex = this.activeSessions.findIndex(s => s.device && s.device.id == devId && (s.protocol === protocol || (protocol === 'webbox' && s.protocol === 'winbox')));
+        if (existingIndex > -1) {
+          this.activeTabIndex = existingIndex;
+        } else if (this.activeSessions.length > 0) {
+          this.loadDeviceDetails(devId, protocol);
+        }
       }
     });
   }
 
-  loadDeviceDetails(id: number) {
+  loadDeviceDetails(id: number, protocol: string = '') {
     this.data_provider.getSessionInfo().then((user: any) => {
       const p = (user && user.role === 'customer') ? this.data_provider.customerGetDevices() : this.data_provider.get_devices();
       p.then((res: any) => {
         const devices = res.result || res || [];
         const dev = devices.find((d: any) => d.id == id);
         if (dev) {
-          this.onDeviceSelected({ device: dev });
+          const protoToUse = protocol || dev.protocol || 'ssh';
+          this.onDeviceSelected({ device: dev, protocol: protoToUse });
         }
       });
     });
@@ -125,13 +140,17 @@ export class ConnectionManagerComponent implements OnInit {
     const protocol = eventData.protocol || '';
 
     // Check if we have an existing session
-    const existingIndex = this.activeSessions.findIndex(s => s.device.id === device.id && s.protocol === protocol);
+    const existingIndex = this.activeSessions.findIndex(s => 
+      s.device.id === device.id && (s.protocol === protocol || (protocol === 'webbox' && s.protocol === 'winbox'))
+    );
     
     if (existingIndex > -1) {
-      if (confirm(`A ${protocol.toUpperCase() || 'terminal'} session is already open for ${device.name}. Open a new session anyway?`)) {
-          this.createNewSession(device, protocol);
+      if (protocol === 'webfig' || protocol === 'webbox' || protocol === 'winbox') {
+        this.activeTabIndex = existingIndex;
+      } else if (confirm(`A ${protocol.toUpperCase() || 'terminal'} session is already open for ${device.name}. Open a new session anyway?`)) {
+        this.createNewSession(device, protocol);
       } else {
-          this.activeTabIndex = existingIndex;
+        this.activeTabIndex = existingIndex;
       }
     } else {
       this.createNewSession(device, protocol);
