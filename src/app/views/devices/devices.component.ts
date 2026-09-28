@@ -40,14 +40,103 @@ export class DevicesComponent implements OnInit, OnDestroy {
     return this.source.filter((d: any) => !this.isMikrotik(d)).length;
   }
 
+  public expandedParentServers: Set<number> = new Set<number>();
+  public publishAppModalVisible: boolean = false;
+  public selectedParentServer: any = null;
+  public publishAppData: any = { name: '', app_mode: 'remote_app', remote_app: '', remote_app_dir: '', remote_app_args: '', initial_program: '' };
+  public isPublishingApp: boolean = false;
+
+  toggleServerExpand(id: number) {
+    if (this.expandedParentServers.has(id)) {
+      this.expandedParentServers.delete(id);
+    } else {
+      this.expandedParentServers.add(id);
+    }
+  }
+
+  isServerExpanded(id: number): boolean {
+    return this.expandedParentServers.has(id);
+  }
+
   public get displayDevices(): any[] {
     if (!this.source || !Array.isArray(this.source)) return [];
     if (this.deviceTab === 'mikrotik') {
       return this.source.filter((d: any) => this.isMikrotik(d));
     } else if (this.deviceTab === 'nonmikrotik') {
-      return this.source.filter((d: any) => !this.isMikrotik(d));
+      const nonMikrotik = this.source.filter((d: any) => !this.isMikrotik(d));
+      const parents = nonMikrotik.filter((d: any) => !d.parent_id);
+      const childMap = new Map<number, any[]>();
+
+      for (const d of nonMikrotik) {
+        if (d.parent_id) {
+          if (!childMap.has(d.parent_id)) childMap.set(d.parent_id, []);
+          childMap.get(d.parent_id)!.push(d);
+        }
+      }
+
+      const orderedList: any[] = [];
+      for (const p of parents) {
+        const children = childMap.get(p.id) || [];
+        p.child_count = children.length;
+        p.is_child = false;
+        orderedList.push(p);
+
+        if (this.isServerExpanded(p.id)) {
+          for (const c of children) {
+            c.is_child = true;
+            c.parent_server_name = p.name;
+            c.effective_ip = p.ip || p.peer_ip;
+            orderedList.push(c);
+          }
+        }
+      }
+      return orderedList;
     }
     return this.source;
+  }
+
+  openPublishAppModal(server: any) {
+    this.selectedParentServer = server;
+    this.publishAppData = {
+      name: '',
+      app_mode: 'remote_app',
+      remote_app: '',
+      remote_app_dir: '',
+      remote_app_args: '',
+      initial_program: ''
+    };
+    this.publishAppModalVisible = true;
+  }
+
+  savePublishedApp() {
+    if (!this.selectedParentServer || !this.publishAppData.name) {
+      this.show_toast('Validation', 'Please provide an application name', 'warning');
+      return;
+    }
+    this.isPublishingApp = true;
+    const payload = {
+      parent_id: this.selectedParentServer.id,
+      name: this.publishAppData.name.trim(),
+      app_mode: this.publishAppData.app_mode,
+      remote_app: this.publishAppData.remote_app.trim(),
+      remote_app_dir: this.publishAppData.remote_app_dir.trim(),
+      remote_app_args: this.publishAppData.remote_app_args.trim(),
+      initial_program: this.publishAppData.initial_program.trim()
+    };
+    this.data_provider.MikroWizardRPC.sendJsonRequest('/api/non-mikrotik/apps/publish', payload).then((res: any) => {
+      this.isPublishingApp = false;
+      if (res && (res.status === 'success' || res.id)) {
+        this.show_toast('Success', `Published application "${payload.name}" successfully`, 'success');
+        this.publishAppModalVisible = false;
+        this.expandedParentServers.add(this.selectedParentServer.id);
+        this.initGridTable();
+      } else {
+        this.show_toast('Error', res?.error || 'Failed to publish application', 'danger');
+      }
+    }).catch((err: any) => {
+      this.isPublishingApp = false;
+      this.show_toast('Error', err?.message || 'Network error publishing application', 'danger');
+    });
   }
 
   public deviceRecordingsModalVisible: boolean = false;
@@ -479,10 +568,14 @@ export class DevicesComponent implements OnInit, OnDestroy {
       if (proto === 'webfig') return connTypes && connTypes.includes('webfig');
       if (proto === 'winbox' || proto === 'webbox') return true;
     } else {
-      if (proto === 'ssh' && (!device.protocol || device.protocol === 'ssh')) return true;
+      const isWindows = device.device_type === 'windows' || device.brand === 'windows';
+      if (proto === 'rdp' && (device.protocol === 'rdp' || isWindows)) return true;
+      if (proto === 'vnc' && (device.protocol === 'vnc' || device.device_type === 'vnc')) return true;
       if (proto === 'telnet' && device.protocol === 'telnet') return true;
-      if (proto === 'rdp' && (device.protocol === 'rdp' || device.device_type === 'windows')) return true;
-      if (proto === 'vnc' && device.protocol === 'vnc') return true;
+      if (proto === 'ssh') {
+        if (isWindows) return false;
+        return !device.protocol || device.protocol === 'ssh';
+      }
     }
     return false;
   }
@@ -492,10 +585,9 @@ export class DevicesComponent implements OnInit, OnDestroy {
       this.show_toast('Pro Feature', 'Interactive terminal and PAM sessions require a MikroWizard Pro license.', 'warning');
       return;
     }
-    const navExtras: any = {};
-    if (protocol) {
-      navExtras.queryParams = { protocol };
-    }
+    const isWindows = device.device_type === 'windows' || device.brand === 'windows';
+    const protoToUse = protocol || device.protocol || (isWindows ? 'rdp' : (device.device_type === 'vnc' ? 'vnc' : 'ssh'));
+    const navExtras: any = { queryParams: { protocol: protoToUse } };
     this.router.navigate(['/connection-manager', device.id], navExtras);
   }
 
@@ -593,24 +685,92 @@ export class DevicesComponent implements OnInit, OnDestroy {
     setTimeout(() => this.showModalGroupDropdown = false, 250);
   }
 
-  onBrandChangeUnified() {
-    const devType = this.unifiedModalMode === 'add' ? this.addNonMikrotikData.device_type : this.editNonMikrotikData.device_type;
-    if (devType) {
-      this.data_provider.listTemplates({ brand_id: devType }).then((res: any) => {
-        this.brandTemplates = (res.data || res || []);
-        if (this.unifiedModalMode === 'add') {
-          if (this.brandTemplates.length && !this.addNonMikrotikData.template_id) {
-            this.addNonMikrotikData.template_id = this.brandTemplates[0].id;
-          }
-        } else {
-          if (this.brandTemplates.length && !this.editNonMikrotikData.template_id) {
-            this.editNonMikrotikData.template_id = this.brandTemplates[0].id;
-          }
-        }
+  getTargetNonMikrotikData(): any {
+    return this.unifiedModalMode === 'add' ? this.addNonMikrotikData : this.editNonMikrotikData;
+  }
+
+  getTemplateProtoTag(t: any): string {
+    if (!t) return 'SSH';
+    const conn = t.connection || {};
+    if (conn.protocol) return conn.protocol.toUpperCase();
+    if (conn.protocols && conn.protocols.length) {
+      return conn.protocols.map((p: string) => p.toUpperCase()).join('/');
+    }
+    return 'CLI';
+  }
+
+  getFilteredBrandsForProto(protocol?: string): any[] {
+    const target = this.getTargetNonMikrotikData();
+    const proto = (protocol || target?.protocol || 'ssh').toLowerCase();
+    if (!this.availableBrands || !this.availableBrands.length) return [];
+    
+    if (proto === 'rdp') {
+      return this.availableBrands.filter((b: any) => {
+        const code = (b.brand || b.id || '').toLowerCase();
+        return code === 'windows' || code === 'generic';
+      });
+    } else if (proto === 'vnc') {
+      return this.availableBrands.filter((b: any) => {
+        const code = (b.brand || b.id || '').toLowerCase();
+        return code === 'generic' || code === 'linux';
       });
     } else {
-      this.brandTemplates = [];
+      return this.availableBrands.filter((b: any) => {
+        const code = (b.brand || b.id || '').toLowerCase();
+        return code !== 'windows';
+      });
     }
+  }
+
+  setNonMikrotikProto(proto: string) {
+    const target = this.getTargetNonMikrotikData();
+    if (!target) return;
+    const oldProto = target.protocol;
+    target.protocol = proto;
+    
+    const defaults: Record<string, number> = { ssh: 22, telnet: 23, rdp: 3389, vnc: 5900 };
+    const prevDefault = defaults[oldProto];
+    if (!target.port || target.port === prevDefault) {
+      target.port = defaults[proto] || 22;
+    }
+
+    const allowedBrands = this.getFilteredBrandsForProto(proto);
+    const currentBrand = target.device_type;
+    const isBrandAllowed = allowedBrands.some((b: any) => (b.brand || b.id) === currentBrand);
+    
+    if (!isBrandAllowed) {
+      if (proto === 'rdp') {
+        target.device_type = 'windows';
+      } else if (proto === 'vnc') {
+        target.device_type = 'generic';
+      } else {
+        target.device_type = 'generic';
+      }
+    }
+    
+    this.onBrandChangeUnified();
+  }
+
+  onBrandChangeUnified() {
+    const target = this.getTargetNonMikrotikData();
+    const devType = target ? target.device_type : '';
+    const proto = target ? (target.protocol || 'ssh') : 'ssh';
+
+    const query: any = { protocol: proto };
+    if (devType) {
+      query.brand_id = devType;
+    }
+
+    this.data_provider.listTemplates(query).then((res: any) => {
+      const list = (res.data || res || []);
+      this.brandTemplates = list;
+      if (target) {
+        const hasCurrent = list.some((t: any) => t.id == target.template_id);
+        if (!hasCurrent) {
+          target.template_id = list.length ? list[0].id : null;
+        }
+      }
+    });
   }
 
   templateHasEscalation(data: any): boolean {
@@ -686,11 +846,9 @@ export class DevicesComponent implements OnInit, OnDestroy {
   }
 
   onNonMikrotikProtoChange() {
-    const defaults: Record<string, number> = { ssh: 22, telnet: 23, rdp: 3389, vnc: 5900 };
-    const target = this.unifiedModalMode === 'add' ? this.addNonMikrotikData : this.editNonMikrotikData;
-    const p = target.protocol;
-    if (p && defaults[p]) {
-      target.port = defaults[p];
+    const target = this.getTargetNonMikrotikData();
+    if (target && target.protocol) {
+      this.setNonMikrotikProto(target.protocol);
     }
   }
 
@@ -728,20 +886,16 @@ export class DevicesComponent implements OnInit, OnDestroy {
       this.editNonMikrotikData.enable_password = '';
       this.editNonMikrotikData.clear_enable_password = false;
       
-      Promise.all([
-        this.data_provider.getNonMikrotikInfo(dev.id),
-        this.data_provider.listTemplates({ brand_id: dev.device_type || '' })
-      ]).then(([infoRes, templatesRes]: any) => {
+      this.data_provider.getNonMikrotikInfo(dev.id).then((infoRes: any) => {
         if (infoRes && (infoRes.status === 'success' || infoRes.id)) {
           const d = infoRes.data || infoRes;
           this.editNonMikrotikData = { ...this.editNonMikrotikData, ...d };
         }
-        this.brandTemplates = (templatesRes.data || templatesRes || []);
-        if (this.brandTemplates.length && !this.editNonMikrotikData.template_id) {
-          this.editNonMikrotikData.template_id = this.brandTemplates[0].id;
-        }
-        this.editNonMikrotikData.protocol = this.editNonMikrotikData.protocol || 'ssh';
-        this.editNonMikrotikData.port = this.editNonMikrotikData.port || (this.editNonMikrotikData.protocol === 'telnet' ? 23 : 22);
+        const proto = this.editNonMikrotikData.protocol || dev.protocol || 'ssh';
+        this.editNonMikrotikData.protocol = proto;
+        const defaults: Record<string, number> = { ssh: 22, telnet: 23, rdp: 3389, vnc: 5900 };
+        this.editNonMikrotikData.port = this.editNonMikrotikData.port || defaults[proto] || 22;
+        this.onBrandChangeUnified();
         this.unifiedModalVisible = true;
         this.EditDevModalVisible = true;
       });
@@ -1618,13 +1772,16 @@ export class DevicesComponent implements OnInit, OnDestroy {
       const data = (res.data || res || []);
       this.availableTemplates = data.map((t: any) => {
         const conn = t.connection || {};
+        const pList = conn.protocols ? [...conn.protocols] : (conn.protocol ? [conn.protocol] : ['ssh']);
         return {
           id: t.id,
           brand: t.brand,
           display_name: t.display_name,
           os_type: t.os_type,
-          protocols: conn.protocols || [],
+          protocol: conn.protocol || (pList.length ? pList[0] : null),
+          protocols: pList,
           has_enable: !!t.privilege_escalation,
+          raw: t
         };
       });
     });

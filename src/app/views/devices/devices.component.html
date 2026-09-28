@@ -310,6 +310,18 @@
 
               <!-- Name -->
               <td>
+                <!-- Child Indentation & Sub-App Badge -->
+                <span *ngIf="item.is_child" class="ms-3 me-2 text-primary">
+                  <i class="fa-solid fa-arrow-turn-up fa-rotate-90"></i>
+                  <span class="badge bg-secondary ms-1 py-1" style="font-size:0.7rem;"><i class="fa-solid fa-window-restore me-1"></i>App</span>
+                </span>
+
+                <!-- Parent Expand/Collapse Chevron -->
+                <button *ngIf="deviceTab === 'nonmikrotik' && !item.is_child && item.child_count > 0"
+                        cButton size="sm" variant="ghost" (click)="toggleServerExpand(item.id)" class="p-0 me-1" style="border:none;">
+                  <i class="fa-solid" [class.fa-chevron-down]="isServerExpanded(item.id)" [class.fa-chevron-right]="!isServerExpanded(item.id)"></i>
+                </button>
+
                 <img [src]="getBrandIcon(item)" class="brand-icon me-1" alt="" />
                 <button *ngIf="isMikrotik(item)" cButton size="sm" variant="ghost" color="primary" (click)="webAccess(item)"
                   style="padding: 2px 4px; margin-right: 3px; border: none;" cTooltip="Web Access">
@@ -327,6 +339,12 @@
                   <i class="fa-solid fa-triangle-exclamation me-1"></i>Failed
                 </span>
                 <strong>{{item.name}}</strong>
+                <!-- App count pill for parent servers -->
+                <span *ngIf="deviceTab === 'nonmikrotik' && !item.is_child && item.child_count > 0"
+                      class="badge bg-dark-subtle border text-info ms-2" style="font-size: 0.72rem; cursor: pointer;"
+                      (click)="toggleServerExpand(item.id)">
+                  {{item.child_count}} app(s)
+                </span>
                 <!-- Attention indicator dot for pending updates on MikroTik -->
                 <span *ngIf="isMikrotik(item) && (item.update_availble || item.upgrade_availble)"
                   class="fw-pulse-dot" [class.dot-update]="item.update_availble" [class.dot-upgrade]="item.upgrade_availble && !item.update_availble"
@@ -451,8 +469,13 @@
 
               <!-- IP Address -->
               <td>
-                {{item.ip}}
-                <small class="text-muted d-block" *ngIf="item.peer_ip">Peer: {{item.peer_ip}}</small>
+                <span *ngIf="item.is_child" class="text-muted small">
+                  <i class="fa-solid fa-link me-1"></i>Inherited ({{item.effective_ip}})
+                </span>
+                <span *ngIf="!item.is_child">
+                  {{item.ip}}
+                  <small class="text-muted d-block" *ngIf="item.peer_ip">Peer: {{item.peer_ip}}</small>
+                </span>
               </td>
 
               <!-- Connection Protocols -->
@@ -528,6 +551,12 @@
 
               <!-- Actions -->
               <td class="text-center">
+                <button *ngIf="deviceTab === 'nonmikrotik' && !item.is_child"
+                        size="sm" shape="rounded-0" variant="outline" cButton color="success"
+                        (click)="openPublishAppModal(item)" style="border: none; padding: 4px 7px;"
+                        cTooltip="Publish Application under this host">
+                  <i class="fa-solid fa-plus"></i><small> App</small>
+                </button>
                 <button size="sm" shape="rounded-0" variant="outline" cButton color="primary"
                   (click)="show_detail(item)" style="border: none;padding: 4px 7px;"><i
                     class="fa-regular fa-eye"></i><small> Details</small>
@@ -542,8 +571,17 @@
                       <i [class]="isMikrotik(item) ? 'fas fa-router me-1' : 'fas fa-server me-1'"></i>
                       {{ isMikrotik(item) ? 'MikroTik Actions' : 'Device Actions' }}
                     </li>
-                    <button size="sm" *ngIf="ispro" (click)="connectDevice(item)" style="padding: 4px 7px;" cListGroupItem>
+                    <button size="sm" *ngIf="ispro && isMikrotik(item)" (click)="connectDevice(item, 'ssh')" style="padding: 4px 7px;" cListGroupItem>
                       <i class="fas fa-terminal text-success"></i><small> Terminal Access</small>
+                    </button>
+                    <button size="sm" *ngIf="ispro && !isMikrotik(item) && hasProtocol(item, 'ssh')" (click)="connectDevice(item, 'ssh')" style="padding: 4px 7px;" cListGroupItem>
+                      <i class="fas fa-terminal text-success"></i><small> SSH Terminal</small>
+                    </button>
+                    <button size="sm" *ngIf="ispro && !isMikrotik(item) && hasProtocol(item, 'rdp')" (click)="connectDevice(item, 'rdp')" style="padding: 4px 7px;" cListGroupItem>
+                      <i class="fab fa-windows text-info"></i><small> Remote Desktop (RDP)</small>
+                    </button>
+                    <button size="sm" *ngIf="ispro && !isMikrotik(item) && hasProtocol(item, 'vnc')" (click)="connectDevice(item, 'vnc')" style="padding: 4px 7px;" cListGroupItem>
+                      <i class="fas fa-desktop text-warning"></i><small> VNC Console</small>
                     </button>
                     <button size="sm" *ngIf="ispro && isMikrotik(item)" (click)="connectDevice(item, 'webbox')" style="padding: 4px 7px;"
                       cListGroupItem><i class="text-primary fa-solid fa-desktop"></i><small>
@@ -551,6 +589,9 @@
                     <button size="sm" *ngIf="ispro && isMikrotik(item)" (click)="connectDevice(item, 'webfig')" style="padding: 4px 7px;"
                       cListGroupItem><i class="text-info fa-solid fa-globe"></i><small>
                         WebFig</small></button>
+                    <button size="sm" *ngIf="!isMikrotik(item) && !item.is_child" (click)="openPublishAppModal(item)" style="padding: 4px 7px;" cListGroupItem>
+                      <i class="fa-solid fa-plus text-success"></i><small> Publish Application</small>
+                    </button>
                     <button size="sm" (click)="single_device_action(item,'edit')" style="padding: 4px 7px;"
                       cListGroupItem><i class="fa-solid fa-pencil text-primary"></i><small>
                         Edit Device</small></button>
@@ -1265,6 +1306,50 @@
     <!-- ============================================== -->
     <ng-container *ngIf="unifiedModalMode === 'add' && unifiedCategory === 'other'">
       <c-row class="g-3">
+        <!-- 1. CONNECTION PROTOCOL AT THE VERY TOP -->
+        <c-col xs="12">
+          <div class="p-2 border rounded bg-light">
+            <label class="form-label small fw-semibold text-uppercase text-secondary d-block mb-2">
+              <i class="fas fa-network-wired me-1 text-primary"></i> 1. Connection Protocol *
+            </label>
+            <div class="d-flex gap-2 flex-wrap">
+              <button type="button" class="btn btn-sm d-flex align-items-center gap-1"
+                [class.btn-primary]="addNonMikrotikData.protocol === 'ssh'"
+                [class.btn-outline-secondary]="addNonMikrotikData.protocol !== 'ssh'"
+                (click)="setNonMikrotikProto('ssh')">
+                <i class="fas fa-terminal"></i>
+                <span class="fw-semibold">SSH</span>
+                <span class="badge bg-secondary-subtle text-dark ms-1">22</span>
+              </button>
+              <button type="button" class="btn btn-sm d-flex align-items-center gap-1"
+                [class.btn-primary]="addNonMikrotikData.protocol === 'telnet'"
+                [class.btn-outline-secondary]="addNonMikrotikData.protocol !== 'telnet'"
+                (click)="setNonMikrotikProto('telnet')">
+                <i class="fas fa-network-wired"></i>
+                <span class="fw-semibold">Telnet</span>
+                <span class="badge bg-secondary-subtle text-dark ms-1">23</span>
+              </button>
+              <button type="button" class="btn btn-sm d-flex align-items-center gap-1"
+                [class.btn-primary]="addNonMikrotikData.protocol === 'rdp'"
+                [class.btn-outline-secondary]="addNonMikrotikData.protocol !== 'rdp'"
+                (click)="setNonMikrotikProto('rdp')">
+                <i class="fab fa-windows"></i>
+                <span class="fw-semibold">RDP (Remote Desktop)</span>
+                <span class="badge bg-secondary-subtle text-dark ms-1">3389</span>
+              </button>
+              <button type="button" class="btn btn-sm d-flex align-items-center gap-1"
+                [class.btn-primary]="addNonMikrotikData.protocol === 'vnc'"
+                [class.btn-outline-secondary]="addNonMikrotikData.protocol !== 'vnc'"
+                (click)="setNonMikrotikProto('vnc')">
+                <i class="fas fa-desktop"></i>
+                <span class="fw-semibold">VNC</span>
+                <span class="badge bg-secondary-subtle text-dark ms-1">5900</span>
+              </button>
+            </div>
+          </div>
+        </c-col>
+
+        <!-- 2. DEVICE IDENTITY -->
         <c-col xs="12" md="6">
           <label class="form-label small fw-semibold">Device Name *</label>
           <input cFormControl size="sm" placeholder="e.g. Core-Switch-01" [(ngModel)]="addNonMikrotikData.name" />
@@ -1273,31 +1358,58 @@
           <label class="form-label small fw-semibold">IP Address *</label>
           <input cFormControl size="sm" placeholder="192.168.1.1" [(ngModel)]="addNonMikrotikData.ip" />
         </c-col>
+
+        <!-- 3. BRAND / DEVICE TYPE (FILTERED BY PROTOCOL) -->
         <c-col xs="12" md="6">
           <label class="form-label small fw-semibold">Brand / Device Type</label>
           <select cSelect size="sm" [(ngModel)]="addNonMikrotikData.device_type" (change)="onBrandChangeUnified()">
             <option value="">Select brand...</option>
-            <option *ngFor="let b of availableBrands" [value]="b.brand || b.id">{{b.display_name || b.name || b.brand}}</option>
-            <option value="generic">Generic</option>
+            <option *ngFor="let b of getFilteredBrandsForProto(addNonMikrotikData.protocol)" [value]="b.brand || b.id">
+              {{b.display_name || b.name || b.brand}}
+            </option>
           </select>
         </c-col>
+
+        <!-- 4. CONNECTION TEMPLATE (FILTERED STRICTLY BY PROTOCOL & BRAND) -->
+        <c-col xs="12" md="6">
+          <label class="form-label small fw-semibold">Connection Template *</label>
+          <select cSelect size="sm" [(ngModel)]="addNonMikrotikData.template_id" required>
+            <option [ngValue]="null" disabled>Select template...</option>
+            <option *ngFor="let t of brandTemplates" [value]="t.id">
+              [{{getTemplateProtoTag(t)}}] {{t.display_name}}
+            </option>
+          </select>
+          <small class="text-muted d-block" *ngIf="!brandTemplates.length">
+            No templates available for {{addNonMikrotikData.protocol | uppercase}} under this brand.
+          </small>
+        </c-col>
+
+        <c-col xs="12" md="6">
+          <label class="form-label small fw-semibold">Port</label>
+          <input cFormControl size="sm" type="number" [(ngModel)]="addNonMikrotikData.port" />
+        </c-col>
+
         <c-col xs="12" md="6">
           <label class="form-label small fw-semibold">Device Model</label>
-          <input cFormControl size="sm" placeholder="e.g. WS-C2960 / Ubuntu 22.04" [(ngModel)]="addNonMikrotikData.device_model" />
+          <input cFormControl size="sm" placeholder="e.g. WS-C2960 / Windows 11 / Ubuntu 22.04" [(ngModel)]="addNonMikrotikData.device_model" />
         </c-col>
-        <c-col xs="12" md="6">
-          <label class="form-label small fw-semibold">Connection Template</label>
-          <select cSelect size="sm" [(ngModel)]="addNonMikrotikData.template_id" required>
-            <option *ngFor="let t of brandTemplates" [value]="t.id">{{t.display_name}}</option>
-          </select>
-        </c-col>
-        <c-col xs="12" md="6">
+
+        <!-- 5. CREDENTIALS & PROTOCOL-SPECIFIC OPTIONS -->
+        <c-col xs="12" md="6" *ngIf="addNonMikrotikData.protocol !== 'vnc'">
           <label class="form-label small fw-semibold">Username</label>
           <input cFormControl size="sm" placeholder="Username" [(ngModel)]="addNonMikrotikData.username" />
         </c-col>
+
+        <c-col xs="12" md="6" *ngIf="addNonMikrotikData.protocol === 'vnc'">
+          <label class="form-label small fw-semibold">Username (Optional)</label>
+          <input cFormControl size="sm" placeholder="Optional for VNC" [(ngModel)]="addNonMikrotikData.username" />
+        </c-col>
+
         <c-col xs="12" md="6">
-          <label class="form-label small fw-semibold">{{addNonMikrotikData.ssh_auth_mode === 'key' ? 'SSH Private Key' : 'Password'}}</label>
-          <c-input-group size="sm" *ngIf="addNonMikrotikData.ssh_auth_mode !== 'key'">
+          <label class="form-label small fw-semibold">
+            {{addNonMikrotikData.protocol === 'vnc' ? 'VNC Password' : (addNonMikrotikData.ssh_auth_mode === 'key' ? 'SSH Private Key' : 'Password')}}
+          </label>
+          <c-input-group size="sm" *ngIf="addNonMikrotikData.ssh_auth_mode !== 'key' || addNonMikrotikData.protocol !== 'ssh'">
             <input cFormControl [type]="show_pass ? 'text' : 'password'" autocomplete="new-password"
               [(ngModel)]="addNonMikrotikData.password" placeholder="Password" />
             <button cButton (click)="show_pass = !show_pass" color="secondary" variant="outline">
@@ -1305,51 +1417,26 @@
               <i *ngIf="!show_pass" class="fa-solid fa-eye-slash"></i>
             </button>
           </c-input-group>
-          <textarea *ngIf="addNonMikrotikData.ssh_auth_mode === 'key'" cFormControl size="sm" rows="3"
+          <textarea *ngIf="addNonMikrotikData.protocol === 'ssh' && addNonMikrotikData.ssh_auth_mode === 'key'" cFormControl size="sm" rows="3"
             [(ngModel)]="addNonMikrotikData.password" placeholder="-----BEGIN PRIVATE KEY-----..."></textarea>
         </c-col>
-        <c-col xs="12" md="6" *ngIf="templateHasEscalation(addNonMikrotikData)">
-          <label class="form-label small fw-semibold">Enable Password</label>
-          <input cFormControl size="sm" type="password" autocomplete="new-password" [(ngModel)]="addNonMikrotikData.enable_password" />
+
+        <c-col xs="12" md="6" *ngIf="addNonMikrotikData.protocol === 'rdp'">
+          <label class="form-label small fw-semibold">Active Directory Domain (Optional)</label>
+          <input cFormControl size="sm" placeholder="e.g. CORP or WORKGROUP" [(ngModel)]="addNonMikrotikData.domain" />
         </c-col>
 
-        <c-col xs="12" md="6">
-          <label class="form-label small fw-semibold">Connection Protocol</label>
-          <div class="d-flex gap-3 flex-wrap">
-            <div class="form-check form-check-inline">
-              <input class="form-check-input" type="radio" [(ngModel)]="addNonMikrotikData.protocol" value="ssh"
-                (change)="onNonMikrotikProtoChange()" name="addNonMikrotikProto" id="add_nm_ssh" />
-              <label class="form-check-label small" for="add_nm_ssh">SSH (22)</label>
-            </div>
-            <div class="form-check form-check-inline">
-              <input class="form-check-input" type="radio" [(ngModel)]="addNonMikrotikData.protocol" value="telnet"
-                (change)="onNonMikrotikProtoChange()" name="addNonMikrotikProto" id="add_nm_telnet" />
-              <label class="form-check-label small" for="add_nm_telnet">Telnet (23)</label>
-            </div>
-            <div class="form-check form-check-inline">
-              <input class="form-check-input" type="radio" [(ngModel)]="addNonMikrotikData.protocol" value="rdp"
-                (change)="onNonMikrotikProtoChange()" name="addNonMikrotikProto" id="add_nm_rdp" />
-              <label class="form-check-label small" for="add_nm_rdp">RDP (3389)</label>
-            </div>
-            <div class="form-check form-check-inline">
-              <input class="form-check-input" type="radio" [(ngModel)]="addNonMikrotikData.protocol" value="vnc"
-                (change)="onNonMikrotikProtoChange()" name="addNonMikrotikProto" id="add_nm_vnc" />
-              <label class="form-check-label small" for="add_nm_vnc">VNC (5900)</label>
-            </div>
-          </div>
-        </c-col>
-
-        <c-col xs="12" md="6">
-          <label class="form-label small fw-semibold">Port</label>
-          <input cFormControl size="sm" type="number" placeholder="22" [(ngModel)]="addNonMikrotikData.port" />
-        </c-col>
-
-        <c-col xs="12" *ngIf="addNonMikrotikData.protocol === 'ssh'">
+        <c-col xs="12" md="6" *ngIf="addNonMikrotikData.protocol === 'ssh'">
           <label class="form-label small fw-semibold">SSH Login Mode</label>
           <select cSelect size="sm" [(ngModel)]="addNonMikrotikData.ssh_auth_mode">
             <option value="credential">Password</option>
             <option value="key">SSH Key</option>
           </select>
+        </c-col>
+
+        <c-col xs="12" md="6" *ngIf="(addNonMikrotikData.protocol === 'ssh' || addNonMikrotikData.protocol === 'telnet') && templateHasEscalation(addNonMikrotikData)">
+          <label class="form-label small fw-semibold">Enable Password</label>
+          <input cFormControl size="sm" type="password" autocomplete="new-password" [(ngModel)]="addNonMikrotikData.enable_password" />
         </c-col>
 
         <c-col xs="12" *ngIf="ispro && addNonMikrotikData.protocol === 'ssh'">
@@ -1365,7 +1452,6 @@
             <option value="strict_compat">Strict + Compatible</option>
           </select>
         </c-col>
-
         <c-col xs="12" *ngIf="groups && groups.length > 0">
           <div class="d-flex justify-content-between align-items-center mb-1">
             <label class="form-label small fw-semibold m-0">
@@ -1474,6 +1560,50 @@
     <!-- ============================================== -->
     <ng-container *ngIf="unifiedModalMode === 'edit' && unifiedCategory === 'other' && editNonMikrotikData">
       <c-row class="g-3">
+        <!-- 1. CONNECTION PROTOCOL AT THE VERY TOP -->
+        <c-col xs="12">
+          <div class="p-2 border rounded bg-light">
+            <label class="form-label small fw-semibold text-uppercase text-secondary d-block mb-2">
+              <i class="fas fa-network-wired me-1 text-primary"></i> 1. Connection Protocol *
+            </label>
+            <div class="d-flex gap-2 flex-wrap">
+              <button type="button" class="btn btn-sm d-flex align-items-center gap-1"
+                [class.btn-primary]="editNonMikrotikData.protocol === 'ssh'"
+                [class.btn-outline-secondary]="editNonMikrotikData.protocol !== 'ssh'"
+                (click)="setNonMikrotikProto('ssh')">
+                <i class="fas fa-terminal"></i>
+                <span class="fw-semibold">SSH</span>
+                <span class="badge bg-secondary-subtle text-dark ms-1">22</span>
+              </button>
+              <button type="button" class="btn btn-sm d-flex align-items-center gap-1"
+                [class.btn-primary]="editNonMikrotikData.protocol === 'telnet'"
+                [class.btn-outline-secondary]="editNonMikrotikData.protocol !== 'telnet'"
+                (click)="setNonMikrotikProto('telnet')">
+                <i class="fas fa-network-wired"></i>
+                <span class="fw-semibold">Telnet</span>
+                <span class="badge bg-secondary-subtle text-dark ms-1">23</span>
+              </button>
+              <button type="button" class="btn btn-sm d-flex align-items-center gap-1"
+                [class.btn-primary]="editNonMikrotikData.protocol === 'rdp'"
+                [class.btn-outline-secondary]="editNonMikrotikData.protocol !== 'rdp'"
+                (click)="setNonMikrotikProto('rdp')">
+                <i class="fab fa-windows"></i>
+                <span class="fw-semibold">RDP (Remote Desktop)</span>
+                <span class="badge bg-secondary-subtle text-dark ms-1">3389</span>
+              </button>
+              <button type="button" class="btn btn-sm d-flex align-items-center gap-1"
+                [class.btn-primary]="editNonMikrotikData.protocol === 'vnc'"
+                [class.btn-outline-secondary]="editNonMikrotikData.protocol !== 'vnc'"
+                (click)="setNonMikrotikProto('vnc')">
+                <i class="fas fa-desktop"></i>
+                <span class="fw-semibold">VNC</span>
+                <span class="badge bg-secondary-subtle text-dark ms-1">5900</span>
+              </button>
+            </div>
+          </div>
+        </c-col>
+
+        <!-- 2. DEVICE IDENTITY -->
         <c-col xs="12" md="6">
           <label class="form-label small fw-semibold">Device Name</label>
           <input cFormControl size="sm" [(ngModel)]="editNonMikrotikData.name" />
@@ -1482,31 +1612,58 @@
           <label class="form-label small fw-semibold">IP Address</label>
           <input cFormControl size="sm" [(ngModel)]="editNonMikrotikData.ip" />
         </c-col>
+
+        <!-- 3. BRAND / DEVICE TYPE (FILTERED BY PROTOCOL) -->
         <c-col xs="12" md="6">
           <label class="form-label small fw-semibold">Brand / Device Type</label>
           <select cSelect size="sm" [(ngModel)]="editNonMikrotikData.device_type" (change)="onBrandChangeUnified()">
             <option value="">Select brand...</option>
-            <option *ngFor="let b of availableBrands" [value]="b.brand || b.id">{{b.display_name || b.name || b.brand}}</option>
-            <option value="generic">Generic</option>
+            <option *ngFor="let b of getFilteredBrandsForProto(editNonMikrotikData.protocol)" [value]="b.brand || b.id">
+              {{b.display_name || b.name || b.brand}}
+            </option>
           </select>
         </c-col>
+
+        <!-- 4. CONNECTION TEMPLATE (FILTERED STRICTLY BY PROTOCOL & BRAND) -->
+        <c-col xs="12" md="6">
+          <label class="form-label small fw-semibold">Connection Template *</label>
+          <select cSelect size="sm" [(ngModel)]="editNonMikrotikData.template_id" required>
+            <option [ngValue]="null" disabled>Select template...</option>
+            <option *ngFor="let t of brandTemplates" [value]="t.id">
+              [{{getTemplateProtoTag(t)}}] {{t.display_name}}
+            </option>
+          </select>
+          <small class="text-muted d-block" *ngIf="!brandTemplates.length">
+            No templates configured for {{editNonMikrotikData.protocol | uppercase}} under this brand.
+          </small>
+        </c-col>
+
+        <c-col xs="12" md="6">
+          <label class="form-label small fw-semibold">Port</label>
+          <input cFormControl size="sm" type="number" [(ngModel)]="editNonMikrotikData.port" />
+        </c-col>
+
         <c-col xs="12" md="6">
           <label class="form-label small fw-semibold">Device Model</label>
           <input cFormControl size="sm" [(ngModel)]="editNonMikrotikData.device_model" />
         </c-col>
-        <c-col xs="12" md="6">
-          <label class="form-label small fw-semibold">Connection Template</label>
-          <select cSelect size="sm" [(ngModel)]="editNonMikrotikData.template_id" required>
-            <option *ngFor="let t of brandTemplates" [value]="t.id">{{t.display_name}}</option>
-          </select>
-        </c-col>
-        <c-col xs="12" md="6">
+
+        <!-- 5. CREDENTIALS & PROTOCOL-SPECIFIC OPTIONS -->
+        <c-col xs="12" md="6" *ngIf="editNonMikrotikData.protocol !== 'vnc'">
           <label class="form-label small fw-semibold">Username</label>
           <input cFormControl size="sm" [(ngModel)]="editNonMikrotikData.username" />
         </c-col>
+
+        <c-col xs="12" md="6" *ngIf="editNonMikrotikData.protocol === 'vnc'">
+          <label class="form-label small fw-semibold">Username (Optional)</label>
+          <input cFormControl size="sm" placeholder="Optional for VNC" [(ngModel)]="editNonMikrotikData.username" />
+        </c-col>
+
         <c-col xs="12" md="6">
-          <label class="form-label small fw-semibold">{{editNonMikrotikData.ssh_auth_mode === 'key' ? 'SSH Private Key' : 'Password'}}</label>
-          <c-input-group size="sm" *ngIf="editNonMikrotikData.ssh_auth_mode !== 'key'">
+          <label class="form-label small fw-semibold">
+            {{editNonMikrotikData.protocol === 'vnc' ? 'VNC Password' : (editNonMikrotikData.ssh_auth_mode === 'key' ? 'SSH Private Key' : 'Password')}}
+          </label>
+          <c-input-group size="sm" *ngIf="editNonMikrotikData.ssh_auth_mode !== 'key' || editNonMikrotikData.protocol !== 'ssh'">
             <input cFormControl [type]="show_pass ? 'text' : 'password'" autocomplete="new-password"
               [(ngModel)]="editNonMikrotikData.password" placeholder="Leave blank to keep current" />
             <button cButton *ngIf="!ispro" (click)="show_pass = !show_pass" color="secondary" variant="outline">
@@ -1518,10 +1675,24 @@
               <i *ngIf="!show_pass" class="fa-solid fa-eye-slash"></i>
             </button>
           </c-input-group>
-          <textarea *ngIf="editNonMikrotikData.ssh_auth_mode === 'key'" cFormControl size="sm" rows="3"
+          <textarea *ngIf="editNonMikrotikData.protocol === 'ssh' && editNonMikrotikData.ssh_auth_mode === 'key'" cFormControl size="sm" rows="3"
             [(ngModel)]="editNonMikrotikData.password" placeholder="Leave blank to keep current. -----BEGIN PRIVATE KEY-----..."></textarea>
         </c-col>
-        <c-col xs="12" md="6" *ngIf="templateHasEscalation(editNonMikrotikData)">
+
+        <c-col xs="12" md="6" *ngIf="editNonMikrotikData.protocol === 'rdp'">
+          <label class="form-label small fw-semibold">Active Directory Domain (Optional)</label>
+          <input cFormControl size="sm" placeholder="e.g. CORP or WORKGROUP" [(ngModel)]="editNonMikrotikData.domain" />
+        </c-col>
+
+        <c-col xs="12" md="6" *ngIf="editNonMikrotikData.protocol === 'ssh'">
+          <label class="form-label small fw-semibold">SSH Login Mode</label>
+          <select cSelect size="sm" [(ngModel)]="editNonMikrotikData.ssh_auth_mode">
+            <option value="credential">Password</option>
+            <option value="key">SSH Key</option>
+          </select>
+        </c-col>
+
+        <c-col xs="12" md="6" *ngIf="(editNonMikrotikData.protocol === 'ssh' || editNonMikrotikData.protocol === 'telnet') && templateHasEscalation(editNonMikrotikData)">
           <label class="form-label small fw-semibold">Enable Password</label>
           <input cFormControl size="sm" type="password" autocomplete="new-password"
             [disabled]="editNonMikrotikData.clear_enable_password" [(ngModel)]="editNonMikrotikData.enable_password"
@@ -1532,42 +1703,7 @@
             <label class="form-check-label small" for="clearEnablePassUnified">Remove enable password</label>
           </div>
         </c-col>
-        <c-col xs="12" md="6">
-          <label class="form-label small fw-semibold">Connection Protocol</label>
-          <div class="d-flex gap-3 flex-wrap">
-            <div class="form-check form-check-inline">
-              <input class="form-check-input" type="radio" [(ngModel)]="editNonMikrotikData.protocol" value="ssh"
-                (change)="onNonMikrotikProtoChange()" name="editNonMikrotikProto" id="edit_nm_ssh" />
-              <label class="form-check-label small" for="edit_nm_ssh">SSH (22)</label>
-            </div>
-            <div class="form-check form-check-inline">
-              <input class="form-check-input" type="radio" [(ngModel)]="editNonMikrotikData.protocol" value="telnet"
-                (change)="onNonMikrotikProtoChange()" name="editNonMikrotikProto" id="edit_nm_telnet" />
-              <label class="form-check-label small" for="edit_nm_telnet">Telnet (23)</label>
-            </div>
-            <div class="form-check form-check-inline">
-              <input class="form-check-input" type="radio" [(ngModel)]="editNonMikrotikData.protocol" value="rdp"
-                (change)="onNonMikrotikProtoChange()" name="editNonMikrotikProto" id="edit_nm_rdp" />
-              <label class="form-check-label small" for="edit_nm_rdp">RDP (3389)</label>
-            </div>
-            <div class="form-check form-check-inline">
-              <input class="form-check-input" type="radio" [(ngModel)]="editNonMikrotikData.protocol" value="vnc"
-                (change)="onNonMikrotikProtoChange()" name="editNonMikrotikProto" id="edit_nm_vnc" />
-              <label class="form-check-label small" for="edit_nm_vnc">VNC (5900)</label>
-            </div>
-          </div>
-        </c-col>
-        <c-col xs="12" md="6">
-          <label class="form-label small fw-semibold">Port</label>
-          <input cFormControl size="sm" type="number" placeholder="22" [(ngModel)]="editNonMikrotikData.port" />
-        </c-col>
-        <c-col xs="12" *ngIf="editNonMikrotikData.protocol === 'ssh'">
-          <label class="form-label small fw-semibold">SSH Login Mode</label>
-          <select cSelect size="sm" [(ngModel)]="editNonMikrotikData.ssh_auth_mode">
-            <option value="credential">Password</option>
-            <option value="key">SSH Key</option>
-          </select>
-        </c-col>
+
         <c-col xs="12" *ngIf="ispro && editNonMikrotikData.protocol === 'ssh'">
           <label class="form-label small fw-semibold">
             Agent Mode Override
@@ -2240,3 +2376,79 @@
 </app-export-modal>
 
 <c-toaster position="fixed" placement="top-end"></c-toaster>
+<!-- 30-Second "Publish Application" Sub-Modal -->
+<c-modal [visible]="publishAppModalVisible" (visibleChange)="publishAppModalVisible = $event" size="lg" backdrop="static">
+  <c-modal-header>
+    <h6 cModalTitle>
+      <i class="fa-solid fa-window-restore text-info me-2"></i>
+      Publish Application on {{selectedParentServer?.name}} ({{selectedParentServer?.ip}})
+    </h6>
+    <button (click)="publishAppModalVisible = false" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body>
+    <p class="text-muted small mb-3">
+      Publish a RemoteApp or Initial Program session hosted on this Windows/Linux server.
+      Child applications automatically inherit host IP, credentials, and network security settings.
+    </p>
+
+    <c-row class="g-3">
+      <c-col xs="12">
+        <label class="form-label small fw-semibold">Application Name *</label>
+        <input cFormControl size="sm" [(ngModel)]="publishAppData.name" placeholder="e.g. WinBox 3.40 (Core), SAP ERP, Accounting Tools" />
+      </c-col>
+
+      <c-col xs="12">
+        <label class="form-label small fw-semibold">Launch Execution Mode</label>
+        <div class="d-flex gap-4">
+          <c-form-check>
+            <input cFormCheckInput type="radio" id="mode-remoteapp" name="appMode" value="remote_app" [(ngModel)]="publishAppData.app_mode" />
+            <label cFormCheckLabel for="mode-remoteapp" class="small">
+              <strong>RemoteApp (Seamless Window)</strong> &mdash; Runs seamless window without full desktop
+            </label>
+          </c-form-check>
+          <c-form-check>
+            <input cFormCheckInput type="radio" id="mode-initprog" name="appMode" value="initial_program" [(ngModel)]="publishAppData.app_mode" />
+            <label cFormCheckLabel for="mode-initprog" class="small">
+              <strong>Initial Program</strong> &mdash; Launches app inside full desktop session
+            </label>
+          </c-form-check>
+        </div>
+      </c-col>
+
+      <!-- RemoteApp Fields -->
+      <ng-container *ngIf="publishAppData.app_mode === 'remote_app'">
+        <c-col xs="12">
+          <label class="form-label small fw-semibold">Application Executable or Alias *</label>
+          <input cFormControl size="sm" [(ngModel)]="publishAppData.remote_app" placeholder="e.g. ||winbox or C:\Tools\winbox.exe" class="font-monospace" />
+          <small class="text-muted" style="font-size:0.75rem;">Can be a published RemoteApp alias (prefixed by ||) or absolute path.</small>
+        </c-col>
+
+        <c-col xs="12" md="6">
+          <label class="form-label small fw-semibold">Application Arguments (Optional)</label>
+          <input cFormControl size="sm" [(ngModel)]="publishAppData.remote_app_args" placeholder="e.g. 192.168.88.1 admin" class="font-monospace" />
+        </c-col>
+
+        <c-col xs="12" md="6">
+          <label class="form-label small fw-semibold">Working Directory (Optional)</label>
+          <input cFormControl size="sm" [(ngModel)]="publishAppData.remote_app_dir" placeholder="e.g. C:\Tools" class="font-monospace" />
+        </c-col>
+      </ng-container>
+
+      <!-- Initial Program Fields -->
+      <ng-container *ngIf="publishAppData.app_mode === 'initial_program'">
+        <c-col xs="12">
+          <label class="form-label small fw-semibold">Initial Program Path *</label>
+          <input cFormControl size="sm" [(ngModel)]="publishAppData.initial_program" placeholder="e.g. notepad.exe or C:\Windows\notepad.exe" class="font-monospace" />
+        </c-col>
+      </ng-container>
+    </c-row>
+  </c-modal-body>
+  <c-modal-footer>
+    <button cButton color="secondary" size="sm" (click)="publishAppModalVisible = false">Cancel</button>
+    <button cButton color="success" size="sm" (click)="savePublishedApp()" [disabled]="isPublishingApp" style="color:#fff;">
+      <i class="fa-solid fa-check me-1" *ngIf="!isPublishingApp"></i>
+      <span class="spinner-border spinner-border-sm me-1" *ngIf="isPublishingApp" role="status"></span>
+      {{ isPublishingApp ? 'Publishing...' : 'Publish Application' }}
+    </button>
+  </c-modal-footer>
+</c-modal>

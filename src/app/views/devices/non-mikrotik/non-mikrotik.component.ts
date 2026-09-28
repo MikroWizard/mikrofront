@@ -83,30 +83,85 @@ export class NonMikrotikComponent implements OnInit, OnChanges {
     });
   }
 
-  onBrandChange() {
-    if (this.editData.device_type) {
-      this.data_provider.listTemplates({ brand_id: this.editData.device_type }).then((res: any) => {
-        this.brandTemplates = (res.data || res || []);
-        if (this.brandTemplates.length && !this.editData.template_id) {
-          this.editData.template_id = this.brandTemplates[0].id;
-        }
+  getTemplateProtoTag(t: any): string {
+    if (!t) return 'SSH';
+    const conn = t.connection || {};
+    if (conn.protocol) return conn.protocol.toUpperCase();
+    if (conn.protocols && conn.protocols.length) {
+      return conn.protocols.map((p: string) => p.toUpperCase()).join('/');
+    }
+    return 'CLI';
+  }
+
+  getFilteredBrands(proto?: string): any[] {
+    const p = (proto || 'ssh').toLowerCase();
+    if (!this.brands || !this.brands.length) return [];
+    if (p === 'rdp') {
+      return this.brands.filter((b: any) => {
+        const code = (b.brand || b.id || '').toLowerCase();
+        return code === 'windows' || code === 'generic';
+      });
+    } else if (p === 'vnc') {
+      return this.brands.filter((b: any) => {
+        const code = (b.brand || b.id || '').toLowerCase();
+        return code === 'generic' || code === 'linux';
       });
     } else {
-      this.brandTemplates = [];
+      return this.brands.filter((b: any) => {
+        const code = (b.brand || b.id || '').toLowerCase();
+        return code !== 'windows' && code !== 'mikrotik';
+      });
     }
   }
 
-  onBrandChangeAdd() {
-    if (this.addData.device_type) {
-      this.data_provider.listTemplates({ brand_id: this.addData.device_type }).then((res: any) => {
-        this.brandTemplates = (res.data || res || []);
-        if (this.brandTemplates.length && !this.addData.template_id) {
-          this.addData.template_id = this.brandTemplates[0].id;
-        }
-      });
-    } else {
-      this.brandTemplates = [];
+  setAddProto(proto: string) {
+    const oldProto = this.addData.protocol;
+    this.addData.protocol = proto;
+    const defaults: Record<string, number> = { ssh: 22, telnet: 23, rdp: 3389, vnc: 5900 };
+    if (!this.addData.port || this.addData.port === defaults[oldProto]) {
+      this.addData.port = defaults[proto] || 22;
     }
+    const allowed = this.getFilteredBrands(proto);
+    if (!allowed.some((b: any) => (b.brand || b.id) === this.addData.device_type)) {
+      this.addData.device_type = proto === 'rdp' ? 'windows' : 'generic';
+    }
+    this.onBrandChangeAdd();
+  }
+
+  setEditProto(proto: string) {
+    const oldProto = this.editData.protocol;
+    this.editData.protocol = proto;
+    const defaults: Record<string, number> = { ssh: 22, telnet: 23, rdp: 3389, vnc: 5900 };
+    if (!this.editData.port || this.editData.port === defaults[oldProto]) {
+      this.editData.port = defaults[proto] || 22;
+    }
+    const allowed = this.getFilteredBrands(proto);
+    if (!allowed.some((b: any) => (b.brand || b.id) === this.editData.device_type)) {
+      this.editData.device_type = proto === 'rdp' ? 'windows' : 'generic';
+    }
+    this.onBrandChange();
+  }
+
+  onBrandChange() {
+    const query: any = { protocol: this.editData.protocol || 'ssh' };
+    if (this.editData.device_type) query.brand_id = this.editData.device_type;
+    this.data_provider.listTemplates(query).then((res: any) => {
+      this.brandTemplates = (res.data || res || []);
+      if (!this.brandTemplates.some((t: any) => t.id == this.editData.template_id)) {
+        this.editData.template_id = this.brandTemplates.length ? this.brandTemplates[0].id : null;
+      }
+    });
+  }
+
+  onBrandChangeAdd() {
+    const query: any = { protocol: this.addData.protocol || 'ssh' };
+    if (this.addData.device_type) query.brand_id = this.addData.device_type;
+    this.data_provider.listTemplates(query).then((res: any) => {
+      this.brandTemplates = (res.data || res || []);
+      if (!this.brandTemplates.some((t: any) => t.id == this.addData.template_id)) {
+        this.addData.template_id = this.brandTemplates.length ? this.brandTemplates[0].id : null;
+      }
+    });
   }
 
   show_pass: boolean = false;
@@ -258,7 +313,9 @@ export class NonMikrotikComponent implements OnInit, OnChanges {
   }
 
   connectDevice(dev: any) {
-    this.router.navigate(['/connection-manager', dev.id]);
+    const isWindows = dev.device_type === 'windows' || dev.brand === 'windows';
+    const proto = dev.protocol || (isWindows ? 'rdp' : (dev.device_type === 'vnc' ? 'vnc' : 'ssh'));
+    this.router.navigate(['/connection-manager', dev.id], { queryParams: { protocol: proto } });
   }
 
   emitAction(type: string, item: any) {
