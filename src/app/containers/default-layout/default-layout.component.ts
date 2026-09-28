@@ -5,9 +5,8 @@ import { User } from '../../providers/mikrowizard/user';
 import { navItems, customerNavItems } from './_nav';
 import { dataProvider } from '../../providers/mikrowizard/data';
 import { LicenseService } from '../../providers/license.service';
-import { arch } from 'os';
+import { UiModeService, UiMode } from '../../providers/ui-mode.service';
 import { DomSanitizer } from '@angular/platform-browser';
-import { disconnect } from 'process';
 
 @Component({
   selector: 'app-dashboard',
@@ -49,10 +48,10 @@ export class DefaultLayoutComponent implements OnInit {
   constructor(
     private router: Router,
     private login_checker: loginChecker,
-		private data_provider: dataProvider,
+    private data_provider: dataProvider,
     private licenseService: LicenseService,
-    private _sanitizer: DomSanitizer
-
+    private _sanitizer: DomSanitizer,
+    public uiModeService: UiModeService
   ) {
     var _self = this;
     var session_info: string = localStorage.getItem('current_user') || "[]";
@@ -315,26 +314,13 @@ export class DefaultLayoutComponent implements OnInit {
       }
     } else {
       this.data_provider.getSessionInfo().then((res) => {
-        _self.ispro=res['ISPRO']
+        _self.ispro = res['ISPRO'];
         _self.licenseService.setLicenseState(res['license']);
-        _self.navItems=_self.navItems.filter((item:any) => {
-          if (item.attributes){
-            if('free' in item.attributes && _self.ispro){
-              return ;
-            }
-            else if('pro' in item.attributes && _self.ispro){
-              return item;
-            }
-            else if('pro' in item.attributes && !_self.ispro){
-              return ;
-            }
-            else
-              return item;
-          }
-          else{
-              return item;
-          }
-        });
+        _self.updateNavItems();
+      });
+
+      this.uiModeService.mode$.subscribe(() => {
+        _self.updateNavItems();
       });
     }
     // check first time after 10 seconds
@@ -362,6 +348,56 @@ export class DefaultLayoutComponent implements OnInit {
   clearTimer() {
      clearInterval(this.timer); 
      this.ConfirmModalVisible = false;
+  }
+
+  updateNavItems(): void {
+    if (this.current_user && this.current_user.role === 'customer') {
+      return;
     }
-  
+    const currentMode = this.uiModeService.currentMode;
+    const isPro = this.ispro;
+
+    const filtered = navItems.filter((item: any) => {
+      if (item.attributes) {
+        if ('free' in item.attributes && isPro) {
+          return false;
+        }
+        if ('pro' in item.attributes && !isPro) {
+          return false;
+        }
+        if ('mode' in item.attributes) {
+          const itemMode = item.attributes['mode'];
+          if (itemMode === 'mikrotik' && currentMode === 'pam') {
+            return false;
+          }
+          if (itemMode === 'pam' && currentMode === 'mikrotik') {
+            return false;
+          }
+        }
+      }
+      return true;
+    });
+
+    const cleaned: any[] = [];
+    for (let i = 0; i < filtered.length; i++) {
+      const item = filtered[i];
+      if (item.title) {
+        let hasChildren = false;
+        for (let j = i + 1; j < filtered.length; j++) {
+          if (filtered[j].title) {
+            break;
+          }
+          hasChildren = true;
+          break;
+        }
+        if (hasChildren) {
+          cleaned.push(item);
+        }
+      } else {
+        cleaned.push(item);
+      }
+    }
+
+    this.navItems = cleaned;
+  }
 }

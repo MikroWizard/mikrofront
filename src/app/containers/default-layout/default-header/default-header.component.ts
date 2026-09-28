@@ -4,12 +4,14 @@ import { loginChecker } from '../../../providers/login_checker';
 import { Router } from "@angular/router";
 import { dataProvider } from '../../../providers/mikrowizard/data';
 import { User } from '../../../providers/mikrowizard/user';
+import { UiModeService, UiMode } from '../../../providers/ui-mode.service';
 
 import { ClassToggleService, HeaderComponent } from '@coreui/angular';
 
 @Component({
   selector: 'app-default-header',
   templateUrl: './default-header.component.html',
+  styleUrls: ['./default-header.component.scss'],
 })
 export class DefaultHeaderComponent extends HeaderComponent {
 
@@ -38,7 +40,8 @@ export class DefaultHeaderComponent extends HeaderComponent {
     private classToggler: ClassToggleService,
     private router: Router,
     private login_checker: loginChecker,
-		private data_provider: dataProvider
+    private data_provider: dataProvider,
+    public uiModeService: UiModeService
   ) {
     super();
     var _self = this;
@@ -97,6 +100,10 @@ export class DefaultHeaderComponent extends HeaderComponent {
 
   navigateToConnectionManager(): void {
     this.router.navigate(['/connection-manager']);
+  }
+
+  setMode(mode: UiMode): void {
+    this.uiModeService.setMode(mode);
   }
 
   emitDeviceChange() {

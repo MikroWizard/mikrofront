@@ -13,7 +13,7 @@
         </c-card-header>
 
         <div class="settings-tabs">
-          <button class="tab-link" [class.active]="activeTab === 'firmware'" (click)="activeTab = 'firmware'">
+          <button class="tab-link" *mwMode="'mikrotik'" [class.active]="activeTab === 'firmware'" (click)="activeTab = 'firmware'">
             <i class="fa-solid fa-microchip me-2"></i>Firmware Manager
           </button>
           <button class="tab-link" [class.active]="activeTab === 'system'" (click)="activeTab = 'system'">
@@ -25,9 +25,11 @@
           <button class="tab-link" *ngIf="ispro" [class.active]="activeTab === 'ai'" (click)="activeTab = 'ai'">
             <i class="fa-solid fa-robot me-2"></i>AI Assistant
           </button>
-          <button class="tab-link" *ngIf="ispro" [class.active]="activeTab === 'speedtest'" (click)="activeTab = 'speedtest'">
-            <i class="fa-solid fa-gauge-high me-2"></i>Speed Test Servers
-          </button>
+          <ng-container *mwMode="'mikrotik'">
+            <button class="tab-link" *ngIf="ispro" [class.active]="activeTab === 'speedtest'" (click)="activeTab = 'speedtest'">
+              <i class="fa-solid fa-gauge-high me-2"></i>Speed Test Servers
+            </button>
+          </ng-container>
           <button class="tab-link" *ngIf="ispro" [class.active]="activeTab === 'alerts'" (click)="activeTab = 'alerts'">
             <i class="fa-solid fa-bell me-2"></i>Alert Channels
           </button>

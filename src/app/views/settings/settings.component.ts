@@ -10,6 +10,7 @@ import { dataProvider } from "../../providers/mikrowizard/data";
 import { Router } from "@angular/router";
 import { loginChecker } from "../../providers/login_checker";
 import { LicenseService } from "../../providers/license.service";
+import { UiModeService } from "../../providers/ui-mode.service";
 import { Table } from 'primeng/table';
 import { ToasterComponent } from "@coreui/angular";
 import { AppToastComponent } from "../toast-simple/toast.component";
@@ -85,7 +86,8 @@ export class SettingsComponent implements OnInit {
     private router: Router,
     private TimeZones: TimeZones,
     private login_checker: loginChecker,
-    private licenseService: LicenseService
+    private licenseService: LicenseService,
+    public uiModeService: UiModeService
   ) {
     var _self = this;
     if (!this.login_checker.isLoggedIn()) {
@@ -169,6 +171,14 @@ export class SettingsComponent implements OnInit {
   public timezones = this.TimeZones.timezones;
 
   ngOnInit(): void {
+    if (!this.uiModeService.showMikrotik && (this.activeTab === 'firmware' || this.activeTab === 'speedtest')) {
+      this.activeTab = 'system';
+    }
+    this.uiModeService.mode$.subscribe(() => {
+      if (!this.uiModeService.showMikrotik && (this.activeTab === 'firmware' || this.activeTab === 'speedtest')) {
+        this.activeTab = 'system';
+      }
+    });
     this.initAvailbleFirms();
     this.initFirmsTable();
     this.initsettings();

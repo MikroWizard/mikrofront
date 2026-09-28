@@ -10,12 +10,12 @@
                   <i class="fas fa-layer-group me-1"></i>All Devices ({{source.length}})
                 </a>
               </div>
-              <div class="nav-item">
+              <div class="nav-item" *mwMode="'mikrotik'">
                 <a [class.active]="deviceTab === 'mikrotik'" class="nav-link" (click)="setDeviceTab('mikrotik')" style="cursor: pointer;">
                   <i class="fas fa-router me-1"></i>MikroTik ({{mikrotikCount}})
                 </a>
               </div>
-              <div class="nav-item">
+              <div class="nav-item" *mwMode="'pam'">
                 <a [class.active]="deviceTab === 'nonmikrotik'" class="nav-link" (click)="setDeviceTab('nonmikrotik')" style="cursor: pointer;">
                   <i class="fas fa-server me-1"></i>Other Brands ({{nonMikrotikCount}})
                 </a>
@@ -36,7 +36,7 @@
       </c-card-header>
       <c-card-body>
         <c-row class="align-items-center mb-2">
-          <c-col xs>
+          <c-col xs *mwMode="'mikrotik'">
             <button *ngIf="updates.length > 0" cButton color="primary" class="mx-1 text-white shadow-sm" size="sm"
               (click)="filterUpdatable()" cTooltip="Filter devices with RouterOS updates available">
               <i class="fas fa-arrow-circle-up me-1"></i>{{updates.length}} Updates Available
@@ -596,28 +596,30 @@
                       cListGroupItem><i class="fa-solid fa-pencil text-primary"></i><small>
                         Edit Device</small></button>
                     <!-- MikroTik Specific Maintenance Actions -->
-                    <ng-container *ngIf="isMikrotik(item)">
-                      <button size="sm" (click)="single_device_action(item,'firmware')" style="padding: 4px 7px;"
-                        cListGroupItem><i class="text-primary fa-solid fa-magnifying-glass"></i><small>
-                          Check Firmware</small></button>
-                      <button size="sm" (click)="single_device_action(item,'update')" style="padding: 4px 7px;"
-                        cListGroupItem><i class="text-primary fa-solid fa-upload"></i><small>
-                          Update Firmware</small></button>
-                      <button size="sm" (click)="single_device_action(item,'upgrade')" style="padding: 4px 7px;"
-                        cListGroupItem><i class="text-primary fa-solid fa-microchip"></i><small>
-                          Upgrade Firmware</small></button>
-                      <button size="sm" (click)="single_device_action(item,'devlogs')" style="padding: 4px 7px;"
-                        cListGroupItem><i class="fa-regular fa-rectangle-list"></i><small>
-                          Device Logs</small></button>
-                      <button size="sm" (click)="single_device_action(item,'logauth')" style="padding: 4px 7px;"
-                        cListGroupItem><i class="text-primary fa-regular fa-clock"></i><small>
-                          Show Auth Logs</small></button>
-                      <button size="sm" (click)="single_device_action(item,'logacc')" style="padding: 4px 7px;"
-                        cListGroupItem><i class="text-primary fa-solid fa-table-list"></i><small>
-                          Show Acc Logs</small></button>
-                      <button size="sm" (click)="single_device_action(item,'backup')" style="padding: 4px 7px;"
-                        cListGroupItem><i class="text-success fa-solid fa-database"></i><small>
-                          Show Backups</small></button>
+                    <ng-container *mwMode="'mikrotik'">
+                      <ng-container *ngIf="isMikrotik(item)">
+                        <button size="sm" (click)="single_device_action(item,'firmware')" style="padding: 4px 7px;"
+                          cListGroupItem><i class="text-primary fa-solid fa-magnifying-glass"></i><small>
+                            Check Firmware</small></button>
+                        <button size="sm" (click)="single_device_action(item,'update')" style="padding: 4px 7px;"
+                          cListGroupItem><i class="text-primary fa-solid fa-upload"></i><small>
+                            Update Firmware</small></button>
+                        <button size="sm" (click)="single_device_action(item,'upgrade')" style="padding: 4px 7px;"
+                          cListGroupItem><i class="text-primary fa-solid fa-microchip"></i><small>
+                            Upgrade Firmware</small></button>
+                        <button size="sm" (click)="single_device_action(item,'devlogs')" style="padding: 4px 7px;"
+                          cListGroupItem><i class="fa-regular fa-rectangle-list"></i><small>
+                            Device Logs</small></button>
+                        <button size="sm" (click)="single_device_action(item,'logauth')" style="padding: 4px 7px;"
+                          cListGroupItem><i class="text-primary fa-regular fa-clock"></i><small>
+                            Show Auth Logs</small></button>
+                        <button size="sm" (click)="single_device_action(item,'logacc')" style="padding: 4px 7px;"
+                          cListGroupItem><i class="text-primary fa-solid fa-table-list"></i><small>
+                            Show Acc Logs</small></button>
+                        <button size="sm" (click)="single_device_action(item,'backup')" style="padding: 4px 7px;"
+                          cListGroupItem><i class="text-success fa-solid fa-database"></i><small>
+                            Show Backups</small></button>
+                      </ng-container>
                     </ng-container>
                     <!-- Pro Auditing Actions for all devices -->
                     <ng-container *ngIf="ispro">

@@ -21,6 +21,7 @@ import { ChartjsModule } from "@coreui/angular-chartjs";
 import { DashboardRoutingModule } from "./dashboard-routing.module";
 import { DashboardComponent } from "./dashboard.component";
 import { ClipboardModule } from "@angular/cdk/clipboard";
+import { SharedModule } from "../../shared/shared.module";
 
 @NgModule({
   imports: [
@@ -40,6 +41,7 @@ import { ClipboardModule } from "@angular/cdk/clipboard";
     ClipboardModule,
     ModalModule,
     TooltipModule,
+    SharedModule,
   ],
   declarations: [DashboardComponent],
 })

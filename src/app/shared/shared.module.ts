@@ -13,11 +13,13 @@ import {
 
 import { LicenseExpiredOverlayComponent } from './components/license-expired-overlay/license-expired-overlay.component';
 import { ExportModalComponent } from './components/export-modal/export-modal.component';
+import { MwModeDirective } from './directives/mw-mode.directive';
 
 @NgModule({
   declarations: [
     LicenseExpiredOverlayComponent,
-    ExportModalComponent
+    ExportModalComponent,
+    MwModeDirective
   ],
   imports: [
     CommonModule,
@@ -33,6 +35,7 @@ import { ExportModalComponent } from './components/export-modal/export-modal.com
   exports: [
     LicenseExpiredOverlayComponent,
     ExportModalComponent,
+    MwModeDirective,
     CommonModule,
     FormsModule
   ]

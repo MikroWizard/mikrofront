@@ -20,6 +20,7 @@ import { InputTextModule as PInputTextModule } from 'primeng/inputtext';
 import { TooltipModule as PTooltipModule } from 'primeng/tooltip';
 
 import { FormsModule } from "@angular/forms";
+import { SharedModule } from "../../shared/shared.module";
 
 @NgModule({
   imports: [
@@ -39,6 +40,7 @@ import { FormsModule } from "@angular/forms";
     ModalModule,
     BadgeModule,
     TooltipModule,
+    SharedModule,
   ],
   declarations: [SettingsComponent],
 })

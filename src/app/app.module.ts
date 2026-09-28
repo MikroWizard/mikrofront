@@ -12,6 +12,7 @@ import { provideHttpClient, withInterceptorsFromDi, HTTP_INTERCEPTORS } from '@a
 import { LicenseService } from './providers/license.service';
 import { LicenseInterceptor } from './providers/license-interceptor.service';
 import { LicenseBannerComponent } from './shared/components/license-banner/license-banner.component';
+import { SharedModule as AppSharedModule } from './shared/shared.module';
 
 // Import routing module
 import { AppRoutingModule } from './app-routing.module';
@@ -93,7 +94,8 @@ export function loginStatusProviderFactory(provider: loginChecker) {
         ModalModule,
         FontAwesomeModule,
         TableModule,
-        CustomerChatWidgetModule], providers: [
+        CustomerChatWidgetModule,
+        AppSharedModule], providers: [
         {
             provide: LocationStrategy,
             useClass: HashLocationStrategy

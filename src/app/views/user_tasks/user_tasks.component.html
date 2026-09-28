@@ -138,7 +138,9 @@
             <option value="config_backup">💾 Multi-Brand Config Backup</option>
             <option value="snippet">📝 Execute Script/Snippet</option>
             <option value="command_exec">⌨️ Command Execution</option>
-            <option value="firmware" *ngIf="ispro">🔄 Firmware Update</option>
+            <ng-container *mwMode="'mikrotik'">
+              <option value="firmware" *ngIf="ispro">🔄 Firmware Update</option>
+            </ng-container>
             <option value="sequence" *ngIf="ispro">⛓️ Alert Sequence</option>
           </select>
         </c-col>

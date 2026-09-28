@@ -38,7 +38,7 @@ export const navItems: INavData[] = [
     name: 'Network Maps',
     url: '/maps',
     icon: 'fa-solid fa-map',
-    attributes: { 'pro': true }
+    attributes: { 'pro': true, 'mode': 'mikrotik' }
   },
   // {
   //   name: 'Tools',
@@ -91,7 +91,7 @@ export const navItems: INavData[] = [
     name: 'Sync and Cloner',
     url: '/cloner',
     icon: 'fa-solid fa-rotate',
-    attributes: { 'pro': true }
+    attributes: { 'pro': true, 'mode': 'mikrotik' }
 
   },
   {
@@ -130,31 +130,30 @@ export const navItems: INavData[] = [
     name: 'Authentication',
     url: '/authlog',
     icon: 'fa-solid fa-check-to-slot',
-
+    attributes: { 'mode': 'mikrotik' }
   },
   {
     name: 'Accounting',
     url: '/accountlog',
     icon: 'fa-solid fa-list-check',
-
+    attributes: { 'mode': 'mikrotik' }
   },
   {
     name: 'Device Logs',
     url: '/devlogs',
     icon: 'fa-regular fa-rectangle-list',
-
+    attributes: { 'mode': 'mikrotik' }
   },
   {
     name: 'System Logs',
     url: '/syslog',
     icon: 'fa-solid fa-person-circle-question',
-
   },
   {
     name: 'Syslog Custom Regex',
     url: '/syslog-regex',
     icon: 'fa-solid fa-code-commit',
-    attributes: { 'pro': true }
+    attributes: { 'pro': true, 'mode': 'mikrotik' }
   },
   {
     title: true,
@@ -169,6 +168,7 @@ export const navItems: INavData[] = [
     name: 'Permissions',
     url: '/permissions',
     icon: 'fa-solid fa-users',
+    attributes: { 'mode': 'mikrotik' }
   },
   {
     name: 'Customer Tickets',
@@ -180,41 +180,42 @@ export const navItems: INavData[] = [
     name: 'Customer Portals',
     url: '/customer-assignments',
     icon: 'fa-solid fa-user-tag',
-    attributes: { 'pro': true }
+    attributes: { 'pro': true, 'mode': 'mikrotik' }
   },
   {
     name: 'Privileged sessions (PAM)',
     title: true,
-    attributes: { 'pro': true }
+    attributes: { 'pro': true, 'mode': 'pam' }
   },
   {
     name: 'Active sessions',
     url: '/pam/active',
     icon: 'fa-solid fa-terminal',
-    attributes: { 'pro': true }
+    attributes: { 'pro': true, 'mode': 'pam' }
   },
   {
     name: 'Session history',
     url: '/pam/history',
     icon: 'fa-solid fa-clock-rotate-left',
-    attributes: { 'pro': true }
+    attributes: { 'pro': true, 'mode': 'pam' }
   },
   {
     name: 'Command history',
     url: '/pam/commands',
     icon: 'fa-solid fa-keyboard',
-    attributes: { 'pro': true }
+    attributes: { 'pro': true, 'mode': 'pam' }
   },
   {
     name: 'Brands / Templates',
     url: '/templates',
     icon: 'fa-solid fa-puzzle-piece',
+    attributes: { 'mode': 'pam' }
   },
   {
     name: 'Terminal Policies',
     url: '/policies',
     icon: 'fa-solid fa-shield-halved',
-    attributes: { 'pro': true }
+    attributes: { 'pro': true, 'mode': 'pam' }
   },
   {
     name: 'AI Chat Audit Logs',

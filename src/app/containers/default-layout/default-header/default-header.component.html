@@ -56,9 +56,15 @@
       </select>
     </div>
 
-    <c-header-nav class="ms-3">
-      <button cButton color="primary" variant="outline" size="sm" class="me-3 rounded-pill btn-connection-mgr d-inline-flex align-items-center" (click)="navigateToConnectionManager()" *ngIf="ispro" title="Switch to Connection Manager">
-        <i class="fa-solid fa-network-wired"></i> <span class="d-none d-md-inline ms-1">Connection Manager</span>
+    <c-header-nav class="ms-auto d-flex align-items-center">
+      <button type="button" 
+              class="btn btn-sm btn-connection-mgr me-3" 
+              (click)="navigateToConnectionManager()" 
+              *ngIf="ispro" 
+              title="Launch Remote Terminal & Desktop Connection Manager">
+        <span class="mgr-pulse"></span>
+        <i class="fa-solid fa-terminal mgr-icon"></i>
+        <span class="d-none d-sm-inline">Connection Manager</span>
       </button>
       <ng-container *ngTemplateOutlet="taskDropdown"></ng-container> | 
       <ng-container *ngTemplateOutlet="userDropdown"></ng-container>
@@ -84,9 +90,39 @@
       <svg cIcon class="me-2" name="cilUser"></svg>
       {{fname}} {{lname}}
     </button>
-    <ul cDropdownMenu class="pt-0 pr-5 w-auto">
+    <ul cDropdownMenu class="pt-0 pr-3 w-auto shadow-lg" style="min-width: 220px;">
       <li>
         <h6 cDropdownHeader class="bg-light fw-semibold py-2">User Menu</h6>
+      </li>
+      <li *ngIf="!current_user || current_user.role !== 'customer'">
+        <div class="px-3 py-2 border-bottom">
+          <small class="text-muted fw-bold text-uppercase d-block mb-1" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+            Workspace Mode
+          </small>
+          <div class="d-flex flex-column gap-1">
+            <button type="button" 
+                    class="btn btn-sm text-start d-flex align-items-center justify-content-between px-2 py-1 rounded" 
+                    [ngClass]="uiModeService.currentMode === 'both' ? 'btn-primary text-white' : 'btn-light text-dark'"
+                    (click)="setMode('both')">
+              <span><i class="fa-solid fa-layer-group me-2"></i>All Features</span>
+              <i class="fa-solid fa-check" *ngIf="uiModeService.currentMode === 'both'"></i>
+            </button>
+            <button type="button" 
+                    class="btn btn-sm text-start d-flex align-items-center justify-content-between px-2 py-1 rounded" 
+                    [ngClass]="uiModeService.currentMode === 'mikrotik' ? 'btn-primary text-white' : 'btn-light text-dark'"
+                    (click)="setMode('mikrotik')">
+              <span><i class="fa-solid fa-router me-2"></i>MikroTik Only</span>
+              <i class="fa-solid fa-check" *ngIf="uiModeService.currentMode === 'mikrotik'"></i>
+            </button>
+            <button type="button" 
+                    class="btn btn-sm text-start d-flex align-items-center justify-content-between px-2 py-1 rounded" 
+                    [ngClass]="uiModeService.currentMode === 'pam' ? 'btn-primary text-white' : 'btn-light text-dark'"
+                    (click)="setMode('pam')">
+              <span><i class="fa-solid fa-shield-halved me-2"></i>PAM &amp; Automation</span>
+              <i class="fa-solid fa-check" *ngIf="uiModeService.currentMode === 'pam'"></i>
+            </button>
+          </div>
+        </div>
       </li>
       <li>
         <button (click)="callParent('password')" cDropdownItem>
@@ -101,7 +137,10 @@
         </button>
       </li>
       <li>
-        <a routerLink="./" (click)="logout()" cDropdownItem>
+        <hr class="dropdown-divider my-1">
+      </li>
+      <li>
+        <a routerLink="./" (click)="logout()" cDropdownItem class="text-danger">
           <svg cIcon class="me-2" name="cilExitToApp"></svg>
           Logout
         </a>
