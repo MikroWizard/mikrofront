@@ -30,7 +30,19 @@ export class PolicyManagerComponent implements OnInit {
 
   public editDialogVisible: boolean = false;
   public editMode: string = 'create';
-  public editPolicy: any = { name: '', description: '', policy_type: 'blacklist', matching: 'token', default_action: 'allow', rules: [], autoExecCommands: '', defense_level: 'standard', blocked_binaries: [], blockedBinariesText: '', agent_modes: {linux: 'none', darwin: 'none', freebsd: 'none'} };
+  public editPolicy: any = {
+    name: '', description: '', policy_type: 'blacklist', matching: 'token', default_action: 'allow',
+    rules: [], autoExecCommands: '', defense_level: 'standard', blocked_binaries: [], blockedBinariesText: '',
+    agent_modes: {linux: 'none', darwin: 'none', freebsd: 'none'},
+    session_dlp: {
+      clipboard: 'bidirectional',
+      file_transfer: 'enabled',
+      watermark: { enabled: false, text: '{user} ({ip}) - {date}', opacity: 0.15 },
+      recording: { video_enabled: true, keystrokes_enabled: true },
+      printing: false,
+      audio_input: false
+    }
+  };
 
   public deleteConfirmVisible: boolean = false;
   public deleteTarget: any = null;
@@ -134,7 +146,19 @@ export class PolicyManagerComponent implements OnInit {
 
   openCreateDialog() {
     this.editMode = 'create';
-    this.editPolicy = { name: '', description: '', policy_type: 'blacklist', matching: 'token', default_action: 'allow', rules: [], autoExecCommands: '', defense_level: 'standard', blocked_binaries: [], blockedBinariesText: '', agent_modes: {linux: 'none', darwin: 'none', freebsd: 'none'} };
+    this.editPolicy = {
+      name: '', description: '', policy_type: 'blacklist', matching: 'token', default_action: 'allow',
+      rules: [], autoExecCommands: '', defense_level: 'standard', blocked_binaries: [], blockedBinariesText: '',
+      agent_modes: {linux: 'none', darwin: 'none', freebsd: 'none'},
+      session_dlp: {
+        clipboard: 'bidirectional',
+        file_transfer: 'enabled',
+        watermark: { enabled: false, text: '{user} ({ip}) - {date}', opacity: 0.15 },
+        recording: { video_enabled: true, keystrokes_enabled: true },
+        printing: false,
+        audio_input: false
+      }
+    };
     this.editDialogVisible = true;
   }
 
@@ -144,6 +168,22 @@ export class PolicyManagerComponent implements OnInit {
     _self.data_provider.getPolicy(policy.id).then((res: any) => {
       if (res.status === 'success') {
         _self.editPolicy = res.data || { name: '', description: '', policy_type: 'blacklist', matching: 'token', default_action: 'allow', rules: [], defense_level: 'standard', blocked_binaries: [], agent_modes: {linux: 'none', darwin: 'none', freebsd: 'none'} };
+        if (!_self.editPolicy.session_dlp) {
+          _self.editPolicy.session_dlp = {
+            clipboard: 'bidirectional',
+            file_transfer: 'enabled',
+            watermark: { enabled: false, text: '{user} ({ip}) - {date}', opacity: 0.15 },
+            recording: { video_enabled: true, keystrokes_enabled: true },
+            printing: false,
+            audio_input: false
+          };
+        }
+        if (!_self.editPolicy.session_dlp.watermark) {
+          _self.editPolicy.session_dlp.watermark = { enabled: false, text: '{user} ({ip}) - {date}', opacity: 0.15 };
+        }
+        if (!_self.editPolicy.session_dlp.recording) {
+          _self.editPolicy.session_dlp.recording = { video_enabled: true, keystrokes_enabled: true };
+        }
         _self.editPolicy.autoExecCommands = _self.editPolicy.policy_type === 'auto_exec'
           ? (_self.editPolicy.rules || []).map((r: any) => r.rule).join('\n')
           : '';

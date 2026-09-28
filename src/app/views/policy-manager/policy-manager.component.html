@@ -331,6 +331,85 @@ or any command-line obfuscation."></i>
         </div>
       </c-col>
 
+      <!-- GUI Session Guardrails (Web DLP) -->
+      <c-col xs="12">
+        <div class="card p-3 border-secondary bg-dark-subtle">
+          <div class="d-flex align-items-center justify-content-between mb-3">
+            <h6 class="mb-0 text-info">
+              <i class="fas fa-shield-halved me-2"></i>GUI Session Guardrails (Session DLP)
+            </h6>
+            <i class="fas fa-circle-info text-muted cursor-pointer"
+               pTooltip="<b>Session Data Loss Prevention (DLP)</b><br/>Enforces clipboard boundaries, virtual drive/file transfer governance, screen watermarking, and forensic recording across RDP and VNC privileged sessions."
+               [escape]="false"></i>
+          </div>
+
+          <c-row class="g-3" *ngIf="editPolicy.session_dlp">
+            <!-- Directional Clipboard -->
+            <c-col xs="12" md="6">
+              <label class="form-label small fw-semibold text-muted mb-1">
+                <i class="fas fa-clipboard me-1"></i>Clipboard Control
+              </label>
+              <select cSelect [(ngModel)]="editPolicy.session_dlp.clipboard" class="form-select-sm">
+                <option value="bidirectional">Bidirectional (Full Copy & Paste)</option>
+                <option value="read_only">Read-Only (Copy Out Only — Remote to Local)</option>
+                <option value="write_only">Write-Only (Paste In Only — Local to Remote)</option>
+                <option value="blocked">Blocked (Completely Disabled)</option>
+              </select>
+            </c-col>
+
+            <!-- File Transfer (Web Drive) -->
+            <c-col xs="12" md="6">
+              <label class="form-label small fw-semibold text-muted mb-1">
+                <i class="fas fa-folder-open me-1"></i>File Transfer (Web Drive)
+              </label>
+              <select cSelect [(ngModel)]="editPolicy.session_dlp.file_transfer" class="form-select-sm">
+                <option value="enabled">Enabled (Upload & Download)</option>
+                <option value="upload_only">Upload Only (Remote ingestion only)</option>
+                <option value="download_only">Download Only (Local extraction only)</option>
+                <option value="blocked">Blocked (No Web Drive Redirection)</option>
+              </select>
+            </c-col>
+
+            <!-- Screen Watermark -->
+            <c-col xs="12" md="6">
+              <div class="d-flex align-items-center justify-content-between mb-1">
+                <label class="form-label small fw-semibold text-muted mb-0">
+                  <i class="fas fa-stamp me-1"></i>Screen Watermarking
+                </label>
+                <c-form-check [switch]="true">
+                  <input cFormCheckInput type="checkbox" [(ngModel)]="editPolicy.session_dlp.watermark.enabled" />
+                </c-form-check>
+              </div>
+              <input cFormControl size="sm" type="text" [(ngModel)]="editPolicy.session_dlp.watermark.text"
+                     [disabled]="!editPolicy.session_dlp.watermark.enabled"
+                     placeholder="{user} ({ip}) - {date}" class="font-monospace small" />
+              <small class="text-muted" style="font-size: 0.72rem;">Variables: &#123;user&#125;, &#123;ip&#125;, &#123;date&#125;</small>
+            </c-col>
+
+            <!-- Forensic Recording & Peripherals -->
+            <c-col xs="12" md="6">
+              <label class="form-label small fw-semibold text-muted mb-1">
+                <i class="fas fa-video me-1"></i>Forensics & Peripherals
+              </label>
+              <div class="d-flex flex-wrap gap-3 mt-1">
+                <c-form-check>
+                  <input cFormCheckInput type="checkbox" id="dlp-video" [(ngModel)]="editPolicy.session_dlp.recording.video_enabled" />
+                  <label cFormCheckLabel for="dlp-video" class="small">Forensic Video</label>
+                </c-form-check>
+                <c-form-check>
+                  <input cFormCheckInput type="checkbox" id="dlp-print" [(ngModel)]="editPolicy.session_dlp.printing" />
+                  <label cFormCheckLabel for="dlp-print" class="small">Printing</label>
+                </c-form-check>
+                <c-form-check>
+                  <input cFormCheckInput type="checkbox" id="dlp-audio" [(ngModel)]="editPolicy.session_dlp.audio_input" />
+                  <label cFormCheckLabel for="dlp-audio" class="small">Microphone Input</label>
+                </c-form-check>
+              </div>
+            </c-col>
+          </c-row>
+        </div>
+      </c-col>
+
       <c-col xs="12" *ngIf="editPolicy.policy_type === 'auto_exec'">
         <mat-form-field appearance="outline" class="w-100">
           <mat-label>Auto-Execute Commands</mat-label>
