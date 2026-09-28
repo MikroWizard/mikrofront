@@ -7,7 +7,17 @@
             <div class="nav nav-underline bg-transparent">
               <div class="nav-item">
                 <a [class.active]="activeTab === 'templates'" class="nav-link" (click)="switchTab('templates')" style="cursor: pointer;">
-                  <i class="fas fa-puzzle-piece me-1"></i>Templates
+                  <i class="fas fa-terminal me-1"></i>CLI Templates
+                </a>
+              </div>
+              <div class="nav-item">
+                <a [class.active]="activeTab === 'rdp_templates'" class="nav-link" (click)="switchTab('rdp_templates')" style="cursor: pointer;">
+                  <i class="fab fa-windows me-1"></i>RDP Templates
+                </a>
+              </div>
+              <div class="nav-item">
+                <a [class.active]="activeTab === 'vnc_templates'" class="nav-link" (click)="switchTab('vnc_templates')" style="cursor: pointer;">
+                  <i class="fas fa-desktop me-1"></i>VNC Templates
                 </a>
               </div>
               <div class="nav-item">
@@ -26,8 +36,8 @@
       </c-card-header>
       <c-card-body>
 
-        <!-- ==================== TEMPLATES TAB ==================== -->
-        <div *ngIf="activeTab === 'templates'">
+        <!-- ==================== TEMPLATES TAB (CLI / RDP / VNC) ==================== -->
+        <div *ngIf="activeTab === 'templates' || activeTab === 'rdp_templates' || activeTab === 'vnc_templates'">
           <div class="tab-info-header mb-3">
             <div class="d-flex align-items-center">
               <i class="fas fa-puzzle-piece text-info me-2 fs-4"></i>
@@ -51,6 +61,7 @@
             <ng-template pTemplate="header">
               <tr>
                 <th pSortableColumn="display_name" pResizableColumn>Name <p-sortIcon field="display_name"></p-sortIcon></th>
+                <th pSortableColumn="protocol" pResizableColumn style="width: 110px;">Protocol <p-sortIcon field="protocol"></p-sortIcon></th>
                 <th pSortableColumn="brand" pResizableColumn>Brand <p-sortIcon field="brand"></p-sortIcon></th>
                 <th pSortableColumn="os_type" pResizableColumn>OS Type <p-sortIcon field="os_type"></p-sortIcon></th>
                 <th>System</th>
@@ -60,6 +71,11 @@
             <ng-template pTemplate="body" let-item>
               <tr>
                 <td><strong>{{item.display_name}}</strong></td>
+                <td>
+                  <span class="badge" [ngClass]="getProtoBadgeClass(item.protocol)">
+                    {{(item.protocol || 'SSH') | uppercase}}
+                  </span>
+                </td>
                 <td><c-badge color="info">{{getBrandName(item.brand)}}</c-badge></td>
                 <td><small class="text-muted">{{item.os_type || 'generic'}}</small></td>
                 <td>
@@ -172,6 +188,99 @@
       </c-col>
     </c-row>
 
+    <!-- GUI Settings (RDP / VNC) -->
+    <div *ngIf="editData.connection && (editData.connection.protocol === 'rdp' || editData.connection.protocol === 'vnc')">
+      <h6 class="mb-3 text-info"><i class="fas fa-desktop me-2"></i>Display & Video Settings</h6>
+      <c-row class="g-3 mb-4">
+        <c-col xs="12" md="3">
+          <label class="form-label small">Color Depth</label>
+          <select cSelect size="sm" [(ngModel)]="editData.connection.color_depth">
+            <option [ngValue]="16">16-bit (Low Bandwidth)</option>
+            <option [ngValue]="24">24-bit (Standard)</option>
+            <option [ngValue]="32">32-bit (True Color)</option>
+          </select>
+        </c-col>
+        <c-col xs="12" md="3" *ngIf="editData.connection.protocol === 'rdp'">
+          <label class="form-label small">Display DPI</label>
+          <select cSelect size="sm" [(ngModel)]="editData.connection.dpi">
+            <option [ngValue]="96">96 DPI (Standard)</option>
+            <option [ngValue]="120">120 DPI (Medium)</option>
+            <option [ngValue]="144">144 DPI (High)</option>
+          </select>
+        </c-col>
+        <c-col xs="12" md="3" *ngIf="editData.connection.protocol === 'rdp'">
+          <label class="form-label small">Security Negotiation</label>
+          <select cSelect size="sm" [(ngModel)]="editData.connection.security">
+            <option value="any">Any (Auto Negotiate)</option>
+            <option value="nla">NLA (Network Level Auth)</option>
+            <option value="tls">TLS</option>
+            <option value="rdp">Standard RDP</option>
+          </select>
+        </c-col>
+        <c-col xs="12" md="3" *ngIf="editData.connection.protocol === 'rdp'">
+          <label class="form-label small">Certificate Validation</label>
+          <div class="mt-2">
+            <c-form-check>
+              <input cFormCheckInput type="checkbox" id="ignore-cert" [(ngModel)]="editData.connection.ignore_cert" />
+              <label cFormCheckLabel for="ignore-cert" class="small">Ignore Self-Signed SSL</label>
+            </c-form-check>
+          </div>
+        </c-col>
+      </c-row>
+
+      <div *ngIf="editData.connection.protocol === 'rdp'">
+        <h6 class="mb-3 text-info"><i class="fas fa-wand-magic-sparkles me-2"></i>Experience & Acceleration</h6>
+        <c-row class="g-3 mb-4">
+          <c-col xs="12" md="4">
+            <c-form-check class="mb-2">
+              <input cFormCheckInput type="checkbox" id="chk-smooth" [(ngModel)]="editData.connection.enable_font_smoothing" />
+              <label cFormCheckLabel for="chk-smooth" class="small">Font Smoothing (ClearType)</label>
+            </c-form-check>
+            <c-form-check class="mb-2">
+              <input cFormCheckInput type="checkbox" id="chk-theme" [(ngModel)]="editData.connection.enable_theming" />
+              <label cFormCheckLabel for="chk-theme" class="small">Desktop Theming</label>
+            </c-form-check>
+          </c-col>
+          <c-col xs="12" md="4">
+            <c-form-check class="mb-2">
+              <input cFormCheckInput type="checkbox" id="chk-wall" [(ngModel)]="editData.connection.enable_wallpaper" />
+              <label cFormCheckLabel for="chk-wall" class="small">Desktop Wallpaper</label>
+            </c-form-check>
+            <c-form-check class="mb-2">
+              <input cFormCheckInput type="checkbox" id="chk-drag" [(ngModel)]="editData.connection.enable_full_window_drag" />
+              <label cFormCheckLabel for="chk-drag" class="small">Full Window Drag</label>
+            </c-form-check>
+          </c-col>
+          <c-col xs="12" md="4">
+            <c-form-check class="mb-2">
+              <input cFormCheckInput type="checkbox" id="chk-comp" [(ngModel)]="editData.connection.enable_desktop_composition" />
+              <label cFormCheckLabel for="chk-comp" class="small">Desktop Composition</label>
+            </c-form-check>
+          </c-col>
+        </c-row>
+
+        <h6 class="mb-3 text-info"><i class="fas fa-keyboard me-2"></i>Keyboard & Localization</h6>
+        <c-row class="g-3 mb-4">
+          <c-col xs="12" md="6">
+            <label class="form-label small">Server Keyboard Layout</label>
+            <select cSelect size="sm" [(ngModel)]="editData.connection.server_layout">
+              <option value="en-us-qwerty">English (US) QWERTY</option>
+              <option value="de-de-qwertz">German (Germany) QWERTZ</option>
+              <option value="fr-fr-azerty">French (France) AZERTY</option>
+              <option value="es-es-qwerty">Spanish (Spain) QWERTY</option>
+              <option value="tr-tr-qwerty">Turkish (Turkey) QWERTY</option>
+            </select>
+          </c-col>
+          <c-col xs="12" md="6">
+            <label class="form-label small">Timezone</label>
+            <input cFormControl size="sm" [(ngModel)]="editData.connection.timezone" placeholder="e.g. UTC, Europe/Istanbul" />
+          </c-col>
+        </c-row>
+      </div>
+    </div>
+
+    <!-- CLI Settings (SSH / Telnet) -->
+    <div *ngIf="!editData.connection || (editData.connection.protocol !== 'rdp' && editData.connection.protocol !== 'vnc')">
     <!-- Prompt Settings -->
     <h6 class="mb-3"><i class="fas fa-terminal me-2 text-info"></i>Prompt Settings</h6>
     <c-row class="g-3 mb-4">
@@ -329,6 +438,7 @@
         </button>
       </c-col>
     </c-row>
+    </div>
   </c-modal-body>
   <c-modal-footer>
     <button cButton color="primary" (click)="saveTemplate()" [disabled]="!editData.display_name">

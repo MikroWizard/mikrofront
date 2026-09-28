@@ -66,7 +66,7 @@ export class TemplateManagerComponent implements OnInit {
   switchTab(tab: string) {
     this.activeTab = tab;
     if (tab === 'brands') this.loadBrands();
-    if (tab === 'templates') this.loadTemplates();
+    else this.loadTemplates();
   }
 
   loadBrands() {
@@ -75,9 +75,37 @@ export class TemplateManagerComponent implements OnInit {
     });
   }
 
+  getProtoBadgeClass(proto: string): string {
+    const p = (proto || 'ssh').toLowerCase();
+    if (p === 'rdp') return 'bg-primary';
+    if (p === 'vnc') return 'bg-warning text-dark';
+    if (p === 'telnet') return 'bg-secondary';
+    return 'bg-dark';
+  }
+
   loadTemplates() {
+    this.loading = true;
     this.data_provider.listTemplates({}).then((res: any) => {
-      this.templates = (res.data || res || []);
+      const all = res.data || res || [];
+      if (this.activeTab === 'templates') {
+        this.templates = all.filter((t: any) => {
+          const p = (t.protocol || (t.connection && t.connection.protocol) || '').toLowerCase();
+          return p !== 'rdp' && p !== 'vnc';
+        });
+      } else if (this.activeTab === 'rdp_templates') {
+        this.templates = all.filter((t: any) => {
+          const p = (t.protocol || (t.connection && t.connection.protocol) || '').toLowerCase();
+          return p === 'rdp';
+        });
+      } else if (this.activeTab === 'vnc_templates') {
+        this.templates = all.filter((t: any) => {
+          const p = (t.protocol || (t.connection && t.connection.protocol) || '').toLowerCase();
+          return p === 'vnc';
+        });
+      } else {
+        this.templates = all;
+      }
+      this.loading = false;
     });
   }
 
@@ -97,6 +125,40 @@ export class TemplateManagerComponent implements OnInit {
 
   openCreateModal() {
     this.editData = JSON.parse(JSON.stringify(this.emptyTemplate));
+    if (this.activeTab === 'rdp_templates') {
+      this.editData.display_name = 'Custom RDP Template';
+      this.editData.brand = 'windows';
+      this.editData.os_type = 'rdp-custom';
+      this.editData.connection = {
+        protocol: 'rdp',
+        protocols: ['rdp'],
+        port: 3389,
+        security: 'any',
+        ignore_cert: true,
+        color_depth: 32,
+        dpi: 96,
+        enable_wallpaper: true,
+        enable_theming: true,
+        enable_font_smoothing: true,
+        enable_full_window_drag: true,
+        enable_desktop_composition: true,
+        enable_menu_animations: false,
+        disable_audio: false,
+        server_layout: 'en-us-qwerty',
+        timezone: 'UTC'
+      };
+    } else if (this.activeTab === 'vnc_templates') {
+      this.editData.display_name = 'Custom VNC Template';
+      this.editData.brand = 'generic';
+      this.editData.os_type = 'vnc-custom';
+      this.editData.connection = {
+        protocol: 'vnc',
+        protocols: ['vnc'],
+        port: 5900,
+        color_depth: 24,
+        read_only: false
+      };
+    }
     this.editModalVisible = true;
   }
 
