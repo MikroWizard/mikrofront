@@ -95,7 +95,10 @@
                   <small class="text-muted" *ngIf="item.username">{{item.username}}</small>
                 </td>
                 <td>
-                  <c-badge [color]="item.protocol === 'winbox' || item.protocol === 'webbox' ? 'success' : (item.protocol === 'ssh' ? 'dark' : 'info')">{{item.protocol === 'winbox' || item.protocol === 'webbox' ? 'WebBox' : (item.protocol || 'terminal')}}</c-badge>
+                  <c-badge [color]="item.protocol === 'winbox' || item.protocol === 'webbox' ? 'success' : (item.protocol === 'rdp' ? 'primary' : (item.protocol === 'vnc' ? 'info' : (item.protocol === 'ssh' ? 'dark' : 'secondary')))">
+                    <i [class]="(item.protocol === 'winbox' || item.protocol === 'webbox') ? 'fas fa-desktop me-1' : (item.protocol === 'rdp' ? 'fab fa-windows me-1' : (item.protocol === 'vnc' ? 'fas fa-desktop me-1' : 'fas fa-terminal me-1'))"></i>
+                    {{item.protocol === 'winbox' || item.protocol === 'webbox' ? 'WebBox' : (item.protocol ? (item.protocol | uppercase) : 'Terminal')}}
+                  </c-badge>
                 </td>
                 <td>
                   <c-badge [color]="item.status === 'active' ? 'success' : 'secondary'">{{item.status}}</c-badge>

@@ -85,7 +85,10 @@
           <small class="text-muted" *ngIf="item.username">{{item.username}}</small>
         </td>
         <td>
-          <c-badge [color]="item.protocol === 'winbox' || item.protocol === 'webbox' ? 'success' : (item.protocol === 'ssh' ? 'dark' : 'info')">{{item.protocol === 'winbox' || item.protocol === 'webbox' ? 'WebBox' : (item.protocol || 'terminal')}}</c-badge>
+          <c-badge [color]="item.protocol === 'winbox' || item.protocol === 'webbox' ? 'success' : (item.protocol === 'rdp' ? 'primary' : (item.protocol === 'vnc' ? 'info' : (item.protocol === 'ssh' ? 'dark' : 'secondary')))">
+            <i [class]="(item.protocol === 'winbox' || item.protocol === 'webbox') ? 'fas fa-desktop me-1' : (item.protocol === 'rdp' ? 'fab fa-windows me-1' : (item.protocol === 'vnc' ? 'fas fa-desktop me-1' : 'fas fa-terminal me-1'))"></i>
+            {{item.protocol === 'winbox' || item.protocol === 'webbox' ? 'WebBox' : (item.protocol ? (item.protocol | uppercase) : 'Terminal')}}
+          </c-badge>
         </td>
         <td>
           <c-badge [color]="item.status === 'active' ? 'success' : 'secondary'">{{item.status}}</c-badge>
@@ -107,9 +110,9 @@
         <td><small>{{item.duration_fmt}}</small></td>
         <td><small>{{item.started_fmt}}</small></td>
         <td style="width: 100px" class="text-center">
-          <button cButton size="sm" [color]="item.protocol === 'winbox' || item.protocol === 'webbox' ? 'success' : 'info'" variant="outline" class="me-1"
-            (click)="watchSession(item.id, false, item.protocol)" [pTooltip]="(item.protocol === 'winbox' || item.protocol === 'webbox') ? 'Watch WebBox Session' : 'Watch Session'">
-            <i class="fas fa-eye"></i>
+          <button cButton size="sm" [color]="item.protocol === 'winbox' || item.protocol === 'webbox' ? 'success' : (item.protocol === 'rdp' ? 'primary' : 'info')" variant="outline" class="me-1"
+            (click)="collaborateSession(item.id, false, item.protocol)" [pTooltip]="item.protocol === 'rdp' ? 'Join RDP Session' : (item.protocol === 'vnc' ? 'Join VNC Session' : ((item.protocol === 'winbox' || item.protocol === 'webbox') ? 'Join WebBox Session' : 'Join Session'))">
+            <i [class]="item.protocol === 'rdp' ? 'fab fa-windows' : ((item.protocol === 'winbox' || item.protocol === 'webbox') ? 'fas fa-desktop' : 'fas fa-right-to-bracket')"></i>
           </button>
           <button color="primary" variant="ghost" size="sm" [matMenuTriggerFor]="menu" cButton>
             <i class="fa-solid fa-ellipsis-vertical"></i>

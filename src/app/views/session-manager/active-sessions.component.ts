@@ -299,14 +299,18 @@ export class ActiveSessionsComponent implements OnInit {
 
     sharePromise.then((res: any) => {
       if (res.status === 'success') {
-        const isWinbox = protocol === 'winbox' || protocol === 'webbox' || res.protocol === 'winbox' || res.protocol === 'webbox';
+        const proto = (res.protocol || protocol || '').toLowerCase();
+        const isDesktop = proto === 'rdp' || proto === 'vnc' || proto === 'desktop';
+        const isWinbox = proto === 'winbox' || proto === 'webbox';
         let routeUrl: string;
-        if (isWinbox) {
-          routeUrl = this.origin + '/terminal-ws/winbox.html?token=' + res.token + '&password=' + adminPass + '&role=observer';
-        } else if (isWebfig) {
-          routeUrl = this.origin + '/#/webfig-share?token=' + res.token + '&password=' + adminPass;
+        if (isDesktop) {
+          routeUrl = `${this.origin}/terminal-ws/desktop.html?token=${encodeURIComponent(res.token)}&password=${encodeURIComponent(adminPass)}&role=observer`;
+        } else if (isWinbox) {
+          routeUrl = `${this.origin}/terminal-ws/winbox.html?token=${encodeURIComponent(res.token)}&password=${encodeURIComponent(adminPass)}&role=observer`;
+        } else if (isWebfig || proto === 'webfig') {
+          routeUrl = `${this.origin}/#/webfig-share?token=${encodeURIComponent(res.token)}&password=${encodeURIComponent(adminPass)}`;
         } else {
-          routeUrl = this.origin + '/#/terminal-share?token=' + res.token + '&password=' + adminPass;
+          routeUrl = `${this.origin}/#/terminal-share?token=${encodeURIComponent(res.token)}&password=${encodeURIComponent(adminPass)}`;
         }
         if (newTab) {
           newTab.location.href = routeUrl;
@@ -332,14 +336,18 @@ export class ActiveSessionsComponent implements OnInit {
 
     sharePromise.then((res: any) => {
       if (res.status === 'success') {
-        const isWinbox = protocol === 'winbox' || protocol === 'webbox' || res.protocol === 'winbox' || res.protocol === 'webbox';
+        const proto = (res.protocol || protocol || '').toLowerCase();
+        const isDesktop = proto === 'rdp' || proto === 'vnc' || proto === 'desktop';
+        const isWinbox = proto === 'winbox' || proto === 'webbox';
         let routeUrl: string;
-        if (isWinbox) {
-          routeUrl = this.origin + '/terminal-ws/winbox.html?token=' + res.token + '&password=' + adminPass + '&role=collaborator';
-        } else if (isWebfig) {
-          routeUrl = this.origin + '/#/webfig-share?token=' + res.token + '&password=' + adminPass;
+        if (isDesktop) {
+          routeUrl = `${this.origin}/terminal-ws/desktop.html?token=${encodeURIComponent(res.token)}&password=${encodeURIComponent(adminPass)}&role=collaborator`;
+        } else if (isWinbox) {
+          routeUrl = `${this.origin}/terminal-ws/winbox.html?token=${encodeURIComponent(res.token)}&password=${encodeURIComponent(adminPass)}&role=collaborator`;
+        } else if (isWebfig || proto === 'webfig') {
+          routeUrl = `${this.origin}/#/webfig-share?token=${encodeURIComponent(res.token)}&password=${encodeURIComponent(adminPass)}`;
         } else {
-          routeUrl = this.origin + '/#/terminal-share?token=' + res.token + '&password=' + adminPass;
+          routeUrl = `${this.origin}/#/terminal-share?token=${encodeURIComponent(res.token)}&password=${encodeURIComponent(adminPass)}`;
         }
         if (newTab) {
           newTab.location.href = routeUrl;
@@ -357,14 +365,18 @@ export class ActiveSessionsComponent implements OnInit {
   }
 
   copyShareUrl() {
-    const isWinbox = this.sessionProtocol === 'winbox' || this.sessionProtocol === 'webbox';
+    const proto = (this.sessionProtocol || '').toLowerCase();
+    const isDesktop = proto === 'rdp' || proto === 'vnc' || proto === 'desktop';
+    const isWinbox = proto === 'winbox' || proto === 'webbox';
     let url: string;
-    if (isWinbox) {
-      url = this.origin + '/terminal-ws/winbox.html?token=' + this.shareToken;
+    if (isDesktop) {
+      url = `${this.origin}/terminal-ws/desktop.html?token=${this.shareToken}`;
+    } else if (isWinbox) {
+      url = `${this.origin}/terminal-ws/winbox.html?token=${this.shareToken}`;
     } else if (this.isWebfigSession) {
-      url = this.origin + '/#/webfig-share?token=' + this.shareToken;
+      url = `${this.origin}/#/webfig-share?token=${this.shareToken}`;
     } else {
-      url = this.origin + '/#/terminal-share?token=' + this.shareToken;
+      url = `${this.origin}/#/terminal-share?token=${this.shareToken}`;
     }
     if (this.sharePassword) {
       navigator.clipboard.writeText(url + '&password=' + this.sharePassword).then(() => {

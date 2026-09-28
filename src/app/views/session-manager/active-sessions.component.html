@@ -89,8 +89,8 @@
                 <small class="text-muted" *ngIf="item.username">{{item.username}}</small>
               </td>
               <td>
-                <c-badge [color]="(item.protocol === 'webfig' || item.stype === 'webfig') ? 'warning' : ((item.protocol === 'winbox' || item.protocol === 'webbox') ? 'success' : (item.protocol === 'ssh' ? 'dark' : 'info'))">
-                  <i [class]="(item.protocol === 'webfig' || item.stype === 'webfig') ? 'fas fa-globe me-1' : ((item.protocol === 'winbox' || item.protocol === 'webbox') ? 'fas fa-desktop me-1' : 'fas fa-terminal me-1')"></i>
+                <c-badge [color]="(item.protocol === 'webfig' || item.stype === 'webfig') ? 'warning' : ((item.protocol === 'winbox' || item.protocol === 'webbox') ? 'success' : (item.protocol === 'rdp' ? 'primary' : (item.protocol === 'vnc' ? 'info' : (item.protocol === 'ssh' ? 'dark' : 'secondary'))))">
+                  <i [class]="(item.protocol === 'webfig' || item.stype === 'webfig') ? 'fas fa-globe me-1' : ((item.protocol === 'winbox' || item.protocol === 'webbox') ? 'fas fa-desktop me-1' : (item.protocol === 'rdp' ? 'fab fa-windows me-1' : (item.protocol === 'vnc' ? 'fas fa-desktop me-1' : 'fas fa-terminal me-1')))"></i>
                   {{(item.protocol === 'winbox' || item.protocol === 'webbox' ? 'WEBBOX' : (item.protocol || item.stype || 'terminal')) | uppercase}}
                 </c-badge>
               </td>
@@ -124,8 +124,18 @@
                   (click)="collaborateSession(item.id, false, item.protocol)" pTooltip="Join WebBox Session">
                   <i class="fas fa-desktop"></i>
                 </button>
+                <!-- For RDP: Quick button is Join RDP -->
+                <button *ngIf="item.protocol === 'rdp'" cButton size="sm" color="primary" variant="outline" class="me-1"
+                  (click)="collaborateSession(item.id, false, 'rdp')" pTooltip="Join RDP Session">
+                  <i class="fab fa-windows"></i>
+                </button>
+                <!-- For VNC: Quick button is Join VNC -->
+                <button *ngIf="item.protocol === 'vnc'" cButton size="sm" color="info" variant="outline" class="me-1"
+                  (click)="collaborateSession(item.id, false, 'vnc')" pTooltip="Join VNC Session">
+                  <i class="fas fa-desktop"></i>
+                </button>
                 <!-- For Terminal: Quick button is Join Session -->
-                <button *ngIf="item.protocol !== 'webfig' && item.stype !== 'webfig' && item.protocol !== 'winbox' && item.protocol !== 'webbox'" cButton size="sm" color="info" variant="outline" class="me-1"
+                <button *ngIf="item.protocol !== 'webfig' && item.stype !== 'webfig' && item.protocol !== 'winbox' && item.protocol !== 'webbox' && item.protocol !== 'rdp' && item.protocol !== 'vnc'" cButton size="sm" color="info" variant="outline" class="me-1"
                   (click)="collaborateSession(item.id, false, item.protocol)" pTooltip="Join Terminal Session">
                   <i class="fas fa-right-to-bracket"></i>
                 </button>
