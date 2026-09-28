@@ -151,7 +151,9 @@ export class DeviceTreeComponent implements OnInit {
   }
 
   connectDefault(device: any) {
-    this.selectDevice(device);
+    const isWindows = device.device_type === 'windows' || device.brand === 'windows';
+    const proto = device.protocol || (isWindows ? 'rdp' : (device.device_type === 'vnc' ? 'vnc' : 'ssh'));
+    this.selectDevice(device, proto);
   }
 
   isMikrotik(device: any): boolean {
@@ -164,21 +166,40 @@ export class DeviceTreeComponent implements OnInit {
   }
   
   hasProtocol(device: any, proto: string): boolean {
-      if (device.connection_types && Array.isArray(device.connection_types) && device.connection_types.length > 0) {
-          return device.connection_types.includes(proto);
-      }
-      if (device.protocols && Array.isArray(device.protocols) && device.protocols.length > 0) {
-          return device.protocols.includes(proto);
-      }
-      
-      // Defaults if not specified by backend
-      if (proto === 'webfig' || proto === 'winbox' || proto === 'webbox') return (!device.device_type || device.device_type === 'mikrotik' || device.brand === 'mikrotik');
-      
-      // Only default to ssh true for mikrotik devices without connection_types
-      // If it's a non-mikrotik device without connection_types, assume ssh is available
-      if (proto === 'ssh') return true;
-      
-      return false; 
+    if (!device) return false;
+    if (device.connection_types && Array.isArray(device.connection_types) && device.connection_types.length > 0) {
+      return device.connection_types.includes(proto);
+    }
+    if (device.protocols && Array.isArray(device.protocols) && device.protocols.length > 0) {
+      return device.protocols.includes(proto);
+    }
+    if (device.protocol && device.protocol.toLowerCase() === proto.toLowerCase()) {
+      return true;
+    }
+
+    const isWindows = device.device_type === 'windows' || device.brand === 'windows';
+
+    // Defaults if not specified by backend
+    if (proto === 'webfig' || proto === 'winbox' || proto === 'webbox') {
+      return !isWindows && (!device.device_type || device.device_type === 'mikrotik' || device.brand === 'mikrotik');
+    }
+    
+    if (proto === 'rdp') {
+      return isWindows || device.protocol === 'rdp';
+    }
+    if (proto === 'vnc') {
+      return device.device_type === 'vnc' || device.protocol === 'vnc';
+    }
+
+    // Windows devices do NOT have SSH unless explicitly listed in connection_types
+    if (isWindows) {
+      return false;
+    }
+
+    // Only default to ssh true for non-windows network devices without connection_types
+    if (proto === 'ssh') return true;
+    
+    return false; 
   }
 
   getBrandIcon(device: any): string {

@@ -10,7 +10,7 @@ import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
   styleUrls: ['./connection-manager.component.scss']
 })
 export class ConnectionManagerComponent implements OnInit {
-  activeSessions: { id: string, device: any, protocol: string, webfigUrl?: SafeResourceUrl, winboxUrl?: SafeResourceUrl, rawWinboxUrl?: string, token?: string, sessionId?: string }[] = [];
+  activeSessions: { id: string, device: any, protocol: string, webfigUrl?: SafeResourceUrl, winboxUrl?: SafeResourceUrl, rawWinboxUrl?: string, desktopUrl?: SafeResourceUrl, rawDesktopUrl?: string, token?: string, sessionId?: string }[] = [];
   activeTabIndex = 0;
 
   public sidebarAutoHide = false;
@@ -81,7 +81,7 @@ export class ConnectionManagerComponent implements OnInit {
         const protocol = qParams['protocol'];
         const existingIndex = this.activeSessions.findIndex(s => s.device && s.device.id == devId && (s.protocol === protocol || (protocol === 'webbox' && s.protocol === 'winbox')));
         if (existingIndex > -1) {
-          this.activeTabIndex = existingIndex;
+          this.selectTab(existingIndex);
         } else if (this.activeSessions.length > 0) {
           this.loadDeviceDetails(devId, protocol);
         }
@@ -96,7 +96,12 @@ export class ConnectionManagerComponent implements OnInit {
         const devices = res.result || res || [];
         const dev = devices.find((d: any) => d.id == id);
         if (dev) {
-          const protoToUse = protocol || dev.protocol || 'ssh';
+          const isWindows = dev.device_type === 'windows' || dev.brand === 'windows';
+          const defaultProto = dev.protocol || (isWindows ? 'rdp' : (dev.device_type === 'vnc' ? 'vnc' : 'ssh'));
+          let protoToUse = protocol || defaultProto;
+          if (isWindows && protoToUse === 'ssh' && (!dev.connection_types || !dev.connection_types.includes('ssh'))) {
+            protoToUse = defaultProto;
+          }
           this.onDeviceSelected({ device: dev, protocol: protoToUse });
         }
       });
@@ -137,7 +142,12 @@ export class ConnectionManagerComponent implements OnInit {
 
     // Support both direct device passing (legacy) and connection selection {device, protocol}
     const device = eventData.device ? eventData.device : eventData;
-    const protocol = eventData.protocol || '';
+    const isWindows = device.device_type === 'windows' || device.brand === 'windows';
+    const defaultProto = device.protocol || (isWindows ? 'rdp' : (device.device_type === 'vnc' ? 'vnc' : 'ssh'));
+    let protocol = eventData.protocol || defaultProto;
+    if (isWindows && protocol === 'ssh' && (!device.connection_types || !device.connection_types.includes('ssh'))) {
+      protocol = defaultProto;
+    }
 
     // Check if we have an existing session
     const existingIndex = this.activeSessions.findIndex(s => 
@@ -146,11 +156,11 @@ export class ConnectionManagerComponent implements OnInit {
     
     if (existingIndex > -1) {
       if (protocol === 'webfig' || protocol === 'webbox' || protocol === 'winbox') {
-        this.activeTabIndex = existingIndex;
+        this.selectTab(existingIndex);
       } else if (confirm(`A ${protocol.toUpperCase() || 'terminal'} session is already open for ${device.name}. Open a new session anyway?`)) {
         this.createNewSession(device, protocol);
       } else {
-        this.activeTabIndex = existingIndex;
+        this.selectTab(existingIndex);
       }
     } else {
       this.createNewSession(device, protocol);
@@ -176,7 +186,7 @@ export class ConnectionManagerComponent implements OnInit {
             token: res.token
           };
           this.activeSessions.push(session);
-          this.activeTabIndex = this.activeSessions.length - 1;
+          this.selectTab(this.activeSessions.length - 1);
         } else if (res && res.status === 'gateway_update_required') {
           this.gatewayNoticeType = 'update_required';
           this.gatewayNoticeTitle = 'Terminal Gateway Update Required';
@@ -198,6 +208,40 @@ export class ConnectionManagerComponent implements OnInit {
       return;
     }
 
+    if (protocol === 'rdp' || protocol === 'vnc') {
+      this.data_provider.MikroWizardRPC.sendJsonRequest('/api/terminal/init', {
+        device_id: device.id,
+        protocol: protocol,
+        connection_type: protocol
+      }).then((res: any) => {
+        if (res && res.token) {
+          const rawUrl = res.web_url || ('/terminal-ws/desktop.html?token=' + res.token);
+          const session: any = {
+            id: 'session_' + new Date().getTime() + '_' + device.id + '_' + protocol,
+            device: device,
+            protocol: protocol,
+            rawDesktopUrl: rawUrl,
+            desktopUrl: this.sanitizer.bypassSecurityTrustResourceUrl(rawUrl),
+            sessionId: res.session_id,
+            token: res.token
+          };
+          this.activeSessions.push(session);
+          this.selectTab(this.activeSessions.length - 1);
+        } else if (res && (res.status === 'gateway_not_installed' || res.status === 'gateway_update_required')) {
+          this.gatewayNoticeType = res.status === 'gateway_not_installed' ? 'not_installed' : 'update_required';
+          this.gatewayNoticeTitle = 'Terminal Gateway Required';
+          this.gatewayNoticeMessage = res.error || 'The MikroWizard Terminal Gateway addon is required to start remote desktop sessions.';
+          this.gatewayNoticeDocUrl = res.doc_url || 'https://mikrowizard.com/docs/installing-terminal-gatway-addon/';
+          this.showGatewayNoticeModal = true;
+        } else {
+          alert(res?.error || `Failed to initialize ${protocol.toUpperCase()} session.`);
+        }
+      }).catch(() => {
+        alert(`Failed to initialize ${protocol.toUpperCase()} session.`);
+      });
+      return;
+    }
+
     const session: any = { 
       id: 'session_' + new Date().getTime() + '_' + device.id + '_' + protocol,
       device: device,
@@ -209,7 +253,7 @@ export class ConnectionManagerComponent implements OnInit {
     }
     
     this.activeSessions.push(session);
-    this.activeTabIndex = this.activeSessions.length - 1;
+    this.selectTab(this.activeSessions.length - 1);
   }
 
   getWebfigUrl(device: any): SafeResourceUrl {
@@ -246,9 +290,18 @@ export class ConnectionManagerComponent implements OnInit {
         }
       } catch (e) {}
     }
+    if (sess && (sess.protocol === 'rdp' || sess.protocol === 'vnc')) {
+      try {
+        if (sess.token) {
+          navigator.sendBeacon(`/terminal-ws/api/desktop/kill?token=${encodeURIComponent(sess.token)}`);
+        }
+      } catch (e) {}
+    }
     this.activeSessions.splice(index, 1);
     if (this.activeTabIndex >= this.activeSessions.length) {
-      this.activeTabIndex = Math.max(0, this.activeSessions.length - 1);
+      this.selectTab(Math.max(0, this.activeSessions.length - 1));
+    } else {
+      this.selectTab(this.activeTabIndex);
     }
   }
 
@@ -261,6 +314,39 @@ export class ConnectionManagerComponent implements OnInit {
     
     // Update active tab index so the selected tab doesn't change
     this.activeTabIndex = this.activeSessions.indexOf(activeSession);
+    setTimeout(() => this.focusActiveTabIframe(), 50);
+  }
+
+  selectTab(index: number): void {
+    this.activeTabIndex = index;
+    setTimeout(() => {
+      this.focusActiveTabIframe();
+    }, 50);
+  }
+
+  focusIframe(event?: any): void {
+    try {
+      const iframe = event?.target as HTMLIFrameElement;
+      if (iframe && iframe.contentWindow) {
+        iframe.focus();
+        iframe.contentWindow.focus();
+        iframe.contentWindow.postMessage('focus', '*');
+      }
+    } catch (e) {}
+  }
+
+  focusActiveTabIframe(): void {
+    try {
+      const activePane = document.querySelector('.cm-tab-pane:not(.cm-tab-hidden)');
+      if (activePane) {
+        const iframe = activePane.querySelector('iframe') as HTMLIFrameElement;
+        if (iframe && iframe.contentWindow) {
+          iframe.focus();
+          iframe.contentWindow.focus();
+          iframe.contentWindow.postMessage('focus', '*');
+        }
+      }
+    } catch (e) {}
   }
 
   returnToDashboard() {

@@ -48,15 +48,18 @@
             <a [active]="activeTabIndex === i"
                cNavLink
                href="javascript:void(0)"
-               (click)="activeTabIndex = i"
+               (click)="selectTab(i)"
                class="cm-tab"
                [class.active]="activeTabIndex === i"
                [title]="'IP: ' + session.device.ip + ' | Protocol: ' + session.protocol.toUpperCase()">
               <!-- Tab Icon based on protocol -->
-              <i class="fa-solid tab-icon me-2" 
+              <i class="tab-icon me-2" 
+                 [class.fa-brands]="session.protocol === 'rdp'"
+                 [class.fa-windows]="session.protocol === 'rdp'"
+                 [class.fa-solid]="session.protocol !== 'rdp'"
                  [class.fa-globe]="session.protocol === 'webfig'"
-                 [class.fa-desktop]="session.protocol === 'winbox' || session.protocol === 'webbox'"
-                 [class.fa-terminal]="session.protocol !== 'webfig' && session.protocol !== 'winbox' && session.protocol !== 'webbox'"
+                 [class.fa-desktop]="session.protocol === 'winbox' || session.protocol === 'webbox' || session.protocol === 'vnc'"
+                 [class.fa-terminal]="session.protocol !== 'webfig' && session.protocol !== 'winbox' && session.protocol !== 'webbox' && session.protocol !== 'rdp' && session.protocol !== 'vnc'"
                  style="font-size: 0.75rem;"></i>
               <span style="max-width: 160px; overflow: hidden; text-overflow: ellipsis;">
                 {{ session.device.name || session.device.ip }} <small class="text-muted ms-1" style="font-size: 0.65rem; text-transform: uppercase;">({{ session.protocol }})</small>
@@ -80,6 +83,8 @@
               <iframe [src]="session.winboxUrl"
                       class="w-100 h-100 border-0 bg-dark"
                       style="border-radius: 4px;"
+                      tabindex="0"
+                      (load)="focusIframe($event)"
                       allow="clipboard-read; clipboard-write; fullscreen">
               </iframe>
             </div>
@@ -88,12 +93,25 @@
             <iframe *ngIf="session.protocol === 'webfig'"
                     [src]="session.webfigUrl"
                     class="w-100 h-100 border-0 bg-white"
-                    style="border-radius: 4px;">
+                    style="border-radius: 4px;"
+                    tabindex="0"
+                    (load)="focusIframe($event)">
             </iframe>
+
+            <!-- Remote Desktop Session (RDP / VNC) -->
+            <div *ngIf="session.protocol === 'rdp' || session.protocol === 'vnc'" class="w-100 h-100 position-relative">
+              <iframe [src]="session.desktopUrl"
+                      class="w-100 h-100 border-0 bg-dark"
+                      style="border-radius: 4px;"
+                      tabindex="0"
+                      (load)="focusIframe($event)"
+                      allow="clipboard-read; clipboard-write; fullscreen">
+              </iframe>
+            </div>
 
             <!-- Terminal Session (SSH/Telnet) -->
             <app-terminal-tab
-              *ngIf="session.protocol !== 'webfig' && session.protocol !== 'winbox' && session.protocol !== 'webbox'"
+              *ngIf="session.protocol !== 'webfig' && session.protocol !== 'winbox' && session.protocol !== 'webbox' && session.protocol !== 'rdp' && session.protocol !== 'vnc'"
               [device]="session.device"
               [protocol]="session.protocol"
               (requestClose)="closeSession(i)"

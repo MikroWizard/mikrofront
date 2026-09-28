@@ -39,8 +39,9 @@
              title="Double-click to connect (default)">
           
           <span class="mw-brand-icon">
-            <img *ngIf="getBrandIcon(dev)" [src]="getBrandIcon(dev)" [title]="dev.brand || dev.device_type" alt="">
-            <i *ngIf="!getBrandIcon(dev)" class="fa-solid fa-network-wired"></i>
+            <i *ngIf="dev.device_type === 'windows' || dev.brand === 'windows'" class="fa-brands fa-windows text-info"></i>
+            <img *ngIf="dev.device_type !== 'windows' && dev.brand !== 'windows' && getBrandIcon(dev)" [src]="getBrandIcon(dev)" [title]="dev.brand || dev.device_type" alt="">
+            <i *ngIf="dev.device_type !== 'windows' && dev.brand !== 'windows' && !getBrandIcon(dev)" class="fa-solid fa-network-wired"></i>
           </span>
           
           <div class="mw-dev-info" style="min-width: 0;">
@@ -66,6 +67,22 @@
                   (click)="connectProtocol(dev, 'webfig')"
                   title="Open WebFig Interface">
             <i class="fa-solid fa-globe text-info" style="font-size: 0.8rem;"></i>
+          </button>
+
+          <!-- RDP Remote Desktop -->
+          <button class="btn btn-link p-0 mw-proto-btn"
+                  *ngIf="ispro && hasProtocol(dev, 'rdp')"
+                  (click)="connectProtocol(dev, 'rdp')"
+                  title="Open RDP Remote Desktop">
+            <i class="fa-brands fa-windows text-info" style="font-size: 0.8rem;"></i>
+          </button>
+
+          <!-- VNC Remote Console -->
+          <button class="btn btn-link p-0 mw-proto-btn"
+                  *ngIf="ispro && hasProtocol(dev, 'vnc')"
+                  (click)="connectProtocol(dev, 'vnc')"
+                  title="Open VNC Console">
+            <i class="fa-solid fa-desktop text-warning" style="font-size: 0.8rem;"></i>
           </button>
           
           <!-- SSH -->
