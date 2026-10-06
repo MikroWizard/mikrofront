@@ -25,7 +25,17 @@ export class TemplateManagerComponent implements OnInit {
 
   public brandModalVisible: boolean = false;
   public isEditingBrand: boolean = false;
-  public brandEditData: any = { brand: '', display_name: '', is_system: false };
+  public brandEditData: any = { brand: '', display_name: '', is_active: true, is_system: false };
+
+  // Advanced hooks JSON bindings
+  public preConnectJson: string = '[]';
+  public postDisconnectJson: string = '[]';
+
+  // Diff Exclusions helpers & preview state
+  public newDiffSectionName: string = '';
+  public sampleDiffText: string = '';
+  public previewResult: any = null;
+  public showPreviewSandbox: boolean = false;
 
   @ViewChildren(ToasterComponent) viewChildren!: QueryList<ToasterComponent>;
 
@@ -111,20 +121,31 @@ export class TemplateManagerComponent implements OnInit {
 
   get emptyTemplate() {
     return {
-      display_name: '', brand: '', os_type: '', is_system: false,
+      display_name: '', brand: '', os_type: '', is_system: false, is_active: true,
       prompt: { login_pattern: '', password_pattern: '', patterns: [] },
       privilege_escalation: { command: '', password_prompt: '', success_pattern: '' },
-      pagination: { enabled: false, key: '', prompt: '' },
-      connection: { protocol: 'ssh', timeout: 30 },
+      pagination: { enabled: false, key: 'space', pattern: '--More--', prompt: '' },
+      connection: { protocol: 'ssh', timeout: 30, default_port_ssh: 22, default_port_telnet: 23, ssh_interactive: true },
       commands: { show_arp: '', show_config: '', show_interfaces: '', show_log: '', show_routing: '', show_version: '', save_config: '' },
+      config_mode: { enter: '', exit: '', save: '' },
+      diff_exclusions: { global: [], show_config: [] },
       error_patterns: { patterns: [] },
       post_login_commands: [],
       pre_logout_commands: ['exit'],
+      pre_connect: [],
+      post_disconnect: [],
     };
   }
 
   openCreateModal() {
     this.editData = JSON.parse(JSON.stringify(this.emptyTemplate));
+    this.preConnectJson = '[]';
+    this.postDisconnectJson = '[]';
+    this.sampleDiffText = '';
+    this.previewResult = null;
+    this.showPreviewSandbox = false;
+    this.newDiffSectionName = '';
+
     if (this.activeTab === 'rdp_templates') {
       this.editData.display_name = 'Custom RDP Template';
       this.editData.brand = 'windows';
@@ -165,26 +186,116 @@ export class TemplateManagerComponent implements OnInit {
   openEditModal(t: any) {
     const d: any = JSON.parse(JSON.stringify(t));
     d.is_system = !!t.is_system;
+    d.is_active = t.is_active !== undefined ? !!t.is_active : true;
     d.prompt = d.prompt || { login_pattern: '', password_pattern: '', patterns: [] };
     d.privilege_escalation = d.privilege_escalation || { command: '', password_prompt: '', success_pattern: '' };
-    d.pagination = d.pagination || { enabled: false, key: '', prompt: '' };
+    
+    // Pagination defaults
+    d.pagination = d.pagination || { enabled: false, key: 'space', pattern: '--More--', prompt: '' };
+    if (d.pagination.pattern === undefined) d.pagination.pattern = '--More--';
+    if (d.pagination.key === undefined) d.pagination.key = 'space';
+
+    // Connection preservation
     d.connection = d.connection || { protocol: 'ssh', timeout: 30 };
     if (!d.connection.protocol && d.connection.protocols && d.connection.protocols.length) {
       d.connection.protocol = d.connection.protocols[0];
     }
-    delete d.connection.protocols;
-    delete d.connection.default_port_ssh;
-    delete d.connection.default_port_telnet;
+    if (d.connection.default_port_ssh === undefined) d.connection.default_port_ssh = 22;
+    if (d.connection.default_port_telnet === undefined) d.connection.default_port_telnet = 23;
+    if (d.connection.ssh_interactive === undefined) d.connection.ssh_interactive = true;
+
     d.commands = d.commands || {};
+    d.config_mode = d.config_mode || { enter: '', exit: '', save: '' };
+
+    // Diff Exclusions normalization
+    if (!d.diff_exclusions || typeof d.diff_exclusions !== 'object') {
+      d.diff_exclusions = { global: [], show_config: [] };
+    }
+    if (typeof d.diff_exclusions === 'string') {
+      try {
+        d.diff_exclusions = JSON.parse(d.diff_exclusions);
+      } catch (e) {
+        d.diff_exclusions = { global: [], show_config: [] };
+      }
+    }
+    if (!d.diff_exclusions.global) d.diff_exclusions.global = [];
+    if (!d.diff_exclusions.show_config) d.diff_exclusions.show_config = [];
+    for (const k of Object.keys(d.diff_exclusions)) {
+      if (!Array.isArray(d.diff_exclusions[k])) {
+        d.diff_exclusions[k] = [];
+      } else {
+        d.diff_exclusions[k] = d.diff_exclusions[k].map((item: any) => {
+          if (typeof item === 'string') return { pattern: item, flags: '' };
+          return { pattern: item?.pattern || '', flags: item?.flags || '' };
+        });
+      }
+    }
+
     d.error_patterns = d.error_patterns || { patterns: [] };
     d.post_login_commands = d.post_login_commands || [];
     d.pre_logout_commands = d.pre_logout_commands || ['exit'];
+
+    // Pre/Post hooks
+    d.pre_connect = d.pre_connect || [];
+    d.post_disconnect = d.post_disconnect || [];
+    this.preConnectJson = JSON.stringify(d.pre_connect, null, 2);
+    this.postDisconnectJson = JSON.stringify(d.post_disconnect, null, 2);
+
+    this.sampleDiffText = '';
+    this.previewResult = null;
+    this.showPreviewSandbox = false;
+    this.newDiffSectionName = '';
+
     this.editData = d;
     this.editModalVisible = true;
   }
 
   saveTemplate() {
     const data: any = JSON.parse(JSON.stringify(this.editData));
+
+    // Parse pre_connect and post_disconnect JSON hooks
+    try {
+      data.pre_connect = this.preConnectJson ? JSON.parse(this.preConnectJson) : [];
+    } catch (e) {
+      this.show_toast('Error', 'Invalid JSON syntax in Pre-Connect hooks', 'danger');
+      return;
+    }
+    try {
+      data.post_disconnect = this.postDisconnectJson ? JSON.parse(this.postDisconnectJson) : [];
+    } catch (e) {
+      this.show_toast('Error', 'Invalid JSON syntax in Post-Disconnect hooks', 'danger');
+      return;
+    }
+
+    // Clean up Diff Exclusions
+    if (data.diff_exclusions) {
+      const cleanExcl: any = {};
+      for (const sec of Object.keys(data.diff_exclusions)) {
+        const rules = (data.diff_exclusions[sec] || []).filter((r: any) => r && r.pattern && r.pattern.trim().length > 0);
+        if (rules.length > 0 || sec === 'global' || sec === 'show_config') {
+          cleanExcl[sec] = rules.map((r: any) => ({
+            pattern: r.pattern.trim(),
+            flags: (r.flags || '').trim()
+          }));
+        }
+      }
+      data.diff_exclusions = cleanExcl;
+    }
+
+    // Clean up config_mode
+    if (data.config_mode) {
+      if (!data.config_mode.enter && !data.config_mode.exit && !data.config_mode.save) {
+        data.config_mode = null;
+      }
+    }
+
+    // Clean up privilege_escalation
+    if (data.privilege_escalation) {
+      if (!data.privilege_escalation.command && !data.privilege_escalation.password_prompt && !data.privilege_escalation.success_pattern) {
+        data.privilege_escalation = null;
+      }
+    }
+
     const isNew = !data.id;
     const method = isNew ? 'createTemplate' : 'updateTemplate';
     this.data_provider[method](data).then((res: any) => {
@@ -193,7 +304,7 @@ export class TemplateManagerComponent implements OnInit {
         this.editModalVisible = false;
         this.loadTemplates();
       } else {
-        this.show_toast('Error', res.err || 'Failed to save', 'danger');
+        this.show_toast('Error', res.err || 'Failed to save template', 'danger');
       }
     });
   }
@@ -230,7 +341,9 @@ export class TemplateManagerComponent implements OnInit {
   }
 
   removeErrorPattern(i: number): void {
-    this.editData.error_patterns.patterns.splice(i, 1);
+    if (this.editData.error_patterns && this.editData.error_patterns.patterns) {
+      this.editData.error_patterns.patterns.splice(i, 1);
+    }
   }
 
   addPostLoginCommand(): void {
@@ -249,11 +362,112 @@ export class TemplateManagerComponent implements OnInit {
     this.editData.pre_logout_commands.splice(i, 1);
   }
 
+  // ---- Diff Exclusions Helpers ----
+
+  getDiffExclusionSections(): string[] {
+    if (!this.editData || !this.editData.diff_exclusions) return [];
+    return Object.keys(this.editData.diff_exclusions);
+  }
+
+  getDiffExclusionCount(exclusions: any): number {
+    if (!exclusions || typeof exclusions !== 'object') return 0;
+    let count = 0;
+    for (const sec of Object.keys(exclusions)) {
+      if (Array.isArray(exclusions[sec])) {
+        count += exclusions[sec].length;
+      }
+    }
+    return count;
+  }
+
+  addDiffExclusionSection(sectionName?: string) {
+    const name = (sectionName || this.newDiffSectionName || '').trim();
+    if (!name) return;
+    if (!this.editData.diff_exclusions) {
+      this.editData.diff_exclusions = {};
+    }
+    if (!this.editData.diff_exclusions[name]) {
+      this.editData.diff_exclusions[name] = [];
+    }
+    this.newDiffSectionName = '';
+  }
+
+  removeDiffExclusionSection(sec: string) {
+    if (this.editData.diff_exclusions && this.editData.diff_exclusions[sec]) {
+      delete this.editData.diff_exclusions[sec];
+    }
+  }
+
+  addDiffExclusionRule(sec: string) {
+    if (!this.editData.diff_exclusions[sec]) {
+      this.editData.diff_exclusions[sec] = [];
+    }
+    this.editData.diff_exclusions[sec].push({ pattern: '', flags: '' });
+  }
+
+  removeDiffExclusionRule(sec: string, index: number) {
+    if (this.editData.diff_exclusions[sec]) {
+      this.editData.diff_exclusions[sec].splice(index, 1);
+    }
+  }
+
+  testDiffExclusions() {
+    if (!this.sampleDiffText) {
+      this.previewResult = null;
+      return;
+    }
+    try {
+      const lines = this.sampleDiffText.split('\n');
+      const kept: string[] = [];
+      const removed: string[] = [];
+
+      const compiledRules: { regex: RegExp; section: string; pattern: string }[] = [];
+      for (const sec of Object.keys(this.editData.diff_exclusions || {})) {
+        const rules = this.editData.diff_exclusions[sec] || [];
+        for (const r of rules) {
+          if (r && r.pattern && r.pattern.trim()) {
+            try {
+              const flags = (r.flags || '').replace(/[^ims]/g, '');
+              compiledRules.push({ regex: new RegExp(r.pattern, flags), section: sec, pattern: r.pattern });
+            } catch (e) {
+              // Ignore invalid regex in client preview
+            }
+          }
+        }
+      }
+
+      for (const line of lines) {
+        let matched = false;
+        const stripped = line.replace(/[\r\n]+$/, '');
+        for (const r of compiledRules) {
+          if (r.regex.test(stripped)) {
+            matched = true;
+            removed.push(line);
+            break;
+          }
+        }
+        if (!matched) {
+          kept.push(line);
+        }
+      }
+
+      this.previewResult = {
+        total_lines: lines.length,
+        lines_removed: removed.length,
+        lines_kept: kept.length,
+        cleaned: kept.join('\n'),
+        removed_samples: removed.slice(0, 10)
+      };
+    } catch (err: any) {
+      this.show_toast('Regex Error', err.message || 'Error executing regex preview', 'danger');
+    }
+  }
+
   // ---- Brand CRUD ----
 
   openBrandCreateModal() {
     this.isEditingBrand = false;
-    this.brandEditData = { brand: '', display_name: '', is_system: false };
+    this.brandEditData = { brand: '', display_name: '', is_active: true, is_system: false };
     this.brandModalVisible = true;
   }
 
@@ -262,7 +476,9 @@ export class TemplateManagerComponent implements OnInit {
     this.brandEditData = {
       brand: b.brand,
       display_name: b.display_name,
+      is_active: b.is_active !== undefined ? !!b.is_active : true,
       is_system: b.is_system,
+      created: b.created
     };
     this.brandModalVisible = true;
   }
@@ -278,7 +494,7 @@ export class TemplateManagerComponent implements OnInit {
       return;
     }
     if (!this.isEditingBrand) {
-      this.data_provider.createBrand({ brand: data.brand, display_name: data.display_name }).then((res: any) => {
+      this.data_provider.createBrand({ brand: data.brand, display_name: data.display_name, is_active: data.is_active }).then((res: any) => {
         if (res.status === 'success') {
           this.show_toast('Success', 'Brand created', 'success');
           this.brandModalVisible = false;
@@ -288,7 +504,7 @@ export class TemplateManagerComponent implements OnInit {
         }
       });
     } else {
-      this.data_provider.updateBrand({ brand: data.brand, display_name: data.display_name }).then((res: any) => {
+      this.data_provider.updateBrand({ brand: data.brand, display_name: data.display_name, is_active: data.is_active }).then((res: any) => {
         if (res.status === 'success') {
           this.show_toast('Success', 'Brand updated', 'success');
           this.brandModalVisible = false;
@@ -316,3 +532,4 @@ export class TemplateManagerComponent implements OnInit {
     });
   }
 }
+

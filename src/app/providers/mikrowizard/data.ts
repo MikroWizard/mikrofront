@@ -646,9 +646,10 @@ export class dataProvider {
         return this.MikroWizardRPC.sendJsonRequest("/api/firmware/get_downloadable_firms", {});
     }
 
-    download_firmware_to_repository(version: string) {
+    download_firmware_to_repository(version: string, arch: string = 'all') {
         var data = {
-            'version': version
+            'version': version,
+            'arch': arch
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/firmware/download_firmware_to_repository", data);
     }
@@ -662,11 +663,30 @@ export class dataProvider {
         return this.MikroWizardRPC.sendJsonRequest("/api/firmware/update_firmware_settings", data);
     }
 
-    update_firmware(devids: string) {
+    update_firmware(devids: string, version?: string, mode?: string, packages?: string[], auto_upgrade_rb?: boolean, delivery_method?: string) {
+        var data: any = {
+            'devids': devids
+        };
+        if (version) data['version'] = version;
+        if (mode) data['mode'] = mode;
+        if (packages) data['packages'] = packages;
+        if (auto_upgrade_rb !== undefined) data['auto_upgrade_rb'] = auto_upgrade_rb;
+        if (delivery_method) data['delivery_method'] = delivery_method;
+        return this.MikroWizardRPC.sendJsonRequest("/api/firmware/update_firmware", data);
+    }
+
+    reset_device_update_status(devids: string) {
         var data = {
             'devids': devids
-        }
-        return this.MikroWizardRPC.sendJsonRequest("/api/firmware/update_firmware", data);
+        };
+        return this.MikroWizardRPC.sendJsonRequest("/api/firmware/reset_device_update_status", data);
+    }
+
+    get_device_packages(devid: any) {
+        var data = {
+            'devid': devid
+        };
+        return this.MikroWizardRPC.sendJsonRequest("/api/firmware/get_device_packages", data);
     }
 
     upgrade_firmware(devids: string) {
@@ -891,6 +911,14 @@ export class dataProvider {
 
     terminalSaveFavorites(device_ids: number[]) {
         return this.MikroWizardRPC.sendJsonRequest("/api/terminal/favorites", { favorites: device_ids });
+    }
+
+    terminalGetCategories() {
+        return this.MikroWizardRPC.sendHttpGetRequest("/api/terminal/categories");
+    }
+
+    terminalSaveCategories(categories: any[]) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/terminal/categories", { categories });
     }
 
     getTerminalGatewayStatus() {

@@ -38,7 +38,7 @@
         <a class="nav-link" [active]="false" (click)="show_dev_logs = true" [cTabContent]="tabContent"
           [tabPaneIdx]="3">Device Events</a>
       </div>
-      <div class="nav-item" *mwMode="'pam'" (click)="actice_tab_index = 3" [ngStyle]="{ display: !ispro ? 'none' : 'block' }">
+      <div class="nav-item" *mwMode="'pam'" (click)="actice_tab_index = 3" [ngStyle]="{ display: !ispro || isMikroTik ? 'none' : 'block' }">
         <a class="nav-link" [active]="false" [cTabContent]="tabContent"
           [tabPaneIdx]="3"><i class="fas fa-video me-1"></i>Sessions</a>
       </div>
@@ -46,7 +46,7 @@
         <a class="nav-link" [active]="false" (click)="show_auth_logs = true" [cTabContent]="tabContent"
           [tabPaneIdx]="4">Authentication</a>
       </div>
-      <div class="nav-item" *mwMode="'pam'" (click)="actice_tab_index = 4" [ngStyle]="{ display: !ispro ? 'none' : 'block' }">
+      <div class="nav-item" *mwMode="'pam'" (click)="actice_tab_index = 4" [ngStyle]="{ display: !ispro || isMikroTik ? 'none' : 'block' }">
         <a class="nav-link" [active]="false" [cTabContent]="tabContent"
           [tabPaneIdx]="4"><i class="fas fa-play me-1"></i>Active Sessions</a>
       </div>
@@ -54,14 +54,14 @@
         <a class="nav-link" [active]="false" (click)="show_acc_logs = true" [cTabContent]="tabContent"
           [tabPaneIdx]="5">Accounting</a>
       </div>
-      <div class="nav-item" *mwMode="'pam'" (click)="actice_tab_index = 5" [ngStyle]="{ display: !ispro ? 'none' : 'block' }">
+      <div class="nav-item" *mwMode="'pam'" (click)="actice_tab_index = 5" [ngStyle]="{ display: !ispro || isMikroTik || isRdpOrVnc ? 'none' : 'block' }">
         <a class="nav-link" [active]="false" [cTabContent]="tabContent"
           [tabPaneIdx]="5"><i class="fas fa-keyboard me-1"></i>Command History</a>
       </div>
       <div class="nav-item" *mwMode="'mikrotik'" (click)="actice_tab_index = 6" [ngStyle]="{ display: !ispro || !isMikroTik ? 'none' : 'block' }">
         <a class="nav-link" [active]="false" [cTabContent]="tabContent" [tabPaneIdx]="6">Speed Test</a>
       </div>
-      <div class="nav-item" *mwMode="'pam'" (click)="actice_tab_index = 6; loadExecutions()" [ngStyle]="{ display: !ispro ? 'none' : 'block' }">
+      <div class="nav-item" *mwMode="'pam'" (click)="actice_tab_index = 6; loadExecutions()" [ngStyle]="{ display: !ispro || isMikroTik || isRdpOrVnc ? 'none' : 'block' }">
         <a class="nav-link" [active]="false" [cTabContent]="tabContent"
           [tabPaneIdx]="6"><i class="fas fa-list-check me-1"></i>Execution History</a>
       </div>
@@ -71,7 +71,7 @@
       <div class="nav-item" *mwMode="'mikrotik'" (click)="actice_tab_index = 8" [ngStyle]="{ display: !ispro || !isMikroTik ? 'none' : 'block' }">
         <a class="nav-link" [active]="false" [cTabContent]="tabContent" [tabPaneIdx]="8">Tools & Clients</a>
       </div>
-      <div class="nav-item" (click)="actice_tab_index = 9" [ngStyle]="{ display: !ispro ? 'none' : 'block' }">
+      <div class="nav-item" (click)="actice_tab_index = 9" [ngStyle]="{ display: !ispro || isRdpOrVnc ? 'none' : 'block' }">
         <a class="nav-link" [active]="false" [cTabContent]="tabContent" [tabPaneIdx]="9">Config Versions</a>
       </div>
     </div>

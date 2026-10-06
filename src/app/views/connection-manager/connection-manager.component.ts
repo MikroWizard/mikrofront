@@ -115,7 +115,7 @@ export class ConnectionManagerComponent implements OnInit {
             this.showPingModal = true;
             const isMik = !this.selectedDeviceForTool?.device_type || this.selectedDeviceForTool?.device_type === 'mikrotik';
             if (!isMik) {
-              this.target = this.selectedDeviceForTool?.peer_ip || this.selectedDeviceForTool?.ip || '8.8.8.8';
+              this.target = this.selectedDeviceForTool?.peer_ip || this.selectedDeviceForTool?.ip || this.selectedDeviceForTool?.effective_ip || '8.8.8.8';
               this.toolType = 'ping';
             }
         } else if (eventData.tool === 'speedtest') {
@@ -249,6 +249,9 @@ export class ConnectionManagerComponent implements OnInit {
     };
     
     if (protocol === 'webfig') {
+        try {
+          localStorage.removeItem('token');
+        } catch (e) {}
         session.webfigUrl = this.getWebfigUrl(device);
     }
     
@@ -269,13 +272,14 @@ export class ConnectionManagerComponent implements OnInit {
     const sess = this.activeSessions[index];
     if (sess && sess.protocol === 'webfig') {
       try {
+        localStorage.removeItem('token');
         const iframes = document.querySelectorAll('iframe');
         iframes.forEach((f: any) => {
           if (f && f.src && f.src.includes('/api/proxy/')) {
             const parts = f.src.split('/api/proxy/');
             if (parts.length > 1) {
               const uid = parts[1].split('/')[0];
-              if (uid && uid.length > 10) {
+              if (uid && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(uid)) {
                 navigator.sendBeacon(`/api/proxy/${uid}/close`);
               }
             }

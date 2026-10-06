@@ -2,12 +2,396 @@
 .mw-tree {
   padding: 0;
   user-select: none;
+  position: relative;
 }
 
-.mw-tree-search {
+/* ─── Sticky Header (Search & View Controls) ─── */
+.mw-tree-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
   background-color: var(--cm-search-bg, #3c4b64);
   border-bottom: 1px solid var(--cm-search-border, #344259);
   transition: background-color 0.3s, border-color 0.3s;
+}
+
+.mw-header-btn {
+  width: 31px;
+  height: 31px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background-color 0.15s, color 0.15s;
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+  }
+}
+
+/* ─── Filter & Grouping Popover (Floating Flyout) ─── */
+.mw-popover-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 10040;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(2px);
+}
+
+.mw-filter-popover {
+  position: fixed !important;
+  z-index: 10050;
+  width: 350px;
+  max-width: calc(100vw - 20px);
+  background-color: #1a1e29;
+  color: #f8fafc;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  animation: popoverFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+
+  .popover-scroll::-webkit-scrollbar {
+    width: 5px;
+  }
+  .popover-scroll::-webkit-scrollbar-thumb {
+    background: #475569;
+    border-radius: 3px;
+  }
+
+  .popover-header-bar {
+    background: #11141c;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+  }
+
+  .popover-header-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    background: rgba(56, 189, 248, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+  }
+
+  .popover-header-title {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: 0.3px;
+    line-height: 1.2;
+  }
+
+  .popover-header-sub {
+    font-size: 0.65rem;
+    color: #94a3b8;
+    line-height: 1.2;
+  }
+
+  .popover-close-btn {
+    border: none;
+    background: transparent;
+    color: #94a3b8;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+    }
+  }
+
+  .popover-tabs-bar {
+    background: #141822;
+  }
+
+  .popover-tabs {
+    background: #0b0e14;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    gap: 2px;
+  }
+
+  .tab-btn {
+    border: none;
+    background: transparent;
+    color: #94a3b8;
+    padding: 5px 10px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:hover {
+      color: #f1f5f9;
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    &.active {
+      color: #ffffff;
+      background: #232a3b;
+      font-weight: 600;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+    }
+  }
+
+  .popover-section-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    color: #94a3b8;
+  }
+
+  /* ─── Modern View Tiles (Replaces Radio Inputs) ─── */
+  .view-tile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    background: rgba(255, 255, 255, 0.02);
+    cursor: pointer;
+    transition: all 0.15s ease;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.06);
+      transform: translateX(2px);
+    }
+
+    &.selected {
+      background: rgba(56, 189, 248, 0.12);
+      border-color: rgba(56, 189, 248, 0.45);
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.08);
+
+      .view-tile-title {
+        color: #ffffff;
+        font-weight: 700;
+      }
+    }
+  }
+
+  .view-tile-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+  }
+
+  .view-tile-content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .view-tile-title {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #f1f5f9;
+    line-height: 1.2;
+  }
+
+  .view-tile-desc {
+    font-size: 0.66rem;
+    color: #94a3b8;
+    margin-top: 1px;
+    line-height: 1.2;
+  }
+
+  .view-tile-check {
+    font-size: 0.85rem;
+    flex-shrink: 0;
+  }
+
+  /* ─── Favorites Toggle Card ─── */
+  .toggle-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.03);
+    cursor: pointer;
+    transition: all 0.15s ease;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    &.active {
+      background: rgba(251, 191, 36, 0.08);
+      border-color: rgba(251, 191, 36, 0.35);
+    }
+  }
+
+  .toggle-card-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.06);
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    transition: all 0.15s;
+
+    &.active {
+      background: rgba(251, 191, 36, 0.2);
+      color: #fbbf24;
+    }
+  }
+
+  .toggle-card-title {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #ffffff;
+    line-height: 1.2;
+  }
+
+  .toggle-card-sub {
+    font-size: 0.65rem;
+    color: #94a3b8;
+    line-height: 1.2;
+  }
+
+  /* ─── Filter Chips Grid ─── */
+  .filter-chip-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+
+  .filter-chip {
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.04);
+    color: #cbd5e1;
+    border-radius: 7px;
+    padding: 6px 8px;
+    font-size: 0.72rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #ffffff;
+    }
+
+    &.chip-app i { color: #38bdf8; }
+    &.chip-rdp i { color: #22d3ee; }
+    &.chip-mikrotik i { color: #fbbf24; }
+    &.chip-ssh i { color: #34d399; }
+    &.chip-vnc i { color: #a78bfa; }
+
+    &.active {
+      background: rgba(56, 189, 248, 0.2);
+      border-color: #38bdf8;
+      color: #ffffff;
+      font-weight: 600;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
+    }
+  }
+
+  /* ─── Checklist Items ─── */
+  .filter-checklist-box {
+    max-height: 120px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding-right: 2px;
+
+    &::-webkit-scrollbar { width: 4px; }
+    &::-webkit-scrollbar-thumb { background: #475569; border-radius: 2px; }
+  }
+
+  .filter-list-item {
+    display: flex;
+    align-items: center;
+    padding: 5px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s;
+    user-select: none;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    &.selected {
+      background: rgba(56, 189, 248, 0.08);
+    }
+  }
+
+  .filter-check-box {
+    width: 15px;
+    height: 15px;
+    border-radius: 4px;
+    border: 1px solid #64748b;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.62rem;
+    color: #ffffff;
+    margin-right: 6px;
+    flex-shrink: 0;
+    transition: all 0.15s;
+
+    &.checked {
+      background: #0284c7;
+      border-color: #38bdf8;
+    }
+  }
+
+  .filter-item-name {
+    font-size: 0.74rem;
+    color: #e2e8f0;
+  }
+
+  .filter-item-badge {
+    font-size: 0.62rem;
+    background: rgba(255, 255, 255, 0.08);
+    color: #94a3b8;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 1px 5px;
+    border-radius: 8px;
+  }
+
+  .popover-footer-bar {
+    background: #11141c;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+  }
+}
+
+@keyframes popoverFadeIn {
+  from { opacity: 0; transform: translateY(-6px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 /* ─── Loading / empty states ─── */
@@ -22,6 +406,10 @@
 }
 
 /* ─── Group ─── */
+.mw-tree-body {
+  padding-top: 2px;
+}
+
 .mw-group { margin-bottom: 2px; }
 
 .mw-group-row {
@@ -47,10 +435,12 @@
 .mw-chevron.open { transform: rotate(90deg); }
 
 .mw-folder-icon {
-  font-size: 0.85rem;
-  color: #f9b115;
-  width: 16px;
+  font-size: 0.9rem;
+  width: 18px;
+  text-align: center;
   flex-shrink: 0;
+  display: inline-block;
+  transition: transform 0.15s ease;
 }
 
 .mw-group-name {
@@ -59,10 +449,33 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: rgba(255, 255, 255, 0.9);
+  color: #f1f5f9;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.mw-cat-edit-btn {
+  opacity: 0.45;
+  transition: opacity 0.15s, transform 0.1s;
+  padding: 1px 4px !important;
+  line-height: 1;
+
+  i {
+    color: #94a3b8 !important;
+  }
+
+  &:hover {
+    opacity: 1;
+    transform: scale(1.15);
+    i {
+      color: #38bdf8 !important;
+    }
+  }
+}
+
+.mw-group-row:hover .mw-cat-edit-btn {
+  opacity: 0.9;
 }
 
 .mw-badge {
@@ -117,8 +530,7 @@
   }
 
   i {
-    font-size: 0.65rem;
-    color: #4e9af1;
+    font-size: 0.75rem;
   }
 }
 
@@ -126,7 +538,7 @@
 
 .mw-dev-name {
   font-size: 0.8rem;
-  color: #ffffff;
+  color: #f8fafc;
   font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -134,9 +546,29 @@
   line-height: 1.2;
 }
 
+.mw-app-tag {
+  font-size: 0.6rem !important;
+  padding: 1px 5px !important;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  background-color: rgba(56, 189, 248, 0.22) !important;
+  color: #38bdf8 !important;
+  border: 1px solid rgba(56, 189, 248, 0.45) !important;
+  border-radius: 3px;
+  line-height: 1.2;
+}
+
+.mw-app-subtitle {
+  color: #93c5fd !important; /* Sky 300 - clear, high contrast readability */
+  font-size: 0.66rem;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+}
+
 .mw-dev-ip {
-  font-size: 0.65rem;
-  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.66rem;
+  color: #94a3b8; /* Slate 400 - clean and readable */
   line-height: 1.2;
 }
 
@@ -188,10 +620,11 @@
   background-color: #ffffff;
   border: 1px solid #d8dbe0;
   border-radius: 6px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
   padding: 4px 0;
   z-index: 10001;
-  min-width: 180px;
+  min-width: 200px;
+  max-width: 260px;
 }
 
 .context-menu-header {
@@ -204,9 +637,21 @@
   text-transform: uppercase;
 }
 
+.context-menu-subheader {
+  letter-spacing: 0.5px;
+  border-top: 1px solid #ebedef;
+  margin-top: 4px;
+}
+
+.divider {
+  height: 1px;
+  background-color: #ebedef;
+  margin: 4px 0;
+}
+
 .context-menu-item {
-  padding: 8px 12px;
-  font-size: 0.85rem;
+  padding: 6px 12px;
+  font-size: 0.82rem;
   color: #3c4b64;
   cursor: pointer;
   display: flex;
@@ -219,3 +664,60 @@
   color: #321fdb;
 }
 
+/* ─── Color & Icon Selection Plates ─── */
+.color-plate-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+
+  &:hover {
+    transform: scale(1.18);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  }
+
+  &.active {
+    outline: 2px solid #0284c7;
+    outline-offset: 2px;
+    transform: scale(1.12);
+  }
+}
+
+.icon-plate-container {
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.icon-plate-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 6px;
+  border: 1px solid #d8dbe0;
+  background-color: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  font-size: 0.95rem;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background-color: #e2e8f0;
+    border-color: #94a3b8;
+    transform: translateY(-1px);
+  }
+
+  &.active {
+    background-color: #eff6ff;
+    border: 2px solid #0284c7;
+    box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.25);
+  }
+}

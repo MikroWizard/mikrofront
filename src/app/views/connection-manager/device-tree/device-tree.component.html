@@ -1,130 +1,723 @@
 <div class="mw-tree">
-  <!-- Search Header -->
-  <div class="mw-tree-search p-2">
-    <div class="input-group input-group-sm">
-      <span class="input-group-text bg-dark border-secondary text-secondary"><i class="fa-solid fa-search"></i></span>
-      <input type="text" class="form-control bg-dark border-secondary text-white" placeholder="Search devices..." [(ngModel)]="searchTerm">
+  <!-- ═══════════════ Sticky Search & View Controls Header ═══════════════ -->
+  <div class="mw-tree-header p-2">
+    <div class="d-flex align-items-center gap-1">
+      <div class="input-group input-group-sm flex-grow-1">
+        <span class="input-group-text bg-dark border-secondary text-secondary">
+          <i class="fa-solid fa-search"></i>
+        </span>
+        <input type="text" class="form-control bg-dark border-secondary text-white" 
+               placeholder="Search name, ip, app, brand..." 
+               [(ngModel)]="searchTerm">
+        <button *ngIf="searchTerm" class="btn btn-dark border-secondary text-secondary p-1" 
+                type="button" (click)="searchTerm = ''" title="Clear Search">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Filter & Grouping Popover Button -->
+      <button class="btn btn-sm btn-dark border-secondary text-secondary position-relative mw-header-btn" 
+              type="button" 
+              (click)="toggleFilterPopover($event)"
+              [class.text-primary]="activeFilterCount > 0 || filterPopoverVisible"
+              title="View & Filter Settings">
+        <i class="fa-solid fa-sliders"></i>
+        <span *ngIf="activeFilterCount > 0" 
+              class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" 
+              style="font-size: 0.55rem; padding: 2px 4px;">
+          {{ activeFilterCount }}
+        </span>
+      </button>
+
+      <!-- Expand / Collapse All -->
+      <button class="btn btn-sm btn-dark border-secondary text-secondary mw-header-btn" 
+              type="button" 
+              (click)="toggleExpandAll()"
+              [title]="allExpanded ? 'Collapse All Groups' : 'Expand All Groups'">
+        <i class="fa-solid" [class.fa-compress]="allExpanded" [class.fa-expand]="!allExpanded"></i>
+      </button>
+    </div>
+
+    <!-- Active Filters Summary Tag Bar -->
+    <div class="d-flex align-items-center justify-content-between mt-1 pt-1 border-top border-secondary border-opacity-25" 
+         *ngIf="activeFilterCount > 0" style="font-size: 0.7rem;">
+      <span class="text-info text-truncate">
+        <i class="fa-solid fa-filter me-1"></i>{{ activeFilterCount }} active filter(s)
+      </span>
+      <button type="button" class="btn btn-link btn-sm text-danger p-0 text-decoration-none" 
+              (click)="clearAllFilters()" style="font-size: 0.7rem;">
+        Reset
+      </button>
     </div>
   </div>
 
+  <!-- ═══════════════ Filter & Grouping Popover (Floating Flyout) ═══════════════ -->
+  <div class="mw-filter-popover shadow-lg" 
+       *ngIf="filterPopoverVisible"
+       [style.top.px]="filterPopoverPos.top"
+       [style.left.px]="filterPopoverPos.left">
+    
+    <!-- Popover Header -->
+    <div class="popover-header-bar d-flex align-items-center justify-content-between px-3 py-2 border-bottom">
+      <div class="d-flex align-items-center gap-2">
+        <div class="popover-header-icon">
+          <i class="fa-solid fa-sliders text-info"></i>
+        </div>
+        <div>
+          <div class="popover-header-title">View & Filters</div>
+          <div class="popover-header-sub text-truncate">Mode: {{ getGroupByLabel() }}</div>
+        </div>
+      </div>
+      <button type="button" class="popover-close-btn" (click)="filterPopoverVisible = false" title="Close">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <!-- Segmented Tab Navigation -->
+    <div class="px-2 pt-2 pb-1 popover-tabs-bar">
+      <div class="popover-tabs d-flex p-1 rounded-3">
+        <button type="button" class="tab-btn flex-fill" 
+                [class.active]="flyoutTab === 'group'" 
+                (click)="flyoutTab = 'group'">
+          <i class="fa-solid fa-folder-tree me-1"></i>
+          <span>Group By</span>
+        </button>
+        <button type="button" class="tab-btn flex-fill position-relative" 
+                [class.active]="flyoutTab === 'filter'" 
+                (click)="flyoutTab = 'filter'">
+          <i class="fa-solid fa-filter me-1"></i>
+          <span>Filters</span>
+          <span *ngIf="activeFilterCount > 0" class="badge rounded-pill bg-info ms-1 px-1.5 py-0.5 text-dark fw-bold" style="font-size: 0.62rem;">
+            {{ activeFilterCount }}
+          </span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Tab 1: Organize & Group By -->
+    <div class="p-2.5 popover-scroll" *ngIf="flyoutTab === 'group'" style="max-height: 420px; overflow-y: auto;">
+      <div class="text-uppercase px-1 mb-2 popover-section-label">Select Grouping Layout</div>
+      
+      <div class="view-tiles-container d-flex flex-column gap-1">
+        <!-- Option 1: Admin Groups -->
+        <div class="view-tile" [class.selected]="groupBy === 'admin_groups'" (click)="setGroupBy('admin_groups')">
+          <div class="view-tile-icon" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b;">
+            <i class="fa-solid fa-folder"></i>
+          </div>
+          <div class="view-tile-content">
+            <div class="view-tile-title">Device Groups (Admin)</div>
+            <div class="view-tile-desc">Server-assigned administration folders</div>
+          </div>
+          <div class="view-tile-check" *ngIf="groupBy === 'admin_groups'">
+            <i class="fa-solid fa-circle-check text-info"></i>
+          </div>
+        </div>
+
+        <!-- Option 2: Custom Categories -->
+        <div class="view-tile" [class.selected]="groupBy === 'custom_categories'" (click)="setGroupBy('custom_categories')">
+          <div class="view-tile-icon" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8;">
+            <i class="fa-solid fa-tags"></i>
+          </div>
+          <div class="view-tile-content">
+            <div class="view-tile-title">Custom Categories</div>
+            <div class="view-tile-desc">User-defined tags with colors & icons</div>
+          </div>
+          <div class="view-tile-check" *ngIf="groupBy === 'custom_categories'">
+            <i class="fa-solid fa-circle-check text-info"></i>
+          </div>
+        </div>
+
+        <!-- Option 3: Type & Protocol -->
+        <div class="view-tile" [class.selected]="groupBy === 'type'" (click)="setGroupBy('type')">
+          <div class="view-tile-icon" style="background: rgba(167, 139, 250, 0.15); color: #a78bfa;">
+            <i class="fa-solid fa-layer-group"></i>
+          </div>
+          <div class="view-tile-content">
+            <div class="view-tile-title">Device Type & Protocol</div>
+            <div class="view-tile-desc">Group by Apps, RDP, MikroTik, SSH, VNC</div>
+          </div>
+          <div class="view-tile-check" *ngIf="groupBy === 'type'">
+            <i class="fa-solid fa-circle-check text-info"></i>
+          </div>
+        </div>
+
+        <!-- Option 4: Brand / Vendor -->
+        <div class="view-tile" [class.selected]="groupBy === 'brand'" (click)="setGroupBy('brand')">
+          <div class="view-tile-icon" style="background: rgba(52, 211, 153, 0.15); color: #34d399;">
+            <i class="fa-solid fa-building"></i>
+          </div>
+          <div class="view-tile-content">
+            <div class="view-tile-title">Brand / Vendor</div>
+            <div class="view-tile-desc">Group by manufacturer (MikroTik, Cisco...)</div>
+          </div>
+          <div class="view-tile-check" *ngIf="groupBy === 'brand'">
+            <i class="fa-solid fa-circle-check text-info"></i>
+          </div>
+        </div>
+
+        <!-- Option 5: Flat List -->
+        <div class="view-tile" [class.selected]="groupBy === 'flat'" (click)="setGroupBy('flat')">
+          <div class="view-tile-icon" style="background: rgba(148, 163, 184, 0.15); color: #94a3b8;">
+            <i class="fa-solid fa-arrow-down-a-z"></i>
+          </div>
+          <div class="view-tile-content">
+            <div class="view-tile-title">Flat List (A-Z)</div>
+            <div class="view-tile-desc">Alphabetical list without folder nesting</div>
+          </div>
+          <div class="view-tile-check" *ngIf="groupBy === 'flat'">
+            <i class="fa-solid fa-circle-check text-info"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Shortcut to Manage Custom Categories -->
+      <div class="mt-3 pt-2.5 border-top border-secondary border-opacity-25">
+        <button type="button" 
+                class="btn btn-outline-info btn-sm w-100 d-flex align-items-center justify-content-between py-1.5 px-3 rounded-2"
+                (click)="filterPopoverVisible = false; openCreateCategoryModal()">
+          <span class="d-flex align-items-center gap-2">
+            <i class="fa-solid fa-gear"></i>
+            <span class="fw-semibold">Manage Categories</span>
+          </span>
+          <span class="badge bg-info bg-opacity-25 text-info">{{ customCategories.length }} active</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Tab 2: Filters -->
+    <div class="p-2.5 popover-scroll" *ngIf="flyoutTab === 'filter'" style="max-height: 420px; overflow-y: auto;">
+      
+      <!-- Favorites Only Toggle Card -->
+      <div class="toggle-card mb-3" [class.active]="favoritesOnly" (click)="toggleFavoritesOnly()">
+        <div class="d-flex align-items-center gap-2.5">
+          <div class="toggle-card-icon" [class.active]="favoritesOnly">
+            <i class="fa-solid fa-star"></i>
+          </div>
+          <div>
+            <div class="toggle-card-title">Favorites Only</div>
+            <div class="toggle-card-sub">Show starred devices only</div>
+          </div>
+        </div>
+        <div class="form-check form-switch m-0" (click)="$event.stopPropagation()">
+          <input class="form-check-input cursor-pointer" type="checkbox" [(ngModel)]="favoritesOnly" (change)="buildTree()">
+        </div>
+      </div>
+
+      <!-- Protocol / Type Chips -->
+      <div class="mb-3">
+        <div class="d-flex align-items-center justify-content-between px-1 mb-1.5">
+          <span class="popover-section-label text-uppercase">Filter by Protocol</span>
+          <button *ngIf="filterTypes.length > 0" type="button" class="btn btn-link btn-sm text-info p-0 text-decoration-none" 
+                  style="font-size: 0.68rem;" (click)="filterTypes = []; buildTree()">
+            Clear
+          </button>
+        </div>
+        <div class="filter-chip-grid">
+          <button type="button" class="filter-chip chip-app" 
+                  [class.active]="filterTypes.includes('app')" 
+                  (click)="toggleFilterType('app')">
+            <i class="fa-solid fa-window-restore"></i>
+            <span>Apps</span>
+          </button>
+          <button type="button" class="filter-chip chip-rdp" 
+                  [class.active]="filterTypes.includes('rdp')" 
+                  (click)="toggleFilterType('rdp')">
+            <i class="fa-brands fa-windows"></i>
+            <span>RDP</span>
+          </button>
+          <button type="button" class="filter-chip chip-mikrotik" 
+                  [class.active]="filterTypes.includes('mikrotik')" 
+                  (click)="toggleFilterType('mikrotik')">
+            <i class="fa-solid fa-microchip"></i>
+            <span>MikroTik</span>
+          </button>
+          <button type="button" class="filter-chip chip-ssh" 
+                  [class.active]="filterTypes.includes('ssh')" 
+                  (click)="toggleFilterType('ssh')">
+            <i class="fa-solid fa-terminal"></i>
+            <span>SSH</span>
+          </button>
+          <button type="button" class="filter-chip chip-vnc" 
+                  [class.active]="filterTypes.includes('vnc')" 
+                  (click)="toggleFilterType('vnc')">
+            <i class="fa-solid fa-desktop"></i>
+            <span>VNC</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Filter by Custom Categories -->
+      <div class="mb-3" *ngIf="customCategories.length > 0">
+        <div class="d-flex align-items-center justify-content-between px-1 mb-1.5">
+          <span class="popover-section-label text-uppercase">Custom Categories</span>
+          <button *ngIf="filterCategoryIds.length > 0" type="button" class="btn btn-link btn-sm text-info p-0 text-decoration-none" 
+                  style="font-size: 0.68rem;" (click)="filterCategoryIds = []; buildTree()">
+            Clear
+          </button>
+        </div>
+        <div class="filter-checklist-box">
+          <div class="filter-list-item" 
+               *ngFor="let c of customCategories"
+               [class.selected]="filterCategoryIds.includes(c.id)"
+               (click)="toggleFilterCategory(c.id)">
+            <div class="filter-check-box" [class.checked]="filterCategoryIds.includes(c.id)">
+              <i class="fa-solid fa-check" *ngIf="filterCategoryIds.includes(c.id)"></i>
+            </div>
+            <i class="fa-solid me-2 ms-1" [ngClass]="formatFaIcon(c.icon)" [style.color]="c.color || '#38bdf8'"></i>
+            <span class="filter-item-name text-truncate">{{ c.name }}</span>
+            <span class="badge filter-item-badge ms-auto">{{ (c.device_ids || []).length }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filter by Admin Device Groups -->
+      <div class="mb-2" *ngIf="groups.length > 0">
+        <div class="d-flex align-items-center justify-content-between px-1 mb-1.5">
+          <span class="popover-section-label text-uppercase">Device Groups (Admin)</span>
+          <button *ngIf="filterGroupIds.length > 0" type="button" class="btn btn-link btn-sm text-info p-0 text-decoration-none" 
+                  style="font-size: 0.68rem;" (click)="filterGroupIds = []; buildTree()">
+            Clear
+          </button>
+        </div>
+        <div class="filter-checklist-box">
+          <div class="filter-list-item" 
+               *ngFor="let g of groups"
+               [class.selected]="filterGroupIds.includes(g.id)"
+               (click)="toggleFilterGroup(g.id)">
+            <div class="filter-check-box" [class.checked]="filterGroupIds.includes(g.id)">
+              <i class="fa-solid fa-check" *ngIf="filterGroupIds.includes(g.id)"></i>
+            </div>
+            <i class="fa-solid fa-folder text-warning me-2 ms-1"></i>
+            <span class="filter-item-name text-truncate">{{ g.name }}</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Popover Footer Bar -->
+    <div class="popover-footer-bar px-3 py-2 border-top d-flex justify-content-between align-items-center">
+      <span class="small" style="font-size: 0.72rem;">
+        <span *ngIf="activeFilterCount === 0" class="text-secondary">No filters applied</span>
+        <span *ngIf="activeFilterCount > 0" class="text-info fw-semibold">
+          <i class="fa-solid fa-filter me-1"></i>{{ activeFilterCount }} filter(s) active
+        </span>
+      </span>
+      <div class="d-flex gap-2 align-items-center">
+        <button *ngIf="activeFilterCount > 0" type="button" 
+                class="btn btn-outline-danger btn-sm py-0.5 px-2" style="font-size: 0.72rem;" 
+                (click)="clearAllFilters()">
+          <i class="fa-solid fa-rotate-left me-1"></i>Reset
+        </button>
+        <button type="button" class="btn btn-primary btn-sm py-0.5 px-2.5 fw-semibold" style="font-size: 0.75rem;" 
+                (click)="filterPopoverVisible = false">
+          Done
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Popover Backdrop for Outside Click -->
+  <div *ngIf="filterPopoverVisible" class="mw-popover-backdrop" (click)="filterPopoverVisible = false"></div>
+
   <!-- Loading state -->
   <div class="mw-tree-loading" *ngIf="loading">
-    <div class="spinner-border spinner-border-sm" style="color: #4e9af1;" role="status"></div>
+    <div class="spinner-border spinner-border-sm" style="color: #38bdf8;" role="status"></div>
     <span>Loading devices...</span>
   </div>
 
   <!-- Empty state -->
   <div class="mw-tree-empty" *ngIf="!loading && filteredGroups.length === 0">
-    <i class="fa-solid fa-circle-exclamation"></i>
-    <span>No devices found</span>
+    <i class="fa-solid fa-circle-exclamation text-warning"></i>
+    <span>No devices match current filters</span>
   </div>
 
-  <!-- Device Groups -->
-  <div class="mw-group" *ngFor="let group of filteredGroups">
-    <!-- Group header row -->
-    <div class="mw-group-row" (click)="toggleGroup(group)" [class.text-warning]="group.isFavorites">
-      <i class="fa-solid fa-chevron-right mw-chevron" [class.open]="group.expanded"></i>
-      <i class="mw-folder-icon fa-solid" [class.fa-star]="group.isFavorites" [class.fa-folder-open]="group.expanded && !group.isFavorites" [class.fa-folder]="!group.expanded && !group.isFavorites"></i>
-      <span class="mw-group-name">{{ group.name }}</span>
-      <span class="mw-badge">{{ group.devices.length }}</span>
-    </div>
+  <!-- ═══════════════ Device Groups & Tree List ═══════════════ -->
+  <div class="mw-tree-body">
+    <div class="mw-group" *ngFor="let group of filteredGroups">
+      <!-- Group header row -->
+      <div class="mw-group-row d-flex align-items-center" (click)="toggleGroup(group)" 
+           [class.text-warning]="group.isFavorites">
+        <i class="fa-solid fa-chevron-right mw-chevron" [class.open]="group.expanded"></i>
+        <i class="mw-folder-icon fa-solid" 
+           [ngClass]="getGroupIcon(group)"
+           [style.color]="getGroupColor(group)">
+        </i>
+        <span class="mw-group-name">{{ group.name }}</span>
+        
+        <!-- Quick in-sidebar edit button for custom categories -->
+        <button *ngIf="group.isCustomCategory" type="button" 
+                class="btn btn-link btn-sm p-0 mw-cat-edit-btn me-1" 
+                (click)="openEditCategoryModal(group, $event)" 
+                title="Edit Category Settings">
+          <i class="fa-solid fa-pen text-secondary" style="font-size:0.65rem;"></i>
+        </button>
 
-    <!-- Devices inside group -->
-    <div class="mw-devices" *ngIf="group.expanded">
-      <div class="mw-device-row d-flex align-items-center justify-content-between"
-           *ngFor="let dev of group.devices"
-           (contextmenu)="onContextMenu($event, dev)">
-        <div class="d-flex align-items-center gap-2" style="flex: 1; min-width: 0;"
-              (dblclick)="ispro && connectDefault(dev)"
-             title="Double-click to connect (default)">
-          
-          <span class="mw-brand-icon">
-            <i *ngIf="dev.device_type === 'windows' || dev.brand === 'windows'" class="fa-brands fa-windows text-info"></i>
-            <img *ngIf="dev.device_type !== 'windows' && dev.brand !== 'windows' && getBrandIcon(dev)" [src]="getBrandIcon(dev)" [title]="dev.brand || dev.device_type" alt="">
-            <i *ngIf="dev.device_type !== 'windows' && dev.brand !== 'windows' && !getBrandIcon(dev)" class="fa-solid fa-network-wired"></i>
-          </span>
-          
-          <div class="mw-dev-info" style="min-width: 0;">
-            <div class="mw-dev-name text-truncate">{{ dev.name }}</div>
-            <div class="mw-dev-ip text-truncate">{{ dev.ip || dev.ip_address }}</div>
+        <span class="mw-badge">{{ group.devices.length }}</span>
+      </div>
+
+      <!-- Devices inside group -->
+      <div class="mw-devices" *ngIf="group.expanded">
+        <div class="mw-device-row d-flex align-items-center justify-content-between"
+             *ngFor="let dev of group.devices"
+             [class.mw-app-row]="isApp(dev)"
+             (contextmenu)="onContextMenu($event, dev)">
+          <div class="d-flex align-items-center gap-2" style="flex: 1; min-width: 0;"
+               (dblclick)="ispro && connectDefault(dev)"
+               [title]="isApp(dev) ? 'Double-click to launch application' : 'Double-click to connect (default)'">
+            
+            <!-- Brand / Type Icon -->
+            <span class="mw-brand-icon">
+              <!-- Published Application Icon -->
+              <i *ngIf="isApp(dev)" class="fa-solid fa-window-restore text-primary" style="font-size: 0.8rem;" title="Published Application"></i>
+              <!-- RDP Windows Desktop Host Icon -->
+              <i *ngIf="!isApp(dev) && isRdp(dev)" class="fa-brands fa-windows text-info" title="RDP (Remote Desktop Host)"></i>
+              <!-- VNC Remote Console Icon -->
+              <i *ngIf="!isApp(dev) && isVnc(dev)" class="fa-solid fa-desktop text-warning" title="VNC Remote Console"></i>
+              <!-- Generic Router or Vendor Logo -->
+              <img *ngIf="!isApp(dev) && !isRdp(dev) && !isVnc(dev) && getBrandIcon(dev)" [src]="getBrandIcon(dev)" [title]="dev.brand || dev.device_type" alt="">
+              <i *ngIf="!isApp(dev) && !isRdp(dev) && !isVnc(dev) && !getBrandIcon(dev)" class="fa-solid fa-network-wired"></i>
+            </span>
+            
+            <!-- Device Info (Name & Subtitle) -->
+            <div class="mw-dev-info" style="min-width: 0;">
+              <div class="mw-dev-name text-truncate d-flex align-items-center gap-1">
+                <span class="text-truncate">{{ dev.name }}</span>
+                <!-- Micro APP Badge for Applications -->
+                <span *ngIf="isApp(dev)" class="badge mw-app-tag">APP</span>
+              </div>
+              
+              <!-- Subtitle: For Apps, show Parent Host name with high contrast; for Hardware, show IP -->
+              <div class="mw-dev-ip text-truncate" [title]="getEffectiveIp(dev)">
+                <span *ngIf="isApp(dev)" class="mw-app-subtitle">
+                  <i class="fa-solid fa-server me-1" style="font-size: 0.6rem;"></i>{{ getAppSubtitle(dev) }}
+                </span>
+                <span *ngIf="!isApp(dev)">
+                  {{ dev.ip || dev.ip_address || getEffectiveIp(dev) || 'No IP' }}
+                </span>
+              </div>
+            </div>
           </div>
-        </div>
-        
-        <div class="mw-protocol-actions d-flex gap-1 ms-2 align-items-center">
-          <i class="fa-star" [class.fa-solid]="dev.is_favorite" [class.fa-regular]="!dev.is_favorite" [class.text-warning]="dev.is_favorite" [class.text-secondary]="!dev.is_favorite" (click)="toggleFavorite(dev, $event)" style="cursor: pointer; font-size: 0.8rem; margin-right: 4px;" title="Toggle Favorite"></i>
-        
-          <!-- WebBox (WinBox): only for MikroTik devices -->
-          <button class="btn btn-link p-0 mw-proto-btn"
-                  *ngIf="ispro && isMikrotik(dev)"
-                  (click)="connectProtocol(dev, 'winbox')"
-                  title="Open WebBox (Remote WinBox)">
-            <i class="fa-solid fa-desktop text-primary" style="font-size: 0.8rem;"></i>
-          </button>
-
-          <!-- WebFig: only for MikroTik devices -->
-          <button class="btn btn-link p-0 mw-proto-btn"
-                  *ngIf="ispro && hasProtocol(dev, 'webfig')"
-                  (click)="connectProtocol(dev, 'webfig')"
-                  title="Open WebFig Interface">
-            <i class="fa-solid fa-globe text-info" style="font-size: 0.8rem;"></i>
-          </button>
-
-          <!-- RDP Remote Desktop -->
-          <button class="btn btn-link p-0 mw-proto-btn"
-                  *ngIf="ispro && hasProtocol(dev, 'rdp')"
-                  (click)="connectProtocol(dev, 'rdp')"
-                  title="Open RDP Remote Desktop">
-            <i class="fa-brands fa-windows text-info" style="font-size: 0.8rem;"></i>
-          </button>
-
-          <!-- VNC Remote Console -->
-          <button class="btn btn-link p-0 mw-proto-btn"
-                  *ngIf="ispro && hasProtocol(dev, 'vnc')"
-                  (click)="connectProtocol(dev, 'vnc')"
-                  title="Open VNC Console">
-            <i class="fa-solid fa-desktop text-warning" style="font-size: 0.8rem;"></i>
-          </button>
           
-          <!-- SSH -->
-          <button class="btn btn-link p-0 mw-proto-btn"
-                  *ngIf="ispro && hasProtocol(dev, 'ssh')"
-                  (click)="connectProtocol(dev, 'ssh')"
-                  title="Open SSH Terminal">
-            <i class="fa-solid fa-terminal text-success" style="font-size: 0.8rem;"></i>
-          </button>
+          <!-- Protocol Hover Action Buttons -->
+          <div class="mw-protocol-actions d-flex gap-1 ms-2 align-items-center">
+            <i class="fa-star" 
+               [class.fa-solid]="dev.is_favorite" 
+               [class.fa-regular]="!dev.is_favorite" 
+               [class.text-warning]="dev.is_favorite" 
+               [class.text-secondary]="!dev.is_favorite" 
+               (click)="toggleFavorite(dev, $event)" 
+               style="cursor: pointer; font-size: 0.8rem; margin-right: 4px;" 
+               title="Toggle Favorite"></i>
           
-          <!-- Telnet -->
-          <button class="btn btn-link p-0 mw-proto-btn"
-                  *ngIf="ispro && hasProtocol(dev, 'telnet')"
-                  (click)="connectProtocol(dev, 'telnet')"
-                  title="Open Telnet Terminal">
-            <i class="fa-solid fa-square-poll-horizontal text-warning" style="font-size: 0.8rem;"></i>
-          </button>
+            <!-- App Launch Action Button -->
+            <button class="btn btn-link p-0 mw-proto-btn"
+                    *ngIf="ispro && isApp(dev)"
+                    (click)="connectDefault(dev)"
+                    title="Launch Application">
+              <i class="fa-solid fa-play text-success" style="font-size: 0.8rem;"></i>
+            </button>
+
+            <!-- WebBox (WinBox): only for MikroTik devices -->
+            <button class="btn btn-link p-0 mw-proto-btn"
+                    *ngIf="ispro && isMikrotik(dev)"
+                    (click)="connectProtocol(dev, 'winbox')"
+                    title="Open WebBox (Remote WinBox)">
+              <i class="fa-solid fa-desktop text-primary" style="font-size: 0.8rem;"></i>
+            </button>
+
+            <!-- WebFig: only for MikroTik devices -->
+            <button class="btn btn-link p-0 mw-proto-btn"
+                    *ngIf="ispro && hasProtocol(dev, 'webfig')"
+                    (click)="connectProtocol(dev, 'webfig')"
+                    title="Open WebFig Interface">
+              <i class="fa-solid fa-globe text-info" style="font-size: 0.8rem;"></i>
+            </button>
+
+            <!-- RDP Remote Desktop (Host) -->
+            <button class="btn btn-link p-0 mw-proto-btn"
+                    *ngIf="ispro && !isApp(dev) && hasProtocol(dev, 'rdp')"
+                    (click)="connectProtocol(dev, 'rdp')"
+                    title="Open RDP Remote Desktop">
+              <i class="fa-brands fa-windows text-info" style="font-size: 0.8rem;"></i>
+            </button>
+
+            <!-- VNC Remote Console -->
+            <button class="btn btn-link p-0 mw-proto-btn"
+                    *ngIf="ispro && hasProtocol(dev, 'vnc')"
+                    (click)="connectProtocol(dev, 'vnc')"
+                    title="Open VNC Console">
+              <i class="fa-solid fa-desktop text-warning" style="font-size: 0.8rem;"></i>
+            </button>
+            
+            <!-- SSH Terminal -->
+            <button class="btn btn-link p-0 mw-proto-btn"
+                    *ngIf="ispro && hasProtocol(dev, 'ssh')"
+                    (click)="connectProtocol(dev, 'ssh')"
+                    title="Open SSH Terminal">
+              <i class="fa-solid fa-terminal text-success" style="font-size: 0.8rem;"></i>
+            </button>
+            
+            <!-- Telnet Terminal -->
+            <button class="btn btn-link p-0 mw-proto-btn"
+                    *ngIf="ispro && hasProtocol(dev, 'telnet')"
+                    (click)="connectProtocol(dev, 'telnet')"
+                    title="Open Telnet Terminal">
+              <i class="fa-solid fa-square-poll-horizontal text-warning" style="font-size: 0.8rem;"></i>
+            </button>
+          </div>
         </div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Context Menu -->
+<!-- ═══════════════ Context-Aware Right-Click Menu ═══════════════ -->
 <div *ngIf="contextMenuVisible" 
-     class="custom-context-menu" 
+     class="custom-context-menu shadow-lg" 
      [style.left.px]="contextMenuPosition.x" 
      [style.top.px]="contextMenuPosition.y"
      (click)="closeContextMenu()">
-  <div class="context-menu-header">{{ selectedDeviceForContext?.name }}</div>
-  <div class="context-menu-item" (click)="openToolModal('ping')"><i class="fa-solid fa-satellite-dish me-2"></i>Ping Tool</div>
-  <div class="context-menu-item" (click)="openToolModal('speedtest')" *ngIf="!selectedDeviceForContext?.device_type || selectedDeviceForContext?.device_type === 'mikrotik'"><i class="fa-solid fa-gauge-high me-2"></i>Speed Test</div>
-  <div class="context-menu-item" (click)="openToolModal('logs')"><i class="fa-solid fa-file-lines me-2"></i>Device Logs</div>
+  <div class="context-menu-header d-flex justify-content-between align-items-center">
+    <span class="text-truncate">{{ selectedDeviceForContext?.name }}</span>
+    <span *ngIf="isApp(selectedDeviceForContext)" class="badge bg-primary ms-1" style="font-size:0.6rem;">APP</span>
+    <span *ngIf="!isApp(selectedDeviceForContext) && isRdp(selectedDeviceForContext)" class="badge bg-info ms-1" style="font-size:0.6rem;">RDP</span>
+  </div>
+
+  <!-- Common Diagnostic Tools -->
+  <div class="context-menu-item" (click)="openToolModal('ping')">
+    <i class="fa-solid fa-satellite-dish me-2 text-primary"></i>Ping Tool
+  </div>
+  
+  <div class="context-menu-item" (click)="openToolModal('sessions')">
+    <i class="fa-solid fa-play me-2 text-success"></i>Latest Sessions / PAM Recordings
+  </div>
+
+  <!-- MikroTik Only Actions -->
+  <ng-container *ngIf="isMikrotik(selectedDeviceForContext)">
+    <div class="context-menu-item" (click)="openToolModal('speedtest')">
+      <i class="fa-solid fa-gauge-high me-2 text-warning"></i>Speed Test
+    </div>
+    <div class="context-menu-item" (click)="openToolModal('logs')">
+      <i class="fa-solid fa-file-lines me-2 text-info"></i>Device Logs
+    </div>
+    <div class="context-menu-item" (click)="openToolModal('backup')">
+      <i class="fa-solid fa-database me-2 text-secondary"></i>Backup Now
+    </div>
+  </ng-container>
+
+  <!-- Network / SSH CLI Only Actions (Hidden for RDP, VNC, and Apps) -->
+  <ng-container *ngIf="!isRdpOrVnc(selectedDeviceForContext) && !isApp(selectedDeviceForContext)">
+    <div class="divider"></div>
+    <div class="context-menu-item" (click)="openToolModal('commands')">
+      <i class="fa-solid fa-keyboard me-2 text-secondary"></i>Command History
+    </div>
+    <div class="context-menu-item" (click)="openToolModal('versions')">
+      <i class="fa-solid fa-history me-2 text-warning"></i>Config Versions
+    </div>
+    <div class="context-menu-item" (click)="openToolModal('executions')">
+      <i class="fa-solid fa-list-check me-2 text-primary"></i>Execution History
+    </div>
+  </ng-container>
+
+  <!-- Custom Categories Assignment Submenu -->
   <div class="divider"></div>
-  <div class="context-menu-item" (click)="openToolModal('commands')"><i class="fa-solid fa-keyboard me-2"></i>Command History</div>
-  <div class="context-menu-item" (click)="openToolModal('versions')"><i class="fa-solid fa-history me-2"></i>Config Versions</div>
-  <div class="context-menu-item" (click)="openToolModal('executions')"><i class="fa-solid fa-list-check me-2"></i>Execution History</div>
-  <div class="divider"></div>
-  <div class="context-menu-item" (click)="openToolModal('backup')"><i class="fa-solid fa-database me-2"></i>Backup Now</div>
-  <div class="context-menu-item" (click)="openToolModal('sessions')"><i class="fa-solid fa-play me-2"></i>Latest Sessions</div>
-  <div class="divider"></div>
-  <div class="context-menu-item" (click)="openDeviceDetails()"><i class="fa-solid fa-circle-info me-2"></i>Device Details <i class="fa-solid fa-arrow-up-right-from-square ms-auto text-secondary" style="font-size: 0.7rem;"></i></div>
+  <div class="context-menu-subheader px-3 py-1 text-muted fw-bold text-uppercase" style="font-size: 0.65rem;">
+    <i class="fa-solid fa-tags me-1"></i> Custom Categories
+  </div>
+  <div class="context-menu-item d-flex align-items-center justify-content-between" 
+       *ngFor="let cat of customCategories"
+       (click)="toggleDeviceCategory(selectedDeviceForContext, cat, $event)">
+    <div class="d-flex align-items-center text-truncate">
+      <i class="fa-solid me-2" [ngClass]="formatFaIcon(cat.icon)" [style.color]="cat.color || '#38bdf8'"></i>
+      <span class="text-truncate">{{cat.name}}</span>
+    </div>
+    <i class="fa-solid fa-check text-success ms-2" *ngIf="isDeviceInCategory(selectedDeviceForContext, cat)"></i>
+  </div>
+  <div class="context-menu-item text-primary" (click)="openCreateCategoryModal(selectedDeviceForContext)">
+    <i class="fa-solid fa-plus me-2"></i>New Category...
+  </div>
+
+  <!-- Device Details: Only for hardware devices, NOT for applications -->
+  <ng-container *ngIf="!isApp(selectedDeviceForContext)">
+    <div class="divider"></div>
+    <div class="context-menu-item" (click)="openDeviceDetails()">
+      <i class="fa-solid fa-circle-info me-2 text-secondary"></i>Device Details 
+      <i class="fa-solid fa-arrow-up-right-from-square ms-auto text-secondary" style="font-size: 0.7rem;"></i>
+    </div>
+  </ng-container>
 </div>
-<!-- Global click listener to close context menu -->
-<div *ngIf="contextMenuVisible" class="context-menu-backdrop" (click)="closeContextMenu()" (contextmenu)="closeContextMenu(); $event.preventDefault()"></div>
+
+<!-- Backdrop to close context menu on click outside -->
+<div *ngIf="contextMenuVisible" class="context-menu-backdrop" 
+     (click)="closeContextMenu()" 
+     (contextmenu)="closeContextMenu(); $event.preventDefault()">
+</div>
+
+<!-- ═══════════════ Custom Categories Management Modal ═══════════════ -->
+<c-modal id="customCategoriesModal" [visible]="showCategoryModal" (visibleChange)="showCategoryModal = $event" size="lg">
+  <c-modal-header>
+    <h5 cModalTitle class="fw-bold">
+      <i class="fa-solid fa-tags text-primary me-2"></i>
+      Manage Custom Categories
+    </h5>
+    <button cButtonClose (click)="showCategoryModal = false"></button>
+  </c-modal-header>
+
+  <c-modal-body>
+    <p class="text-muted small mb-3">
+      Create and organize custom device categories. Categories are synchronized with your user account across all browsers and devices.
+    </p>
+
+    <!-- Create / Edit Category Section -->
+    <div class="p-3 border rounded mb-4" [class.bg-light]="categoryModalMode === 'create'" [class.border-primary]="categoryModalMode === 'edit'" [class.bg-white]="categoryModalMode === 'edit'">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="fw-semibold m-0 text-dark">
+          <i class="fa-solid me-1" [class.fa-plus]="categoryModalMode === 'create'" [class.fa-pen-to-square]="categoryModalMode === 'edit'" [class.text-primary]="true"></i>
+          <span *ngIf="categoryModalMode === 'create'">Create New Category</span>
+          <span *ngIf="categoryModalMode === 'edit'">Editing Category: <strong class="text-primary">{{ categoryForm.name || 'Untitled' }}</strong></span>
+        </h6>
+        <button *ngIf="categoryModalMode === 'edit'" type="button" class="btn btn-outline-secondary btn-sm py-0 px-2" (click)="cancelEditCategory()" style="font-size: 0.75rem;">
+          <i class="fa-solid fa-xmark me-1"></i>Cancel Edit
+        </button>
+      </div>
+
+      <div class="row g-3">
+        <!-- Category Name -->
+        <div class="col-12 col-md-6">
+          <label class="form-label small fw-semibold text-dark">Category Name *</label>
+          <input class="form-control form-control-sm" [(ngModel)]="categoryForm.name" placeholder="e.g. Core Routers, Accounting Apps" />
+        </div>
+
+        <!-- Live Preview Badge -->
+        <div class="col-12 col-md-6">
+          <label class="form-label small fw-semibold text-dark">Folder Preview in Tree</label>
+          <div class="p-2 border rounded bg-dark d-flex align-items-center gap-2" style="height: 31px;">
+            <i class="fa-solid" [ngClass]="formatFaIcon(categoryForm.icon)" [style.color]="categoryForm.color" style="font-size: 0.9rem;"></i>
+            <span class="small fw-bold text-truncate" [style.color]="categoryForm.color">
+              {{ categoryForm.name || 'Category Name' }}
+            </span>
+            <span class="badge bg-secondary ms-auto" style="font-size: 0.6rem;">0</span>
+          </div>
+        </div>
+
+        <!-- Color Palette (Plate) -->
+        <div class="col-12 col-md-6">
+          <label class="form-label small fw-semibold text-dark d-flex justify-content-between align-items-center">
+            <span>Color Palette</span>
+            <span class="small" [style.color]="categoryForm.color">{{ categoryForm.color }}</span>
+          </label>
+          <div class="d-flex flex-wrap gap-2 align-items-center p-2 rounded bg-white border">
+            <button type="button" 
+                    *ngFor="let c of availableColors" 
+                    class="color-plate-btn" 
+                    [style.background-color]="c" 
+                    [class.active]="categoryForm.color === c"
+                    (click)="categoryForm.color = c"
+                    [title]="c">
+              <i class="fa-solid fa-check text-white" *ngIf="categoryForm.color === c" style="font-size: 0.65rem;"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Icon Palette (Plate) -->
+        <div class="col-12 col-md-6">
+          <label class="form-label small fw-semibold text-dark">Icon Selection</label>
+          <div class="d-flex flex-wrap gap-2 align-items-center p-2 rounded bg-white border icon-plate-container">
+            <button type="button" 
+                    *ngFor="let ic of availableIcons" 
+                    class="icon-plate-btn" 
+                    [class.active]="categoryForm.icon === ic"
+                    (click)="categoryForm.icon = ic"
+                    [title]="ic.replace('fa-', '')">
+              <i class="fa-solid" [ngClass]="formatFaIcon(ic)" [style.color]="categoryForm.icon === ic ? categoryForm.color : '#64748b'"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Action Submit Buttons -->
+        <div class="col-12 d-flex justify-content-end gap-2 mt-2">
+          <button *ngIf="categoryModalMode === 'edit'" type="button" class="btn btn-sm btn-secondary" (click)="cancelEditCategory()">
+            Cancel
+          </button>
+          <button class="btn btn-sm btn-primary px-3" (click)="saveCategoryModal()" [disabled]="!categoryForm.name || !categoryForm.name.trim()">
+            <i class="fa-solid fa-check me-1"></i>
+            {{ categoryModalMode === 'create' ? 'Create Category' : 'Save Changes' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Existing Categories List -->
+    <div class="mb-4">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h6 class="fw-semibold m-0 text-dark">Existing Categories ({{ customCategories.length }})</h6>
+        <button class="btn btn-sm btn-outline-secondary py-0 px-2" (click)="showImportExport = !showImportExport" style="font-size: 0.75rem;">
+          <i class="fa-solid fa-file-import me-1"></i>Import / Export
+        </button>
+      </div>
+
+      <div *ngIf="customCategories.length === 0" class="text-center py-4 text-muted border rounded bg-white">
+        <i class="fa-solid fa-tags fa-2x mb-2 d-block text-secondary"></i>
+        No custom categories created yet. Create one above to organize your devices.
+      </div>
+
+      <div class="list-group" *ngIf="customCategories.length > 0">
+        <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-3" 
+             *ngFor="let cat of customCategories"
+             [class.border-primary]="categoryModalMode === 'edit' && categoryForm.id === cat.id"
+             [class.bg-light]="categoryModalMode === 'edit' && categoryForm.id === cat.id">
+          <div class="d-flex align-items-center gap-2">
+            <span class="rounded-circle d-inline-block" [style.background-color]="cat.color" style="width: 12px; height: 12px;"></span>
+            <i class="fa-solid" [ngClass]="formatFaIcon(cat.icon)" [style.color]="cat.color"></i>
+            <span class="fw-semibold text-dark">{{ cat.name }}</span>
+            <span class="badge bg-secondary-subtle text-secondary border ms-2">
+              {{ (cat.device_ids || []).length }} device(s)
+            </span>
+            <span *ngIf="categoryModalMode === 'edit' && categoryForm.id === cat.id" class="badge bg-primary ms-2" style="font-size: 0.65rem;">
+              Currently Editing
+            </span>
+          </div>
+          <div class="d-flex align-items-center gap-1">
+            <button class="btn btn-sm btn-link text-primary p-1" (click)="openEditCategoryModal(cat)" title="Edit">
+              <i class="fa-solid fa-pencil"></i>
+            </button>
+            <button class="btn btn-sm btn-link text-danger p-1" (click)="deleteCategory(cat, $event)" title="Delete">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Import / Export Section (Expandable) -->
+    <div class="p-3 border rounded bg-white" *ngIf="showImportExport">
+      <h6 class="fw-semibold mb-2 text-dark"><i class="fa-solid fa-arrow-right-arrow-left me-1 text-info"></i> Backup & Transfer</h6>
+      <p class="text-muted small mb-3">
+        Export your categories to a JSON file to transfer them to another device or browser, or import a backup file.
+      </p>
+      
+      <div class="d-flex gap-2 mb-3">
+        <button class="btn btn-sm btn-outline-primary" (click)="exportCategories()">
+          <i class="fa-solid fa-download me-1"></i> Export to JSON
+        </button>
+        <label class="btn btn-sm btn-outline-success m-0 cursor-pointer">
+          <i class="fa-solid fa-upload me-1"></i> Import from File
+          <input type="file" accept=".json" (change)="importCategoriesFromFile($event)" style="display: none;">
+        </label>
+      </div>
+
+      <div class="mb-2">
+        <label class="form-label small fw-semibold text-dark">Or Paste JSON Data:</label>
+        <textarea class="form-control font-monospace" rows="3" [(ngModel)]="importJsonText" placeholder='[{"id":"cat_1","name":"Core","device_ids":[1,2]}]' style="font-size:0.75rem;"></textarea>
+      </div>
+      <button class="btn btn-sm btn-primary" (click)="importCategoriesFromText()" [disabled]="!importJsonText.trim()">
+        Import JSON
+      </button>
+    </div>
+  </c-modal-body>
+
+  <c-modal-footer>
+    <button cButton color="secondary" size="sm" (click)="showCategoryModal = false">Close</button>
+  </c-modal-footer>
+</c-modal>

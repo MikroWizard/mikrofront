@@ -263,6 +263,48 @@ export class UserTasksComponent implements OnInit {
     this.NewMemberModalVisible = false;
   }
 
+  ensureTaskData(): void {
+    if (!this.SelectedTask) {
+      this.SelectedTask = {};
+    }
+    if (typeof this.SelectedTask['data'] === 'string') {
+      try {
+        this.SelectedTask['data'] = JSON.parse(this.SelectedTask['data']);
+      } catch (e) {
+        this.SelectedTask['data'] = {};
+      }
+    }
+    if (!this.SelectedTask['data'] || typeof this.SelectedTask['data'] !== 'object') {
+      this.SelectedTask['data'] = {
+        strategy: 'system',
+        mode: 'full',
+        version_to_install: '',
+        version_to_install_6: '',
+        delivery_method: 'local_repo'
+      };
+    }
+    if (!this.SelectedTask['data']['strategy']) {
+      this.SelectedTask['data']['strategy'] = 'system';
+    }
+    if (!this.SelectedTask['data']['mode']) {
+      this.SelectedTask['data']['mode'] = 'full';
+    }
+  }
+
+  loadFirmwares(): void {
+    var _self = this;
+    this.data_provider.get_firms(0, 10000, false).then((res: any) => {
+      if (res && res.firms) {
+        _self.available_firmwares = Array.from(
+          new Set(res.firms.map((x: any) => String(x.version)))
+        );
+        _self.available_firmwaresv6 = _self.available_firmwares.filter((x: string) => x.startsWith('6.'));
+        _self.updateBehavior = res.updateBehavior;
+        _self.firms_loaded = true;
+      }
+    });
+  }
+
   editAddTask(item: any, action: string) {
     if (action == "showadd") {
       this.SelectedTask = {
@@ -276,53 +318,38 @@ export class UserTasksComponent implements OnInit {
         selection_type: "devices",
         snippetid: "",
         task_type: "backup",
+        data: {
+          strategy: 'system',
+          mode: 'full',
+          version_to_install: '',
+          version_to_install_6: '',
+          delivery_method: 'local_repo'
+        }
       };
-      this.SelectedTask['data'] = { 'strategy': 'system', 'version_to_install': '', 'version_to_install_6': '' };
       this.cronSearch = '';
       this.selectedCronPreset = null;
       this.SelectedMembers = [];
       this.SelectedTaskItems = [];
+      this.firms_loaded = true;
       this.EditTaskModalVisible = true;
       return;
     }
 
     var _self = this;
     this.SelectedTask = { ...item };
+    this.ensureTaskData();
 
     // Initialize cron search and preset tracking
     this.cronSearch = '';
     const currentCron = this.SelectedTask['cron'];
     this.selectedCronPreset = this.predefinedCrons.find(cron => cron.value === currentCron) || null;
 
-    if ((this.SelectedTask['task_type'] == 'firmware' || this.SelectedTask['task_type'] == 'sequence') && 'data' in this.SelectedTask && this.SelectedTask['data']) {
-      if (typeof this.SelectedTask['data'] === 'string') {
-        this.SelectedTask['data'] = JSON.parse(this.SelectedTask['data']);
-      }
-      if (this.SelectedTask['task_type'] == 'firmware' && this.SelectedTask['data']['strategy'] == 'defined') {
-        this.data_provider.get_firms(0, 10000, false).then((res) => {
-          let index = 1;
-          _self.available_firmwares = [
-            ...new Set(
-              res["firms"].map((x: any) => {
-                return x.version;
-              })
-            ),
-          ];
-          _self.available_firmwaresv6 = [
-            ...new Set(
-              res["firms"].map((x: any) => {
-                return x.version;
-              })
-            ),
-          ].filter((x: any) => x.match(/^6\./g));
-          _self.updateBehavior = res.updateBehavior;
-          _self.firms_loaded = true;
-        });
-      }
-      else {
+    if (this.SelectedTask['task_type'] == 'firmware') {
+      if (this.SelectedTask['data']['strategy'] == 'defined') {
+        this.loadFirmwares();
+      } else {
         _self.firms_loaded = true;
       }
-
     }
     _self.data_provider.get_snippets("", "", "", 0, 1000, false).then((res) => {
       _self.Snippets = res.map((x: any) => {
@@ -354,39 +381,33 @@ export class UserTasksComponent implements OnInit {
 
 
   firmware_type_changed(type: any) {
+    this.ensureTaskData();
+    if (type == 'latest' && !this.ispro) {
+      this.show_toast("Pro Feature", "Cloud Auto-Pilot to latest version is a Pro feature", "warning");
+      this.SelectedTask['data']['strategy'] = 'system';
+      return;
+    }
     this.SelectedTask['data']['strategy'] = type;
     if (type == 'system') {
-      this.SelectedTask['data']['version_to_install'] = false
-      this.SelectedTask['data']['version_to_install_6'] = false
+      this.SelectedTask['data']['version_to_install'] = false;
+      this.SelectedTask['data']['version_to_install_6'] = false;
+      this.SelectedTask['data']['delivery_method'] = 'local_repo';
+    }
+    else if (type == 'native') {
+      this.SelectedTask['data']['version_to_install'] = false;
+      this.SelectedTask['data']['version_to_install_6'] = false;
+      this.SelectedTask['data']['delivery_method'] = 'native';
     }
     else if (type == 'defined') {
-      var _self = this;
-      this.data_provider.get_firms(0, 10000, false).then((res) => {
-        let index = 1;
-        _self.available_firmwares = [
-          ...new Set(
-            res["firms"].map((x: any) => {
-              return x.version;
-            })
-          ),
-        ];
-        _self.available_firmwaresv6 = [
-          ...new Set(
-            res["firms"].map((x: any) => {
-              return x.version;
-            })
-          ),
-        ].filter((x: any) => x.match(/^6\./g));
-        _self.updateBehavior = res.updateBehavior;
-        _self.firms_loaded = true;
-      });
+      this.SelectedTask['data']['delivery_method'] = 'local_repo';
+      this.loadFirmwares();
     }
     else if (type == 'latest') {
-      this.SelectedTask['data']['version_to_install'] = false
-      this.SelectedTask['data']['version_to_install_6'] = false
-      //get firmwares to select
+      this.SelectedTask['data']['version_to_install'] = false;
+      this.SelectedTask['data']['version_to_install_6'] = false;
+      this.SelectedTask['data']['delivery_method'] = 'local_repo';
     }
-    return
+    return;
   }
   remove_member(item: any) {
     var _self = this;
@@ -451,6 +472,11 @@ export class UserTasksComponent implements OnInit {
     var _self = this;
     this.data_provider.get_user_task_list().then((res) => {
       _self.source = res.map((x: any) => {
+        if (x && typeof x.data === 'string') {
+          try {
+            x.data = JSON.parse(x.data);
+          } catch (e) { }
+        }
         return x;
       });
       _self.loading = false;
@@ -518,7 +544,19 @@ export class UserTasksComponent implements OnInit {
   }
 
   onTaskTypeChange(): void {
-    if (this.SelectedTask['task_type'] === 'snippet') {
+    this.ensureTaskData();
+    if (this.SelectedTask['task_type'] === 'firmware') {
+      if (!this.SelectedTask['data']['strategy']) {
+        this.SelectedTask['data']['strategy'] = 'system';
+      }
+      if (!this.SelectedTask['data']['mode']) {
+        this.SelectedTask['data']['mode'] = 'full';
+      }
+      this.firms_loaded = true;
+      if (this.SelectedTask['data']['strategy'] === 'defined') {
+        this.loadFirmwares();
+      }
+    } else if (this.SelectedTask['task_type'] === 'snippet') {
       this.loadSnippets();
     } else if (this.SelectedTask['task_type'] === 'sequence') {
       this.loadSequences();

@@ -139,7 +139,7 @@
             <option value="snippet">📝 Execute Script/Snippet</option>
             <option value="command_exec">⌨️ Command Execution</option>
             <ng-container *mwMode="'mikrotik'">
-              <option value="firmware" *ngIf="ispro">🔄 Firmware Update</option>
+              <option value="firmware">🔄 Firmware Update</option>
             </ng-container>
             <option value="sequence" *ngIf="ispro">⛓️ Alert Sequence</option>
           </select>
@@ -181,32 +181,43 @@
         <c-card-body>
           <div class="strategy-buttons mb-3">
             <c-button-group role="group" class="w-100">
-              <button cButton [active]="SelectedTask['data']['strategy']=='system'"
+              <button cButton [active]="SelectedTask['data']?.['strategy']=='system'"
                 (click)="firmware_type_changed('system')" color="info" variant="outline" class="flex-fill">
                 <i class="fa-solid fa-cogs me-1"></i>System Default
               </button>
-              <button cButton [active]="SelectedTask['data']['strategy']=='defined'"
+              <button cButton [active]="SelectedTask['data']?.['strategy']=='defined'"
                 (click)="firmware_type_changed('defined')" color="warning" variant="outline" class="flex-fill">
                 <i class="fa-solid fa-list me-1"></i>Custom Version
               </button>
-              <button cButton [active]="SelectedTask['data']['strategy']=='latest'"
-                (click)="firmware_type_changed('latest')" color="success" variant="outline" class="flex-fill">
-                <i class="fa-solid fa-download me-1"></i>Latest Available
+              <button cButton [active]="SelectedTask['data']?.['strategy']=='native'"
+                (click)="firmware_type_changed('native')" color="primary" variant="outline" class="flex-fill">
+                <i class="fa-solid fa-cloud me-1"></i>Router Native
+              </button>
+              <button cButton [active]="SelectedTask['data']?.['strategy']=='latest'"
+                (click)="firmware_type_changed('latest')" color="success" variant="outline" class="flex-fill"
+                [disabled]="!ispro">
+                <i class="fa-solid fa-download me-1"></i>Latest Cloud (⭐ Pro)
               </button>
             </c-button-group>
           </div>
 
-          <div *ngIf=" SelectedTask['data']['strategy']=='system'" class="alert alert-info">
+          <div *ngIf="SelectedTask['data']?.['strategy']=='system'" class="alert alert-info py-2 px-3 small">
             <i class="fa-solid fa-info-circle me-2"></i>
-            Uses global MikroWizard update strategy settings. Check Settings page for configuration.
+            Uses global MikroWizard local repository version settings. Check Settings page for details.
           </div>
 
-          <div *ngIf="firms_loaded && SelectedTask['data']['strategy']=='latest'" class="alert alert-success">
+          <div *ngIf="SelectedTask['data']?.['strategy']=='native'" class="alert alert-primary py-2 px-3 small">
+            <i class="fa-solid fa-cloud me-2"></i>
+            Uses internal RouterOS <strong>/system package update</strong> directly on devices (requires router internet
+            access).
+          </div>
+
+          <div *ngIf="SelectedTask['data']?.['strategy']=='latest'" class="alert alert-success py-2 px-3 small">
             <i class="fa-solid fa-cloud-download-alt me-2"></i>
-            Downloads latest firmware from mikrotik.com. Server needs internet access.
+            Auto-pilot scheduled updates checking and downloading latest releases from mikrotik.com (⭐ Pro Feature).
           </div>
 
-          <div *ngIf="firms_loaded && SelectedTask['data']['strategy']=='defined'">
+          <div *ngIf="firms_loaded && SelectedTask['data']?.['strategy']=='defined'" class="mb-3">
             <c-row class="g-3">
               <c-col xs="12" md="6">
                 <label class="form-label">RouterOS v7+ Version</label>
@@ -223,6 +234,57 @@
                 </select>
               </c-col>
             </c-row>
+          </div>
+
+          <!-- Update Scope (Local Repository) -->
+          <div *ngIf="SelectedTask['data']?.['strategy']=='system' || SelectedTask['data']?.['strategy']=='defined'" class="mb-3">
+            <label class="form-label small fw-bold text-muted mb-1">Update Scope</label>
+            <select cSelect [(ngModel)]="SelectedTask['data']['mode']" class="form-select">
+              <option value="full">Full Update (RouterOS + Packages)</option>
+              <option value="firmware_only">Firmware Only (RouterOS OS Only)</option>
+              <option value="packages_only">Packages Only (Keep Current OS)</option>
+            </select>
+
+            <div *ngIf="SelectedTask['data']?.['mode']=='firmware_only'" class="alert alert-warning py-2 px-3 small mt-2 mb-0">
+              <i class="fa-solid fa-triangle-exclamation me-1"></i>
+              <strong>Warning:</strong> Updating RouterOS firmware without updating installed packages can cause package version mismatches, disabled features, or system instability!
+            </div>
+            <div *ngIf="SelectedTask['data']?.['mode']=='packages_only'" class="alert alert-info py-2 px-3 small mt-2 mb-0">
+              <i class="fa-solid fa-info-circle me-1"></i>
+              Only installed extra packages will be updated; the core RouterOS version will remain untouched.
+            </div>
+            <div *ngIf="SelectedTask['data']?.['mode']=='full' || !SelectedTask['data']?.['mode']" class="alert alert-light border py-2 px-3 small mt-2 mb-0">
+              <i class="fa-solid fa-circle-check text-success me-1"></i>
+              <strong>Full Update:</strong> Updates the base RouterOS and automatically updates all extra packages currently installed on each device.
+            </div>
+          </div>
+
+          <!-- Safety & Automation Options -->
+          <div class="border rounded p-3 bg-light">
+            <div class="form-check form-switch mb-2">
+              <input class="form-check-input" type="checkbox" id="taskAutoUpgradeRB"
+                [(ngModel)]="SelectedTask['data']['auto_upgrade_rb']">
+              <label class="form-check-label small d-block" for="taskAutoUpgradeRB">
+                <span class="fw-bold">Auto-upgrade RouterBOOT on reboot</span>
+                <span class="d-block text-muted" style="font-size: 0.75rem;">
+                  Enables auto-upgrade on RouterBOOT during reboot to eliminate a second manual reboot.
+                </span>
+              </label>
+            </div>
+            <div class="form-check form-switch mb-0">
+              <input class="form-check-input" type="checkbox" id="taskPtpOrdering"
+                [(ngModel)]="SelectedTask['data']['ptp_safe_ordering']" [disabled]="!ispro">
+              <label class="form-check-label small d-block" for="taskPtpOrdering">
+                <span class="fw-bold">PtP Station-First Safe Ordering</span>
+                <span *ngIf="ispro" class="badge bg-success-subtle text-success border ms-1"
+                  style="font-size: 0.7rem;">⭐ Pro Active</span>
+                <span *ngIf="!ispro" class="badge bg-secondary-subtle text-muted border ms-1"
+                  style="font-size: 0.7rem;">⭐ Pro Tier</span>
+                <span class="d-block text-muted" style="font-size: 0.75rem;">
+                  Upgrades remote PtP Station clients first, then Access Points, to maintain connection.
+                </span>
+              </label>
+            </div>
           </div>
         </c-card-body>
       </c-card>
@@ -606,13 +668,8 @@
   </c-modal-footer>
 </c-modal>
 
-<app-export-modal
-  [(visible)]="exportModalVisible"
-  title="Export User Tasks Report"
-  [allData]="source"
-  [filteredData]="dt?.filteredValue || source"
-  [customColumns]="exportColumns"
-  defaultFileName="user_tasks_report">
+<app-export-modal [(visible)]="exportModalVisible" title="Export User Tasks Report" [allData]="source"
+  [filteredData]="dt?.filteredValue || source" [customColumns]="exportColumns" defaultFileName="user_tasks_report">
 </app-export-modal>
 
 <c-toaster position="fixed" placement="top-end"></c-toaster>

@@ -134,7 +134,7 @@
                   to mikrotik.com domain available in server.</span>
               </div>
               <c-row class="g-3 mt-2" *ngIf="!loading">
-                <c-col md="8">
+                <c-col md="5">
                   <div class="search-select-wrapper">
                     <label class="form-label">Select RouterOS Version</label>
                     <input cFormControl [(ngModel)]="firmwareSearch" (input)="filterFirmwares($event)"
@@ -152,7 +152,19 @@
                     </div>
                   </div>
                 </c-col>
-                <c-col md="4" class="d-flex align-items-end">
+                <c-col md="4">
+                  <label class="form-label">Architecture</label>
+                  <select cSelect [(ngModel)]="download_arch" class="form-select">
+                    <option value="all">All Architectures (Full Bundle)</option>
+                    <option value="arm">ARM (e.g. hAP ac3, cAP ax)</option>
+                    <option value="arm64">ARM64 (e.g. CCR2004, RB5009)</option>
+                    <option value="mipsbe">MIPSBE (e.g. hEX, RB951, Groove)</option>
+                    <option value="mmips">MMIPS (e.g. hEX S, hEX lite)</option>
+                    <option value="x86">X86 (x86 PCs, CHR)</option>
+                    <option value="tile">TILE (CCR1009, CCR1016, CCR1036)</option>
+                  </select>
+                </c-col>
+                <c-col md="3" class="d-flex align-items-end">
                   <button cButton color="primary" class="w-100" (click)="ConfirmModalVisible=true"
                     [disabled]="!firmtodownload">
                     <i class="fa-solid fa-download me-1"></i>Download
@@ -226,6 +238,18 @@
                     <option *ngFor="let f of available_firmwaresv6" [value]="f">{{f}}</option>
                   </select>
                   <small class="setting-help">Firmware version for RouterOS v6 devices</small>
+                </div>
+              </c-col>
+
+              <c-col md="6" *ngIf="sysconfigs && sysconfigs['firmware_max_retries']">
+                <div class="setting-group">
+                  <label class="setting-label">Maximum Update Retries
+                    <i class="fa-solid fa-question-circle ms-1 text-info help-icon"
+                      [cTooltip]="'Maximum background retries for failed firmware updates before stopping to prevent futile reboot loops.'"
+                      cTooltipPlacement="top"></i>
+                  </label>
+                  <input cFormControl type="number" min="1" max="5" [(ngModel)]="sysconfigs['firmware_max_retries']['value']" class="form-control" />
+                  <small class="setting-help">Default: 2 retries. Prevents infinite reboot loops on corrupted devices.</small>
                 </div>
               </c-col>
             </c-row>

@@ -45,7 +45,11 @@
               (click)="filterUpgradable()" cTooltip="Filter devices with RouterBOOT upgrades pending">
               <i class="fas fa-microchip me-1"></i>{{upgrades.length}} RouterBOOT Upgrades
             </button>
-            <button *ngIf="updates.length > 0 || upgrades.length > 0" cButton color="secondary" variant="outline" class="mx-1" size="sm"
+            <button *ngIf="failedUpdatesCount > 0" cButton color="danger" class="mx-1 text-white shadow-sm" size="sm"
+              (click)="filterFailedUpdates()" cTooltip="Filter devices with failed firmware updates">
+              <i class="fas fa-triangle-exclamation me-1"></i>{{failedUpdatesCount}} Failed
+            </button>
+            <button *ngIf="updates.length > 0 || upgrades.length > 0 || failedUpdatesCount > 0" cButton color="secondary" variant="outline" class="mx-1" size="sm"
               (click)="clearFilter()" cTooltip="Show all devices without firmware filter">
               <i class="fas fa-times me-1"></i>Clear Filter
             </button>
@@ -162,6 +166,11 @@
                 [cTooltip]="selectedNonMikrotikCount > 0 ? 'Upgrade RouterBOOT on ' + selectedMikrotikCount + ' MikroTik device(s) (non-MikroTik skipped)' : 'Upgrade RouterBOOT BIOS on selected MikroTik devices'">
                 <i class="fas fa-microchip me-1"></i>Upgrade RouterBOOT<span *ngIf="selectedNonMikrotikCount > 0" class="ms-1">({{selectedMikrotikCount}})</span>
               </button>
+              <button cButton color="secondary" size="sm" class="text-white shadow-sm"
+                (click)="triggerBatchAction('clear_failed')"
+                [cTooltip]="selectedNonMikrotikCount > 0 ? 'Clear failed status on ' + selectedMikrotikCount + ' MikroTik device(s)' : 'Clear failed update status on selected MikroTik devices'">
+                <i class="fas fa-circle-check me-1"></i>Clear Failed<span *ngIf="selectedNonMikrotikCount > 0" class="ms-1">({{selectedMikrotikCount}})</span>
+              </button>
               <button cButton color="dark" size="sm" class="text-white shadow-sm"
                 (click)="triggerBatchAction('reboot')"
                 [cTooltip]="selectedNonMikrotikCount > 0 ? 'Reboot ' + selectedMikrotikCount + ' MikroTik device(s) (non-MikroTik skipped)' : 'Reboot selected MikroTik devices'">
@@ -184,6 +193,7 @@
         </div>
 
         <p-table #dt [value]="displayDevices" [paginator]="true" [rows]="10" [showCurrentPageReport]="true"
+          dataKey="id"
           [(selection)]="selected_rows" (selectionChange)="onSelectionChange($event)"
           [rowsPerPageOptions]="[10, 25, 50]" [resizableColumns]="true" columnResizeMode="expand" [showGridlines]="true"
           [stripedRows]="true" styleClass="p-datatable-sm p-datatable-gridlines p-datatable-striped"
@@ -299,8 +309,8 @@
 
           <ng-template pTemplate="body" let-item>
             <tr [ngClass]="{
-              'row-updating': item.status === 'updating',
-              'row-updated': item.status === 'updated',
+              'row-updating': item.status === 'updating' || item.status === 'rebooting',
+              'row-updated': item.status === 'updated' && !item.update_availble && !item.upgrade_availble,
               'row-failed': item.status === 'failed'
             }">
               <!-- Selection Checkbox -->
@@ -317,22 +327,29 @@
                 </span>
 
                 <!-- Parent Expand/Collapse Chevron -->
-                <button *ngIf="deviceTab === 'nonmikrotik' && !item.is_child && item.child_count > 0"
+                <button *ngIf="!item.is_child && item.child_count > 0"
                         cButton size="sm" variant="ghost" (click)="toggleServerExpand(item.id)" class="p-0 me-1" style="border:none;">
                   <i class="fa-solid" [class.fa-chevron-down]="isServerExpanded(item.id)" [class.fa-chevron-right]="!isServerExpanded(item.id)"></i>
                 </button>
 
-                <img [src]="getBrandIcon(item)" class="brand-icon me-1" alt="" />
+                <span *ngIf="isRdp(item)" class="brand-icon-fa me-1" title="RDP (Remote Desktop)">
+                  <i class="fa-brands fa-windows text-info"></i>
+                </span>
+                <span *ngIf="isVnc(item)" class="brand-icon-fa me-1" title="VNC Remote Console">
+                  <i class="fa-solid fa-desktop text-warning"></i>
+                </span>
+                <img *ngIf="!isRdp(item) && !isVnc(item)" [src]="getBrandIcon(item)" class="brand-icon me-1" alt="" />
                 <button *ngIf="isMikrotik(item)" cButton size="sm" variant="ghost" color="primary" (click)="webAccess(item)"
                   style="padding: 2px 4px; margin-right: 3px; border: none;" cTooltip="Web Access">
                   <i class="fas fa-globe" style="font-size: 12px;"></i>
                 </button>
                 <!-- Firmware Update Status Indicators -->
-                <span *ngIf="item.status === 'updating'" class="status-pill status-updating me-1" cTooltip="Firmware update in progress...">
+                <span *ngIf="item.status === 'updating' || item.status === 'rebooting'" class="status-pill status-updating me-1"
+                  [cTooltip]="item.status === 'rebooting' ? 'Router is rebooting to apply update...' : 'Firmware update in progress...'">
                   <span class="spinner-border spinner-border-sm me-1" role="status" style="width: 0.75rem; height: 0.75rem; border-width: 1.5px;"></span>
-                  Updating...
+                  {{ item.status === 'rebooting' ? 'Rebooting...' : 'Updating...' }}
                 </span>
-                <span *ngIf="item.status === 'updated'" class="status-pill status-updated me-1" cTooltip="Firmware update completed successfully">
+                <span *ngIf="item.status === 'updated' && !item.update_availble && !item.upgrade_availble" class="status-pill status-updated me-1" cTooltip="Firmware update completed successfully">
                   <i class="fa-solid fa-check me-1"></i>Updated
                 </span>
                 <span *ngIf="item.status === 'failed'" class="status-pill status-failed me-1" cTooltip="Firmware update failed">
@@ -340,7 +357,7 @@
                 </span>
                 <strong>{{item.name}}</strong>
                 <!-- App count pill for parent servers -->
-                <span *ngIf="deviceTab === 'nonmikrotik' && !item.is_child && item.child_count > 0"
+                <span *ngIf="!item.is_child && item.child_count > 0"
                       class="badge bg-dark-subtle border text-info ms-2" style="font-size: 0.72rem; cursor: pointer;"
                       (click)="toggleServerExpand(item.id)">
                   {{item.child_count}} app(s)
@@ -354,7 +371,8 @@
 
               <!-- Brand: Visible in 'all' and 'nonmikrotik' -->
               <td *ngIf="deviceTab !== 'mikrotik'">
-                <c-badge [color]="isMikrotik(item) ? 'primary' : 'info'">{{ isMikrotik(item) ? 'MikroTik' : (item.device_type || 'generic') }}</c-badge>
+                <c-badge *ngIf="isApp(item)" color="info"><i class="fa-solid fa-window-restore me-1"></i>App</c-badge>
+                <c-badge *ngIf="!isApp(item)" [color]="isMikrotik(item) ? 'primary' : 'info'">{{ isMikrotik(item) ? 'MikroTik' : (item.device_type || 'generic') }}</c-badge>
               </td>
 
               <!-- CPU Arch: Only visible in 'mikrotik' tab -->
@@ -369,23 +387,36 @@
                     {{item.current_firmware || '-'}}
                   </span>
 
-                  <!-- Active Updating Status -->
-                  <span *ngIf="item.status === 'updating'" class="fw-status-badge badge-updating"
-                    cTooltip="Firmware update in progress...">
+                  <!-- Active Updating / Rebooting Status -->
+                  <span *ngIf="item.status === 'updating' || item.status === 'rebooting'" class="fw-status-badge badge-updating"
+                    [cTooltip]="item.status === 'rebooting' ? 'Router is rebooting to apply update...' : 'Firmware update in progress...'">
                     <span class="spinner-border spinner-border-sm me-1" style="width: 0.65rem; height: 0.65rem; border-width: 1.5px;"></span>
-                    <span>Updating...</span>
+                    <span>{{ item.status === 'rebooting' ? 'Rebooting...' : 'Updating...' }}</span>
                   </span>
 
-                  <!-- Failed Status (Clickable Retry) -->
-                  <span *ngIf="item.status === 'failed'" class="fw-status-badge badge-failed clickable"
-                    (click)="single_device_action(item, 'update')"
-                    cTooltip="Update failed &bull; Click to retry update">
-                    <i class="fas fa-rotate-right me-1"></i>
-                    <span>Retry</span>
+                  <!-- Updated Status badge in Firmware column -->
+                  <span *ngIf="item.status === 'updated' && !item.update_availble && !item.upgrade_availble" class="fw-status-badge badge-uptodate" cTooltip="Firmware updated successfully">
+                    <i class="fas fa-check"></i>
+                    <span>Updated</span>
+                  </span>
+
+                  <!-- Failed Status (Clickable Retry & Clear) -->
+                  <span *ngIf="item.status === 'failed'" class="d-inline-flex align-items-center gap-1">
+                    <span class="fw-status-badge badge-failed clickable"
+                      (click)="single_device_action(item, 'update')"
+                      cTooltip="Update failed &bull; Click to retry update">
+                      <i class="fas fa-rotate-right me-1"></i>
+                      <span>Retry</span>
+                    </span>
+                    <span class="badge bg-secondary-subtle border text-muted clickable py-1 px-1"
+                      (click)="on_clear_failed_click($event, item)"
+                      cTooltip="Clear failed status and mark active">
+                      <i class="fas fa-times text-danger"></i>
+                    </span>
                   </span>
 
                   <!-- Firmware Update Available (clickable quick action) -->
-                  <span *ngIf="item.update_availble && item.status !== 'updating'" class="fw-status-badge badge-update clickable"
+                  <span *ngIf="item.update_availble && item.status !== 'updating' && item.status !== 'rebooting'" class="fw-status-badge badge-update clickable"
                     (click)="single_device_action(item, 'update')"
                     cTooltip="RouterOS Update Available &bull; Click to install update">
                     <i class="fas fa-arrow-circle-up"></i>
@@ -393,7 +424,7 @@
                   </span>
 
                   <!-- RouterBOOT Firmware Upgrade Available (clickable quick action) -->
-                  <span *ngIf="item.upgrade_availble && item.status !== 'updating'" class="fw-status-badge badge-upgrade clickable"
+                  <span *ngIf="item.upgrade_availble && item.status !== 'updating' && item.status !== 'rebooting'" class="fw-status-badge badge-upgrade clickable"
                     (click)="single_device_action(item, 'upgrade')"
                     cTooltip="RouterBOOT BIOS Upgrade Available &bull; Click to upgrade firmware">
                     <i class="fas fa-microchip"></i>
@@ -401,7 +432,7 @@
                   </span>
 
                   <!-- Up to date indicator -->
-                  <span *ngIf="!item.update_availble && !item.upgrade_availble && item.current_firmware && item.status !== 'updating' && item.status !== 'failed'"
+                  <span *ngIf="!item.update_availble && !item.upgrade_availble && item.current_firmware && item.status !== 'updating' && item.status !== 'rebooting' && item.status !== 'updated' && item.status !== 'failed'"
                     class="fw-status-badge badge-uptodate" cTooltip="RouterOS &amp; RouterBOOT are up to date">
                     <i class="fas fa-check"></i>
                     <span>Latest</span>
@@ -411,7 +442,10 @@
 
               <!-- Device Model: Only visible in 'nonmikrotik' tab -->
               <td *ngIf="deviceTab === 'nonmikrotik'">
-                <small class="fw-semibold">{{item.device_model || '-'}}</small>
+                <small *ngIf="isApp(item)" class="text-muted font-monospace" [cTooltip]="'Command: ' + getAppCommand(item)">
+                  {{ getAppCommand(item) }}
+                </small>
+                <small *ngIf="!isApp(item)" class="fw-semibold">{{item.device_model || '-'}}</small>
               </td>
 
               <!-- Hardware & System: Only visible in 'all' tab -->
@@ -423,20 +457,34 @@
                       v{{item.current_firmware || '-'}}
                     </span>
 
-                    <!-- Updating / Failed status badges if active -->
-                    <span *ngIf="item.status === 'updating'" class="fw-status-badge badge-updating" cTooltip="Updating firmware...">
+                    <!-- Updating / Rebooting status badges if active -->
+                    <span *ngIf="item.status === 'updating' || item.status === 'rebooting'" class="fw-status-badge badge-updating"
+                      [cTooltip]="item.status === 'rebooting' ? 'Router is rebooting to apply update...' : 'Updating firmware...'">
                       <span class="spinner-border spinner-border-sm me-1" style="width: 0.65rem; height: 0.65rem; border-width: 1.5px;"></span>
-                      <span>Updating...</span>
+                      <span>{{ item.status === 'rebooting' ? 'Rebooting...' : 'Updating...' }}</span>
                     </span>
 
-                    <span *ngIf="item.status === 'failed'" class="fw-status-badge badge-failed clickable"
-                      (click)="single_device_action(item, 'update')" cTooltip="Update failed &bull; Click to retry">
-                      <i class="fas fa-rotate-right me-1"></i>
-                      <span>Retry</span>
+                    <!-- Updated Status badge in Firmware column -->
+                    <span *ngIf="item.status === 'updated' && !item.update_availble && !item.upgrade_availble" class="fw-status-badge badge-uptodate" cTooltip="Firmware updated successfully">
+                      <i class="fas fa-check"></i>
+                      <span>Updated</span>
+                    </span>
+
+                    <span *ngIf="item.status === 'failed'" class="d-inline-flex align-items-center gap-1">
+                      <span class="fw-status-badge badge-failed clickable"
+                        (click)="single_device_action(item, 'update')" cTooltip="Update failed &bull; Click to retry">
+                        <i class="fas fa-rotate-right me-1"></i>
+                        <span>Retry</span>
+                      </span>
+                      <span class="badge bg-secondary-subtle border text-muted clickable py-1 px-1"
+                        (click)="on_clear_failed_click($event, item)"
+                        cTooltip="Clear failed status and mark active">
+                        <i class="fas fa-times text-danger"></i>
+                      </span>
                     </span>
 
                     <!-- Quick Update Badge -->
-                    <span *ngIf="item.update_availble && item.status !== 'updating'" class="fw-status-badge badge-update clickable"
+                    <span *ngIf="item.update_availble && item.status !== 'updating' && item.status !== 'rebooting'" class="fw-status-badge badge-update clickable"
                       (click)="single_device_action(item, 'update')"
                       cTooltip="RouterOS Update Available &bull; Click to update">
                       <i class="fas fa-arrow-circle-up"></i>
@@ -444,7 +492,7 @@
                     </span>
 
                     <!-- Quick Upgrade Badge -->
-                    <span *ngIf="item.upgrade_availble && item.status !== 'updating'" class="fw-status-badge badge-upgrade clickable"
+                    <span *ngIf="item.upgrade_availble && item.status !== 'updating' && item.status !== 'rebooting'" class="fw-status-badge badge-upgrade clickable"
                       (click)="single_device_action(item, 'upgrade')"
                       cTooltip="RouterBOOT Upgrade Available &bull; Click to upgrade">
                       <i class="fas fa-microchip"></i>
@@ -452,7 +500,7 @@
                     </span>
 
                     <!-- Up to date checkmark -->
-                    <span *ngIf="!item.update_availble && !item.upgrade_availble && item.current_firmware && item.status !== 'updating' && item.status !== 'failed'"
+                    <span *ngIf="!item.update_availble && !item.upgrade_availble && item.current_firmware && item.status !== 'updating' && item.status !== 'rebooting' && item.status !== 'updated' && item.status !== 'failed'"
                       class="fw-status-badge badge-uptodate" cTooltip="RouterOS &amp; RouterBOOT are up to date">
                       <i class="fas fa-check"></i>
                     </span>
@@ -462,8 +510,17 @@
                   </small>
                 </div>
                 <div *ngIf="!isMikrotik(item)" class="d-flex flex-column">
-                  <span class="small fw-semibold text-dark">{{item.device_model || item.device_type || 'Generic Device'}}</span>
-                  <small class="text-muted" *ngIf="item.mac">MAC: {{item.mac}}</small>
+                  <ng-container *ngIf="isApp(item)">
+                    <span class="small fw-semibold text-dark">
+                      <i class="fa-solid fa-window-restore text-info me-1"></i>
+                      RemoteApp
+                    </span>
+                    <small class="text-muted font-monospace" [cTooltip]="getAppCommand(item)">{{ getAppCommand(item) }}</small>
+                  </ng-container>
+                  <ng-container *ngIf="!isApp(item)">
+                    <span class="small fw-semibold text-dark">{{item.device_model || item.device_type || 'Generic Device'}}</span>
+                    <small class="text-muted" *ngIf="item.mac">MAC: {{item.mac}}</small>
+                  </ng-container>
                 </div>
               </td>
 
@@ -515,25 +572,25 @@
                     <span *ngIf="hasProtocol(item, 'ssh')" class="proto-badge badge-ssh" [class.clickable]="ispro"
                       (click)="connectDevice(item, 'ssh')"
                       [cTooltip]="ispro ? 'Click to open SSH in Connection Manager' : 'SSH Terminal access requires Pro'">
-                      <i class="fas fa-terminal me-1"></i>SSH:{{item.port || 22}}
+                      <i class="fas fa-terminal me-1"></i>SSH:{{getDevicePort(item, 'ssh')}}
                       <i *ngIf="!ispro" class="fas fa-lock ms-1" style="font-size:0.6rem;"></i>
                     </span>
                     <span *ngIf="hasProtocol(item, 'telnet')" class="proto-badge badge-telnet" [class.clickable]="ispro"
                       (click)="connectDevice(item, 'telnet')"
                       [cTooltip]="ispro ? 'Click to open Telnet in Connection Manager' : 'Telnet requires Pro'">
-                      <i class="fas fa-keyboard me-1"></i>TEL:{{item.port || 23}}
+                      <i class="fas fa-keyboard me-1"></i>TEL:{{getDevicePort(item, 'telnet')}}
                       <i *ngIf="!ispro" class="fas fa-lock ms-1" style="font-size:0.6rem;"></i>
                     </span>
                     <span *ngIf="hasProtocol(item, 'rdp')" class="proto-badge badge-rdp" [class.clickable]="ispro"
                       (click)="connectDevice(item, 'rdp')"
                       [cTooltip]="ispro ? 'Click to open RDP in Connection Manager' : 'RDP requires Pro'">
-                      <i class="fab fa-windows me-1"></i>RDP:{{item.port || 3389}}
+                      <i class="fab fa-windows me-1"></i>RDP:{{getDevicePort(item, 'rdp')}}
                       <i *ngIf="!ispro" class="fas fa-lock ms-1" style="font-size:0.6rem;"></i>
                     </span>
                     <span *ngIf="hasProtocol(item, 'vnc')" class="proto-badge badge-vnc" [class.clickable]="ispro"
                       (click)="connectDevice(item, 'vnc')"
                       [cTooltip]="ispro ? 'Click to open VNC in Connection Manager' : 'VNC requires Pro'">
-                      <i class="fas fa-desktop me-1"></i>VNC:{{item.port || 5900}}
+                      <i class="fas fa-desktop me-1"></i>VNC:{{getDevicePort(item, 'vnc')}}
                       <i *ngIf="!ispro" class="fas fa-lock ms-1" style="font-size:0.6rem;"></i>
                     </span>
                     <span *ngIf="ispro && item.agent_modes" class="proto-badge badge-pam" cTooltip="PAM Agent Override active">
@@ -551,13 +608,19 @@
 
               <!-- Actions -->
               <td class="text-center">
-                <button *ngIf="deviceTab === 'nonmikrotik' && !item.is_child"
+                <button *ngIf="isRdpHost(item)"
                         size="sm" shape="rounded-0" variant="outline" cButton color="success"
                         (click)="openPublishAppModal(item)" style="border: none; padding: 4px 7px;"
                         cTooltip="Publish Application under this host">
                   <i class="fa-solid fa-plus"></i><small> App</small>
                 </button>
-                <button size="sm" shape="rounded-0" variant="outline" cButton color="primary"
+                <button *ngIf="isApp(item) && ispro"
+                        size="sm" shape="rounded-0" variant="outline" cButton color="info"
+                        (click)="connectDevice(item, 'rdp')" style="border: none; padding: 4px 7px;"
+                        cTooltip="Launch Application via RDP">
+                  <i class="fa-brands fa-windows"></i><small> Launch</small>
+                </button>
+                <button *ngIf="!isRdpOrVnc(item) && !isApp(item)" size="sm" shape="rounded-0" variant="outline" cButton color="primary"
                   (click)="show_detail(item)" style="border: none;padding: 4px 7px;"><i
                     class="fa-regular fa-eye"></i><small> Details</small>
                 </button>
@@ -568,19 +631,19 @@
                 <mat-menu #universalMenu="matMenu">
                   <div cListGroup>
                     <li cListGroupItem [active]="false" color="dark">
-                      <i [class]="isMikrotik(item) ? 'fas fa-router me-1' : 'fas fa-server me-1'"></i>
-                      {{ isMikrotik(item) ? 'MikroTik Actions' : 'Device Actions' }}
+                      <i [class]="isMikrotik(item) ? 'fas fa-router me-1' : (isApp(item) ? 'fa-solid fa-window-restore me-1 text-info' : 'fas fa-server me-1')"></i>
+                      {{ isMikrotik(item) ? 'MikroTik Actions' : (isApp(item) ? 'Application Actions' : 'Device Actions') }}
                     </li>
                     <button size="sm" *ngIf="ispro && isMikrotik(item)" (click)="connectDevice(item, 'ssh')" style="padding: 4px 7px;" cListGroupItem>
                       <i class="fas fa-terminal text-success"></i><small> Terminal Access</small>
                     </button>
-                    <button size="sm" *ngIf="ispro && !isMikrotik(item) && hasProtocol(item, 'ssh')" (click)="connectDevice(item, 'ssh')" style="padding: 4px 7px;" cListGroupItem>
+                    <button size="sm" *ngIf="ispro && !isMikrotik(item) && !isApp(item) && hasProtocol(item, 'ssh')" (click)="connectDevice(item, 'ssh')" style="padding: 4px 7px;" cListGroupItem>
                       <i class="fas fa-terminal text-success"></i><small> SSH Terminal</small>
                     </button>
-                    <button size="sm" *ngIf="ispro && !isMikrotik(item) && hasProtocol(item, 'rdp')" (click)="connectDevice(item, 'rdp')" style="padding: 4px 7px;" cListGroupItem>
-                      <i class="fab fa-windows text-info"></i><small> Remote Desktop (RDP)</small>
+                    <button size="sm" *ngIf="ispro && !isMikrotik(item) && (hasProtocol(item, 'rdp') || isRdp(item))" (click)="connectDevice(item, 'rdp')" style="padding: 4px 7px;" cListGroupItem>
+                      <i class="fab fa-windows text-info"></i><small> {{ isApp(item) ? 'Launch Application (RDP)' : 'Remote Desktop (RDP)' }}</small>
                     </button>
-                    <button size="sm" *ngIf="ispro && !isMikrotik(item) && hasProtocol(item, 'vnc')" (click)="connectDevice(item, 'vnc')" style="padding: 4px 7px;" cListGroupItem>
+                    <button size="sm" *ngIf="ispro && !isMikrotik(item) && !isApp(item) && hasProtocol(item, 'vnc')" (click)="connectDevice(item, 'vnc')" style="padding: 4px 7px;" cListGroupItem>
                       <i class="fas fa-desktop text-warning"></i><small> VNC Console</small>
                     </button>
                     <button size="sm" *ngIf="ispro && isMikrotik(item)" (click)="connectDevice(item, 'webbox')" style="padding: 4px 7px;"
@@ -589,12 +652,12 @@
                     <button size="sm" *ngIf="ispro && isMikrotik(item)" (click)="connectDevice(item, 'webfig')" style="padding: 4px 7px;"
                       cListGroupItem><i class="text-info fa-solid fa-globe"></i><small>
                         WebFig</small></button>
-                    <button size="sm" *ngIf="!isMikrotik(item) && !item.is_child" (click)="openPublishAppModal(item)" style="padding: 4px 7px;" cListGroupItem>
+                    <button size="sm" *ngIf="isRdpHost(item)" (click)="openPublishAppModal(item)" style="padding: 4px 7px;" cListGroupItem>
                       <i class="fa-solid fa-plus text-success"></i><small> Publish Application</small>
                     </button>
                     <button size="sm" (click)="single_device_action(item,'edit')" style="padding: 4px 7px;"
                       cListGroupItem><i class="fa-solid fa-pencil text-primary"></i><small>
-                        Edit Device</small></button>
+                        {{ isApp(item) ? 'Edit Application' : 'Edit Device' }}</small></button>
                     <!-- MikroTik Specific Maintenance Actions -->
                     <ng-container *mwMode="'mikrotik'">
                       <ng-container *ngIf="isMikrotik(item)">
@@ -607,6 +670,9 @@
                         <button size="sm" (click)="single_device_action(item,'upgrade')" style="padding: 4px 7px;"
                           cListGroupItem><i class="text-primary fa-solid fa-microchip"></i><small>
                             Upgrade Firmware</small></button>
+                        <button *ngIf="item.status === 'failed'" size="sm" (click)="single_device_action(item,'clear_failed')" style="padding: 4px 7px;"
+                          cListGroupItem><i class="text-warning fa-solid fa-circle-check"></i><small>
+                            Clear Failed State</small></button>
                         <button size="sm" (click)="single_device_action(item,'devlogs')" style="padding: 4px 7px;"
                           cListGroupItem><i class="fa-regular fa-rectangle-list"></i><small>
                             Device Logs</small></button>
@@ -623,19 +689,19 @@
                     </ng-container>
                     <!-- Pro Auditing Actions for all devices -->
                     <ng-container *ngIf="ispro">
-                      <button size="sm" (click)="openConfigVersions(item)" style="padding: 4px 7px;"
+                      <button size="sm" *ngIf="!isRdpOrVnc(item)" (click)="openConfigVersions(item)" style="padding: 4px 7px;"
                         cListGroupItem><i class="text-warning fa-solid fa-history"></i><small>
                           Config Versions</small></button>
                       <button size="sm" (click)="openDeviceRecordings(item)" style="padding: 4px 7px;"
                         cListGroupItem><i class="text-warning fas fa-video"></i><small>
                           View Recordings (PAM)</small></button>
-                      <button size="sm" (click)="openDeviceCommandLogs(item)" style="padding: 4px 7px;"
+                      <button size="sm" *ngIf="!isRdpOrVnc(item)" (click)="openDeviceCommandLogs(item)" style="padding: 4px 7px;"
                         cListGroupItem><i class="text-secondary fas fa-keyboard"></i><small>
                           Command History</small></button>
                     </ng-container>
                     <button size="sm" (click)="single_device_action(item,'delete')" style="padding: 4px 7px;"
                       cListGroupItem><i class="text-danger fa-solid fa-trash"></i><small>
-                        Delete Device</small></button>
+                        {{ isApp(item) ? 'Delete Application' : 'Delete Device' }}</small></button>
                   </div>
                 </mat-menu>
               </td>
@@ -691,6 +757,11 @@
                 <li>
                   <button cDropdownItem (click)="triggerBatchAction('upgrade')">
                     <i class="fas fa-microchip text-warning me-2"></i>Upgrade RouterBOOT ({{selectedMikrotikCount}})
+                  </button>
+                </li>
+                <li>
+                  <button cDropdownItem (click)="triggerBatchAction('clear_failed')">
+                    <i class="fas fa-circle-check text-warning me-2"></i>Clear Failed State ({{selectedMikrotikCount}})
                   </button>
                 </li>
                 <li><hr class="dropdown-divider"></li>
@@ -939,21 +1010,162 @@
   </c-modal-footer>
 </c-modal>
 
-<c-modal #ConfirmModal backdrop="static" [(visible)]="ConfirmModalVisible" id="runConfirmModal">
+<c-modal #ConfirmModal backdrop="static" size="lg" [(visible)]="ConfirmModalVisible" id="runConfirmModal">
   <c-modal-header>
     <h6 cModalTitle>
       <i class="fas fa-circle-question me-2 text-warning"></i>Please Confirm Action
     </h6>
-    <button [cModalToggle]="ConfirmModal.id" cButtonClose></button>
+    <button (click)="cancelConfirmModal()" [cModalToggle]="ConfirmModal.id" cButtonClose></button>
   </c-modal-header>
   <c-modal-body>
     <div *ngIf="ConfirmAction=='checkfirm'">
       <span *ngIf="Selectedrows.length <= 1">Are you sure you want to check firmware of <strong>{{selected_device?.name || 'this device'}}</strong>?</span>
       <span *ngIf="Selectedrows.length > 1">Are you sure you want to check firmware of <strong>{{Selectedrows.length}} selected MikroTik devices</strong>?</span>
     </div>
+    <div *ngIf="ConfirmAction=='clear_failed'">
+      <div class="alert alert-warning py-2 px-3 mb-2 small d-flex align-items-center">
+        <i class="fas fa-triangle-exclamation me-2 fs-5"></i>
+        <div>
+          <strong *ngIf="Selectedrows.length <= 1">Reset failed status for {{selected_device?.name || 'this device'}}?</strong>
+          <strong *ngIf="Selectedrows.length > 1">Reset failed status for {{Selectedrows.length}} selected MikroTik devices?</strong>
+          <div class="text-muted mt-1">This will clear the failed error status, reset retry counters to 0, mark the device as active, and resolve open updater events.</div>
+        </div>
+      </div>
+    </div>
+
     <div *ngIf="ConfirmAction=='update'">
-      <span *ngIf="Selectedrows.length <= 1">Are you sure you want to <code>update firmware</code> on <strong>{{selected_device?.name || 'this device'}}</strong>?</span>
-      <span *ngIf="Selectedrows.length > 1">Are you sure you want to <code>update firmware</code> on <strong>{{Selectedrows.length}} selected MikroTik devices</strong>?</span>
+      <div class="alert alert-info py-2 px-3 mb-3 small d-flex align-items-center">
+        <i class="fas fa-arrow-circle-up me-2 fs-5"></i>
+        <div>
+          <strong *ngIf="Selectedrows.length <= 1">Updating {{selected_device?.name || 'this device'}}</strong>
+          <strong *ngIf="Selectedrows.length > 1">Updating {{Selectedrows.length}} selected MikroTik devices</strong>
+          <div class="text-muted" *ngIf="selected_device?.current_firmware && Selectedrows.length <= 1">
+            Current RouterOS: v{{selected_device.current_firmware}} (Arch: {{selected_device.arch || 'unknown'}})
+          </div>
+        </div>
+      </div>
+
+      <!-- Delivery Method Selection -->
+      <div class="mb-3">
+        <label class="form-label small fw-bold text-muted mb-1">Delivery Method</label>
+        <div class="btn-group w-100" role="group">
+          <input type="radio" class="btn-check" name="delivery_method" id="method_local" value="local_repo" [(ngModel)]="delivery_method">
+          <label class="btn btn-outline-primary btn-sm" for="method_local">
+            <i class="fas fa-server me-1"></i> Local Repository (Offline)
+          </label>
+          <input type="radio" class="btn-check" name="delivery_method" id="method_native" value="native" [(ngModel)]="delivery_method">
+          <label class="btn btn-outline-primary btn-sm" for="method_native">
+            <i class="fas fa-cloud me-1"></i> Router Native (/system package update)
+          </label>
+        </div>
+        <small class="text-muted d-block mt-1" *ngIf="delivery_method == 'native'">
+          Router will check and install updates directly from MikroTik servers (requires router internet access).
+        </small>
+        <small class="text-muted d-block mt-1" *ngIf="delivery_method == 'local_repo'">
+          Packages are pushed from MikroWizard local storage (works without router internet access).
+        </small>
+      </div>
+
+      <!-- Local Repository Options -->
+      <div *ngIf="delivery_method == 'local_repo'" class="card bg-light border-0 p-3 mb-3">
+        <!-- Target Version Selector -->
+        <div class="row g-2 mb-2">
+          <div class="col-md-6">
+            <label class="form-label small fw-bold text-muted mb-1">Target Version</label>
+            <select class="form-select form-select-sm" [(ngModel)]="target_firmware_version">
+              <option value="">Latest in Repository</option>
+              <option *ngFor="let ver of repo_versions" [value]="ver">v{{ver}}</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small fw-bold text-muted mb-1">Update Scope</label>
+            <select class="form-select form-select-sm" [(ngModel)]="packages_mode" (ngModelChange)="onPackagesModeChange()">
+              <option value="full">Full Update (RouterOS + Packages)</option>
+              <option value="firmware_only">Firmware Only (RouterOS OS Only)</option>
+              <option value="packages_only">Packages Only (Keep Current OS)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Scope Explanations -->
+        <div *ngIf="packages_mode == 'firmware_only'" class="alert alert-warning py-2 px-3 small mt-2 mb-2">
+          <i class="fa-solid fa-triangle-exclamation me-1"></i>
+          <strong>Warning:</strong> Updating RouterOS firmware without updating installed packages can cause package version mismatches, disabled features, or system instability!
+        </div>
+
+        <div *ngIf="packages_mode == 'packages_only'" class="alert alert-info py-2 px-3 small mt-2 mb-2">
+          <i class="fa-solid fa-info-circle me-1"></i>
+          Installed extra packages will be updated; the core RouterOS version will remain untouched.
+        </div>
+
+        <div *ngIf="packages_mode == 'full'" class="alert alert-light border py-2 px-3 small mt-2 mb-2">
+          <div *ngIf="selected_extra_packages.length == 0">
+            <i class="fa-solid fa-circle-check text-success me-1"></i>
+            <strong>Full Update:</strong> Updates the base RouterOS firmware and <strong>automatically updates all extra packages currently installed</strong> on the router.
+          </div>
+          <div *ngIf="selected_extra_packages.length > 0" class="text-warning-emphasis">
+            <i class="fa-solid fa-filter me-1"></i>
+            <strong>Selective Package Filter:</strong> Only updating RouterOS and the <strong>{{selected_extra_packages.length}} selected package(s)</strong> (if installed). Other installed packages will remain on their current version.
+          </div>
+        </div>
+
+        <!-- Extra Packages Filter (Optional) -->
+        <div class="mt-2" *ngIf="packages_mode != 'firmware_only'">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <label class="form-label small fw-bold text-muted mb-0">Extra Packages Filter (Optional)</label>
+            <div>
+              <button *ngIf="selected_extra_packages.length > 0" type="button" class="btn btn-link btn-sm p-0 me-2 text-decoration-none text-danger" (click)="clearExtraPackages()">
+                <small><i class="fa-solid fa-times me-1"></i>Reset (Update All Installed)</small>
+              </button>
+              <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none" (click)="showPackageOptions = !showPackageOptions">
+                <small>{{ showPackageOptions ? 'Hide' : 'Filter Specific Packages' }} ({{ selected_extra_packages.length == 0 ? 'All installed' : selected_extra_packages.length + ' selected' }})</small>
+              </button>
+            </div>
+          </div>
+          <small class="text-muted d-block mb-2" style="font-size: 0.75rem;">
+            Leave unselected to automatically update all packages currently installed on the router. If you select specific packages, only those will be updated. New packages will never be installed.
+          </small>
+          <div *ngIf="showPackageOptions" class="d-flex flex-wrap gap-1 p-2 bg-white rounded border">
+            <button *ngFor="let pkg of available_extra_packages"
+              type="button"
+              class="btn btn-sm py-0 px-2"
+              [class.btn-primary]="is_package_selected(pkg)"
+              [class.btn-outline-secondary]="!is_package_selected(pkg)"
+              style="font-size: 0.78rem;"
+              (click)="toggle_package(pkg)">
+              <i class="fas" [class.fa-check]="is_package_selected(pkg)" [class.fa-plus]="!is_package_selected(pkg)"></i>
+              {{pkg}}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Advanced Safety & RouterBOOT Options -->
+      <div class="border rounded p-2 mb-2 bg-white">
+        <!-- Auto Upgrade RouterBOOT -->
+        <div class="form-check form-switch mb-2">
+          <input class="form-check-input" type="checkbox" id="autoUpgradeRB" [(ngModel)]="auto_upgrade_routerboot">
+          <label class="form-check-label small d-block" for="autoUpgradeRB">
+            <span class="fw-bold">Auto-upgrade RouterBOOT on reboot</span>
+            <span class="d-block text-muted" style="font-size: 0.75rem;">
+              Enables auto-upgrade on RouterBOOT during reboot to eliminate a second manual reboot.
+            </span>
+          </label>
+        </div>
+
+        <!-- PtP Safe Ordering (Pro Feature) -->
+        <div class="form-check form-switch mb-0">
+          <input class="form-check-input" type="checkbox" id="ptpSafeOrdering" [(ngModel)]="ptp_safe_ordering" [disabled]="!ispro">
+          <label class="form-check-label small d-block" for="ptpSafeOrdering">
+            <span class="fw-bold">PtP Station-First Safe Ordering</span>
+            <span *ngIf="ispro" class="badge bg-success-subtle text-success border border-success-subtle ms-1" style="font-size: 0.7rem;">⭐ Pro Active</span>
+            <span *ngIf="!ispro" class="badge bg-secondary-subtle text-muted border ms-1" style="font-size: 0.7rem;">⭐ Pro Tier</span>
+            <span class="d-block text-muted" style="font-size: 0.75rem;">
+              Upgrades remote Stations before Access Points and verifies link re-association to prevent wireless link disconnection.
+            </span>
+          </label>
+        </div>
+      </div>
     </div>
     <div *ngIf="ConfirmAction=='upgrade'">
       <span *ngIf="Selectedrows.length <= 1">Are you sure you want to <code>upgrade RouterBOOT firmware</code> on <strong>{{selected_device?.name || 'this device'}}</strong>?</span>
@@ -990,6 +1202,9 @@
     </ng-container>
   </c-modal-body>
   <c-modal-footer>
+    <button *ngIf="ConfirmAction=='clear_failed'" (click)="clear_failed_status()" cButton color="warning" class="text-white">
+      <i class="fas fa-circle-check me-1"></i>Yes, Clear Failed Status
+    </button>
     <button *ngIf="ConfirmAction=='checkfirm'" (click)="check_firmware()" cButton color="info" class="text-white">
       Yes, Check Firmware
     </button>
@@ -1005,23 +1220,26 @@
     <button *ngIf="ConfirmAction=='delete'" (click)="delete_device()" cButton color="danger">
       Yes, Delete Device
     </button>
-    <button cButton [cModalToggle]="ConfirmModal.id" color="secondary" variant="outline">
+    <button cButton (click)="cancelConfirmModal()" [cModalToggle]="ConfirmModal.id" color="secondary" variant="outline">
       Cancel
     </button>
   </c-modal-footer>
 </c-modal>
 
-<!-- Unified Device Modal (Add & Edit for MikroTik and Other Brands) -->
+<!-- Unified Device Modal (Add & Edit for MikroTik, Other Brands, and Applications) -->
 <c-modal #UnifiedDeviceModal backdrop="static" size="lg" [(visible)]="unifiedModalVisible" id="UnifiedDeviceModal">
   <c-modal-header>
     <h6 cModalTitle>
-      <i *ngIf="unifiedModalMode === 'add'" class="fas fa-plus me-2 text-success"></i>
-      <i *ngIf="unifiedModalMode === 'edit'" class="fas fa-edit me-2 text-primary"></i>
-      <span *ngIf="unifiedModalMode === 'add'">Add New Device</span>
+      <i *ngIf="unifiedModalMode === 'add' && unifiedCategory !== 'app'" class="fas fa-plus me-2 text-success"></i>
+      <i *ngIf="unifiedCategory === 'app'" class="fa-solid fa-window-restore me-2 text-info"></i>
+      <i *ngIf="unifiedModalMode === 'edit' && unifiedCategory !== 'app'" class="fas fa-edit me-2 text-primary"></i>
+      <span *ngIf="unifiedModalMode === 'add'">
+        {{ unifiedCategory === 'app' ? 'Publish Application under RDP Host' : 'Add New Device' }}
+      </span>
       <span *ngIf="unifiedModalMode === 'edit'">
-        Edit Device:
-        <span *ngIf="unifiedCategory === 'mikrotik'">{{selected_device?.name || selected_device?.ip}}</span>
-        <span *ngIf="unifiedCategory !== 'mikrotik'">{{editNonMikrotikData?.name || editNonMikrotikData?.ip}}</span>
+        <span *ngIf="unifiedCategory === 'mikrotik'">Edit MikroTik: {{selected_device?.name || selected_device?.ip}}</span>
+        <span *ngIf="unifiedCategory === 'other'">Edit Device: {{editNonMikrotikData?.name || editNonMikrotikData?.ip}}</span>
+        <span *ngIf="unifiedCategory === 'app'">Edit Application: {{editAppData?.name}}</span>
       </span>
     </h6>
     <button (click)="closeUnifiedModal()" cButtonClose></button>
@@ -1031,7 +1249,7 @@
     <!-- Platform / Category Selector (Visible in Add Mode) -->
     <div class="mb-3 p-3 bg-light rounded border" *ngIf="unifiedModalMode === 'add'">
       <label class="form-label fw-bold small text-muted text-uppercase mb-2 d-block">Device Platform / Brand Category</label>
-      <div class="d-flex gap-4">
+      <div class="d-flex gap-4 flex-wrap">
         <div class="form-check">
           <input class="form-check-input" type="radio" [(ngModel)]="unifiedCategory" value="mikrotik"
             (change)="onCategoryChange()" id="catMikrotik" name="unifiedDeviceCategory">
@@ -1043,7 +1261,14 @@
           <input class="form-check-input" type="radio" [(ngModel)]="unifiedCategory" value="other"
             (change)="onCategoryChange()" id="catOther" name="unifiedDeviceCategory">
           <label class="form-check-label fw-semibold" for="catOther" style="cursor: pointer;">
-            <i class="fas fa-server text-info me-1"></i> Other Brands &amp; Servers (Cisco, Generic, Linux, etc.)
+            <i class="fas fa-server text-info me-1"></i> Other Brands &amp; Servers
+          </label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" type="radio" [(ngModel)]="unifiedCategory" value="app"
+            (change)="onCategoryChange()" id="catApp" name="unifiedDeviceCategory">
+          <label class="form-check-label fw-semibold" for="catApp" style="cursor: pointer;">
+            <i class="fa-solid fa-window-restore text-success me-1"></i> Application (under RDP Host)
           </label>
         </div>
       </div>
@@ -1354,11 +1579,15 @@
         <!-- 2. DEVICE IDENTITY -->
         <c-col xs="12" md="6">
           <label class="form-label small fw-semibold">Device Name *</label>
-          <input cFormControl size="sm" placeholder="e.g. Core-Switch-01" [(ngModel)]="addNonMikrotikData.name" />
+          <input cFormControl size="sm" placeholder="e.g. Core-Switch-01 / Accounting-RDP" [(ngModel)]="addNonMikrotikData.name" />
         </c-col>
         <c-col xs="12" md="6">
           <label class="form-label small fw-semibold">IP Address *</label>
           <input cFormControl size="sm" placeholder="192.168.1.1" [(ngModel)]="addNonMikrotikData.ip" />
+          <small class="text-muted d-block mt-1" style="font-size: 0.72rem;">
+            <i class="fas fa-info-circle me-1 text-primary"></i>
+            Multiple devices behind NAT can share the same IP with distinct ports.
+          </small>
         </c-col>
 
         <!-- 3. BRAND / DEVICE TYPE (FILTERED BY PROTOCOL) -->
@@ -1602,6 +1831,10 @@
                 <span class="badge bg-secondary-subtle text-dark ms-1">5900</span>
               </button>
             </div>
+            <div *ngIf="editNonMikrotikData.connection_types && editNonMikrotikData.connection_types.length > 1" class="small text-muted mt-2 pt-2 border-top">
+              <i class="fas fa-check-double text-success me-1"></i> Active protocols on this device:
+              <span class="badge bg-secondary me-1" *ngFor="let p of editNonMikrotikData.connection_types">{{p | uppercase}}</span>
+            </div>
           </div>
         </c-col>
 
@@ -1822,6 +2055,237 @@
       </c-row>
     </ng-container>
 
+    <!-- ============================================== -->
+    <!-- SECTION 4: ADD APPLICATION UNDER RDP HOST     -->
+    <!-- ============================================== -->
+    <ng-container *ngIf="unifiedModalMode === 'add' && unifiedCategory === 'app'">
+      <div class="alert alert-info d-flex align-items-center mb-3 py-2" role="alert">
+        <i class="fa-solid fa-window-restore me-2 fs-5 text-info"></i>
+        <div class="small">
+          Publish a child application (RemoteApp) under an existing Windows / RDP host server. The application inherits network IP, RDP port, and host credentials.
+        </div>
+      </div>
+
+      <c-row class="g-3">
+        <!-- Parent Server Selector -->
+        <c-col xs="12">
+          <label class="form-label small fw-semibold">Parent RDP Host Server *</label>
+          <select cSelect size="sm" [(ngModel)]="publishAppData.parent_id" required>
+            <option [ngValue]="null" disabled>Select RDP Server...</option>
+            <option *ngFor="let s of getAvailableRdpServers()" [value]="s.id">
+              {{s.name}} ({{s.ip || s.peer_ip}})
+            </option>
+          </select>
+          <small class="text-danger d-block mt-1" *ngIf="!getAvailableRdpServers().length">
+            <i class="fas fa-exclamation-triangle me-1"></i>No Windows/RDP servers found. Please add an RDP host server first.
+          </small>
+        </c-col>
+
+        <!-- Application Name -->
+        <c-col xs="12">
+          <label class="form-label small fw-semibold">Application Name *</label>
+          <input cFormControl size="sm" [(ngModel)]="publishAppData.name" placeholder="e.g. WinBox 3.40 (Core), SAP ERP, Accounting Tools" />
+        </c-col>
+
+        <!-- Launch Execution Mode -->
+        <c-col xs="12">
+          <label class="form-label small fw-semibold">Launch Execution Mode</label>
+          <div class="d-flex align-items-center">
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">
+              <i class="fa-solid fa-window-restore me-1"></i>RemoteApp (Seamless Window)
+            </span>
+            <small class="text-muted ms-2">&mdash; Runs seamless window without full desktop</small>
+          </div>
+        </c-col>
+
+        <!-- RemoteApp Fields -->
+        <c-col xs="12">
+          <label class="form-label small fw-semibold">Application Executable or Alias *</label>
+          <input cFormControl size="sm" [(ngModel)]="publishAppData.remote_app" placeholder="e.g. ||winbox or C:\Tools\winbox.exe" class="font-monospace" />
+          <small class="text-muted" style="font-size:0.75rem;">Can be a published RemoteApp alias (prefixed by ||) or absolute path.</small>
+        </c-col>
+
+        <c-col xs="12" md="6">
+          <label class="form-label small fw-semibold">Application Arguments (Optional)</label>
+          <input cFormControl size="sm" [(ngModel)]="publishAppData.remote_app_args" placeholder="e.g. 192.168.88.1 admin" class="font-monospace" />
+        </c-col>
+
+        <c-col xs="12" md="6">
+          <label class="form-label small fw-semibold">Working Directory (Optional)</label>
+          <input cFormControl size="sm" [(ngModel)]="publishAppData.remote_app_dir" placeholder="e.g. C:\Tools" class="font-monospace" />
+        </c-col>
+
+        <!-- Groups Assignment -->
+        <c-col xs="12" *ngIf="groups && groups.length > 0">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <label class="form-label small fw-semibold m-0">
+              <i class="fas fa-folder-tree text-primary me-1"></i> Assign to Device Groups
+            </label>
+            <div class="d-flex gap-2 align-items-center">
+              <span class="badge bg-primary-subtle text-primary border border-primary-subtle" *ngIf="publishAppData.group_ids?.length">
+                {{publishAppData.group_ids.length}} selected
+              </span>
+              <button type="button" class="btn btn-link btn-sm p-0 text-danger text-decoration-none"
+                *ngIf="publishAppData.group_ids?.length"
+                (click)="clearAllModalGroups(publishAppData)" style="font-size: 0.75rem;">
+                Clear All
+              </button>
+            </div>
+          </div>
+
+          <div class="search-select-wrapper modal-group-wrapper">
+            <div class="selected-chips p-2 mb-2 bg-light border rounded" *ngIf="publishAppData.group_ids && publishAppData.group_ids.length > 0">
+              <span class="chip-badge group-chip" *ngFor="let gid of publishAppData.group_ids">
+                <i class="fas fa-folder text-warning me-1"></i>
+                {{getGroupName(gid)}}
+                <i class="fas fa-times ms-1 chip-remove" (click)="removeModalGroup(gid, publishAppData)" title="Remove group"></i>
+              </span>
+            </div>
+
+            <div class="input-group input-group-sm">
+              <span class="input-group-text bg-white text-muted">
+                <i class="fas fa-search"></i>
+              </span>
+              <input class="form-control" [(ngModel)]="modalGroupSearch" (input)="filterModalGroups($event)"
+                (focus)="filterModalGroups($event)" placeholder="Search and assign groups..." />
+            </div>
+
+            <div class="search-select-dropdown mt-1 border rounded shadow-sm bg-white" *ngIf="filteredModalGroups.length > 0"
+              style="max-height: 160px; overflow-y: auto;">
+              <div class="dropdown-item py-1 px-2 small cursor-pointer" *ngFor="let g of filteredModalGroups"
+                [class.active-item]="publishAppData.group_ids?.includes(g.id)"
+                (click)="toggleModalGroup(g, publishAppData)">
+                <i class="fas fa-folder text-warning me-1"></i>
+                {{g.name}}
+                <i class="fas fa-check text-success float-end mt-1" *ngIf="publishAppData.group_ids?.includes(g.id)"></i>
+              </div>
+            </div>
+          </div>
+        </c-col>
+      </c-row>
+    </ng-container>
+
+    <!-- ============================================== -->
+    <!-- SECTION 5: EDIT APPLICATION                   -->
+    <!-- ============================================== -->
+    <ng-container *ngIf="unifiedModalMode === 'edit' && unifiedCategory === 'app' && editAppData">
+      <c-row class="g-3">
+        <!-- Host Server Info Banner -->
+        <c-col xs="12">
+          <div class="p-3 bg-light border rounded">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span class="small fw-semibold text-uppercase text-secondary">
+                <i class="fas fa-server text-primary me-1"></i> Host RDP Server
+              </span>
+              <span class="badge bg-info-subtle text-info border border-info-subtle">
+                <i class="fab fa-windows me-1"></i>Inherited RDP Session
+              </span>
+            </div>
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+              <div>
+                <strong class="text-dark">{{editAppData.parent_server_name || 'RDP Host'}}</strong>
+                <span class="badge bg-secondary ms-2" *ngIf="editAppData.parent_ip">{{editAppData.parent_ip}}</span>
+              </div>
+              <div *ngIf="getAvailableRdpServers().length > 1" class="d-flex align-items-center gap-2">
+                <label class="form-label small text-muted m-0">Change Host:</label>
+                <select cSelect size="sm" [(ngModel)]="editAppData.parent_id" style="width: auto; min-width: 180px;">
+                  <option *ngFor="let s of getAvailableRdpServers()" [value]="s.id">
+                    {{s.name}} ({{s.ip || s.peer_ip}})
+                  </option>
+                </select>
+              </div>
+            </div>
+            <small class="text-muted d-block mt-2" style="font-size:0.75rem;">
+              <i class="fas fa-info-circle me-1"></i>
+              Child applications automatically inherit credentials, network access, and connection policies from the parent host server.
+            </small>
+          </div>
+        </c-col>
+
+        <!-- Application Name -->
+        <c-col xs="12">
+          <label class="form-label small fw-semibold">Application Name *</label>
+          <input cFormControl size="sm" [(ngModel)]="editAppData.name" placeholder="e.g. WinBox 3.40 (Core), SAP ERP, Accounting Tools" />
+        </c-col>
+
+        <!-- Launch Execution Mode -->
+        <c-col xs="12">
+          <label class="form-label small fw-semibold">Launch Execution Mode</label>
+          <div class="d-flex align-items-center">
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">
+              <i class="fa-solid fa-window-restore me-1"></i>RemoteApp (Seamless Window)
+            </span>
+            <small class="text-muted ms-2">&mdash; Runs seamless window without full desktop</small>
+          </div>
+        </c-col>
+
+        <!-- RemoteApp Fields -->
+        <c-col xs="12">
+          <label class="form-label small fw-semibold">Application Executable or Alias *</label>
+          <input cFormControl size="sm" [(ngModel)]="editAppData.remote_app" placeholder="e.g. ||winbox or C:\Tools\winbox.exe" class="font-monospace" />
+          <small class="text-muted" style="font-size:0.75rem;">Can be a published RemoteApp alias (prefixed by ||) or absolute path.</small>
+        </c-col>
+
+        <c-col xs="12" md="6">
+          <label class="form-label small fw-semibold">Application Arguments (Optional)</label>
+          <input cFormControl size="sm" [(ngModel)]="editAppData.remote_app_args" placeholder="e.g. 192.168.88.1 admin" class="font-monospace" />
+        </c-col>
+
+        <c-col xs="12" md="6">
+          <label class="form-label small fw-semibold">Working Directory (Optional)</label>
+          <input cFormControl size="sm" [(ngModel)]="editAppData.remote_app_dir" placeholder="e.g. C:\Tools" class="font-monospace" />
+        </c-col>
+
+        <!-- Groups Assignment -->
+        <c-col xs="12" *ngIf="groups && groups.length > 0">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <label class="form-label small fw-semibold m-0">
+              <i class="fas fa-folder-tree text-primary me-1"></i> Assign to Device Groups
+            </label>
+            <div class="d-flex gap-2 align-items-center">
+              <span class="badge bg-primary-subtle text-primary border border-primary-subtle" *ngIf="editAppData.group_ids?.length">
+                {{editAppData.group_ids.length}} selected
+              </span>
+              <button type="button" class="btn btn-link btn-sm p-0 text-danger text-decoration-none"
+                *ngIf="editAppData.group_ids?.length"
+                (click)="clearAllModalGroups(editAppData)" style="font-size: 0.75rem;">
+                Clear All
+              </button>
+            </div>
+          </div>
+
+          <div class="search-select-wrapper modal-group-wrapper">
+            <div class="selected-chips p-2 mb-2 bg-light border rounded" *ngIf="editAppData.group_ids && editAppData.group_ids.length > 0">
+              <span class="chip-badge group-chip" *ngFor="let gid of editAppData.group_ids">
+                <i class="fas fa-folder text-warning me-1"></i>
+                {{getGroupName(gid)}}
+                <i class="fas fa-times ms-1 chip-remove" (click)="removeModalGroup(gid, editAppData)" title="Remove group"></i>
+              </span>
+            </div>
+
+            <div class="input-group input-group-sm">
+              <span class="input-group-text bg-white text-muted">
+                <i class="fas fa-search"></i>
+              </span>
+              <input class="form-control" [(ngModel)]="modalGroupSearch" (input)="filterModalGroups($event)"
+                (focus)="filterModalGroups($event)" placeholder="Search and assign groups..." />
+            </div>
+
+            <div class="search-select-dropdown mt-1 border rounded shadow-sm bg-white" *ngIf="filteredModalGroups.length > 0"
+              style="max-height: 160px; overflow-y: auto;">
+              <div class="dropdown-item py-1 px-2 small cursor-pointer" *ngFor="let g of filteredModalGroups"
+                [class.active-item]="editAppData.group_ids?.includes(g.id)"
+                (click)="toggleModalGroup(g, editAppData)">
+                <i class="fas fa-folder text-warning me-1"></i>
+                {{g.name}}
+                <i class="fas fa-check text-success float-end mt-1" *ngIf="editAppData.group_ids?.includes(g.id)"></i>
+              </div>
+            </div>
+          </div>
+        </c-col>
+      </c-row>
+    </ng-container>
+
     <!-- Progress indicator while saving / scanning -->
     <div *ngIf="savingUnifiedDevice" class="mt-3 p-3 bg-light rounded text-center border">
       <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
@@ -1830,11 +2294,14 @@
   </c-modal-body>
 
   <c-modal-footer>
-    <button cButton color="primary" (click)="saveUnifiedDevice()" [disabled]="savingUnifiedDevice">
+    <button cButton color="primary" (click)="saveUnifiedDevice()" [disabled]="savingUnifiedDevice"
+      [class.btn-success]="unifiedModalMode === 'add'">
       <i *ngIf="!savingUnifiedDevice && unifiedModalMode === 'add'" class="fas fa-plus me-1"></i>
       <i *ngIf="!savingUnifiedDevice && unifiedModalMode === 'edit'" class="fas fa-save me-1"></i>
       <span *ngIf="savingUnifiedDevice">Saving...</span>
-      <span *ngIf="!savingUnifiedDevice && unifiedModalMode === 'add'">Add Device</span>
+      <span *ngIf="!savingUnifiedDevice && unifiedModalMode === 'add'">
+        {{ unifiedCategory === 'app' ? 'Publish Application' : 'Add Device' }}
+      </span>
       <span *ngIf="!savingUnifiedDevice && unifiedModalMode === 'edit'">Save Changes</span>
     </button>
     <button (click)="closeUnifiedModal()" [disabled]="savingUnifiedDevice" cButton color="secondary">
@@ -2389,60 +2856,112 @@
   </c-modal-header>
   <c-modal-body>
     <p class="text-muted small mb-3">
-      Publish a RemoteApp or Initial Program session hosted on this Windows/Linux server.
+      Publish a RemoteApp session hosted on this Windows/Linux server.
       Child applications automatically inherit host IP, credentials, and network security settings.
     </p>
 
     <c-row class="g-3">
+      <!-- Host Server Indicator / Selector -->
+      <c-col xs="12">
+        <div class="p-2 border rounded bg-light d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <div>
+            <i class="fa-solid fa-server text-primary me-2"></i>
+            <strong>Host Server:</strong> {{selectedParentServer?.name || 'Select Server'}}
+            <span class="badge bg-secondary ms-2" *ngIf="selectedParentServer?.ip || selectedParentServer?.peer_ip">
+              {{selectedParentServer?.ip || selectedParentServer?.peer_ip}}
+            </span>
+          </div>
+          <div *ngIf="getAvailableRdpServers().length > 1" class="d-flex align-items-center gap-2">
+            <label class="form-label small text-muted m-0">Change Host:</label>
+            <select cSelect size="sm" [(ngModel)]="publishAppData.parent_id" (ngModelChange)="onPublishAppServerChange($event)" style="width: auto; min-width: 180px;">
+              <option *ngFor="let s of getAvailableRdpServers()" [value]="s.id">
+                {{s.name}} ({{s.ip || s.peer_ip}})
+              </option>
+            </select>
+          </div>
+        </div>
+      </c-col>
+
       <c-col xs="12">
         <label class="form-label small fw-semibold">Application Name *</label>
         <input cFormControl size="sm" [(ngModel)]="publishAppData.name" placeholder="e.g. WinBox 3.40 (Core), SAP ERP, Accounting Tools" />
       </c-col>
 
+      <!-- Launch Execution Mode -->
       <c-col xs="12">
         <label class="form-label small fw-semibold">Launch Execution Mode</label>
-        <div class="d-flex gap-4">
-          <c-form-check>
-            <input cFormCheckInput type="radio" id="mode-remoteapp" name="appMode" value="remote_app" [(ngModel)]="publishAppData.app_mode" />
-            <label cFormCheckLabel for="mode-remoteapp" class="small">
-              <strong>RemoteApp (Seamless Window)</strong> &mdash; Runs seamless window without full desktop
-            </label>
-          </c-form-check>
-          <c-form-check>
-            <input cFormCheckInput type="radio" id="mode-initprog" name="appMode" value="initial_program" [(ngModel)]="publishAppData.app_mode" />
-            <label cFormCheckLabel for="mode-initprog" class="small">
-              <strong>Initial Program</strong> &mdash; Launches app inside full desktop session
-            </label>
-          </c-form-check>
+        <div class="d-flex align-items-center">
+          <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">
+            <i class="fa-solid fa-window-restore me-1"></i>RemoteApp (Seamless Window)
+          </span>
+          <small class="text-muted ms-2">&mdash; Runs seamless window without full desktop</small>
         </div>
       </c-col>
 
       <!-- RemoteApp Fields -->
-      <ng-container *ngIf="publishAppData.app_mode === 'remote_app'">
-        <c-col xs="12">
-          <label class="form-label small fw-semibold">Application Executable or Alias *</label>
-          <input cFormControl size="sm" [(ngModel)]="publishAppData.remote_app" placeholder="e.g. ||winbox or C:\Tools\winbox.exe" class="font-monospace" />
-          <small class="text-muted" style="font-size:0.75rem;">Can be a published RemoteApp alias (prefixed by ||) or absolute path.</small>
-        </c-col>
+      <c-col xs="12">
+        <label class="form-label small fw-semibold">Application Executable or Alias *</label>
+        <input cFormControl size="sm" [(ngModel)]="publishAppData.remote_app" placeholder="e.g. ||winbox or C:\Tools\winbox.exe" class="font-monospace" />
+        <small class="text-muted" style="font-size:0.75rem;">Can be a published RemoteApp alias (prefixed by ||) or absolute path.</small>
+      </c-col>
 
-        <c-col xs="12" md="6">
-          <label class="form-label small fw-semibold">Application Arguments (Optional)</label>
-          <input cFormControl size="sm" [(ngModel)]="publishAppData.remote_app_args" placeholder="e.g. 192.168.88.1 admin" class="font-monospace" />
-        </c-col>
+      <c-col xs="12" md="6">
+        <label class="form-label small fw-semibold">Application Arguments (Optional)</label>
+        <input cFormControl size="sm" [(ngModel)]="publishAppData.remote_app_args" placeholder="e.g. 192.168.88.1 admin" class="font-monospace" />
+      </c-col>
 
-        <c-col xs="12" md="6">
-          <label class="form-label small fw-semibold">Working Directory (Optional)</label>
-          <input cFormControl size="sm" [(ngModel)]="publishAppData.remote_app_dir" placeholder="e.g. C:\Tools" class="font-monospace" />
-        </c-col>
-      </ng-container>
+      <c-col xs="12" md="6">
+        <label class="form-label small fw-semibold">Working Directory (Optional)</label>
+        <input cFormControl size="sm" [(ngModel)]="publishAppData.remote_app_dir" placeholder="e.g. C:\Tools" class="font-monospace" />
+      </c-col>
 
-      <!-- Initial Program Fields -->
-      <ng-container *ngIf="publishAppData.app_mode === 'initial_program'">
-        <c-col xs="12">
-          <label class="form-label small fw-semibold">Initial Program Path *</label>
-          <input cFormControl size="sm" [(ngModel)]="publishAppData.initial_program" placeholder="e.g. notepad.exe or C:\Windows\notepad.exe" class="font-monospace" />
-        </c-col>
-      </ng-container>
+      <!-- Groups Assignment -->
+      <c-col xs="12" *ngIf="groups && groups.length > 0">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <label class="form-label small fw-semibold m-0">
+            <i class="fas fa-folder-tree text-primary me-1"></i> Assign to Device Groups
+          </label>
+          <div class="d-flex gap-2 align-items-center">
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle" *ngIf="publishAppData.group_ids?.length">
+              {{publishAppData.group_ids.length}} selected
+            </span>
+            <button type="button" class="btn btn-link btn-sm p-0 text-danger text-decoration-none"
+              *ngIf="publishAppData.group_ids?.length"
+              (click)="clearAllModalGroups(publishAppData)" style="font-size: 0.75rem;">
+              Clear All
+            </button>
+          </div>
+        </div>
+
+        <div class="search-select-wrapper modal-group-wrapper">
+          <div class="selected-chips p-2 mb-2 bg-light border rounded" *ngIf="publishAppData.group_ids && publishAppData.group_ids.length > 0">
+            <span class="chip-badge group-chip" *ngFor="let gid of publishAppData.group_ids">
+              <i class="fas fa-folder text-warning me-1"></i>
+              {{getGroupName(gid)}}
+              <i class="fas fa-times ms-1 chip-remove" (click)="removeModalGroup(gid, publishAppData)" title="Remove group"></i>
+            </span>
+          </div>
+
+          <div class="input-group input-group-sm">
+            <span class="input-group-text bg-white text-muted">
+              <i class="fas fa-search"></i>
+            </span>
+            <input class="form-control" [(ngModel)]="modalGroupSearch" (input)="filterModalGroups($event)"
+              (focus)="filterModalGroups($event)" placeholder="Search and assign groups..." />
+          </div>
+
+          <div class="search-select-dropdown mt-1 border rounded shadow-sm bg-white" *ngIf="filteredModalGroups.length > 0"
+            style="max-height: 160px; overflow-y: auto;">
+            <div class="dropdown-item py-1 px-2 small cursor-pointer" *ngFor="let g of filteredModalGroups"
+              [class.active-item]="publishAppData.group_ids?.includes(g.id)"
+              (click)="toggleModalGroup(g, publishAppData)">
+              <i class="fas fa-folder text-warning me-1"></i>
+              {{g.name}}
+              <i class="fas fa-check text-success float-end mt-1" *ngIf="publishAppData.group_ids?.includes(g.id)"></i>
+            </div>
+          </div>
+        </div>
+      </c-col>
     </c-row>
   </c-modal-body>
   <c-modal-footer>

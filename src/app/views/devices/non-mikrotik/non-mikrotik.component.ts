@@ -322,6 +322,22 @@ export class NonMikrotikComponent implements OnInit, OnChanges {
     this.actionEvent.emit({type, item});
   }
 
+  isRdp(dev: any): boolean {
+    if (!dev) return false;
+    const isWindows = dev.device_type === 'windows' || dev.brand === 'windows';
+    return isWindows || dev.protocol === 'rdp' || !!dev.is_child;
+  }
+
+  isVnc(dev: any): boolean {
+    if (!dev) return false;
+    return (dev.device_type === 'vnc' || dev.protocol === 'vnc' || dev.brand === 'vnc') && !this.isRdp(dev);
+  }
+
+  isRdpOrVnc(dev: any): boolean {
+    if (!dev) return false;
+    return this.isRdp(dev) || this.isVnc(dev);
+  }
+
   refresh() {
     this.data_provider.get_dev_list({}).then((res: any) => {
       const list = res.result || res || [];

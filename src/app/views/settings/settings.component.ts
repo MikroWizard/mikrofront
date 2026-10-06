@@ -31,6 +31,7 @@ export class SettingsComponent implements OnInit {
   public filters: any = {};
   public firms: any = {};
   public firmtodownload: any = {};
+  public download_arch: string = 'all';
   public activeTab: string = 'firmware';
 
   @ViewChild('dt') dt!: Table;
@@ -189,7 +190,7 @@ export class SettingsComponent implements OnInit {
     _self.currentFirm=firm;
     if(del){
       this.data_provider.delete_firm(this.currentFirm.id).then((res) => {
-        if ("error" in res && res.error.indexOf("Unauthorized")) {
+        if ("error" in res && res.error && res.error.indexOf("Unauthorized") > -1) {
           _self.show_toast(
             "Error",
             "You are not authorized to perform this action",
@@ -219,9 +220,9 @@ export class SettingsComponent implements OnInit {
     var _self = this;
     this.loading = true;
     this.data_provider
-      .download_firmware_to_repository(this.firmtodownload)
+      .download_firmware_to_repository(this.firmtodownload, this.download_arch)
       .then((res) => {
-        if ("error" in res && res.error.indexOf("Unauthorized")) {
+        if ("error" in res && res.error && res.error.indexOf("Unauthorized") > -1) {
           _self.show_toast(
             "Error",
             "You are not authorized to perform this action",
@@ -230,18 +231,18 @@ export class SettingsComponent implements OnInit {
         }
         else{
         if (res.status == true) {
-          // show toast that we are already downloading
-          _self.show_toast(
-            "Firmware Download",
-            "Firmware download in progress",
-            "warning"
-          );
-        } else {
           // show toast that download started
           _self.show_toast(
             "Firmware Download",
             "Firmware download started",
             "success"
+          );
+        } else {
+          // show toast that we are already downloading
+          _self.show_toast(
+            "Firmware Download",
+            "Firmware download already in progress",
+            "warning"
           );
         }
         _self.ConfirmModalVisible = !_self.ConfirmModalVisible;
@@ -297,7 +298,7 @@ export class SettingsComponent implements OnInit {
         this.firmwaretoinstallv6
       )
       .then((res) => {
-        if ("error" in res && res.error.indexOf("Unauthorized")) {
+        if ("error" in res && res.error && res.error.indexOf("Unauthorized") > -1) {
           _self.show_toast(
             "Error",
             "You are not authorized to perform this action",
@@ -313,7 +314,7 @@ export class SettingsComponent implements OnInit {
   saveSysSetting() {
     var _self = this;
     this.data_provider.save_sys_setting(this.sysconfigs).then((res) => {
-      if ("error" in res && res.error.indexOf("Unauthorized")) {
+      if ("error" in res && res.error && res.error.indexOf("Unauthorized") > -1) {
         _self.show_toast(
           "Error",
           "You are not authorized to perform this action",
@@ -398,7 +399,7 @@ export class SettingsComponent implements OnInit {
   initsettings(): void {
     var _self = this;
     this.data_provider.get_settings().then((res) => {
-      if ("error" in res && res.error.indexOf("Unauthorized")) {
+      if ("error" in res && res.error && res.error.indexOf("Unauthorized") > -1) {
         _self.show_toast(
           "Error",
           "You are not authorized to perform this action",
@@ -452,6 +453,10 @@ export class SettingsComponent implements OnInit {
         }
       });
       _self.sysconfigs['ai_api_key']['value'] = ""; // Clear API key on load for input security
+
+      if (!('firmware_max_retries' in _self.sysconfigs)) {
+        _self.sysconfigs['firmware_max_retries'] = { value: '2' };
+      }
 
       // Initialize SMTP configurations
       const smtpKeys = ['smtp_host', 'smtp_port', 'smtp_user', 'smtp_password', 'smtp_from'];

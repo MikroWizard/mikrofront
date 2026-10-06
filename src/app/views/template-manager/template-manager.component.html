@@ -57,15 +57,18 @@
           <p-table #dt [value]="templates" [paginator]="true" [rows]="15" [showGridlines]="true"
             [stripedRows]="true" [resizableColumns]="true" columnResizeMode="expand"
             styleClass="p-datatable-sm p-datatable-gridlines p-datatable-striped" [loading]="loading"
-            [globalFilterFields]="['display_name', 'brand', 'os_type']">
+            [globalFilterFields]="['display_name', 'brand', 'os_type', 'protocol']">
             <ng-template pTemplate="header">
               <tr>
                 <th pSortableColumn="display_name" pResizableColumn>Name <p-sortIcon field="display_name"></p-sortIcon></th>
-                <th pSortableColumn="protocol" pResizableColumn style="width: 110px;">Protocol <p-sortIcon field="protocol"></p-sortIcon></th>
+                <th pSortableColumn="protocol" pResizableColumn style="width: 105px;">Protocol <p-sortIcon field="protocol"></p-sortIcon></th>
                 <th pSortableColumn="brand" pResizableColumn>Brand <p-sortIcon field="brand"></p-sortIcon></th>
                 <th pSortableColumn="os_type" pResizableColumn>OS Type <p-sortIcon field="os_type"></p-sortIcon></th>
-                <th>System</th>
-                <th style="width: 140px" class="text-center">Actions</th>
+                <th pResizableColumn style="width: 130px;">Diff Exclusions</th>
+                <th pSortableColumn="is_active" pResizableColumn style="width: 90px;" class="text-center">Status <p-sortIcon field="is_active"></p-sortIcon></th>
+                <th pSortableColumn="is_system" pResizableColumn style="width: 95px;" class="text-center">System <p-sortIcon field="is_system"></p-sortIcon></th>
+                <th pSortableColumn="created" pResizableColumn style="width: 130px;">Created <p-sortIcon field="created"></p-sortIcon></th>
+                <th style="width: 120px" class="text-center">Actions</th>
               </tr>
             </ng-template>
             <ng-template pTemplate="body" let-item>
@@ -79,8 +82,20 @@
                 <td><c-badge color="info">{{getBrandName(item.brand)}}</c-badge></td>
                 <td><small class="text-muted">{{item.os_type || 'generic'}}</small></td>
                 <td>
+                  <c-badge [color]="getDiffExclusionCount(item.diff_exclusions) > 0 ? 'danger' : 'light'" [textColor]="getDiffExclusionCount(item.diff_exclusions) > 0 ? 'white' : 'dark'">
+                    <i class="fas fa-filter me-1" *ngIf="getDiffExclusionCount(item.diff_exclusions) > 0"></i>
+                    {{getDiffExclusionCount(item.diff_exclusions) > 0 ? (getDiffExclusionCount(item.diff_exclusions) + ' rules') : 'None'}}
+                  </c-badge>
+                </td>
+                <td class="text-center">
+                  <c-badge [color]="item.is_active !== false ? 'success' : 'secondary'">
+                    {{item.is_active !== false ? 'Active' : 'Inactive'}}
+                  </c-badge>
+                </td>
+                <td class="text-center">
                   <c-badge [color]="item.is_system ? 'warning' : 'light'">{{item.is_system ? 'System' : 'Custom'}}</c-badge>
                 </td>
+                <td><small class="text-muted">{{item.created ? (item.created | date:'short') : '-'}}</small></td>
                 <td class="text-center">
                   <button cButton size="sm" color="primary" variant="outline" class="me-1"
                     (click)="openEditModal(item)" pTooltip="Edit Template">
@@ -122,7 +137,9 @@
               <tr>
                 <th pSortableColumn="brand" pResizableColumn>Brand Slug <p-sortIcon field="brand"></p-sortIcon></th>
                 <th pSortableColumn="display_name" pResizableColumn>Display Name <p-sortIcon field="display_name"></p-sortIcon></th>
-                <th>Type</th>
+                <th pSortableColumn="is_active" pResizableColumn style="width: 100px;" class="text-center">Status <p-sortIcon field="is_active"></p-sortIcon></th>
+                <th pSortableColumn="is_system" pResizableColumn style="width: 100px;" class="text-center">Type <p-sortIcon field="is_system"></p-sortIcon></th>
+                <th pSortableColumn="created" pResizableColumn style="width: 140px;">Created <p-sortIcon field="created"></p-sortIcon></th>
                 <th style="width: 140px" class="text-center">Actions</th>
               </tr>
             </ng-template>
@@ -130,12 +147,18 @@
               <tr>
                 <td><code>{{item.brand}}</code></td>
                 <td><strong>{{item.display_name}}</strong></td>
-                <td>
+                <td class="text-center">
+                  <c-badge [color]="item.is_active !== false ? 'success' : 'secondary'">
+                    {{item.is_active !== false ? 'Active' : 'Inactive'}}
+                  </c-badge>
+                </td>
+                <td class="text-center">
                   <c-badge [color]="item.is_system ? 'warning' : 'success'">
                     <i class="fas" [ngClass]="item.is_system ? 'fa-lock' : 'fa-user'"></i>
                     {{item.is_system ? 'System' : 'User'}}
                   </c-badge>
                 </td>
+                <td><small class="text-muted">{{item.created ? (item.created | date:'short') : '-'}}</small></td>
                 <td class="text-center">
                   <button cButton size="sm" color="primary" variant="outline" class="me-1"
                     (click)="openBrandEditModal(item)" [pTooltip]="item.is_system ? 'View Brand' : 'Edit Brand'">
@@ -173,7 +196,7 @@
         <input cFormControl size="sm" [(ngModel)]="editData.display_name" placeholder="e.g. Cisco IOS" [readonly]="editData.is_system" />
         <small class="text-muted" *ngIf="editData.is_system">System template name cannot be changed</small>
       </c-col>
-      <c-col xs="12" md="4">
+      <c-col xs="12" md="3">
         <label class="form-label small">Brand</label>
         <select cSelect size="sm" [(ngModel)]="editData.brand" [disabled]="editData.is_system">
           <option value="">Generic</option>
@@ -181,10 +204,16 @@
         </select>
         <small class="text-muted" *ngIf="editData.is_system">System template brand cannot be changed</small>
       </c-col>
-      <c-col xs="12" md="4">
+      <c-col xs="12" md="3">
         <label class="form-label small">OS Type</label>
         <input cFormControl size="sm" [(ngModel)]="editData.os_type" placeholder="generic" [readonly]="editData.is_system" />
         <small class="text-muted" *ngIf="editData.is_system">System template OS type cannot be changed</small>
+      </c-col>
+      <c-col xs="12" md="2">
+        <div class="form-check form-switch mt-4">
+          <input class="form-check-input" type="checkbox" id="templateActiveToggle" [(ngModel)]="editData.is_active" />
+          <label class="form-check-label small" for="templateActiveToggle">Active</label>
+        </div>
       </c-col>
     </c-row>
 
@@ -281,6 +310,87 @@
 
     <!-- CLI Settings (SSH / Telnet) -->
     <div *ngIf="!editData.connection || (editData.connection.protocol !== 'rdp' && editData.connection.protocol !== 'vnc')">
+
+    <!-- Connection Settings -->
+    <h6 class="mb-3"><i class="fas fa-plug me-2 text-secondary"></i>Connection Settings</h6>
+    <c-row class="g-3 mb-4">
+      <c-col xs="12" md="3">
+        <label class="form-label small">Protocol</label>
+        <select cSelect size="sm" [(ngModel)]="editData.connection.protocol">
+          <option value="ssh">SSH</option>
+          <option value="telnet">Telnet</option>
+        </select>
+      </c-col>
+      <c-col xs="12" md="3">
+        <label class="form-label small">Connection Timeout (s)</label>
+        <input cFormControl size="sm" type="number" [(ngModel)]="editData.connection.timeout" />
+      </c-col>
+      <c-col xs="12" md="2">
+        <label class="form-label small">Default SSH Port</label>
+        <input cFormControl size="sm" type="number" [(ngModel)]="editData.connection.default_port_ssh" placeholder="22" />
+      </c-col>
+      <c-col xs="12" md="2">
+        <label class="form-label small">Default Telnet Port</label>
+        <input cFormControl size="sm" type="number" [(ngModel)]="editData.connection.default_port_telnet" placeholder="23" />
+      </c-col>
+      <c-col xs="12" md="2">
+        <div class="form-check form-switch mt-4">
+          <input class="form-check-input" type="checkbox" id="sshInteractiveToggle" [(ngModel)]="editData.connection.ssh_interactive" />
+          <label class="form-check-label small" for="sshInteractiveToggle">SSH Interactive</label>
+        </div>
+      </c-col>
+    </c-row>
+
+    <!-- Configuration Mode -->
+    <h6 class="mb-3"><i class="fas fa-sliders-h me-2 text-warning"></i>Configuration Mode (Optional)</h6>
+    <c-row class="g-3 mb-4">
+      <c-col xs="12" md="4">
+        <label class="form-label small">Enter Config Mode Command</label>
+        <input cFormControl size="sm" [(ngModel)]="editData.config_mode.enter" placeholder="e.g. configure terminal" />
+      </c-col>
+      <c-col xs="12" md="4">
+        <label class="form-label small">Exit Config Mode Command</label>
+        <input cFormControl size="sm" [(ngModel)]="editData.config_mode.exit" placeholder="e.g. end" />
+      </c-col>
+      <c-col xs="12" md="4">
+        <label class="form-label small">Save in Config Mode Command</label>
+        <input cFormControl size="sm" [(ngModel)]="editData.config_mode.save" placeholder="e.g. write memory (or leave empty)" />
+      </c-col>
+    </c-row>
+
+    <!-- Device Commands -->
+    <h6 class="mb-3"><i class="fas fa-code me-2 text-danger"></i>Device Commands</h6>
+    <c-row class="g-3 mb-4">
+      <c-col xs="12" md="6">
+        <label class="form-label small">Version Command</label>
+        <input cFormControl size="sm" [(ngModel)]="editData.commands.show_version" placeholder="show version" />
+      </c-col>
+      <c-col xs="12" md="6">
+        <label class="form-label small">Backup Command</label>
+        <input cFormControl size="sm" [(ngModel)]="editData.commands.show_config" placeholder="show running-config" />
+      </c-col>
+      <c-col xs="12" md="6">
+        <label class="form-label small">Interfaces Command</label>
+        <input cFormControl size="sm" [(ngModel)]="editData.commands.show_interfaces" placeholder="show ip interface brief" />
+      </c-col>
+      <c-col xs="12" md="6">
+        <label class="form-label small">ARP Command</label>
+        <input cFormControl size="sm" [(ngModel)]="editData.commands.show_arp" placeholder="show arp" />
+      </c-col>
+      <c-col xs="12" md="6">
+        <label class="form-label small">Routing Command</label>
+        <input cFormControl size="sm" [(ngModel)]="editData.commands.show_routing" placeholder="show ip route" />
+      </c-col>
+      <c-col xs="12" md="6">
+        <label class="form-label small">Log Command</label>
+        <input cFormControl size="sm" [(ngModel)]="editData.commands.show_log" placeholder="show logging" />
+      </c-col>
+      <c-col xs="12" md="6">
+        <label class="form-label small">Save Config Command</label>
+        <input cFormControl size="sm" [(ngModel)]="editData.commands.save_config" placeholder="wr mem / write memory / commit" />
+      </c-col>
+    </c-row>
+
     <!-- Prompt Settings -->
     <h6 class="mb-3"><i class="fas fa-terminal me-2 text-info"></i>Prompt Settings</h6>
     <c-row class="g-3 mb-4">
@@ -329,16 +439,20 @@
       <c-col xs="12" md="2">
         <div class="form-check form-switch mt-4">
           <input class="form-check-input" type="checkbox" [(ngModel)]="editData.pagination.enabled" id="paginationToggle" />
-          <label class="form-check-label small" for="paginationToggle">Disabled Paging</label>
+          <label class="form-check-label small" for="paginationToggle">Enable Paging</label>
         </div>
       </c-col>
-      <c-col xs="12" md="4">
-        <label class="form-label small">Paging Command</label>
-        <input cFormControl size="sm" [(ngModel)]="editData.pagination.key" placeholder="terminal length 0" />
+      <c-col xs="12" md="3">
+        <label class="form-label small">More-Prompt Pattern</label>
+        <input cFormControl size="sm" [(ngModel)]="editData.pagination.pattern" placeholder="e.g. --More--" />
       </c-col>
-      <c-col xs="12" md="4">
-        <label class="form-label small">Reset Paging Command</label>
-        <input cFormControl size="sm" [(ngModel)]="editData.pagination.prompt" placeholder="terminal length 40" />
+      <c-col xs="12" md="2">
+        <label class="form-label small">Advance Keystroke</label>
+        <input cFormControl size="sm" [(ngModel)]="editData.pagination.key" placeholder="e.g. space, enter" />
+      </c-col>
+      <c-col xs="12" md="3">
+        <label class="form-label small">Reset / Paging Command</label>
+        <input cFormControl size="sm" [(ngModel)]="editData.pagination.prompt" placeholder="e.g. terminal length 0" />
       </c-col>
       <c-col xs="12" md="2">
         <label class="form-label small">Linebreak</label>
@@ -349,56 +463,109 @@
       </c-col>
     </c-row>
 
-    <!-- Connection Settings -->
-    <h6 class="mb-3"><i class="fas fa-plug me-2 text-secondary"></i>Connection Settings</h6>
-    <c-row class="g-3 mb-4">
-      <c-col xs="12" md="6">
-        <label class="form-label small">Protocol</label>
-        <select cSelect size="sm" [(ngModel)]="editData.connection.protocol">
-          <option value="ssh">SSH</option>
-          <option value="telnet">Telnet</option>
-        </select>
-      </c-col>
-      <c-col xs="12" md="6">
-        <label class="form-label small">Connection Timeout (s)</label>
-        <input cFormControl size="sm" type="number" [(ngModel)]="editData.connection.timeout" />
-      </c-col>
-    </c-row>
+    <!-- ==================== DIFF EXCLUSIONS SECTION ==================== -->
+    <div class="d-flex align-items-center justify-content-between mb-2">
+      <div>
+        <h6 class="mb-1"><i class="fas fa-filter me-2 text-danger"></i>Diff Exclusions</h6>
+        <p class="text-muted small mb-0">Regex patterns stripped from command output during configuration versioning to prevent false diffs.</p>
+      </div>
+      <div>
+        <button cButton size="sm" color="info" variant="outline" (click)="showPreviewSandbox = !showPreviewSandbox">
+          <i class="fas fa-vial me-1"></i>{{showPreviewSandbox ? 'Hide Test Sandbox' : 'Test Exclusions Sandbox'}}
+        </button>
+      </div>
+    </div>
 
-    <!-- Commands -->
-    <h6 class="mb-3"><i class="fas fa-code me-2 text-danger"></i>Device Commands</h6>
-    <c-row class="g-3 mb-4">
-      <c-col xs="12" md="6">
-        <label class="form-label small">Version Command</label>
-        <input cFormControl size="sm" [(ngModel)]="editData.commands.show_version" placeholder="show version" />
-      </c-col>
-      <c-col xs="12" md="6">
-        <label class="form-label small">Backup Command</label>
-        <input cFormControl size="sm" [(ngModel)]="editData.commands.show_config" placeholder="show running-config" />
-      </c-col>
-      <c-col xs="12" md="6">
-        <label class="form-label small">Interfaces Command</label>
-        <input cFormControl size="sm" [(ngModel)]="editData.commands.show_interfaces" placeholder="show ip interface brief" />
-      </c-col>
-      <c-col xs="12" md="6">
-        <label class="form-label small">ARP Command</label>
-        <input cFormControl size="sm" [(ngModel)]="editData.commands.show_arp" placeholder="show arp" />
-      </c-col>
-      <c-col xs="12" md="6">
-        <label class="form-label small">Routing Command</label>
-        <input cFormControl size="sm" [(ngModel)]="editData.commands.show_routing" placeholder="show ip route" />
-      </c-col>
-      <c-col xs="12" md="6">
-        <label class="form-label small">Log Command</label>
-        <input cFormControl size="sm" [(ngModel)]="editData.commands.show_log" placeholder="show logging" />
-      </c-col>
-      <c-col xs="12" md="6">
-        <label class="form-label small">Save Config Command</label>
-        <input cFormControl size="sm" [(ngModel)]="editData.commands.save_config" placeholder="wr mem / write memory / commit" />
-      </c-col>
-    </c-row>
+    <!-- Interactive Sandbox Preview -->
+    <div *ngIf="showPreviewSandbox" class="p-3 mb-4 border rounded bg-light">
+      <div class="fw-semibold small mb-2"><i class="fas fa-flask me-1 text-info"></i>Test Diff Exclusions Against Sample Text</div>
+      <textarea cFormControl rows="4" class="font-monospace small mb-2" [(ngModel)]="sampleDiffText"
+        placeholder="Paste sample device output here (e.g. from show running-config)..."></textarea>
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <button cButton size="sm" color="primary" (click)="testDiffExclusions()" [disabled]="!sampleDiffText">
+          <i class="fas fa-play me-1"></i>Run Regex Test
+        </button>
+        <div *ngIf="previewResult" class="small">
+          <span class="badge bg-secondary me-2">Original: {{previewResult.total_lines}} lines</span>
+          <span class="badge bg-danger me-2">Removed: {{previewResult.lines_removed}} lines</span>
+          <span class="badge bg-success">Kept: {{previewResult.lines_kept}} lines</span>
+        </div>
+      </div>
+      <div *ngIf="previewResult && previewResult.removed_samples?.length">
+        <small class="text-muted d-block mb-1">Sample removed lines:</small>
+        <div class="preview-terminal">
+          <div *ngFor="let rm of previewResult.removed_samples" class="removed-line">- {{rm}}</div>
+        </div>
+      </div>
+    </div>
 
-    <!-- Error Patterns & Post/Pre Commands -->
+    <!-- Exclusion Sections Cards -->
+    <div *ngFor="let sec of getDiffExclusionSections()" class="diff-section-card">
+      <div class="diff-section-header d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center">
+          <span class="badge bg-primary me-2 font-monospace">{{sec}}</span>
+          <small class="text-muted" *ngIf="sec === 'global'">Applies across all commands</small>
+          <small class="text-muted" *ngIf="sec === 'show_config'">Applies to backup / running-config</small>
+          <small class="text-muted" *ngIf="sec !== 'global' && sec !== 'show_config'">Applies to '{{sec}}'</small>
+        </div>
+        <div>
+          <button cButton size="sm" color="success" variant="outline" class="me-1 py-0 px-2" (click)="addDiffExclusionRule(sec)" pTooltip="Add Rule">
+            <i class="fas fa-plus me-1"></i>Add Rule
+          </button>
+          <button cButton size="sm" color="danger" variant="outline" class="py-0 px-2" *ngIf="sec !== 'global' && sec !== 'show_config'"
+            (click)="removeDiffExclusionSection(sec)" pTooltip="Delete Section">
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
+      </div>
+      <div class="p-3">
+        <div *ngIf="!editData.diff_exclusions[sec]?.length" class="text-muted small fst-italic">
+          No exclusion patterns in this section. Click "+ Add Rule" to add one.
+        </div>
+        <div *ngFor="let rule of editData.diff_exclusions[sec]; let rIdx = index" class="row g-2 align-items-center mb-2">
+          <div class="col-8 col-md-9">
+            <div class="input-group input-group-sm">
+              <span class="input-group-text font-monospace text-muted">/</span>
+              <input cFormControl size="sm" class="font-monospace" [(ngModel)]="rule.pattern" placeholder="e.g. ^!\s*Last configuration change at.*$" />
+              <span class="input-group-text font-monospace text-muted">/</span>
+            </div>
+          </div>
+          <div class="col-3 col-md-2">
+            <input cFormControl size="sm" class="font-monospace" [(ngModel)]="rule.flags" placeholder="flags (e.g. i)" pTooltip="Flags: i=case-insensitive, m=multiline, s=dotall" />
+          </div>
+          <div class="col-1 text-end">
+            <button cButton size="sm" color="danger" variant="outline" (click)="removeDiffExclusionRule(sec, rIdx)" pTooltip="Remove Rule">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add New Section Controls -->
+    <div class="card p-3 mb-4 bg-light border-dashed">
+      <div class="row g-2 align-items-center">
+        <div class="col-12 col-md-auto">
+          <span class="small fw-semibold text-muted"><i class="fas fa-folder-plus me-1"></i>Add Section:</span>
+        </div>
+        <div class="col-12 col-md-4">
+          <input cFormControl size="sm" [(ngModel)]="newDiffSectionName" placeholder="Section name (e.g. show_version)" />
+        </div>
+        <div class="col-12 col-md-auto">
+          <button cButton size="sm" color="secondary" variant="outline" (click)="addDiffExclusionSection()" [disabled]="!newDiffSectionName">
+            <i class="fas fa-plus me-1"></i>Add Section
+          </button>
+        </div>
+        <div class="col-12 col-md-auto">
+          <span class="small text-muted me-1">Quick add:</span>
+          <button cButton size="sm" color="light" class="me-1 py-0 px-2 small" (click)="addDiffExclusionSection('show_version')">show_version</button>
+          <button cButton size="sm" color="light" class="me-1 py-0 px-2 small" (click)="addDiffExclusionSection('show_interfaces')">show_interfaces</button>
+          <button cButton size="sm" color="light" class="py-0 px-2 small" (click)="addDiffExclusionSection('show_arp')">show_arp</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Error Patterns & Lifecycle Commands -->
     <h6 class="mb-3"><i class="fas fa-exclamation-triangle me-2 text-danger"></i>Error Patterns & Lifecycle Commands</h6>
     <c-row class="g-3 mb-4">
       <c-col xs="12" md="4">
@@ -438,6 +605,21 @@
         </button>
       </c-col>
     </c-row>
+
+    <!-- Pre-Connect & Post-Disconnect Hooks -->
+    <h6 class="mb-2"><i class="fas fa-network-wired me-2 text-primary"></i>Connection Hooks (Pre-Connect & Post-Disconnect)</h6>
+    <p class="text-muted small mb-3">Optional automation hooks executed immediately before establishing connection or after disconnecting (JSON format, e.g. for RouterOS API service activation).</p>
+    <c-row class="g-3 mb-4">
+      <c-col xs="12" md="6">
+        <label class="form-label small fw-semibold">Pre-Connect Hooks (JSON)</label>
+        <textarea cFormControl rows="4" class="font-monospace small" [(ngModel)]="preConnectJson" placeholder="[]"></textarea>
+      </c-col>
+      <c-col xs="12" md="6">
+        <label class="form-label small fw-semibold">Post-Disconnect Hooks (JSON)</label>
+        <textarea cFormControl rows="4" class="font-monospace small" [(ngModel)]="postDisconnectJson" placeholder="[]"></textarea>
+      </c-col>
+    </c-row>
+
     </div>
   </c-modal-body>
   <c-modal-footer>
@@ -449,7 +631,7 @@
 </c-modal>
 
 <!-- ==================== BRAND CREATE/EDIT MODAL ==================== -->
-<c-modal #brandModal backdrop="static" size="sm" [(visible)]="brandModalVisible" id="brandModal">
+<c-modal #brandModal backdrop="static" size="lg" [(visible)]="brandModalVisible" id="brandModal">
   <c-modal-header>
     <h6 cModalTitle>
       <i class="fas me-2" [ngClass]="isEditingBrand ? 'fa-edit text-primary' : 'fa-plus text-success'"></i>
@@ -467,6 +649,17 @@
       <c-col xs="12" md="6">
         <label class="form-label small">Display Name *</label>
         <input cFormControl size="sm" [(ngModel)]="brandEditData.display_name" placeholder="e.g. Cisco" [readonly]="brandEditData.is_system" />
+      </c-col>
+      <c-col xs="12" md="6">
+        <div class="form-check form-switch mt-2">
+          <input class="form-check-input" type="checkbox" id="brandActiveSwitch" [(ngModel)]="brandEditData.is_active" [disabled]="brandEditData.is_system" />
+          <label class="form-check-label small" for="brandActiveSwitch">Active</label>
+        </div>
+      </c-col>
+      <c-col xs="12" md="6" *ngIf="brandEditData.created">
+        <div class="text-muted small mt-2">
+          <i class="fas fa-calendar-alt me-1"></i>Created: {{brandEditData.created | date:'medium'}}
+        </div>
       </c-col>
       <c-col xs="12" *ngIf="brandEditData.is_system">
         <c-alert color="warning" class="mb-0">

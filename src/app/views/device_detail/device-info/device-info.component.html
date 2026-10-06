@@ -10,17 +10,29 @@
             style="padding: 0.175rem 0.35rem;background-color:#ed4646;text-transform: capitalize;color:#fff;font-size:0.75rem;border: none;font-weight: bold;"
             cInputGroupText>Device offline or not accessible for MikroWizard</span>
         </c-input-group>
-        <c-input-group class="mr-0 ml-0 mb-1" *ngIf="devdata['update_availble']"
-          style="padding-right:unset;width: auto;flex: 1 1 auto;flex-flow:  nowrap;flex: unset;">
+        <c-input-group class="mr-0 ml-0 mb-1" *ngIf="devdata['status'] === 'failed'"
+          style="padding-right:unset;width: auto;flex: 1 1 auto;flex-flow: nowrap;flex: unset;">
           <span
-            style="padding: 0.175rem 0.35rem;background-color:#ed4646;text-transform: capitalize;color:#fff;font-size:0.75rem;border: none;"
-            cInputGroupText>Firmware Upgrade Detected</span>
+            style="padding: 0.175rem 0.5rem;background-color:#e55353;text-transform: none;color:#fff;font-size:0.75rem;border: none;font-weight: 600;"
+            cInputGroupText><i class="fas fa-triangle-exclamation me-1"></i>Firmware Update Failed</span>
+        </c-input-group>
+        <c-input-group class="mr-0 ml-0 mb-1" *ngIf="devdata['status'] === 'updating'"
+          style="padding-right:unset;width: auto;flex: 1 1 auto;flex-flow: nowrap;flex: unset;">
+          <span
+            style="padding: 0.175rem 0.5rem;background-color:#321fdb;text-transform: none;color:#fff;font-size:0.75rem;border: none;font-weight: 600;"
+            cInputGroupText><span class="spinner-border spinner-border-sm me-1" style="width: 0.7rem; height: 0.7rem;"></span>Updating Firmware...</span>
+        </c-input-group>
+        <c-input-group class="mr-0 ml-0 mb-1" *ngIf="devdata['update_availble']"
+          style="padding-right:unset;width: auto;flex: 1 1 auto;flex-flow: nowrap;flex: unset;">
+          <span
+            style="padding: 0.175rem 0.5rem;background-color:#2eb85c;text-transform: none;color:#fff;font-size:0.75rem;border: none;font-weight: 600;"
+            cInputGroupText><i class="fas fa-arrow-circle-up me-1"></i>RouterOS Update Available</span>
         </c-input-group>
         <c-input-group class="mr-0 ml-0 mb-1" *ngIf="devdata['upgrade_availble']"
-        style="padding-right:unset;width: auto;flex: 1 1 auto;flex-flow:  nowrap;flex: unset;">
-        <span
-          style="padding: 0.175rem 0.35rem;background-color:#edd446;text-transform: capitalize;color:#fff;font-size:0.75rem;border: none;"
-          cInputGroupText>Firmware Upgrade Detected</span>
+          style="padding-right:unset;width: auto;flex: 1 1 auto;flex-flow: nowrap;flex: unset;">
+          <span
+            style="padding: 0.175rem 0.5rem;background-color:#f9b115;text-transform: none;color:#000;font-size:0.75rem;border: none;font-weight: 600;"
+            cInputGroupText><i class="fas fa-microchip me-1"></i>RouterBOOT Upgrade Available</span>
         </c-input-group>
           <ng-container *ngFor="let item of devdata | keyvalue; index as i">
             <c-input-group *ngIf="checkitem(item)" class="mr-0 ml-0 mb-1"

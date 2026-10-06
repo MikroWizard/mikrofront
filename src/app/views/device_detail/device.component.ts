@@ -90,6 +90,7 @@ export class DeviceComponent implements OnInit, OnDestroy {
   public is_radio: boolean = false;
   public dhcp_server_available: boolean = false;
   public isMikroTik: boolean = false;
+  public isRdpOrVnc: boolean = false;
   public dhcp_server_data: any = {};
 
   public deviceExecutions: any[] = [];
@@ -479,6 +480,9 @@ export class DeviceComponent implements OnInit, OnDestroy {
       _self.interfaces = res.interfaces;
       if ("is_radio" in res) _self.is_radio = res.is_radio;
       _self.isMikroTik = !res.device_type || res.device_type === 'mikrotik';
+      const isWindows = res.device_type === 'windows' || res.brand === 'windows';
+      const proto = (res.protocol || '').toLowerCase();
+      _self.isRdpOrVnc = !_self.isMikroTik && (proto === 'rdp' || proto === 'vnc' || res.device_type === 'vnc' || isWindows || !!res.is_child);
 
       if (_self.isMikroTik) {
         _self.data_provider
@@ -587,6 +591,9 @@ export class DeviceComponent implements OnInit, OnDestroy {
         if ("is_radio" in res) _self.is_radio = res.is_radio;
         _self.interfaces = res.interfaces;
         _self.isMikroTik = !res.device_type || res.device_type === 'mikrotik';
+        const isWindows = res.device_type === 'windows' || res.brand === 'windows';
+        const proto = (res.protocol || '').toLowerCase();
+        _self.isRdpOrVnc = !_self.isMikroTik && (proto === 'rdp' || proto === 'vnc' || res.device_type === 'vnc' || isWindows || !!res.is_child);
 
         if (_self.isMikroTik) {
           _self.data_provider

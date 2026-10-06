@@ -39,13 +39,18 @@
         </ng-template>
         <ng-template pTemplate="body" let-item>
           <tr>
-            <td><i class="fas fa-server me-2 text-primary"></i><strong>{{item.name}}</strong></td>
+            <td>
+              <i *ngIf="isRdp(item)" class="fa-brands fa-windows text-info me-2" title="RDP (Remote Desktop)"></i>
+              <i *ngIf="isVnc(item)" class="fa-solid fa-desktop text-warning me-2" title="VNC Remote Console"></i>
+              <i *ngIf="!isRdp(item) && !isVnc(item)" class="fas fa-server me-2 text-primary"></i>
+              <strong>{{item.name}}</strong>
+            </td>
             <td><small>{{item.ip}}</small></td>
             <td><c-badge color="info">{{item.device_type || 'generic'}}</c-badge></td>
             <td><small class="text-muted">{{item.device_model || '-'}}</small></td>
             <td><small class="text-muted">{{item.mac || '-'}}</small></td>
             <td class="text-center">
-              <button size="sm" shape="rounded-0" variant="outline" cButton color="primary"
+              <button *ngIf="!isRdpOrVnc(item)" size="sm" shape="rounded-0" variant="outline" cButton color="primary"
                 (click)="emitAction('details', item)" style="border: none;padding: 4px 7px;">
                 <i class="fa-regular fa-eye"></i><small> Details</small>
               </button>
@@ -66,10 +71,10 @@
                   <button size="sm" *ngIf="ispro" (click)="emitAction('recordings', item)" style="padding: 4px 7px;"
                     cListGroupItem><i class="text-warning fas fa-video"></i><small>
                       View Recordings</small></button>
-                  <button size="sm" *ngIf="ispro" (click)="emitAction('command-logs', item)" style="padding: 4px 7px;"
+                  <button size="sm" *ngIf="ispro && !isRdpOrVnc(item)" (click)="emitAction('command-logs', item)" style="padding: 4px 7px;"
                     cListGroupItem><i class="text-secondary fas fa-keyboard"></i><small>
                       Command History</small></button>
-                  <button size="sm" *ngIf="ispro" (click)="emitAction('config-versions', item)" style="padding: 4px 7px;"
+                  <button size="sm" *ngIf="ispro && !isRdpOrVnc(item)" (click)="emitAction('config-versions', item)" style="padding: 4px 7px;"
                     cListGroupItem><i class="text-warning fa-solid fa-history"></i><small>
                       Config Versions</small></button>
                   <button size="sm" (click)="deleteDevice(item.id)" style="padding: 4px 7px;"

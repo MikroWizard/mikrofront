@@ -43,7 +43,7 @@ export class DevicesComponent implements OnInit, OnDestroy {
   public expandedParentServers: Set<number> = new Set<number>();
   public publishAppModalVisible: boolean = false;
   public selectedParentServer: any = null;
-  public publishAppData: any = { name: '', app_mode: 'remote_app', remote_app: '', remote_app_dir: '', remote_app_args: '', initial_program: '' };
+  public publishAppData: any = { name: '', app_mode: 'remote_app', remote_app: '', remote_app_dir: '', remote_app_args: '' };
   public isPublishingApp: boolean = false;
 
   toggleServerExpand(id: number) {
@@ -62,72 +62,108 @@ export class DevicesComponent implements OnInit, OnDestroy {
     if (!this.source || !Array.isArray(this.source)) return [];
     if (this.deviceTab === 'mikrotik') {
       return this.source.filter((d: any) => this.isMikrotik(d));
-    } else if (this.deviceTab === 'nonmikrotik') {
-      const nonMikrotik = this.source.filter((d: any) => !this.isMikrotik(d));
-      const parents = nonMikrotik.filter((d: any) => !d.parent_id);
-      const childMap = new Map<number, any[]>();
-
-      for (const d of nonMikrotik) {
-        if (d.parent_id) {
-          if (!childMap.has(d.parent_id)) childMap.set(d.parent_id, []);
-          childMap.get(d.parent_id)!.push(d);
-        }
-      }
-
-      const orderedList: any[] = [];
-      for (const p of parents) {
-        const children = childMap.get(p.id) || [];
-        p.child_count = children.length;
-        p.is_child = false;
-        orderedList.push(p);
-
-        if (this.isServerExpanded(p.id)) {
-          for (const c of children) {
-            c.is_child = true;
-            c.parent_server_name = p.name;
-            c.effective_ip = p.ip || p.peer_ip;
-            orderedList.push(c);
-          }
-        }
-      }
-      return orderedList;
     }
-    return this.source;
+
+    const targetList = this.deviceTab === 'nonmikrotik'
+      ? this.source.filter((d: any) => !this.isMikrotik(d))
+      : this.source;
+
+    const childMap = new Map<number, any[]>();
+    for (const d of this.source) {
+      if (d.parent_id) {
+        if (!childMap.has(d.parent_id)) childMap.set(d.parent_id, []);
+        childMap.get(d.parent_id)!.push(d);
+      }
+    }
+
+    const parents = targetList.filter((d: any) => !d.parent_id);
+    const orderedList: any[] = [];
+
+    for (const p of parents) {
+      const children = childMap.get(p.id) || [];
+      p.child_count = children.length;
+      p.is_child = false;
+      orderedList.push(p);
+
+      if (this.isServerExpanded(p.id)) {
+        for (const c of children) {
+          c.is_child = true;
+          c.parent_server_name = p.name;
+          c.effective_ip = p.ip || p.peer_ip;
+          orderedList.push(c);
+        }
+      }
+    }
+
+    // Include any orphaned child applications whose parent device is not present in target
+    for (const d of targetList) {
+      if (d.parent_id && !this.source.some((p: any) => p.id === d.parent_id)) {
+        d.is_child = true;
+        orderedList.push(d);
+      }
+    }
+
+    return orderedList;
   }
 
-  openPublishAppModal(server: any) {
+  openPublishAppModal(server?: any) {
+    if (!server) {
+      const rdpServers = this.getAvailableRdpServers();
+      server = rdpServers.length > 0 ? rdpServers[0] : null;
+    }
     this.selectedParentServer = server;
     this.publishAppData = {
+      parent_id: server?.id || null,
       name: '',
       app_mode: 'remote_app',
       remote_app: '',
       remote_app_dir: '',
       remote_app_args: '',
-      initial_program: ''
+      group_ids: []
     };
     this.publishAppModalVisible = true;
   }
 
+  onPublishAppServerChange(parentId: any) {
+    this.selectedParentServer = this.source.find((s: any) => s.id == parentId) || null;
+  }
+
   savePublishedApp() {
-    if (!this.selectedParentServer || !this.publishAppData.name) {
+    if (!this.selectedParentServer && this.publishAppData.parent_id) {
+      this.selectedParentServer = this.source.find((s: any) => s.id === this.publishAppData.parent_id);
+    }
+    if (!this.selectedParentServer) {
+      this.show_toast('Validation', 'Please select a parent host server', 'warning');
+      return;
+    }
+    if (!this.publishAppData.name || !this.publishAppData.name.trim()) {
       this.show_toast('Validation', 'Please provide an application name', 'warning');
+      return;
+    }
+    if (!this.publishAppData.remote_app?.trim()) {
+      this.show_toast('Validation', 'Please provide the application executable or alias', 'warning');
       return;
     }
     this.isPublishingApp = true;
     const payload = {
       parent_id: this.selectedParentServer.id,
       name: this.publishAppData.name.trim(),
-      app_mode: this.publishAppData.app_mode,
-      remote_app: this.publishAppData.remote_app.trim(),
-      remote_app_dir: this.publishAppData.remote_app_dir.trim(),
-      remote_app_args: this.publishAppData.remote_app_args.trim(),
-      initial_program: this.publishAppData.initial_program.trim()
+      app_mode: 'remote_app',
+      remote_app: (this.publishAppData.remote_app || '').trim(),
+      remote_app_dir: (this.publishAppData.remote_app_dir || '').trim(),
+      remote_app_args: (this.publishAppData.remote_app_args || '').trim(),
+      group_ids: this.publishAppData.group_ids || []
     };
     this.data_provider.MikroWizardRPC.sendJsonRequest('/api/non-mikrotik/apps/publish', payload).then((res: any) => {
       this.isPublishingApp = false;
       if (res && (res.status === 'success' || res.id)) {
+        const appId = res.id || res.device_id;
+        if (appId && payload.group_ids && payload.group_ids.length > 0) {
+          this.data_provider.attachDeviceToGroups(appId, payload.group_ids);
+        }
         this.show_toast('Success', `Published application "${payload.name}" successfully`, 'success');
         this.publishAppModalVisible = false;
+        this.closeUnifiedModal();
         this.expandedParentServers.add(this.selectedParentServer.id);
         this.initGridTable();
       } else {
@@ -254,7 +290,19 @@ export class DevicesComponent implements OnInit, OnDestroy {
   // Unified Modal & Multi-device State
   public unifiedModalVisible: boolean = false;
   public unifiedModalMode: 'add' | 'edit' = 'add';
-  public unifiedCategory: 'mikrotik' | 'other' = 'mikrotik';
+  public unifiedCategory: 'mikrotik' | 'other' | 'app' = 'mikrotik';
+  public editAppData: any = {
+    id: 0,
+    name: '',
+    parent_id: null,
+    parent_server_name: '',
+    parent_ip: '',
+    app_mode: 'remote_app',
+    remote_app: '',
+    remote_app_dir: '',
+    remote_app_args: '',
+    group_ids: []
+  };
   public savingUnifiedDevice: boolean = false;
   public savingUnifiedStatus: string = '';
   public brandTemplates: any[] = [];
@@ -270,7 +318,8 @@ export class DevicesComponent implements OnInit, OnDestroy {
   public addNonMikrotikData: any = {
     name: '', ip: '', device_type: 'generic', device_model: '',
     username: '', password: '', enable_password: '', template_id: null,
-    protocol: 'ssh', port: 22, group_ids: [], ssh_auth_mode: 'credential'
+    protocol: 'ssh', port: 22, group_ids: [], ssh_auth_mode: 'credential',
+    parent_id: null
   };
 
   public editNonMikrotikData: any = {};
@@ -307,6 +356,28 @@ export class DevicesComponent implements OnInit, OnDestroy {
     enabled: true,
     multiSorting: true,
   };
+  public target_firmware_version: string = '';
+  public packages_mode: string = 'full';
+  public selected_extra_packages: string[] = [];
+  public available_extra_packages: string[] = ['wireless', 'wifi-qcom', 'wifi-qcom-ac', 'container', 'zerotier', 'dude', 'iot', 'lora', 'gps', 'rose-storage'];
+  public auto_upgrade_routerboot: boolean = true;
+  public delivery_method: string = 'local_repo';
+  public ptp_safe_ordering: boolean = true;
+  public repo_versions: string[] = [];
+  public showPackageOptions: boolean = false;
+
+  onPackagesModeChange(mode?: string): void {
+    const selectedMode = mode || this.packages_mode;
+    if (selectedMode === 'firmware_only') {
+      this.selected_extra_packages = [];
+      this.showPackageOptions = false;
+    }
+  }
+
+  clearExtraPackages(): void {
+    this.selected_extra_packages = [];
+  }
+
   public ip_scanner: any = {
     start: "",
     end: "",
@@ -401,6 +472,13 @@ export class DevicesComponent implements OnInit, OnDestroy {
       }
     }
 
+    if (action === 'update') {
+      this.load_firmware_versions();
+      this.target_firmware_version = '';
+      this.packages_mode = 'full';
+      this.selected_extra_packages = [];
+      this.showPackageOptions = false;
+    }
     this.ConfirmAction = action;
     this.ConfirmModalVisible = true;
   }
@@ -467,11 +545,19 @@ export class DevicesComponent implements OnInit, OnDestroy {
         this.check_firmware();
         break;
       case "update":
+        this.load_firmware_versions();
+        this.target_firmware_version = '';
+        this.packages_mode = 'full';
+        this.selected_extra_packages = [];
         this.ConfirmAction = "update";
         this.ConfirmModalVisible = true;
         break;
       case "upgrade":
         this.ConfirmAction = "upgrade";
+        this.ConfirmModalVisible = true;
+        break;
+      case "clear_failed":
+        this.ConfirmAction = "clear_failed";
         this.ConfirmModalVisible = true;
         break;
       case "logauth":
@@ -580,6 +666,22 @@ export class DevicesComponent implements OnInit, OnDestroy {
     return false;
   }
 
+  isRdp(device: any): boolean {
+    if (!device || this.isMikrotik(device)) return false;
+    const isWindows = device.device_type === 'windows' || device.brand === 'windows';
+    return isWindows || device.protocol === 'rdp' || !!device.is_child || this.isApp(device) || this.hasProtocol(device, 'rdp');
+  }
+
+  isVnc(device: any): boolean {
+    if (!device || this.isMikrotik(device)) return false;
+    return (device.protocol === 'vnc' || device.device_type === 'vnc' || device.brand === 'vnc' || this.hasProtocol(device, 'vnc')) && !this.isRdp(device);
+  }
+
+  isRdpOrVnc(device: any): boolean {
+    if (!device) return false;
+    return this.isRdp(device) || this.isVnc(device);
+  }
+
   connectDevice(device: any, protocol?: string) {
     if (!this.ispro) {
       this.show_toast('Pro Feature', 'Interactive terminal and PAM sessions require a MikroWizard Pro license.', 'warning');
@@ -589,6 +691,18 @@ export class DevicesComponent implements OnInit, OnDestroy {
     const protoToUse = protocol || device.protocol || (isWindows ? 'rdp' : (device.device_type === 'vnc' ? 'vnc' : 'ssh'));
     const navExtras: any = { queryParams: { protocol: protoToUse } };
     this.router.navigate(['/connection-manager', device.id], navExtras);
+  }
+
+  getDevicePort(device: any, proto: string): number | string {
+    if (!device) return '';
+    if (device.connection_ports && device.connection_ports[proto]) {
+      return device.connection_ports[proto];
+    }
+    if (device.protocol === proto && device.port) {
+      return device.port;
+    }
+    const defaults: Record<string, number> = { ssh: 22, telnet: 23, winbox: 8291, rdp: 3389, vnc: 5900, api: 8728 };
+    return device.port || defaults[proto] || '';
   }
 
   getGroupName(gid: any): string {
@@ -815,7 +929,18 @@ export class DevicesComponent implements OnInit, OnDestroy {
     this.addNonMikrotikData = {
       name: '', ip: '', device_type: 'generic', device_model: '',
       username: '', password: '', enable_password: '', template_id: null,
-      protocol: 'ssh', port: 22, group_ids: [], ssh_auth_mode: 'credential'
+      protocol: 'ssh', port: 22, group_ids: [], ssh_auth_mode: 'credential',
+      parent_id: null
+    };
+    const rdpServers = this.getAvailableRdpServers();
+    this.publishAppData = {
+      parent_id: rdpServers.length > 0 ? rdpServers[0].id : null,
+      name: '',
+      app_mode: 'remote_app',
+      remote_app: '',
+      remote_app_dir: '',
+      remote_app_args: '',
+      group_ids: []
     };
     this.loadBrandsAndTemplates();
     this.onBrandChangeUnified();
@@ -830,7 +955,14 @@ export class DevicesComponent implements OnInit, OnDestroy {
   }
 
   onCategoryChange() {
-    this.onBrandChangeUnified();
+    if (this.unifiedCategory === 'app') {
+      const rdpServers = this.getAvailableRdpServers();
+      if (!this.publishAppData.parent_id && rdpServers.length > 0) {
+        this.publishAppData.parent_id = rdpServers[0].id;
+      }
+    } else {
+      this.onBrandChangeUnified();
+    }
   }
 
   onMikrotikAddSslChange() {
@@ -861,7 +993,65 @@ export class DevicesComponent implements OnInit, OnDestroy {
     this.filteredModalGroups = [];
     this.loadBrandsAndTemplates();
 
-    if (this.isMikrotik(dev)) {
+    if (this.isApp(dev)) {
+      this.unifiedCategory = 'app';
+      this.unifiedModalMode = 'edit';
+      this.editAppData = {
+        id: dev.id,
+        name: dev.name || '',
+        parent_id: dev.parent_id,
+        parent_server_name: dev.parent_server_name || '',
+        parent_ip: dev.effective_ip || dev.ip || '',
+        app_mode: 'remote_app',
+        remote_app: '',
+        remote_app_dir: '',
+        remote_app_args: '',
+        group_ids: dev.group_ids ? [...dev.group_ids] : []
+      };
+
+      this.data_provider.getNonMikrotikInfo(dev.id).then((infoRes: any) => {
+        if (infoRes && (infoRes.status === 'success' || infoRes.id)) {
+          const d = infoRes.data || infoRes;
+          let pcfg: any = {};
+          if (typeof d.protocol_config === 'string') {
+            try { pcfg = JSON.parse(d.protocol_config); } catch (e) { pcfg = {}; }
+          } else if (d.protocol_config) {
+            pcfg = d.protocol_config;
+          }
+
+          this.editAppData.name = d.name || dev.name || '';
+          this.editAppData.parent_id = d.parent_id || dev.parent_id;
+          this.editAppData.parent_server_name = d.parent_name || dev.parent_server_name || '';
+          this.editAppData.parent_ip = d.parent_ip || dev.effective_ip || '';
+          this.editAppData.app_mode = 'remote_app';
+          this.editAppData.remote_app = pcfg.remote_app || pcfg.initial_program || '';
+          this.editAppData.remote_app_dir = pcfg.remote_app_dir || '';
+          this.editAppData.remote_app_args = pcfg.remote_app_args || '';
+          if (d.group_ids && Array.isArray(d.group_ids)) {
+            this.editAppData.group_ids = [...d.group_ids];
+          }
+        }
+        if (!this.editAppData.parent_server_name && this.editAppData.parent_id) {
+          const parent = this.source.find((s: any) => s.id === this.editAppData.parent_id);
+          if (parent) {
+            this.editAppData.parent_server_name = parent.name;
+            this.editAppData.parent_ip = parent.ip || parent.peer_ip;
+          }
+        }
+        this.unifiedModalVisible = true;
+        this.EditDevModalVisible = true;
+      }).catch(() => {
+        if (!this.editAppData.parent_server_name && this.editAppData.parent_id) {
+          const parent = this.source.find((s: any) => s.id === this.editAppData.parent_id);
+          if (parent) {
+            this.editAppData.parent_server_name = parent.name;
+            this.editAppData.parent_ip = parent.ip || parent.peer_ip;
+          }
+        }
+        this.unifiedModalVisible = true;
+        this.EditDevModalVisible = true;
+      });
+    } else if (this.isMikrotik(dev)) {
       this.unifiedCategory = 'mikrotik';
       this.unifiedModalMode = 'edit';
       let method = this.ispro ? this.data_provider.get_editform_pro(dev.id) : this.data_provider.get_editform(dev.id);
@@ -943,6 +1133,45 @@ export class DevicesComponent implements OnInit, OnDestroy {
     if (this.unifiedModalMode === 'edit') {
       if (this.unifiedCategory === 'mikrotik') {
         this.save_device();
+      } else if (this.unifiedCategory === 'app') {
+        if (!this.editAppData.name || !this.editAppData.name.trim()) {
+          this.show_toast('Validation', 'Please provide an application name', 'warning');
+          return;
+        }
+        if (!this.editAppData.remote_app?.trim()) {
+          this.show_toast('Validation', 'Please provide the application executable or alias', 'warning');
+          return;
+        }
+        this.savingUnifiedDevice = true;
+        const protocol_config = {
+          app_mode: 'remote_app',
+          remote_app: (this.editAppData.remote_app || '').trim(),
+          remote_app_dir: (this.editAppData.remote_app_dir || '').trim(),
+          remote_app_args: (this.editAppData.remote_app_args || '').trim()
+        };
+        const payload: any = {
+          id: this.editAppData.id,
+          name: this.editAppData.name.trim(),
+          parent_id: this.editAppData.parent_id,
+          protocol_config: protocol_config,
+          group_ids: this.editAppData.group_ids || []
+        };
+        this.data_provider.editNonMikrotikDevice(payload).then((res: any) => {
+          this.savingUnifiedDevice = false;
+          if (res && (res.status === 'success' || !res.error)) {
+            if (payload.group_ids && payload.group_ids.length > 0) {
+              this.data_provider.attachDeviceToGroups(payload.id, payload.group_ids);
+            }
+            this.show_toast('Success', `Application "${payload.name}" updated successfully`, 'success');
+            this.closeUnifiedModal();
+            this.initGridTable();
+          } else {
+            this.show_toast('Error', res?.error || 'Failed to update application', 'danger');
+          }
+        }).catch((err: any) => {
+          this.savingUnifiedDevice = false;
+          this.show_toast('Error', err?.message || 'Failed to update application', 'danger');
+        });
       } else {
         if (!this.templateHasEscalation(this.editNonMikrotikData)) {
           this.editNonMikrotikData.enable_password = '';
@@ -955,6 +1184,9 @@ export class DevicesComponent implements OnInit, OnDestroy {
         this.data_provider.editNonMikrotikDevice(this.editNonMikrotikData).then((res: any) => {
           this.savingUnifiedDevice = false;
           if (res.status === 'success' || !res.error) {
+            if (this.editNonMikrotikData.group_ids && this.editNonMikrotikData.group_ids.length > 0) {
+              this.data_provider.attachDeviceToGroups(this.editNonMikrotikData.id, this.editNonMikrotikData.group_ids);
+            }
             this.show_toast('Success', 'Device updated', 'success');
             this.closeUnifiedModal();
             this.initGridTable();
@@ -968,6 +1200,10 @@ export class DevicesComponent implements OnInit, OnDestroy {
       }
     } else {
       // Add Mode
+      if (this.unifiedCategory === 'app') {
+        this.savePublishedApp();
+        return;
+      }
       if (this.unifiedCategory === 'mikrotik') {
         if (!this.addMikrotikData.ip || !this.addMikrotikData.username) {
           this.show_toast('Validation', 'Please provide both IP and Username', 'warning');
@@ -1337,10 +1573,12 @@ export class DevicesComponent implements OnInit, OnDestroy {
   check_firmware() {
     var _self = this;
     this.ConfirmModalVisible = false;
+    const targetIds = [...this.Selectedrows];
+    this.clearSelection();
     this.data_provider
-      .check_firmware(this.Selectedrows.toString())
+      .check_firmware(targetIds.toString())
       .then((res) => {
-        if ("error" in res && res.error.indexOf("Unauthorized")) {
+        if ("error" in res && res.error && res.error.indexOf("Unauthorized") > -1) {
           _self.show_toast(
             "Error",
             "You are not authorized to perform this action",
@@ -1348,29 +1586,108 @@ export class DevicesComponent implements OnInit, OnDestroy {
           );
         }
         else{
-        _self.show_toast("info", "Checking Firmwares", "light");
-        _self.ConfirmModalVisible = false;
-        setTimeout(function () {
-          if (_self.Selectedrows.length < 1) _self.initGridTable();
-        }, 1);
-      }
+          _self.show_toast("info", "Checking Firmwares", "light");
+          _self.initGridTable();
+        }
       });
+  }
+
+  load_firmware_versions() {
+    var _self = this;
+    this.data_provider.get_firms(0, 1000, false).then((res: any) => {
+      if (res && res.firms) {
+        _self.repo_versions = Array.from(new Set(res.firms.map((x: any) => String(x.version))));
+      }
+    }).catch(() => {});
+  }
+
+  toggle_package(pkg: string) {
+    const idx = this.selected_extra_packages.indexOf(pkg);
+    if (idx > -1) {
+      this.selected_extra_packages.splice(idx, 1);
+    } else {
+      this.selected_extra_packages.push(pkg);
+    }
+  }
+
+  is_package_selected(pkg: string): boolean {
+    return this.selected_extra_packages.indexOf(pkg) > -1;
+  }
+
+  on_clear_failed_click(event: any, item: any) {
+    if (event && event.stopPropagation) {
+      event.stopPropagation();
+    }
+    this.single_device_action(item, "clear_failed");
+  }
+
+  cancelConfirmModal() {
+    this.ConfirmModalVisible = false;
+    if (this.Selectedrows.length <= 1 && (!this.selected_rows || this.selected_rows.length === 0)) {
+      this.clearSelection();
+    }
+  }
+
+  clear_failed_status() {
+    var _self = this;
+    this.ConfirmModalVisible = false;
+    const idsToReset = [...this.Selectedrows];
+    if (this.source && idsToReset.length > 0) {
+      this.source.forEach((d: any) => {
+        if (idsToReset.includes(d.id)) {
+          d.status = 'active';
+          d.failed_attempt = 0;
+        }
+      });
+    }
+    if (this.originalSource && idsToReset.length > 0) {
+      this.originalSource.forEach((d: any) => {
+        if (idsToReset.includes(d.id)) {
+          d.status = 'active';
+          d.failed_attempt = 0;
+        }
+      });
+    }
+    this.clearSelection();
+    this.data_provider.reset_device_update_status(idsToReset.toString()).then((res: any) => {
+      _self.show_toast("Success", "Device update status cleared and reset to active", "success");
+      _self.initGridTable();
+    }).catch((err: any) => {
+      _self.show_toast("Error", (err && err.error) || "Failed to reset status", "danger");
+      _self.initGridTable();
+    });
   }
 
   update_firmware() {
     var _self = this;
     this.ConfirmModalVisible = false;
-    if (this.source && this.Selectedrows) {
+    const targetIds = [...this.Selectedrows];
+    if (this.source && targetIds.length > 0) {
       this.source.forEach((d: any) => {
-        if (this.Selectedrows.includes(d.id)) {
+        if (targetIds.includes(d.id)) {
           d.status = 'updating';
         }
       });
     }
+    if (this.originalSource && targetIds.length > 0) {
+      this.originalSource.forEach((d: any) => {
+        if (targetIds.includes(d.id)) {
+          d.status = 'updating';
+        }
+      });
+    }
+    this.clearSelection();
     this.data_provider
-      .update_firmware(this.Selectedrows.toString())
+      .update_firmware(
+        targetIds.toString(),
+        this.target_firmware_version || undefined,
+        this.packages_mode,
+        this.selected_extra_packages.length > 0 && this.packages_mode !== 'firmware_only' ? this.selected_extra_packages : undefined,
+        this.auto_upgrade_routerboot,
+        this.delivery_method
+      )
       .then((res) => {
-        if ("error" in res && res.error.indexOf("Unauthorized")) {
+        if ("error" in res && res.error && res.error.indexOf("Unauthorized") > -1) {
           _self.show_toast(
             "Error",
             "You are not authorized to perform this action",
@@ -1381,25 +1698,35 @@ export class DevicesComponent implements OnInit, OnDestroy {
           _self.show_toast("Error", res.error, "danger");
         }
         else{
-        _self.show_toast("info", "Updating Firmwares Sent", "light");
-        _self.initGridTable();}
+          _self.show_toast("info", "Updating Firmwares Sent", "light");
+          _self.initGridTable();
+        }
       });
   }
 
   upgrade_firmware() {
     var _self = this;
     this.ConfirmModalVisible = false;
-    if (this.source && this.Selectedrows) {
+    const targetIds = [...this.Selectedrows];
+    if (this.source && targetIds.length > 0) {
       this.source.forEach((d: any) => {
-        if (this.Selectedrows.includes(d.id)) {
+        if (targetIds.includes(d.id)) {
           d.status = 'updating';
         }
       });
     }
+    if (this.originalSource && targetIds.length > 0) {
+      this.originalSource.forEach((d: any) => {
+        if (targetIds.includes(d.id)) {
+          d.status = 'updating';
+        }
+      });
+    }
+    this.clearSelection();
     this.data_provider
-      .upgrade_firmware(this.Selectedrows.toString())
+      .upgrade_firmware(targetIds.toString())
       .then((res) => {
-        if ("error" in res && res.error.indexOf("Unauthorized")) {
+        if ("error" in res && res.error && res.error.indexOf("Unauthorized") > -1) {
           _self.show_toast(
             "Error",
             "You are not authorized to perform this action",
@@ -1407,8 +1734,8 @@ export class DevicesComponent implements OnInit, OnDestroy {
           );
         }
         else{
-        _self.show_toast("info", "Upgrading Firmwares", "light");
-        _self.initGridTable();
+          _self.show_toast("info", "Upgrading Firmwares", "light");
+          _self.initGridTable();
         }
       });
   }
@@ -1416,10 +1743,26 @@ export class DevicesComponent implements OnInit, OnDestroy {
   reboot_devices() {
     var _self = this;
     this.ConfirmModalVisible = false;
+    const targetIds = [...this.Selectedrows];
+    if (this.source && targetIds.length > 0) {
+      this.source.forEach((d: any) => {
+        if (targetIds.includes(d.id)) {
+          d.status = 'rebooting';
+        }
+      });
+    }
+    if (this.originalSource && targetIds.length > 0) {
+      this.originalSource.forEach((d: any) => {
+        if (targetIds.includes(d.id)) {
+          d.status = 'rebooting';
+        }
+      });
+    }
+    this.clearSelection();
     this.data_provider
-      .reboot_devices(this.Selectedrows.toString())
+      .reboot_devices(targetIds.toString())
       .then((res) => {
-        if ("error" in res && res.error.indexOf("Unauthorized")) {
+        if ("error" in res && res.error && res.error.indexOf("Unauthorized") > -1) {
           _self.show_toast(
             "Error",
             "You are not authorized to perform this action",
@@ -1427,9 +1770,8 @@ export class DevicesComponent implements OnInit, OnDestroy {
           );
         }
         else{
-        _self.show_toast("info", "Reboot sent", "light");
-        _self.ConfirmModalVisible = !_self.ConfirmModalVisible;
-        _self.initGridTable();
+          _self.show_toast("info", "Reboot sent", "light");
+          _self.initGridTable();
         }
       });
   }
@@ -1437,7 +1779,7 @@ export class DevicesComponent implements OnInit, OnDestroy {
   get_groups() {
     var _self = this;
     this.data_provider.get_devgroup_list().then((res) => {
-      if ("error" in res && res.error.indexOf("Unauthorized")) {
+      if ("error" in res && res.error && res.error.indexOf("Unauthorized") > -1) {
         _self.show_toast(
           "Error",
           "You are not authorized to perform this action",
@@ -1464,7 +1806,7 @@ export class DevicesComponent implements OnInit, OnDestroy {
     };
 
     _self.data_provider.get_dev_list(data).then((res) => {
-      if ("error" in res && res.error.indexOf("Unauthorized")) {
+      if ("error" in res && res.error && res.error.indexOf("Unauthorized") > -1) {
         _self.show_toast(
           "Error",
           "You are not authorized to perform this action",
@@ -1478,6 +1820,12 @@ export class DevicesComponent implements OnInit, OnDestroy {
         return x;
       });
       _self.source = [..._self.originalSource];
+
+      // Restore selection references if user has items selected
+      if (_self.Selectedrows && _self.Selectedrows.length > 0) {
+        _self.selected_rows = _self.source.filter((d: any) => _self.Selectedrows.includes(d.id));
+      }
+
       _self.device_interval();
       _self.loading = false;
     }
@@ -1486,26 +1834,23 @@ export class DevicesComponent implements OnInit, OnDestroy {
 
   device_interval() {
     var _self = this;
-    var data = {
-      group_id: this.selected_group,
-      search: false,
-    };
     clearTimeout(this.list_update_timer);
+
+    const hasActiveTasks = _self.source && _self.source.some(
+      (d: any) => d.status === 'updating' || d.status === 'rebooting' || d.status === 'upgrading'
+    );
+
+    // If devices are actively updating/rebooting, poll every 4 seconds for real-time state changes
+    const pollInterval = hasActiveTasks ? 4000 : 10000;
+
     _self.list_update_timer = setTimeout(function () {
-      // 	_self.data_provider.get_dev_list(data).then(res => {
-      // 		_self.source =res.map( (x:any) => {
-      // 			if(x.upgrade_availble)
-      // 				_self.upgrades.push(x);
-      // 			if(x.update_availble)
-      // 				_self.updates.push(x);
-      // 			return x;
-      // 		});
-      // 		// _self.device_interval()
-      // 		_self.loading = false;
-      // });
-      //we don't want to reload table if user is selected devices from list
-      if (_self.Selectedrows && _self.Selectedrows.length < 1) _self.initGridTable();
-    }, 10000);
+      if (hasActiveTasks || (!_self.Selectedrows || _self.Selectedrows.length < 1)) {
+        _self.initGridTable();
+      } else {
+        // Reschedule to keep polling alive when user unselects rows
+        _self.device_interval();
+      }
+    }, pollInterval);
   }
   
   sanitizeString(desc:string) {
@@ -1608,7 +1953,7 @@ export class DevicesComponent implements OnInit, OnDestroy {
     this.data_provider
     .scan_results()
     .then((res) => {
-      if ("error" in res && res.error.indexOf("Unauthorized")) {
+      if ("error" in res && res.error && res.error.indexOf("Unauthorized") > -1) {
         _self.show_toast(
           "Error",
           "You are not authorized to perform this action",
@@ -1708,6 +2053,15 @@ export class DevicesComponent implements OnInit, OnDestroy {
     this.source = this.originalSource.filter(device => device.upgrade_availble);
   }
 
+  filterFailedUpdates() {
+    this.source = this.originalSource.filter(device => device.status === 'failed');
+  }
+
+  public get failedUpdatesCount(): number {
+    if (!this.originalSource || !Array.isArray(this.originalSource)) return 0;
+    return this.originalSource.filter((d: any) => d.status === 'failed').length;
+  }
+
   clearFilter() {
     this.source = [...this.originalSource];
   }
@@ -1747,7 +2101,39 @@ export class DevicesComponent implements OnInit, OnDestroy {
 
   isMikrotik(device: any): boolean {
     if (!device) return false;
+    if (device.parent_id || device.is_child) return false;
     return !device.device_type || device.device_type === 'mikrotik' || device.brand === 'mikrotik';
+  }
+
+  isApp(device: any): boolean {
+    if (!device) return false;
+    if (device.parent_id || device.is_child) return true;
+    if (device.protocol_config) {
+      if (typeof device.protocol_config === 'string') {
+        return device.protocol_config.indexOf('app_mode') > -1;
+      }
+      return !!device.protocol_config.app_mode;
+    }
+    return false;
+  }
+
+  isRdpHost(device: any): boolean {
+    if (!device || this.isMikrotik(device) || this.isApp(device)) return false;
+    return this.hasProtocol(device, 'rdp') || this.isRdp(device);
+  }
+
+  getAppCommand(device: any): string {
+    if (!device) return '-';
+    let cfg = device.protocol_config || {};
+    if (typeof cfg === 'string') {
+      try { cfg = JSON.parse(cfg); } catch (e) { cfg = {}; }
+    }
+    return cfg.remote_app || cfg.initial_program || 'RemoteApp';
+  }
+
+  getAvailableRdpServers(): any[] {
+    if (!this.source || !Array.isArray(this.source)) return [];
+    return this.source.filter((d: any) => this.isRdpHost(d));
   }
 
   openWebboxAccess(device?: any) {
@@ -2085,5 +2471,6 @@ export class DevicesComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     clearTimeout(this.scan_timer);
     clearTimeout(this.statusCheckTimer);
+    clearTimeout(this.list_update_timer);
   }
 }
