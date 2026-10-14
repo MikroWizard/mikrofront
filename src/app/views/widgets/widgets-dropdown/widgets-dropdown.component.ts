@@ -173,7 +173,7 @@ export class WidgetsDropdownComponent implements OnInit, AfterContentInit, OnCha
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['devicedata'] && !changes['devicedata'].firstChange) {
       if (this.charts && this.devicedata && this.devicedata.sensors) {
-        const sensors = this.devicedata.sensors;
+        const sensors = (this.devicedata.sensors || []).filter((s: string) => this.has_data(s, this.devicedata));
         this.charts.forEach((c, index) => {
           const sensor = sensors[index];
           if (sensor) {
@@ -213,7 +213,16 @@ export class WidgetsDropdownComponent implements OnInit, AfterContentInit, OnCha
     else
       return false;
   }
+  has_data(sensor:string,data:any){
+    return !!(data && data[sensor] && Array.isArray(data[sensor].datasets) && data[sensor].datasets.length);
+  }
+  last_label(sensor:string,data:any){
+    if(!this.has_data(sensor,data)) return '';
+    const d=data[sensor];
+    return (d.labels || [])[d.datasets[0].data.length-1];
+  }
   show_number(sensor:string,data:any){
+    if(!this.has_data(sensor,data)) return '-';
     if(sensor=='rxp/txp-total'){
       let mynumber=data[sensor]["datasets"][0]["data"][data[sensor]["datasets"][0]["data"].length-1];
       let mynumber1=data[sensor]["datasets"][1]["data"][data[sensor]["datasets"][1]["data"].length-1];

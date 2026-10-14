@@ -1,5 +1,6 @@
 <c-row>
-  <c-col *ngFor="let sensor of devicedata['sensors']; index as i" [sm]="6" [xl]="count_calc(devicedata)">
+  <ng-container *ngFor="let sensor of devicedata?.sensors; index as i">
+  <c-col *ngIf="has_data(sensor, devicedata)" [sm]="6" [xl]="count_calc(devicedata)">
     <c-widget-stat-a class="mb-2" [color]="colors[i]" [title]="sensor">
       <ng-template cTemplateId="widgetValueTemplate" ngPreserveWhitespaces>
         {{show_number(sensor,devicedata)}}
@@ -9,7 +10,7 @@
       <ng-template cTemplateId="widgetChartTemplate">
         <c-chart [data]="devicedata[sensor]" [options]="(check_options(sensor)) ? options[4] :options[2]"
           class="mt-3 mx-3" height="70" [type]="(check_options(sensor)) ? 'bar' :'line'"></c-chart>
-        <div [innerHTML]='show_date(devicedata[sensor]["labels"][devicedata[sensor]["datasets"][0]["data"].length-1])'
+        <div [innerHTML]='show_date(last_label(sensor, devicedata))'
           class="fs-6 fw-normal" style="
         padding: 5px;
         width: 200px;
@@ -23,6 +24,7 @@
     </c-widget-stat-a>
 
   </c-col>
+  </ng-container>
   <div *ngIf="!devicedata?.sensors || devicedata.sensors.length === 0" class="text-center p-4 text-muted w-100">
     <i class="fa-solid fa-chart-bar fa-2x mb-3 text-secondary opacity-50"></i>
     <p class="mb-0 fw-medium">No real-time metrics available for this device yet.</p>
