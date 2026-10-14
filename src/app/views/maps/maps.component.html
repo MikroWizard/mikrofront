@@ -1,148 +1,595 @@
-<div style="position: relative;">
-<c-row class="network-container">
-  <c-col [xs]="12" class="network-col">
-    <c-card class="network-card">
-      <div class="map-actions">
-        <button cButton color="primary" size="sm" (click)="refreshData()" class="refresh-btn">
-          <i class="fas fa-sync-alt"></i> Refresh
-        </button>
-        <button cButton color="warning" size="sm" (click)="resetLocations()" class="refresh-btn">
-          <i class="fas fa-thumbtack"></i> Reset Locations
-        </button>
-        <button cButton color="danger" size="sm" (click)="showResetModal = true" class="refresh-btn">
-          <i class="fas fa-trash-alt"></i> Reset Map
-        </button>
-      </div>
-      <div class="network-canvas">
-        <div #network class="full-size"></div>
-        <div *ngIf="loadingMap && mikrotikData.length === 0" class="map-loading-overlay">
-          <div class="loader-content">
-            <i class="fas fa-project-diagram fa-spin"></i>
-            <h3>Generating Map...</h3>
-            <p>Please wait while we discover your network topology. This might take a few minutes. (Polling every 30s)</p>
-          </div>
-        </div>
-      </div>
-    </c-card>
-  </c-col>
-</c-row>
+<div #shell class="nm-shell" [class.noc]="noc" [class.dark]="dark">
 
-<div *ngIf="selectedDevice" class="floating-sidebar" [ngStyle]="{
-  'left.px': selectedDevice.popupPosition?.x || 20,
-  'top.px': selectedDevice.popupPosition?.y || 20
-}">
-  <div class="device-panel">
-    <div class="panel-header">
-      <span class="device-name">{{ selectedDevice.label }}</span>
-      <button cButton variant="ghost" size="sm" (click)="closeDeviceDetails()" class="close-btn">
-        <i class="fas fa-times"></i>
-      </button>
-    </div>
-    
-    <div class="panel-content">
-      <div class="device-info">
-        <div><small><strong>Type:</strong> {{getDeviceInfo()?.type}} ({{getDeviceInfo()?.brand}})</small></div>
-        <div><small><strong>Board:</strong> {{getDeviceInfo()?.board}}</small></div>
-        <div><small><strong>Version:</strong> {{getDeviceInfo()?.version}}</small></div>
-        <div *ngIf="getDeviceInfo()?.systemDescription"><small><strong>System:</strong> {{getDeviceInfo()?.systemDescription}}</small></div>
-        <div><small><strong>IP:</strong> {{getPrimaryIP()}}</small></div>
-        <div><small><strong>Neighbors:</strong> {{getNeighborCount()}}</small></div>
-      </div>
-      
-      <div class="interfaces-section">
-        <div *ngFor="let interface of getDeviceInterfaces()" class="interface-row">
-          <div class="if-header">
-            <span class="if-name">{{ interface.name }}</span>
-            <span class="if-neighbors">({{ interface.neighbors }} neighbors)</span>
-          </div>
-          <span class="if-ip">{{ interface.address }}</span>
+  <!-- toolbar -->
+  <div class="nm-toolbar">
+    <button class="nm-btn icon" (click)="leftOpen = !leftOpen; savePrefs()" title="Problems and filters (p)" *ngIf="!noc">
+      <i class="fas fa-bars"></i>
+    </button>
+
+    <div class="nm-search">
+      <i class="fas fa-search"></i>
+      <input #searchBox type="text" [(ngModel)]="searchText" (ngModelChange)="onSearch()" (keydown)="onSearchKey($event)"
+             (focus)="onSearch()" (blur)="searchOpen = false" placeholder="Search name, IP, MAC, model  ( / )" autocomplete="off" />
+      <div class="nm-results" *ngIf="searchOpen">
+        <div class="nm-result" *ngFor="let r of searchResults; let i = index; trackBy: trackKey" [class.active]="i === searchIdx"
+             (mousedown)="pickSearch(r)">
+          <span class="dot" [style.background]="stateColor[map.stateOf(r) || (r.lk ? 'locked' : 'discovered')]"></span>
+          <span class="r-name">{{ r.n }}</span>
+          <span class="r-ip">{{ r.ip }}</span>
+          <span class="r-kind">{{ r.lk ? 'restricted' : (r.m ? (r.md || 'managed') : 'discovered') }}</span>
         </div>
-      </div>
-      
-      <div class="actions-section">
-        <button cButton color="primary" size="sm" (click)="webAccess()" class="compact-btn">
-          <i class="fas fa-globe"></i> Web
-        </button>
-        <button *ngIf="getDeviceInfo()?.deviceId" cButton color="info" size="sm" (click)="showMoreInfo()" class="compact-btn">
-          <i class="fas fa-info-circle"></i> Info
-        </button>
-        <!-- <button cButton color="success" size="sm" (click)="pingDevice(getDeviceInfo()?.deviceId)" class="compact-btn">
-          <i class="fas fa-play"></i> Ping
-        </button>
-        <button cButton color="warning" size="sm" (click)="configureDevice(getDeviceInfo()?.deviceId)" class="compact-btn">
-          <i class="fas fa-cog"></i> Config
-        </button> -->
+        <div class="nm-result empty" *ngIf="!searchResults.length">No device matches "{{ searchText }}"</div>
       </div>
     </div>
+
+    <div class="nm-seg" title="Group devices">
+      <span class="seg-label">Group</span>
+      <button [class.on]="groupMode === 'area'" (click)="setGroupMode('area')" title="Areas: branches leaving the core">Area</button>
+      <button [class.on]="groupMode === 'router'" (click)="setGroupMode('router')" title="Fold CPEs into their router">Router</button>
+      <button [class.on]="groupMode === 'subnet'" (click)="setGroupMode('subnet')" title="By /24 of the management IP">Subnet</button>
+      <button [class.on]="groupMode === 'none'" (click)="setGroupMode('none')">None</button>
+    </div>
+
+    <div class="nm-seg" title="Layout">
+      <span class="seg-label">Layout</span>
+      <button [class.on]="layoutMode === 'radial'" (click)="setLayoutMode('radial')" title="Core in the centre, branches round it"><i class="fas fa-circle-nodes"></i> Radial</button>
+      <button [class.on]="layoutMode === 'tree'" (click)="setLayoutMode('tree')" title="Core on top, branches below"><i class="fas fa-sitemap"></i> Tree</button>
+    </div>
+
+    <div class="nm-spacer"></div>
+
+    <button class="nm-btn" (click)="collapseAll()" *ngIf="expanded.size" title="Close every opened group">
+      <i class="fas fa-compress"></i> Collapse
+    </button>
+    <button class="nm-btn icon" (click)="fit()" title="Fit to screen (f)"><i class="fas fa-expand"></i></button>
+    <button class="nm-btn icon" (click)="refresh()" title="Reload topology"><i class="fas fa-sync-alt"></i></button>
+    <div class="nm-menu">
+      <button class="nm-btn icon" title="More"><i class="fas fa-ellipsis-v"></i></button>
+      <div class="nm-menu-list">
+        <button (click)="exportPng()"><i class="fas fa-image"></i> Export view as PNG</button>
+        <button (click)="exportCsv()"><i class="fas fa-file-csv"></i> Export devices as CSV</button>
+        <button (click)="showLegend = !showLegend"><i class="fas fa-circle-info"></i> {{ showLegend ? 'Hide' : 'Show' }} legend</button>
+        <button (click)="resetMyLayout()"><i class="fas fa-thumbtack"></i> Reset my layout</button>
+        <button *ngIf="isAdmin" class="danger" (click)="showResetModal = true"><i class="fas fa-trash-alt"></i> Reset map data (admin)</button>
+      </div>
+    </div>
+    <button class="nm-btn icon" (click)="showHelp = true" title="How the map works (?)"><i class="fas fa-question"></i></button>
+    <button class="nm-btn" [class.on]="noc" (click)="toggleNoc()" title="Full-screen NOC view (n)">
+      <i class="fas fa-tv"></i> NOC
+    </button>
+  </div>
+
+  <div class="nm-body">
+
+    <!-- left: problems and filters -->
+    <aside class="nm-left" *ngIf="leftOpen && !noc">
+      <div class="nm-tabs">
+        <button [class.on]="leftTab === 'problems'" (click)="leftTab = 'problems'; savePrefs()">
+          Problems <span class="pill" [class.bad]="problems.length">{{ problems.length }}</span>
+        </button>
+        <button [class.on]="leftTab === 'filters'" (click)="leftTab = 'filters'; savePrefs()">
+          Filters <span class="pill" *ngIf="filterCount">{{ filterCount }}</span>
+        </button>
+      </div>
+
+      <ng-container *ngIf="leftTab === 'problems'">
+        <div class="pv-head">
+          <div class="chips">
+            <button *ngFor="let st of problemStates" class="chip sm" [class.on]="pv.states[st]" (click)="togglePvState(st)"
+                    [title]="'Only ' + stateLabel[st].toLowerCase() + ' devices in this list'">
+              <span class="dot" [style.background]="stateColor[st]"></span>{{ stateLabel[st] }} <b>{{ counts[st] || 0 }}</b>
+            </button>
+          </div>
+          <div class="pv-tools">
+            <div class="pv-search"><i class="fas fa-filter"></i>
+              <input type="text" [(ngModel)]="pv.text" (ngModelChange)="rebuildProblems()" placeholder="Filter by name, IP, event" autocomplete="off">
+            </div>
+            <select [ngModel]="pv.groupBy" (ngModelChange)="setPv('groupBy', $event)" title="How the list is arranged">
+              <option value="cause">Root cause</option>
+              <option value="area">By area</option>
+              <option value="none">Flat</option>
+            </select>
+            <select [ngModel]="pv.sort" (ngModelChange)="setPv('sort', $event)" title="Order">
+              <option value="severity">Severity</option>
+              <option value="longest">Longest</option>
+              <option value="newest">Newest</option>
+              <option value="name">Name</option>
+            </select>
+          </div>
+          <div class="pv-meta" *ngIf="problems.length">
+            <span>{{ problems.length }} device{{ problems.length === 1 ? '' : 's' }}<span *ngIf="pv.groupBy === 'cause' && pvRows < problems.length"> &middot; {{ pvRows }} root cause{{ pvRows === 1 ? '' : 's' }}</span></span>
+            <a (click)="problemsOnMap()" title="Apply a status filter to the map"><i class="fas fa-map"></i> show on map</a>
+          </div>
+        </div>
+
+        <div class="nm-left-body">
+          <div class="nm-empty-note" *ngIf="!problems.length">
+            <i class="fas fa-check-circle"></i> No device is down or reporting problems.
+          </div>
+          <div class="nm-empty-note" *ngIf="problems.length && !pvRows">Nothing matches this filter.</div>
+
+          <ng-container *ngFor="let sec of pvSections; trackBy: trackSec">
+            <div class="pv-sec" *ngIf="sec.title" (click)="toggleSec(sec)">
+              <i class="fas chev" [ngClass]="secOpen(sec) ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
+              <b class="pv-sec-name">{{ sec.title }}</b>
+              <span class="pv-badge down" *ngIf="sec.down">{{ sec.down }}</span>
+              <span class="pv-badge warn" *ngIf="sec.warn">{{ sec.warn }}</span>
+              <span class="pv-badge" *ngIf="sec.total - sec.down - sec.warn > 0">{{ sec.total - sec.down - sec.warn }}</span>
+              <button class="pv-loc" *ngIf="sec.head" (click)="$event.stopPropagation(); locateArea(sec)" title="Show this area on the map"><i class="fas fa-crosshairs"></i></button>
+            </div>
+            <ng-container *ngIf="!sec.title || secOpen(sec)">
+              <ng-container *ngFor="let p of secRows(sec); trackBy: trackKey">
+                <div class="nm-problem" [class.nested]="!!sec.title" (click)="locate(p.node)">
+                  <span class="st-bar" [style.background]="stateColor[p.s.state]"></span>
+                  <div class="pr-main">
+                    <div class="pr-name">{{ p.node.n }}</div>
+                    <div class="pr-sub">{{ p.node.ip }}<span *ngIf="p.s.worst"> &middot; {{ p.s.worst }}</span></div>
+                    <button class="pr-behind" *ngIf="p.behind.length" (click)="$event.stopPropagation(); toggleBehind(p)"
+                            title="Devices behind this one are unreachable too">
+                      <i class="fas" [ngClass]="behindOpen(p) ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
+                      +{{ p.behind.length }} down behind it
+                    </button>
+                  </div>
+                  <div class="pr-side">
+                    <div class="pr-state" [style.color]="stateColor[p.s.state]">{{ stateLabel[p.s.state] }}<span class="pr-for" *ngIf="p.s.state === 'down' && p.s.since"> {{ since(p.s) }}</span></div>
+                    <div class="pr-sub" *ngIf="p.s.ev">{{ p.s.ev }} event{{ p.s.ev > 1 ? 's' : '' }}</div>
+                  </div>
+                </div>
+                <div class="pr-behind-list" *ngIf="p.behind.length && behindOpen(p)">
+                  <div class="pr-bh" *ngFor="let b of p.behind.slice(0, 100); trackBy: trackKey" (click)="locate(b.node)">
+                    <span class="dot" [style.background]="stateColor['down']"></span>
+                    <span class="bh-name">{{ b.node.n }}</span><span class="muted">{{ b.node.ip }}</span>
+                  </div>
+                  <div class="muted pr-bh" *ngIf="p.behind.length > 100">and {{ p.behind.length - 100 }} more</div>
+                </div>
+              </ng-container>
+              <button class="pv-more" *ngIf="sec.rows.length > secLimit(sec)" (click)="moreRows(sec)">
+                Show more ({{ sec.rows.length - secLimit(sec) }} left)
+              </button>
+            </ng-container>
+          </ng-container>
+        </div>
+      </ng-container>
+
+      <div class="nm-left-body nm-filters" *ngIf="leftTab === 'filters'">
+        <div class="f-row">
+          <span class="f-title">When filtered</span>
+          <div class="nm-seg sm">
+            <button [class.on]="filterMode === 'dim'" (click)="filterMode = 'dim'; applyFilters()" title="Keep everything on the map, grey out what does not match">Dim</button>
+            <button [class.on]="filterMode === 'hide'" (click)="filterMode = 'hide'; applyFilters()" title="Remove what does not match">Hide</button>
+          </div>
+        </div>
+
+        <div class="f-title">Status</div>
+        <div class="chips">
+          <button *ngFor="let s of stateOrder" class="chip" [class.on]="filters.states[s]" (click)="toggleState(s)">
+            <span class="dot" [style.background]="stateColor[s]"></span>{{ stateLabel[s] }} <b>{{ counts[s] || 0 }}</b>
+          </button>
+        </div>
+
+        <div class="f-title">Kind</div>
+        <div class="chips">
+          <button class="chip" [class.on]="filters.kinds['managed']" (click)="toggleKind('managed')">Managed <b>{{ counts['managed'] || 0 }}</b></button>
+          <button class="chip" [class.on]="filters.kinds['discovered']" (click)="toggleKind('discovered')">Discovered <b>{{ counts['discovered'] || 0 }}</b></button>
+          <button class="chip" [class.on]="filters.kinds['locked']" (click)="toggleKind('locked')" *ngIf="counts['locked']">No access <b>{{ counts['locked'] }}</b></button>
+        </div>
+
+        <div class="f-title">Type</div>
+        <div class="chips">
+          <button *ngFor="let t of typeKeys" class="chip" [class.on]="filters.types[t]" (click)="toggleType(t)">{{ typeLabel[t] }}</button>
+        </div>
+
+        <div class="f-title">Health</div>
+        <label class="f-check"><input type="checkbox" [(ngModel)]="filters.eventsOnly" (change)="applyFilters()"> Has open events</label>
+        <label class="f-check"><input type="checkbox" [(ngModel)]="filters.updatesOnly" (change)="applyFilters()"> Update or RouterBOOT upgrade available</label>
+        <div class="f-inline">
+          <label>CPU &ge; <input type="number" min="0" max="100" [(ngModel)]="filters.cpuAbove" (change)="applyFilters()" placeholder="%"></label>
+          <label>Memory &ge; <input type="number" min="0" max="100" [(ngModel)]="filters.memAbove" (change)="applyFilters()" placeholder="%"></label>
+        </div>
+        <label class="f-text">RouterOS version starts with
+          <input type="text" [(ngModel)]="filters.version" (change)="applyFilters()" placeholder="e.g. 6.49 or 7.1">
+        </label>
+
+        <div class="f-title" *ngIf="map.groups.length">Show device groups</div>
+        <div class="chips" *ngIf="map.groups.length">
+          <button *ngFor="let g of map.groups" class="chip" [class.on]="filters.groups.indexOf(g.id) >= 0" (click)="toggleGroup(g.id)">{{ g.n }}</button>
+        </div>
+
+        <button class="nm-btn wide" (click)="clearFilters()" [disabled]="!filterCount"><i class="fas fa-times"></i> Clear filters</button>
+      </div>
+    </aside>
+
+    <!-- map -->
+    <div class="nm-canvas">
+      <div #network class="nm-net"></div>
+      <div #tooltip class="nm-tooltip"></div>
+
+      <div class="nm-banner" *ngIf="pathPicking">
+        <i class="fas fa-route"></i><span>Path from <b>{{ pathFrom?.n }}</b>: click the destination on the map or search for it.</span>
+        <button class="nm-btn sm" (click)="clearPath()">Cancel</button>
+      </div>
+      <div class="nm-banner error" *ngIf="errorMsg">{{ errorMsg }}</div>
+
+      <div class="nm-overlay" *ngIf="loading">
+        <i class="fas fa-project-diagram fa-spin"></i>
+        <h4>Loading the network map&hellip;</h4>
+      </div>
+      <div class="nm-overlay soft" *ngIf="!loading && empty && map.nodes.size">
+        <i class="fas fa-satellite-dish"></i>
+        <h4>Discovering topology&hellip;</h4>
+        <p>Devices are shown, but no neighbour links have been reported yet. The poller collects them on its next cycles; this view checks again every 30 s.</p>
+      </div>
+
+      <div class="nm-legend" *ngIf="showLegend || noc">
+        <div class="lg-row" *ngFor="let s of stateOrder"><span class="ring" [style.border-color]="stateColor[s]"></span>{{ stateLabel[s] }}</div>
+        <div class="lg-row"><span class="ring dashed"></span>Discovered, not managed</div>
+        <div class="lg-row"><span class="line red"></span>Link to a device that is down</div>
+        <div class="lg-row"><span class="line blue"></span>Link traffic (zoom in)</div>
+        <div class="lg-row"><span class="lg-badge">3</span>Open events</div>
+      </div>
+    </div>
+
+    <!-- right: details drawer -->
+    <aside class="nm-right" *ngIf="panelKind">
+      <button class="nm-close" (click)="pathHops.length || pathPicking ? clearPath() : closePanel()" title="Close (Esc)"><i class="fas fa-times"></i></button>
+
+      <!-- managed device -->
+      <ng-container *ngIf="panelKind === 'device' && panelNode as n">
+        <ng-container *ngIf="statusOf(n) as s; else noStatus">
+          <div class="d-head">
+            <div class="d-icon" [style.border-color]="stateColor[s.state]"><i class="fas fa-network-wired"></i></div>
+            <div>
+              <div class="d-name">{{ n.n }}</div>
+              <div class="d-state" [style.color]="stateColor[s.state]">
+                {{ stateLabel[s.state] }}<span *ngIf="s.state === 'down' && s.since"> for {{ since(s) }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="d-kv">
+            <span>IP</span><b class="copy" (click)="copy(n.ip)" title="Copy">{{ n.ip || '-' }}</b>
+            <span>Model</span><b>{{ n.md || panelData?.model || '-' }}</b>
+            <span>RouterOS</span><b>{{ s.fw || '-' }} <em class="upd" *ngIf="s.upd === 1">update available</em><em class="upd" *ngIf="s.upd === 2">RouterBOOT upgrade</em></b>
+            <span>Uptime</span><b>{{ s.uptime ? fmtDuration(s.uptime) : '-' }}</b>
+            <span>Last poll</span><b>{{ ago(s.seen) }}</b>
+            <span>MAC</span><b class="copy" (click)="copy(n.mac)">{{ n.mac || '-' }}</b>
+            <span *ngIf="panelData?.groups?.length">Groups</span><b *ngIf="panelData?.groups?.length"><i *ngFor="let g of panelData.groups" class="tag">{{ g.n }}</i></b>
+          </div>
+          <div class="d-bars">
+            <div class="bar-row"><span>CPU</span><div class="bar"><div [style.width.%]="pct(s.cpu)" [class.hot]="(s.cpu || 0) >= 80"></div></div><b>{{ s.cpu ?? '-' }}%</b></div>
+            <div class="bar-row"><span>Memory</span><div class="bar"><div [style.width.%]="pct(s.mem)" [class.hot]="(s.mem || 0) >= 85"></div></div><b>{{ s.mem ?? '-' }}%</b></div>
+            <div class="bar-row"><span>Traffic</span><div class="traffic">&darr; {{ fmtBps(s.rx) }} &nbsp; &uarr; {{ fmtBps(s.tx) }}</div></div>
+          </div>
+        </ng-container>
+        <ng-template #noStatus>
+          <div class="d-head"><div><div class="d-name">{{ n.n }}</div><div class="d-state">No poll data yet</div></div></div>
+        </ng-template>
+
+        <div class="d-actions">
+          <button class="nm-btn primary" (click)="webAccess(n)"><i class="fas fa-desktop"></i> Access</button>
+          <button class="nm-btn" (click)="ping(n)" [disabled]="pinging"><i class="fas fa-satellite-dish" [class.fa-beat]="pinging"></i> Ping</button>
+          <button class="nm-btn" (click)="startPath(n)"><i class="fas fa-route"></i> Path</button>
+          <button class="nm-btn" (click)="focusNeighbours(n.k)"><i class="fas fa-bullseye"></i> Neighbours</button>
+          <button class="nm-btn" (click)="openDevicePage(n)"><i class="fas fa-chart-line"></i> Details</button>
+        </div>
+        <div class="d-ping" *ngIf="pingResult">
+          <ng-container *ngIf="!pingResult.failed; else pingFail">
+            {{ pingResult.successful_pings }}/{{ pingResult.count }} replies
+            <span *ngIf="pingResult.average_ping_time !== null"> &middot; avg {{ pingResult.average_ping_time }} ms</span>
+            <span class="t-down" *ngIf="pingResult.failed_pings"> &middot; {{ pingResult.failed_pings }} lost</span>
+          </ng-container>
+          <ng-template #pingFail><span class="t-down">Ping failed</span></ng-template>
+        </div>
+
+        <div class="d-loading" *ngIf="panelLoading"><i class="fas fa-spinner fa-spin"></i> Loading details&hellip;</div>
+        <ng-container *ngIf="panelData">
+          <div class="d-section">Open events <span class="pill" [class.bad]="panelData.events.length">{{ panelData.events.length }}</span></div>
+          <div class="d-empty" *ngIf="!panelData.events.length">None</div>
+          <div class="d-event" *ngFor="let e of panelData.events">
+            <span class="lv" [ngClass]="levelClass(e.level)">{{ e.level }}</span>
+            <div><b>{{ e.detail }}</b><span class="muted"> &middot; {{ e.type }}</span>
+              <div class="muted" *ngIf="e.comment">{{ e.comment }}</div></div>
+            <span class="muted when">{{ ago(e.at) }}</span>
+          </div>
+          <details class="d-resolved" *ngIf="panelData.resolved?.length">
+            <summary>Recently resolved ({{ panelData.resolved.length }})</summary>
+            <div class="d-event" *ngFor="let e of panelData.resolved">
+              <span class="lv lv-ok">ok</span><div>{{ e.detail }}<span class="muted"> &middot; {{ e.type }}</span></div><span class="muted when">{{ ago(e.fixed) }}</span>
+            </div>
+          </details>
+
+          <div class="d-section">Last 6 hours</div>
+          <div class="d-spark" *ngIf="sparks['cpu-load']"><span>CPU <b>max {{ sparkMax('cpu-load') }}</b></span>
+            <svg viewBox="0 0 200 32" preserveAspectRatio="none"><path [attr.d]="sparks['cpu-load']" class="sp-cpu"/></svg></div>
+          <div class="d-spark" *ngIf="sparks['rx-total']"><span>Download <b>max {{ sparkMax('rx-total') }}</b></span>
+            <svg viewBox="0 0 200 32" preserveAspectRatio="none"><path [attr.d]="sparks['rx-total']" class="sp-rx"/></svg></div>
+          <div class="d-spark" *ngIf="sparks['tx-total']"><span>Upload <b>max {{ sparkMax('tx-total') }}</b></span>
+            <svg viewBox="0 0 200 32" preserveAspectRatio="none"><path [attr.d]="sparks['tx-total']" class="sp-tx"/></svg></div>
+          <div class="d-empty" *ngIf="!sparks['cpu-load'] && !sparks['rx-total']">No history yet</div>
+
+          <ng-container *ngIf="isAdmin && (panelData.aliases?.macs?.length || panelData.aliases?.swids?.length)">
+            <div class="d-section">Linked neighbour IDs</div>
+            <div class="al-row" *ngFor="let m of panelData.aliases.macs">
+              <span class="mono">{{ m }}</span><button class="pv-loc" (click)="unlinkAlias(n.id!, m, 'macs')" title="Unlink"><i class="fas fa-unlink"></i></button>
+            </div>
+            <div class="al-row" *ngFor="let m of panelData.aliases.swids">
+              <span class="mono">software-id {{ m }}</span><button class="pv-loc" (click)="unlinkAlias(n.id!, m, 'swids')" title="Unlink"><i class="fas fa-unlink"></i></button>
+            </div>
+          </ng-container>
+
+          <div class="d-section">Interfaces</div>
+          <table class="d-table">
+            <colgroup><col class="c-if"><col class="c-nb"><col class="c-rate"></colgroup>
+            <tr><th>Interface</th><th>Neighbours</th><th class="num">&darr; / &uarr;</th></tr>
+            <tr *ngFor="let i of panelData.interfaces">
+              <td><b class="if-name">{{ i.name }}</b><div class="muted if-addr" *ngIf="i.address">{{ i.address }}</div></td>
+              <td>
+                <div *ngFor="let nb of i.neighbors" class="nb" [title]="nb.n + (nb.port ? ' · ' + nb.port : '') + (nb.bridge ? ' via ' + nb.bridge : '')">
+                  {{ nb.n }}<span class="muted" *ngIf="nb.port"> &middot; {{ nb.port }}</span><span class="muted" *ngIf="nb.bridge"> via {{ nb.bridge }}</span>
+                </div>
+              </td>
+              <td class="num">{{ i.rx !== undefined ? fmtBps(i.rx) : '' }}<br>{{ i.tx !== undefined ? fmtBps(i.tx) : '' }}</td>
+            </tr>
+          </table>
+        </ng-container>
+      </ng-container>
+
+      <!-- discovered (not managed) device -->
+      <ng-container *ngIf="panelKind === 'discovered' && panelNode as n">
+        <div class="d-head">
+          <div class="d-icon dashed"><i class="fas fa-question"></i></div>
+          <div><div class="d-name">{{ n.n }}</div><div class="d-state muted">Discovered, not managed by MikroWizard</div></div>
+        </div>
+        <div class="d-kv">
+          <span>IP</span><b class="copy" (click)="copy(n.ip)">{{ n.ip || '-' }}</b>
+          <span>MAC</span><b class="copy" (click)="copy(n.mac)">{{ n.mac || '-' }}</b>
+          <span>Type</span><b>{{ typeLabel[n.t || 'unknown'] || n.t }}</b>
+          <span>Brand</span><b>{{ n.b || '-' }}</b>
+          <span>Board</span><b>{{ n.md || '-' }}</b>
+          <span>Version</span><b>{{ n.ver || '-' }}</b>
+          <span *ngIf="n.plat">Platform</span><b *ngIf="n.plat">{{ n.plat }}</b>
+        </div>
+        <div class="d-why" *ngIf="n.why">
+          <i class="fas fa-circle-info"></i><span>{{ whyText(n) }}</span>
+        </div>
+        <div class="d-actions">
+          <button class="nm-btn" (click)="webAccess(n)" *ngIf="n.ip"><i class="fas fa-globe"></i> Web</button>
+          <button class="nm-btn" (click)="startPath(n)"><i class="fas fa-route"></i> Path</button>
+          <button class="nm-btn" (click)="copy(n.ip)" *ngIf="n.ip"><i class="fas fa-copy"></i> Copy IP</button>
+        </div>
+        <div class="d-section">Seen by</div>
+        <div class="d-nb" *ngFor="let x of neighbourList(n); trackBy: trackKey" (click)="locate(x.node)">
+          <span class="dot" [style.background]="stateColor[x.state || 'discovered']"></span><b>{{ x.node.n }}</b><span class="muted">{{ x.ports }}</span>
+        </div>
+
+        <div class="d-alias" *ngIf="isAdmin && managedList.length">
+          <div class="d-section">Is this one of your managed devices?</div>
+          <div class="al-sugg" *ngIf="n.why?.d?.length">
+            <button class="nm-btn" *ngFor="let id of n.why!.d!" (click)="linkAlias(n, id)" [disabled]="aliasBusy">
+              <i class="fas fa-link"></i> This is {{ managedName(id) }}
+            </button>
+          </div>
+          <div class="al-pick">
+            <input type="text" list="nm-managed-list" [(ngModel)]="aliasPick" placeholder="Pick a managed device" autocomplete="off">
+            <button class="nm-btn primary" (click)="linkAlias(n)" [disabled]="aliasBusy || !aliasPick"><i class="fas fa-link"></i> Link</button>
+          </div>
+          <datalist id="nm-managed-list"><option *ngFor="let m of managedList" [value]="m.label"></option></datalist>
+          <p class="muted al-note">The map will treat this neighbour ({{ n.mac }}<span *ngIf="n.sw">, software-id {{ n.sw }}</span>) as that device from now on, also after a map reset. You can undo it from the device's panel.</p>
+        </div>
+      </ng-container>
+
+      <!-- locked device -->
+      <ng-container *ngIf="panelKind === 'locked' && panelNode as n">
+        <div class="d-head">
+          <div class="d-icon dashed"><i class="fas fa-lock"></i></div>
+          <div><div class="d-name">{{ n.n }}</div><div class="d-state muted">No access</div></div>
+        </div>
+        <p class="muted">This device is managed by MikroWizard but is not in your device groups. You see it because one of your routers reports it as a neighbour.</p>
+        <div class="d-section">Connected to</div>
+        <div class="d-nb" *ngFor="let x of neighbourList(n); trackBy: trackKey" (click)="locate(x.node)">
+          <span class="dot" [style.background]="stateColor[x.state || 'discovered']"></span><b>{{ x.node.n }}</b><span class="muted">{{ x.ports }}</span>
+        </div>
+      </ng-container>
+
+      <!-- cluster -->
+      <ng-container *ngIf="panelKind === 'cluster' && panelDisp as d">
+        <div class="d-head">
+          <div class="d-icon" [style.border-color]="stateColor[d.state || 'unknown']"><i class="fas fa-layer-group"></i></div>
+          <div><div class="d-name">{{ d.label }}</div><div class="d-state muted">{{ d.total }} devices</div></div>
+        </div>
+        <div class="d-counts">
+          <span class="t-down" *ngIf="d.down">{{ d.down }} down</span>
+          <span class="t-warn" *ngIf="d.warn">{{ d.warn }} with problems</span>
+          <span *ngIf="d.events">{{ d.events }} open events</span>
+        </div>
+        <div class="d-actions">
+          <button class="nm-btn primary" (click)="expandCluster(d.id)"><i class="fas fa-expand-alt"></i> Open group</button>
+        </div>
+        <div class="d-section">Devices</div>
+        <div class="d-nb" *ngFor="let x of clusterMembers(d); trackBy: trackKey" (click)="locate(x.node)">
+          <span class="dot" [style.background]="stateColor[x.s?.state || (x.node.m ? 'unknown' : 'discovered')]"></span>
+          <b>{{ x.node.n }}</b><span class="muted">{{ x.node.ip }}</span>
+          <span class="muted right" *ngIf="x.s?.ev">{{ x.s?.ev }} ev</span>
+        </div>
+      </ng-container>
+
+      <!-- link -->
+      <ng-container *ngIf="panelKind === 'link' && panelEdge as e">
+        <div class="d-head">
+          <div class="d-icon"><i class="fas fa-ethernet"></i></div>
+          <div><div class="d-name">{{ e.count }} link{{ e.count > 1 ? 's' : '' }}</div><div class="d-state muted">between two drawn items</div></div>
+        </div>
+        <div class="d-link" *ngFor="let l of edgeLinks(e)">
+          <div><b class="lnk" (click)="locate(l.a)">{{ l.a.n }}</b> &harr; <b class="lnk" (click)="locate(l.b)">{{ l.b.n }}</b></div>
+          <div class="muted">{{ l.ports }}</div>
+          <div class="muted">{{ l.rate }}</div>
+        </div>
+      </ng-container>
+
+      <!-- path -->
+      <ng-container *ngIf="panelKind === 'path'">
+        <div class="d-head">
+          <div class="d-icon"><i class="fas fa-route"></i></div>
+          <div><div class="d-name">Path</div>
+            <div class="d-state muted" *ngIf="pathPicking">from {{ pathFrom?.n }} &mdash; pick the destination</div>
+            <div class="d-state muted" *ngIf="!pathPicking && pathHops.length">{{ pathHops.length - 1 }} hop{{ pathHops.length === 2 ? '' : 's' }}</div>
+          </div>
+        </div>
+        <ol class="d-path">
+          <li *ngFor="let h of pathHops; let i = index">
+            <div class="hop-link" *ngIf="i > 0"><span>{{ h.ports }}</span><span class="muted">{{ h.rate }}</span></div>
+            <div class="hop" (click)="locate(h.node)">
+              <span class="dot" [style.background]="stateColor[h.state || (h.node.m ? 'unknown' : 'discovered')]"></span>
+              <b>{{ h.node.n }}</b><span class="muted">{{ h.node.ip }}</span>
+              <span class="right" [style.color]="stateColor[h.state || 'discovered']" *ngIf="h.state && h.state !== 'up'">{{ stateLabel[h.state] }}</span>
+            </div>
+          </li>
+        </ol>
+      </ng-container>
+    </aside>
+  </div>
+
+  <!-- status bar -->
+  <div class="nm-status">
+    <span class="sb-item" (click)="onlyState('down')" [class.sb-alert]="counts['down']"><span class="dot" [style.background]="stateColor['down']"></span>{{ counts['down'] || 0 }} down</span>
+    <span class="sb-item" (click)="onlyState('degraded')"><span class="dot" [style.background]="stateColor['degraded']"></span>{{ counts['degraded'] || 0 }} degraded</span>
+    <span class="sb-item" (click)="onlyState('warn')"><span class="dot" [style.background]="stateColor['warn']"></span>{{ counts['warn'] || 0 }} warning</span>
+    <span class="sb-item" (click)="onlyState('maint')"><span class="dot" [style.background]="stateColor['maint']"></span>{{ counts['maint'] || 0 }} maintenance</span>
+    <span class="sb-item" (click)="onlyState('up')"><span class="dot" [style.background]="stateColor['up']"></span>{{ counts['up'] || 0 }} up</span>
+    <span class="sb-sep"></span>
+    <span class="sb-item plain">{{ counts['managed'] || 0 }} managed &middot; {{ counts['discovered'] || 0 }} discovered</span>
+    <span class="sb-item plain" *ngIf="filterCount">showing {{ shown }} &middot; <a (click)="clearFilters()">clear filters</a></span>
+    <span class="nm-spacer"></span>
+    <span class="sb-item plain muted">updated {{ ago(lastStatusAt) }}</span>
+    <span class="sb-item plain muted hide-sm">/ search &middot; f fit &middot; n NOC &middot; Esc clear</span>
   </div>
 </div>
 
 <!-- Web Access Modal -->
 <c-modal #WebAccessModal backdrop="static" [(visible)]="showWebAccessModal" id="WebAccessModal">
   <c-modal-header>
-    <h6 cModalTitle>Web Access Options</h6>
-    <button cButtonClose (click)="closeWebAccessModal()"></button>
+    <h6 cModalTitle>Access {{ accessTarget?.ip }}</h6>
+    <button cButtonClose (click)="showWebAccessModal = false"></button>
   </c-modal-header>
   <c-modal-body>
-    <p>Choose how to access the device:</p>
-    <div class="d-grid gap-2">
-      <button *ngIf="ispro && isMikrotik(currentDeviceInfo)" cButton color="primary" class="d-flex align-items-center justify-content-center gap-2" (click)="openWebboxAccess()">
-        <i class="fa-solid fa-desktop"></i>
-        <span><strong>WebBox</strong> — Remote WinBox GUI (PAM)</span>
+    <div class="nm-access">
+      <button *ngIf="ispro && accessTarget?.mikrotik && accessTarget?.id !== null" type="button" class="acc-opt" (click)="openWebboxAccess()">
+        <span class="acc-ic primary"><i class="fa-solid fa-desktop"></i></span>
+        <span class="acc-txt"><b>WebBox</b><small>Remote WinBox GUI in the browser, recorded (PAM)</small></span>
+        <i class="fas fa-chevron-right acc-go"></i>
       </button>
-      <button *ngIf="ispro" cButton color="info" class="text-white d-flex align-items-center justify-content-center gap-2" (click)="openProxyAccess()">
-        <i class="fas fa-shield-alt"></i>
-        <span>Proxy Access, through Mikrowizard server</span>
+      <button *ngIf="ispro" type="button" class="acc-opt" (click)="openProxyAccess()">
+        <span class="acc-ic info"><i class="fas fa-shield-alt"></i></span>
+        <span class="acc-txt"><b>Proxy access</b><small>Open the device web page through the MikroWizard server</small></span>
+        <i class="fas fa-chevron-right acc-go"></i>
       </button>
-      <button cButton color="secondary" class="d-flex align-items-center justify-content-center gap-2" (click)="openDirectAccess()">
-        <i class="fas fa-external-link-alt"></i>
-        <span>Direct Access</span>
+      <button type="button" class="acc-opt" (click)="openDirectAccess()">
+        <span class="acc-ic"><i class="fas fa-external-link-alt"></i></span>
+        <span class="acc-txt"><b>Direct access</b><small>http://{{ accessTarget?.ip }} &mdash; only works if your PC can reach it</small></span>
+        <i class="fas fa-chevron-right acc-go"></i>
       </button>
     </div>
   </c-modal-body>
   <c-modal-footer>
-    <button cButton color="secondary" (click)="closeWebAccessModal()">Cancel</button>
+    <button cButton color="secondary" (click)="showWebAccessModal = false">Cancel</button>
   </c-modal-footer>
 </c-modal>
 
-<!-- Gateway Notice Modal (Install / Update Required) -->
+<!-- Gateway Notice Modal -->
 <c-modal #GatewayNoticeModal backdrop="static" [(visible)]="showGatewayNoticeModal" id="mapsGatewayNoticeModal">
   <c-modal-header [ngClass]="gatewayNoticeType === 'update_required' ? 'bg-warning text-dark' : 'bg-info text-white'">
-    <h6 cModalTitle class="m-0">
-      <i class="fa-solid me-2" [ngClass]="gatewayNoticeType === 'update_required' ? 'fa-triangle-exclamation' : 'fa-server'"></i>
-      {{ gatewayNoticeTitle }}
-    </h6>
-    <button cButtonClose (click)="showGatewayNoticeModal=false"></button>
+    <h6 cModalTitle class="m-0">{{ gatewayNoticeTitle }}</h6>
+    <button cButtonClose (click)="showGatewayNoticeModal = false"></button>
   </c-modal-header>
   <c-modal-body class="p-4 text-center">
-    <div class="mb-3">
-      <i class="fa-solid fa-3x" [ngClass]="gatewayNoticeType === 'update_required' ? 'fa-arrow-up-right-from-square text-warning' : 'fa-server text-info'"></i>
-    </div>
-    <h5 class="fw-bold mb-2">{{ gatewayNoticeTitle }}</h5>
     <p class="text-muted mb-4">{{ gatewayNoticeMessage }}</p>
     <div class="d-flex justify-content-center gap-2">
-      <a [href]="gatewayNoticeDocUrl" target="_blank" class="btn btn-primary px-3">
-        <i class="fa-solid fa-book-open me-1"></i> Update Instructions
-      </a>
-      <button cButton color="secondary" (click)="showGatewayNoticeModal=false">Close</button>
+      <a [href]="gatewayNoticeDocUrl" target="_blank" class="btn btn-primary px-3"><i class="fa-solid fa-book-open me-1"></i> Instructions</a>
+      <button cButton color="secondary" (click)="showGatewayNoticeModal = false">Close</button>
     </div>
   </c-modal-body>
 </c-modal>
 
-<!-- Reset Map Confirmation Modal -->
+<!-- Help Modal -->
+<c-modal [(visible)]="showHelp" size="lg" id="MapHelpModal" [scrollable]="true">
+  <c-modal-header>
+    <h6 cModalTitle><i class="fas fa-circle-question me-1"></i> How the network map works</h6>
+    <button cButtonClose (click)="showHelp = false"></button>
+  </c-modal-header>
+  <c-modal-body>
+    <div class="nm-help">
+      <section>
+        <h6>Group</h6>
+        <p class="muted">Groups fold many devices into one circle so large networks stay readable. Double-click a group (or use <b>Open group</b>) to see its devices; <b>Collapse</b> closes them again.</p>
+        <dl>
+          <dt>Area</dt><dd>One group per branch that leaves the core router. Best for big ISP networks: you see the core and its branches, and how many devices are down in each.</dd>
+          <dt>Router</dt><dd>Every router keeps its own CPEs/radios folded into it ("+12 CPE"). Good for mid-size networks where the backbone matters more than every customer radio.</dd>
+          <dt>Subnet</dt><dd>Devices grouped by the /24 network of their management IP. Useful when your sites are addressed per subnet.</dd>
+          <dt>None</dt><dd>Every device drawn on its own. Fine up to a few hundred devices.</dd>
+        </dl>
+      </section>
+      <section>
+        <h6>Layout</h6>
+        <dl>
+          <dt>Radial</dt><dd>The core sits in the middle and branches spread around it, like a star. Uses the screen well and shows how far each device is from the core.</dd>
+          <dt>Tree</dt><dd>The core on top and every level below it, like an org chart. Makes upstream / downstream easy to follow.</dd>
+        </dl>
+        <p class="muted">Drag a device to move it. Moves are saved for your account only; <b>&#8942; &rarr; Reset my layout</b> puts everything back.</p>
+      </section>
+      <section>
+        <h6>Colours and symbols</h6>
+        <div class="help-legend">
+          <span *ngFor="let st of stateOrder"><i class="ring" [style.border-color]="stateColor[st]"></i>{{ stateLabel[st] }}</span>
+          <span><i class="ring dashed"></i>Discovered, not managed</span>
+          <span><i class="fas fa-lock"></i> In MikroWizard, but not in your groups</span>
+          <span><i class="lg-badge">3</i> Open events</span>
+          <span><i class="line red"></i> Link to a device that is down</span>
+          <span><i class="line blue"></i> Link traffic (thicker = busier, zoom in to load)</span>
+        </div>
+        <p class="muted"><b>Down</b>: not polled successfully. <b>Degraded</b>: critical events. <b>Warning</b>: other open events or high CPU/memory. <b>Maintenance</b>: in a maintenance window.</p>
+      </section>
+      <section>
+        <h6>Problems panel</h6>
+        <dl>
+          <dt>Root cause</dt><dd>A device that is down because the router in front of it is down is folded under that router ("+37 down behind it"). One broken uplink shows as one line, not 37.</dd>
+          <dt>By area</dt><dd>One folded section per area, worst area first. Click the <i class="fas fa-crosshairs"></i> icon to jump to the area on the map.</dd>
+          <dt>Flat</dt><dd>Every problem device on its own line.</dd>
+        </dl>
+        <p class="muted">Use the status chips and the filter box to narrow the list; <b>show on map</b> applies the same status filter to the map.</p>
+      </section>
+      <section>
+        <h6>Filters</h6>
+        <p class="muted"><b>Dim</b> keeps everything on the map and greys out what does not match, so you keep your bearings. <b>Hide</b> removes it. <b>Show device groups</b> limits the map to devices in the groups you pick.</p>
+      </section>
+      <section>
+        <h6>Mouse and keyboard</h6>
+        <dl class="keys">
+          <dt>Click</dt><dd>Details of a device, group or link</dd>
+          <dt>Double-click</dt><dd>Open a group or a router's folded CPEs</dd>
+          <dt><kbd>/</kbd></dt><dd>Search by name, IP, MAC or model</dd>
+          <dt><kbd>f</kbd></dt><dd>Fit the whole map on screen</dd>
+          <dt><kbd>p</kbd></dt><dd>Open the problems list</dd>
+          <dt><kbd>n</kbd></dt><dd>NOC wall view (full screen, dark)</dd>
+          <dt><kbd>?</kbd></dt><dd>This help</dd>
+          <dt><kbd>Esc</kbd></dt><dd>Close the panel, clear highlight or path</dd>
+        </dl>
+      </section>
+    </div>
+  </c-modal-body>
+</c-modal>
+
+<!-- Reset Map Modal -->
 <c-modal #ResetMapModal backdrop="static" [(visible)]="showResetModal" id="ResetMapModal">
   <c-modal-header>
-    <h6 cModalTitle>Confirm Map Reset</h6>
+    <h6 cModalTitle>Reset map data</h6>
     <button cButtonClose (click)="showResetModal = false"></button>
   </c-modal-header>
   <c-modal-body>
-    <p>Are you sure you want to reset all network discovery data?</p>
-    <p class="text-danger"><i class="fas fa-exclamation-triangle"></i> This will delete all current neighbors' data and trigger a fresh scan. Node positions will also be reset.</p>
+    <p>Delete all neighbour discovery data and rebuild the topology from the next poll cycles?</p>
+    <p class="text-muted">Everyone's own layouts are kept. Only administrators can do this.</p>
   </c-modal-body>
   <c-modal-footer>
     <button cButton color="secondary" (click)="showResetModal = false">Cancel</button>
-    <button cButton color="danger" (click)="confirmResetMap()">Reset Everything</button>
+    <button cButton color="danger" (click)="confirmResetMap()">Reset map data</button>
   </c-modal-footer>
 </c-modal>
 <app-license-expired-overlay></app-license-expired-overlay>
-</div>
