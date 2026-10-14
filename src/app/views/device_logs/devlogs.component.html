@@ -13,8 +13,12 @@
                   style="color: #74C0FC;"></i>
               </a>
             </h5>
-            <c-badge color="warning" *ngIf="devid!=0 && !component_devid">Filtered Result For Device ID
-              {{devid}}</c-badge>
+            <c-badge color="warning" *ngIf="devid!=0 && !component_devid" class="d-inline-flex align-items-center gap-1">
+              Filtered Result For Device ID {{devid}}
+              <a href="javascript:void(0)" (click)="clearDeviceFilter()" class="text-dark ms-1" title="Clear device filter">
+                <i class="fas fa-times-circle"></i>
+              </a>
+            </c-badge>
             <c-alert color="warning" style="padding-top: 5px!important;font-size: 0.8rem;display: inline-block;"
               *ngIf="!filters['start_time'] && !filters['end_time']">
               <i class="fa-solid fa-triangle-exclamation mx-1"></i>Showing <strong>last 24 hours logs</strong> by

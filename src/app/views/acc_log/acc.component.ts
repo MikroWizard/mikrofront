@@ -91,6 +91,12 @@ export class AccComponent implements OnInit, OnDestroy {
         _self.router.navigate(["login"]);
       }, 100);
     }
+    try {
+      const user = JSON.parse(localStorage.getItem('current_user') || '{}');
+      if (user && user.role) {
+        this.role = user.role;
+      }
+    } catch (e) {}
     this.data_provider.getSessionInfo().then((res) => {
       _self.uid = res.uid;
       _self.uname = res.name;
@@ -135,30 +141,58 @@ export class AccComponent implements OnInit, OnDestroy {
     this.initGridTable();
   }
 
+  get isCustomer(): boolean {
+    if (this.role === 'customer') return true;
+    try {
+      const user = JSON.parse(localStorage.getItem('current_user') || '{}');
+      return user && user.role === 'customer';
+    } catch (e) {
+      return false;
+    }
+  }
+
+  clearDeviceFilter(): void {
+    this.devid = 0;
+    delete this.filters["devid"];
+    this.checkPermissionAndInit();
+  }
+
   ngOnInit(): void {
     if (this.component_devid) {
-      this.devid = this.component_devid;
+      this.devid = Number(this.component_devid);
     } else {
-      this.devid = Number(this.route.snapshot.paramMap.get("devid"));
+      const routeDevId = this.route.snapshot.paramMap.get("devid") || this.route.snapshot.queryParamMap.get("devid");
+      this.devid = routeDevId ? Number(routeDevId) : 0;
     }
 
-    if (this.role === 'customer' || (!this.devid && localStorage.getItem('customer_selected_device_id'))) {
-      const cached = localStorage.getItem('customer_selected_device_id');
-      if (cached) {
-        this.devid = +cached;
+    if (this.isCustomer) {
+      if (!this.devid) {
+        const cached = localStorage.getItem('customer_selected_device_id');
+        if (cached) {
+          this.devid = +cached;
+        }
       }
+    } else {
+      localStorage.removeItem('customer_selected_device_id');
     }
 
     if (this.devid > 0) {
       this.filters["devid"] = this.devid;
+    } else {
+      this.devid = 0;
+      delete this.filters["devid"];
     }
 
     // Register global device selection change listener for customers
     this.deviceChangeSub = (event: Event) => {
-      if (this.role === 'customer') {
+      if (this.isCustomer) {
         const customEvent = event as CustomEvent;
-        this.devid = customEvent.detail;
-        this.filters["devid"] = this.devid;
+        this.devid = customEvent.detail ? Number(customEvent.detail) : 0;
+        if (this.devid > 0) {
+          this.filters["devid"] = this.devid;
+        } else {
+          delete this.filters["devid"];
+        }
         this.checkPermissionAndInit();
       }
     };
