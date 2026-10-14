@@ -122,7 +122,14 @@ export class ConnectionManagerComponent implements OnInit {
             this.showSpeedTestModal = true;
         } else if (eventData.tool === 'logs') {
             this.showLogsModal = true;
+            this.activeLogsTab = 'events';
             this.fetchDeviceLogs();
+        } else if (eventData.tool === 'auth') {
+            this.showLogsModal = true;
+            this.activeLogsTab = 'auth';
+        } else if (eventData.tool === 'acc') {
+            this.showLogsModal = true;
+            this.activeLogsTab = 'acc';
         } else if (eventData.tool === 'commands') {
             this.showCommandsModal = true;
             this.fetchCommands();

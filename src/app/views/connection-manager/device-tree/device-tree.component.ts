@@ -863,6 +863,13 @@ export class DeviceTreeComponent implements OnInit {
   
   hasProtocol(device: any, proto: string): boolean {
     if (!device) return false;
+    const isWindows = device.device_type === 'windows' || device.brand === 'windows';
+    const isMikrotik = !isWindows && (!device.device_type || device.device_type === 'mikrotik' || device.brand === 'mikrotik');
+
+    if (isMikrotik && (proto === 'webfig' || proto === 'winbox' || proto === 'webbox' || proto === 'api')) {
+      return true;
+    }
+
     if (device.connection_types && Array.isArray(device.connection_types) && device.connection_types.length > 0) {
       return device.connection_types.includes(proto);
     }
@@ -871,12 +878,6 @@ export class DeviceTreeComponent implements OnInit {
     }
     if (device.protocol && device.protocol.toLowerCase() === proto.toLowerCase()) {
       return true;
-    }
-
-    const isWindows = device.device_type === 'windows' || device.brand === 'windows';
-
-    if (proto === 'webfig' || proto === 'winbox' || proto === 'webbox') {
-      return !isWindows && (!device.device_type || device.device_type === 'mikrotik' || device.brand === 'mikrotik');
     }
     
     if (proto === 'rdp') {
@@ -943,8 +944,55 @@ export class DeviceTreeComponent implements OnInit {
   onContextMenu(event: MouseEvent, device: any) {
     event.preventDefault();
     this.selectedDeviceForContext = device;
-    this.contextMenuPosition = { x: event.clientX, y: event.clientY };
+
+    const padding = 10;
+    const estWidth = 240;
+    const isMik = this.isMikrotik(device);
+    const catCount = this.customCategories ? this.customCategories.length : 0;
+    const estHeight = (isMik ? 460 : 320) + (catCount * 28);
+
+    let x = event.clientX;
+    let y = event.clientY;
+
+    if (y + estHeight > window.innerHeight - padding) {
+      y = Math.max(padding, event.clientY - estHeight);
+      if (y + estHeight > window.innerHeight - padding) {
+        y = Math.max(padding, window.innerHeight - estHeight - padding);
+      }
+    }
+
+    if (x + estWidth > window.innerWidth - padding) {
+      x = Math.max(padding, window.innerWidth - estWidth - padding);
+    }
+
+    this.contextMenuPosition = { x, y };
     this.contextMenuVisible = true;
+
+    setTimeout(() => {
+      const menuEl = document.querySelector('.custom-context-menu') as HTMLElement;
+      if (menuEl) {
+        const rect = menuEl.getBoundingClientRect();
+        let adjX = this.contextMenuPosition.x;
+        let adjY = this.contextMenuPosition.y;
+
+        if (rect.bottom > window.innerHeight - padding) {
+          adjY = Math.max(padding, window.innerHeight - rect.height - padding);
+        }
+        if (rect.top < padding) {
+          adjY = padding;
+        }
+        if (rect.right > window.innerWidth - padding) {
+          adjX = Math.max(padding, window.innerWidth - rect.width - padding);
+        }
+        if (rect.left < padding) {
+          adjX = padding;
+        }
+
+        if (adjX !== this.contextMenuPosition.x || adjY !== this.contextMenuPosition.y) {
+          this.contextMenuPosition = { x: adjX, y: adjY };
+        }
+      }
+    }, 0);
   }
 
   closeContextMenu() {

@@ -501,14 +501,20 @@
     <div class="context-menu-item" (click)="openToolModal('logs')">
       <i class="fa-solid fa-file-lines me-2 text-info"></i>Device Logs
     </div>
-    <div class="context-menu-item" (click)="openToolModal('backup')">
-      <i class="fa-solid fa-database me-2 text-secondary"></i>Backup Now
+    <div class="context-menu-item" (click)="openToolModal('auth')">
+      <i class="fa-regular fa-clock me-2 text-primary"></i>Authentication Logs
+    </div>
+    <div class="context-menu-item" (click)="openToolModal('acc')">
+      <i class="fa-solid fa-table-list me-2 text-success"></i>Accounting Logs
     </div>
   </ng-container>
 
   <!-- Network / SSH CLI Only Actions (Hidden for RDP, VNC, and Apps) -->
   <ng-container *ngIf="!isRdpOrVnc(selectedDeviceForContext) && !isApp(selectedDeviceForContext)">
     <div class="divider"></div>
+    <div class="context-menu-item" (click)="openToolModal('backup')">
+      <i class="fa-solid fa-database me-2 text-secondary"></i>Backup Now
+    </div>
     <div class="context-menu-item" (click)="openToolModal('commands')">
       <i class="fa-solid fa-keyboard me-2 text-secondary"></i>Command History
     </div>
