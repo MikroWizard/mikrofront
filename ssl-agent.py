@@ -380,9 +380,9 @@ def generate_ssl_server_config(domain, cert_path, key_path):
     gzip_disable "MSIE [1-6]\\.";
     gzip_min_length 256;
     gzip_vary on;
-    gzip_proxied expired no-cache no-store private auth;
+    gzip_proxied any;
     gzip_types text/plain text/css application/json application/javascript application/x-javascript text/xml application/xml application/xml+rss text/javascript;
-    gzip_comp_level 9;
+    gzip_comp_level 5;
 
     root /usr/share/nginx/html;
 
