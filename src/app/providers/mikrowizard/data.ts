@@ -663,7 +663,7 @@ export class dataProvider {
         return this.MikroWizardRPC.sendJsonRequest("/api/firmware/update_firmware_settings", data);
     }
 
-    update_firmware(devids: string, version?: string, mode?: string, packages?: string[], auto_upgrade_rb?: boolean, delivery_method?: string) {
+    update_firmware(devids: string, version?: string, mode?: string, packages?: string[], auto_upgrade_rb?: boolean, delivery_method?: string, ptp_safe_ordering?: boolean, channel?: string) {
         var data: any = {
             'devids': devids
         };
@@ -672,6 +672,8 @@ export class dataProvider {
         if (packages) data['packages'] = packages;
         if (auto_upgrade_rb !== undefined) data['auto_upgrade_rb'] = auto_upgrade_rb;
         if (delivery_method) data['delivery_method'] = delivery_method;
+        if (ptp_safe_ordering !== undefined) data['ptp_safe_ordering'] = ptp_safe_ordering;
+        if (channel) data['channel'] = channel;
         return this.MikroWizardRPC.sendJsonRequest("/api/firmware/update_firmware", data);
     }
 
@@ -777,6 +779,32 @@ export class dataProvider {
         return this.MikroWizardRPC.sendJsonRequest("/api/networkmap/reset", {});
     }
 
+    // Network map v2
+    getNetworkGraph(params: { mode?: string, v?: string, force?: boolean } = {}) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/networkmap/graph", params);
+    }
+
+    getNetworkStatus() {
+        return this.MikroWizardRPC.sendJsonRequest("/api/networkmap/status", {});
+    }
+
+    getNetworkDevice(devid: number) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/networkmap/device", { devid });
+    }
+
+    getNetworkLinks(pairs: [number, string][]) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/networkmap/links", { pairs });
+    }
+
+    saveNetworkLayout(payload: { mode: string, set?: { [k: string]: number[] }, clear?: boolean, unset?: string[] }) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/networkmap/layout", payload);
+    }
+
+    /** Admin: tell the map that a discovered neighbour (MACs / software-id) is managed device devid. */
+    setNetworkAlias(payload: { devid: number, macs?: string[], swids?: string[], remove?: boolean }) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/networkmap/alias", payload);
+    }
+
     bulk_add_devices(devices: any[]) {
         var data = {
             'devices': devices
@@ -791,11 +819,12 @@ export class dataProvider {
         return this.MikroWizardRPC.sendJsonRequest("/api/dev/bulk_add_status", data);
     }
 
-    group_firmware_action(groupId: number, action: string) {
-        var data = {
+    group_firmware_action(groupId: number, action: string, options?: any) {
+        var data: any = {
             'groupId': groupId,
             'action': action
-        }
+        };
+        if (options) Object.assign(data, options);
         return this.MikroWizardRPC.sendJsonRequest("/api/devgroup/firmware_action", data);
     }
 
