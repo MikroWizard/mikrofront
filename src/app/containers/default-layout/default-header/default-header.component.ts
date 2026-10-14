@@ -67,6 +67,7 @@ export class DefaultHeaderComponent extends HeaderComponent {
     this.ConfirmModalEvent.next({action:action,data:data});
   }
   logout() {
+    localStorage.removeItem('customer_selected_device_id');
     this.data_provider.logout().then(res => {
       this.router.navigate(['login']);
     })
@@ -121,6 +122,8 @@ export class DefaultHeaderComponent extends HeaderComponent {
     if (this.current_user && this.current_user.role === 'customer') {
       this.loadCustomerDevices();
       return;
+    } else {
+      localStorage.removeItem('customer_selected_device_id');
     }
     this.data_provider.get_running_tasks().then(res => {
       if (res && res['tasks']) {
