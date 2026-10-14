@@ -217,6 +217,20 @@
             Auto-pilot scheduled updates checking and downloading latest releases from mikrotik.com (⭐ Pro Feature).
           </div>
 
+          <div *ngIf="SelectedTask['data']?.['strategy']=='latest'" class="mb-3">
+            <label class="form-label small fw-bold">Release Channel</label>
+            <select cSelect [(ngModel)]="SelectedTask['data']['channel']" class="form-select">
+              <option value="stable">Stable</option>
+              <option value="long-term">Long-term (LTS)</option>
+              <option value="testing">Testing (rc)</option>
+              <option value="development">Development (beta)</option>
+            </select>
+            <div *ngIf="(SelectedTask['data']?.['channel']=='testing' || SelectedTask['data']?.['channel']=='development')" class="alert alert-warning py-2 px-3 small mt-2 mb-0">
+              <i class="fa-solid fa-triangle-exclamation me-1"></i>
+              Testing and Development releases are pre-releases (rc / beta) - not recommended for production routers.
+            </div>
+          </div>
+
           <div *ngIf="firms_loaded && SelectedTask['data']?.['strategy']=='defined'" class="mb-3">
             <c-row class="g-3">
               <c-col xs="12" md="6">
@@ -237,21 +251,17 @@
           </div>
 
           <!-- Update Scope (Local Repository) -->
-          <div *ngIf="SelectedTask['data']?.['strategy']=='system' || SelectedTask['data']?.['strategy']=='defined'" class="mb-3">
+          <div *ngIf="SelectedTask['data']?.['strategy']=='system' || SelectedTask['data']?.['strategy']=='defined' || SelectedTask['data']?.['strategy']=='latest'" class="mb-3">
             <label class="form-label small fw-bold text-muted mb-1">Update Scope</label>
             <select cSelect [(ngModel)]="SelectedTask['data']['mode']" class="form-select">
               <option value="full">Full Update (RouterOS + Packages)</option>
               <option value="firmware_only">Firmware Only (RouterOS OS Only)</option>
-              <option value="packages_only">Packages Only (Keep Current OS)</option>
             </select>
 
-            <div *ngIf="SelectedTask['data']?.['mode']=='firmware_only'" class="alert alert-warning py-2 px-3 small mt-2 mb-0">
+            <div *ngIf="SelectedTask['data']?.['mode']=='firmware_only'" class="alert alert-danger py-2 px-3 small mt-2 mb-0">
               <i class="fa-solid fa-triangle-exclamation me-1"></i>
-              <strong>Warning:</strong> Updating RouterOS firmware without updating installed packages can cause package version mismatches, disabled features, or system instability!
-            </div>
-            <div *ngIf="SelectedTask['data']?.['mode']=='packages_only'" class="alert alert-info py-2 px-3 small mt-2 mb-0">
-              <i class="fa-solid fa-info-circle me-1"></i>
-              Only installed extra packages will be updated; the core RouterOS version will remain untouched.
+              <strong>Danger:</strong> Only RouterOS is updated. Installed extra packages stay on their old version and <strong>RouterOS will disable them after the reboot</strong> (version mismatch) - their features stop working until they are updated.
+              <span *ngIf="ispro"> Wireless driver packages are always updated with RouterOS.</span>
             </div>
             <div *ngIf="SelectedTask['data']?.['mode']=='full' || !SelectedTask['data']?.['mode']" class="alert alert-light border py-2 px-3 small mt-2 mb-0">
               <i class="fa-solid fa-circle-check text-success me-1"></i>

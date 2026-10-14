@@ -286,7 +286,8 @@ export class UserTasksComponent implements OnInit {
     if (!this.SelectedTask['data']['strategy']) {
       this.SelectedTask['data']['strategy'] = 'system';
     }
-    if (!this.SelectedTask['data']['mode']) {
+    // update scope: full or firmware_only ('packages_only' is no longer offered)
+    if (!this.SelectedTask['data']['mode'] || this.SelectedTask['data']['mode'] == 'packages_only') {
       this.SelectedTask['data']['mode'] = 'full';
     }
   }
@@ -393,10 +394,21 @@ export class UserTasksComponent implements OnInit {
       this.SelectedTask['data']['version_to_install_6'] = false;
       this.SelectedTask['data']['delivery_method'] = 'local_repo';
     }
+    else if (type == 'latest') {
+      this.SelectedTask['data']['version_to_install'] = false;
+      this.SelectedTask['data']['version_to_install_6'] = false;
+      this.SelectedTask['data']['delivery_method'] = 'local_repo';
+      if (!this.SelectedTask['data']['channel']) {
+        this.SelectedTask['data']['channel'] = 'stable';
+      }
+    }
     else if (type == 'native') {
       this.SelectedTask['data']['version_to_install'] = false;
       this.SelectedTask['data']['version_to_install_6'] = false;
       this.SelectedTask['data']['delivery_method'] = 'native';
+      // Router Native updates RouterOS and every installed package itself
+      this.SelectedTask['data']['mode'] = 'full';
+      delete this.SelectedTask['data']['packages'];
     }
     else if (type == 'defined') {
       this.SelectedTask['data']['delivery_method'] = 'local_repo';

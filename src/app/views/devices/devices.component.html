@@ -38,14 +38,17 @@
         <c-row class="align-items-center mb-2">
           <c-col xs *mwMode="'mikrotik'">
             <button *ngIf="updates.length > 0" cButton color="primary" class="mx-1 text-white shadow-sm" size="sm"
+              [class.active]="activeFirmwareFilter === 'updates'"
               (click)="filterUpdatable()" cTooltip="Filter devices with RouterOS updates available">
               <i class="fas fa-arrow-circle-up me-1"></i>{{updates.length}} Updates Available
             </button>
             <button *ngIf="upgrades.length > 0" cButton color="warning" class="mx-1 text-white shadow-sm" size="sm"
+              [class.active]="activeFirmwareFilter === 'upgrades'"
               (click)="filterUpgradable()" cTooltip="Filter devices with RouterBOOT upgrades pending">
               <i class="fas fa-microchip me-1"></i>{{upgrades.length}} RouterBOOT Upgrades
             </button>
             <button *ngIf="failedUpdatesCount > 0" cButton color="danger" class="mx-1 text-white shadow-sm" size="sm"
+              [class.active]="activeFirmwareFilter === 'failed'"
               (click)="filterFailedUpdates()" cTooltip="Filter devices with failed firmware updates">
               <i class="fas fa-triangle-exclamation me-1"></i>{{failedUpdatesCount}} Failed
             </button>
@@ -124,6 +127,7 @@
           <span class="p-input-icon-left table-search-input">
             <i class="pi pi-search"></i>
             <input type="text" pInputText placeholder="Search all devices (name, IP, MAC, model)..."
+              [(ngModel)]="globalSearchQuery"
               (input)="applyFilterGlobal($event, 'contains')" class="form-control-sm" />
           </span>
         </div>
@@ -193,7 +197,7 @@
         </div>
 
         <p-table #dt [value]="displayDevices" [paginator]="true" [rows]="10" [showCurrentPageReport]="true"
-          dataKey="id"
+          dataKey="id" [rowTrackBy]="trackByDeviceId"
           [(selection)]="selected_rows" (selectionChange)="onSelectionChange($event)"
           [rowsPerPageOptions]="[10, 25, 50]" [resizableColumns]="true" columnResizeMode="expand" [showGridlines]="true"
           [stripedRows]="true" styleClass="p-datatable-sm p-datatable-gridlines p-datatable-striped"
@@ -628,7 +632,7 @@
                   [matMenuTriggerFor]="universalMenu" (click)="selected_device = item" cButton>
                   <i class="fa-solid fa-bars"></i>
                 </button>
-                <mat-menu #universalMenu="matMenu">
+                <mat-menu #universalMenu="matMenu" (opened)="onActionMenuOpened(item)" (closed)="onActionMenuClosed()">
                   <div cListGroup>
                     <li cListGroupItem [active]="false" color="dark">
                       <i [class]="isMikrotik(item) ? 'fas fa-router me-1' : (isApp(item) ? 'fa-solid fa-window-restore me-1 text-info' : 'fas fa-server me-1')"></i>
@@ -1074,7 +1078,14 @@
             <label class="form-label small fw-bold text-muted mb-1">Target Version</label>
             <select class="form-select form-select-sm" [(ngModel)]="target_firmware_version">
               <option value="">Latest in Repository</option>
+              <option value="latest_cloud" [disabled]="!ispro">Latest Cloud (⭐ Pro)</option>
               <option *ngFor="let ver of repo_versions" [value]="ver">v{{ver}}</option>
+            </select>
+            <select *ngIf="target_firmware_version == 'latest_cloud'" class="form-select form-select-sm mt-2" [(ngModel)]="latest_cloud_channel">
+              <option value="stable">Stable</option>
+              <option value="long-term">Long-term (LTS)</option>
+              <option value="testing">Testing (rc)</option>
+              <option value="development">Development (beta)</option>
             </select>
           </div>
           <div class="col-md-6">
@@ -1082,20 +1093,21 @@
             <select class="form-select form-select-sm" [(ngModel)]="packages_mode" (ngModelChange)="onPackagesModeChange()">
               <option value="full">Full Update (RouterOS + Packages)</option>
               <option value="firmware_only">Firmware Only (RouterOS OS Only)</option>
-              <option value="packages_only">Packages Only (Keep Current OS)</option>
             </select>
           </div>
         </div>
 
         <!-- Scope Explanations -->
-        <div *ngIf="packages_mode == 'firmware_only'" class="alert alert-warning py-2 px-3 small mt-2 mb-2">
+        <div *ngIf="packages_mode == 'firmware_only'" class="alert alert-danger py-2 px-3 small mt-2 mb-2">
           <i class="fa-solid fa-triangle-exclamation me-1"></i>
-          <strong>Warning:</strong> Updating RouterOS firmware without updating installed packages can cause package version mismatches, disabled features, or system instability!
+          <strong>Danger:</strong> Only RouterOS is updated. Installed extra packages stay on their old version and <strong>RouterOS will disable them after the reboot</strong> (version mismatch) - their features stop working until they are updated.
+          <span *ngIf="ispro"> Wireless driver packages are always updated with RouterOS.</span>
         </div>
 
-        <div *ngIf="packages_mode == 'packages_only'" class="alert alert-info py-2 px-3 small mt-2 mb-2">
-          <i class="fa-solid fa-info-circle me-1"></i>
-          Installed extra packages will be updated; the core RouterOS version will remain untouched.
+        <div *ngIf="target_firmware_version == 'latest_cloud'" class="alert alert-success py-2 px-3 small mt-2 mb-2">
+          <i class="fa-solid fa-cloud-download-alt me-1"></i>
+          The newest <strong>{{latest_cloud_channel}}</strong> release is read from mikrotik.com and downloaded to the local repository before the update.
+          <span *ngIf="(latest_cloud_channel == 'testing' || latest_cloud_channel == 'development')" class="d-block text-danger mt-1">Testing and Development releases are pre-releases (rc / beta) - not recommended for production routers.</span>
         </div>
 
         <div *ngIf="packages_mode == 'full'" class="alert alert-light border py-2 px-3 small mt-2 mb-2">
@@ -1105,25 +1117,25 @@
           </div>
           <div *ngIf="selected_extra_packages.length > 0" class="text-warning-emphasis">
             <i class="fa-solid fa-filter me-1"></i>
-            <strong>Selective Package Filter:</strong> Only updating RouterOS and the <strong>{{selected_extra_packages.length}} selected package(s)</strong> (if installed). Other installed packages will remain on their current version.
+            <strong>Full Update + Additional Packages:</strong> Updates RouterOS and all installed packages. The <strong>{{selected_extra_packages.length}} selected package(s)</strong> are installed additionally when they are not installed yet.
           </div>
         </div>
 
-        <!-- Extra Packages Filter (Optional) -->
+        <!-- Additional Packages (Optional) -->
         <div class="mt-2" *ngIf="packages_mode != 'firmware_only'">
           <div class="d-flex justify-content-between align-items-center mb-1">
-            <label class="form-label small fw-bold text-muted mb-0">Extra Packages Filter (Optional)</label>
+            <label class="form-label small fw-bold text-muted mb-0">Additional Packages (Optional)</label>
             <div>
               <button *ngIf="selected_extra_packages.length > 0" type="button" class="btn btn-link btn-sm p-0 me-2 text-decoration-none text-danger" (click)="clearExtraPackages()">
-                <small><i class="fa-solid fa-times me-1"></i>Reset (Update All Installed)</small>
+                <small><i class="fa-solid fa-times me-1"></i>Clear Selection</small>
               </button>
               <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none" (click)="showPackageOptions = !showPackageOptions">
-                <small>{{ showPackageOptions ? 'Hide' : 'Filter Specific Packages' }} ({{ selected_extra_packages.length == 0 ? 'All installed' : selected_extra_packages.length + ' selected' }})</small>
+                <small>{{ showPackageOptions ? 'Hide' : 'Select Packages' }} ({{ selected_extra_packages.length == 0 ? 'none' : selected_extra_packages.length + ' selected' }})</small>
               </button>
             </div>
           </div>
           <small class="text-muted d-block mb-2" style="font-size: 0.75rem;">
-            Leave unselected to automatically update all packages currently installed on the router. If you select specific packages, only those will be updated. New packages will never be installed.
+            Installed packages are always updated with RouterOS (RouterOS disables a package left on an older version). Select packages to install them additionally; a package that does not exist for the router's architecture is skipped.
           </small>
           <div *ngIf="showPackageOptions" class="d-flex flex-wrap gap-1 p-2 bg-white rounded border">
             <button *ngFor="let pkg of available_extra_packages"

@@ -602,16 +602,88 @@ export class DevicesGroupComponent implements OnInit {
     );
   }
 
+  // Group firmware update options (same as the device update dialog)
+  public fw_delivery_method: string = 'local_repo';
+  public fw_target_version: string = '';
+  public fw_latest_cloud_channel: string = 'stable';
+  public fw_packages_mode: string = 'full';
+  public fw_selected_packages: string[] = [];
+  public fw_available_packages: string[] = ['wireless', 'wifi-qcom', 'wifi-qcom-ac', 'container', 'zerotier', 'dude', 'iot', 'lora', 'gps', 'rose-storage'];
+  public fw_show_packages: boolean = false;
+  public fw_auto_upgrade_rb: boolean = true;
+  public fw_ptp_safe_ordering: boolean = true;
+  public fw_repo_versions: string[] = [];
+
   groupFirmwareAction(group: any, action: string): void {
     this.selectedGroupForFirmware = group;
     this.firmwareAction = action;
+    if (action === 'update') {
+      this.fw_delivery_method = 'local_repo';
+      this.fw_target_version = '';
+      this.fw_latest_cloud_channel = 'stable';
+      this.fw_packages_mode = 'full';
+      this.fw_selected_packages = [];
+      this.fw_show_packages = false;
+      this.fw_auto_upgrade_rb = true;
+      this.fw_ptp_safe_ordering = true;
+      this.loadGroupFirmwareVersions();
+    }
     this.FirmwareConfirmModalVisible = true;
+  }
+
+  loadGroupFirmwareVersions(): void {
+    var _self = this;
+    this.data_provider.get_firms(0, 1000, false).then((res: any) => {
+      if (res && res.firms) {
+        _self.fw_repo_versions = Array.from(new Set(res.firms.map((x: any) => String(x.version))));
+      }
+    }).catch(() => {});
+  }
+
+  onGroupPackagesModeChange(): void {
+    if (this.fw_packages_mode === 'firmware_only') {
+      this.fw_selected_packages = [];
+      this.fw_show_packages = false;
+    }
+  }
+
+  toggleGroupPackage(pkg: string): void {
+    const idx = this.fw_selected_packages.indexOf(pkg);
+    if (idx > -1) {
+      this.fw_selected_packages.splice(idx, 1);
+    } else {
+      this.fw_selected_packages.push(pkg);
+    }
+  }
+
+  groupFirmwareOptions(): any {
+    if (this.firmwareAction !== 'update') {
+      return undefined;
+    }
+    // Router Native updates RouterOS and every installed package itself
+    const isNative = this.fw_delivery_method === 'native';
+    const options: any = {
+      delivery_method: this.fw_delivery_method,
+      mode: isNative ? 'full' : this.fw_packages_mode,
+      auto_upgrade_rb: this.fw_auto_upgrade_rb,
+      ptp_safe_ordering: this.fw_ptp_safe_ordering
+    };
+    if (!isNative && this.fw_target_version) {
+      options.version = this.fw_target_version;
+      if (this.fw_target_version === 'latest_cloud') {
+        options.channel = this.fw_latest_cloud_channel;
+      }
+    }
+    if (!isNative && this.fw_packages_mode !== 'firmware_only' && this.fw_selected_packages.length > 0) {
+      options.packages = this.fw_selected_packages;
+    }
+    return options;
   }
 
   confirmGroupFirmwareAction(): void {
     if (!this.selectedGroupForFirmware) return;
     
-    this.data_provider.group_firmware_action(this.selectedGroupForFirmware.id, this.firmwareAction)
+    this.data_provider.group_firmware_action(this.selectedGroupForFirmware.id, this.firmwareAction, this.groupFirmwareOptions())
       .then((res) => {
         if ("error" in res) {
           console.error('Firmware action failed:', res.error);

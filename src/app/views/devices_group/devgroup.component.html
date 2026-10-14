@@ -621,7 +621,7 @@
     </button>
   </c-modal-footer>
 </c-modal>
-<c-modal #FirmwareConfirmModal backdrop="static" [(visible)]="FirmwareConfirmModalVisible" id="FirmwareConfirmModal">
+<c-modal #FirmwareConfirmModal backdrop="static" [size]="firmwareAction === 'update' ? 'lg' : undefined" [(visible)]="FirmwareConfirmModalVisible" id="FirmwareConfirmModal">
   <c-modal-header>
     <h5 cModalTitle>Confirm Firmware {{firmwareAction | titlecase}}</h5>
     <button [cModalToggle]="FirmwareConfirmModal.id" cButtonClose></button>
@@ -634,6 +634,114 @@
       </p>
       <p class="text-muted small">This action will affect all devices in this group and may take some time to complete.
       </p>
+    </div>
+
+    <!-- Update options (same as the device update dialog) -->
+    <div *ngIf="firmwareAction === 'update'" class="text-start">
+      <label class="form-label small fw-bold text-muted mb-1">Delivery Method</label>
+      <div class="btn-group w-100 mb-1" role="group">
+        <input type="radio" class="btn-check" name="group_delivery_method" id="group_method_local" value="local_repo" [(ngModel)]="fw_delivery_method">
+        <label class="btn btn-outline-primary btn-sm" for="group_method_local">
+          <i class="fas fa-server me-1"></i> Local Repository (Offline)
+        </label>
+        <input type="radio" class="btn-check" name="group_delivery_method" id="group_method_native" value="native" [(ngModel)]="fw_delivery_method">
+        <label class="btn btn-outline-primary btn-sm" for="group_method_native">
+          <i class="fas fa-cloud me-1"></i> Router Native (/system package update)
+        </label>
+      </div>
+      <small class="text-muted d-block mb-3" *ngIf="fw_delivery_method == 'native'">
+        Routers download and install RouterOS and all installed packages themselves (requires router internet access).
+      </small>
+
+      <div *ngIf="fw_delivery_method == 'local_repo'" class="card bg-light border-0 p-3 mb-3">
+        <div class="row g-2 mb-2">
+          <div class="col-md-6">
+            <label class="form-label small fw-bold text-muted mb-1">Target Version</label>
+            <select class="form-select form-select-sm" [(ngModel)]="fw_target_version">
+              <option value="">Latest in Repository</option>
+              <option value="latest_cloud" [disabled]="!ispro">Latest Cloud (⭐ Pro)</option>
+              <option *ngFor="let ver of fw_repo_versions" [value]="ver">v{{ver}}</option>
+            </select>
+            <select *ngIf="fw_target_version == 'latest_cloud'" class="form-select form-select-sm mt-2" [(ngModel)]="fw_latest_cloud_channel">
+              <option value="stable">Stable</option>
+              <option value="long-term">Long-term (LTS)</option>
+              <option value="testing">Testing (rc)</option>
+              <option value="development">Development (beta)</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small fw-bold text-muted mb-1">Update Scope</label>
+            <select class="form-select form-select-sm" [(ngModel)]="fw_packages_mode" (ngModelChange)="onGroupPackagesModeChange()">
+              <option value="full">Full Update (RouterOS + Packages)</option>
+              <option value="firmware_only">Firmware Only (RouterOS OS Only)</option>
+            </select>
+          </div>
+        </div>
+
+        <div *ngIf="fw_target_version == 'latest_cloud'" class="alert alert-success py-2 px-3 small mb-2">
+          <i class="fa-solid fa-cloud-download-alt me-1"></i>
+          The newest <strong>{{fw_latest_cloud_channel}}</strong> release is read from mikrotik.com and downloaded to the local repository before the update.
+          <span *ngIf="(fw_latest_cloud_channel == 'testing' || fw_latest_cloud_channel == 'development')" class="d-block text-danger mt-1">Testing and Development releases are pre-releases (rc / beta) - not recommended for production routers.</span>
+        </div>
+        <div *ngIf="fw_packages_mode == 'firmware_only'" class="alert alert-danger py-2 px-3 small mb-2">
+          <i class="fa-solid fa-triangle-exclamation me-1"></i>
+          <strong>Danger:</strong> Only RouterOS is updated. Installed extra packages stay on their old version and <strong>RouterOS will disable them after the reboot</strong> (version mismatch) - their features stop working until they are updated.
+          <span *ngIf="ispro"> Wireless driver packages are always updated with RouterOS.</span>
+        </div>
+        <div *ngIf="fw_packages_mode == 'full'" class="alert alert-light border py-2 px-3 small mb-2">
+          <i class="fa-solid fa-circle-check text-success me-1"></i>
+          <strong>Full Update:</strong> Updates RouterOS and all installed packages<span *ngIf="fw_selected_packages.length > 0">; the <strong>{{fw_selected_packages.length}} selected package(s)</strong> are installed additionally when they are not installed yet</span>.
+        </div>
+
+        <div *ngIf="fw_packages_mode != 'firmware_only'">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <label class="form-label small fw-bold text-muted mb-0">Additional Packages (Optional)</label>
+            <div>
+              <button *ngIf="fw_selected_packages.length > 0" type="button" class="btn btn-link btn-sm p-0 me-2 text-decoration-none text-danger" (click)="fw_selected_packages = []">
+                <small><i class="fa-solid fa-times me-1"></i>Clear Selection</small>
+              </button>
+              <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none" (click)="fw_show_packages = !fw_show_packages">
+                <small>{{ fw_show_packages ? 'Hide' : 'Select Packages' }} ({{ fw_selected_packages.length == 0 ? 'none' : fw_selected_packages.length + ' selected' }})</small>
+              </button>
+            </div>
+          </div>
+          <small class="text-muted d-block mb-2" style="font-size: 0.75rem;">
+            Installed packages are always updated with RouterOS (RouterOS disables a package left on an older version). Select packages to install them additionally; a package that does not exist for a router's architecture is skipped.
+          </small>
+          <div *ngIf="fw_show_packages" class="d-flex flex-wrap gap-1 p-2 bg-white rounded border">
+            <button *ngFor="let pkg of fw_available_packages" type="button" class="btn btn-sm py-0 px-2"
+              [class.btn-primary]="fw_selected_packages.indexOf(pkg) > -1"
+              [class.btn-outline-secondary]="fw_selected_packages.indexOf(pkg) == -1"
+              style="font-size: 0.78rem;" (click)="toggleGroupPackage(pkg)">
+              <i class="fas" [class.fa-check]="fw_selected_packages.indexOf(pkg) > -1" [class.fa-plus]="fw_selected_packages.indexOf(pkg) == -1"></i>
+              {{pkg}}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="border rounded p-2 mb-2 bg-white">
+        <div class="form-check form-switch mb-2">
+          <input class="form-check-input" type="checkbox" id="groupAutoUpgradeRB" [(ngModel)]="fw_auto_upgrade_rb">
+          <label class="form-check-label small d-block" for="groupAutoUpgradeRB">
+            <span class="fw-bold">Auto-upgrade RouterBOOT on reboot</span>
+            <span class="d-block text-muted" style="font-size: 0.75rem;">
+              Enables auto-upgrade on RouterBOOT during reboot to eliminate a second manual reboot.
+            </span>
+          </label>
+        </div>
+        <div class="form-check form-switch mb-0">
+          <input class="form-check-input" type="checkbox" id="groupPtpSafeOrdering" [(ngModel)]="fw_ptp_safe_ordering" [disabled]="!ispro">
+          <label class="form-check-label small d-block" for="groupPtpSafeOrdering">
+            <span class="fw-bold">PtP Station-First Safe Ordering</span>
+            <span *ngIf="ispro" class="badge bg-success-subtle text-success border border-success-subtle ms-1" style="font-size: 0.7rem;">⭐ Pro Active</span>
+            <span *ngIf="!ispro" class="badge bg-secondary-subtle text-muted border ms-1" style="font-size: 0.7rem;">⭐ Pro Tier</span>
+            <span class="d-block text-muted" style="font-size: 0.75rem;">
+              Upgrades remote Stations before Access Points and verifies link re-association to prevent wireless link disconnection.
+            </span>
+          </label>
+        </div>
+      </div>
     </div>
   </c-modal-body>
   <c-modal-footer>

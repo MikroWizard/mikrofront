@@ -238,6 +238,70 @@ export class DevicesComponent implements OnInit, OnDestroy {
   public showGroupSearchDropdown: boolean = false;
   public selected_devices: any = {};
   public selected_device: any = {};
+  public activeFirmwareFilter: 'all' | 'updates' | 'upgrades' | 'failed' = 'all';
+  public isActionMenuOpen: boolean = false;
+  public activeMenuDevice: any = null;
+  public globalSearchQuery: string = '';
+
+  trackByDeviceId = (index: number, item: any): any => {
+    return item ? item.id : index;
+  };
+
+  onActionMenuOpened(item?: any) {
+    this.isActionMenuOpen = true;
+    if (item) {
+      this.activeMenuDevice = item;
+      this.selected_device = item;
+    }
+  }
+
+  onActionMenuClosed() {
+    this.isActionMenuOpen = false;
+    this.activeMenuDevice = null;
+  }
+
+  isAnyModalOpen(): boolean {
+    return !!(
+      this.ConfirmModalVisible ||
+      this.EditDevModalVisible ||
+      this.scanwizard_modal ||
+      this.ExecutedDataModalVisible ||
+      this.detailsModalVisible ||
+      this.showWebAccessModal ||
+      this.showGatewayNoticeModal ||
+      this.addDeviceModalVisible ||
+      this.unifiedModalVisible ||
+      this.publishAppModalVisible ||
+      this.deviceRecordingsModalVisible ||
+      this.deviceCommandLogsModalVisible ||
+      this.configVersionsModalVisible ||
+      this.deviceExportModalVisible
+    );
+  }
+
+  isUserInteracting(): boolean {
+    if (this.isActionMenuOpen) {
+      return true;
+    }
+    if (this.showGroupSearchDropdown) {
+      return true;
+    }
+    if (this.isAnyModalOpen()) {
+      return true;
+    }
+    if (typeof document !== 'undefined') {
+      const activeMenu = document.querySelector('.mat-mdc-menu-panel, .mat-menu-panel');
+      const activeFilter = document.querySelector('.p-column-filter-overlay, .p-column-filter-menu, .p-dropdown-panel');
+      if (activeMenu || activeFilter) {
+        return true;
+      }
+      const activeEl = document.activeElement;
+      if (activeEl && (activeEl.classList.contains('p-inputtext') || activeEl.closest('.table-search-input') || activeEl.closest('.p-column-filter-overlay'))) {
+        return true;
+      }
+    }
+    return false;
+  }
   public show_pass: boolean = false;
   public ExecutedDataModalVisible: boolean = false;
   public ExecutedData: any = [];
@@ -363,6 +427,7 @@ export class DevicesComponent implements OnInit, OnDestroy {
   public auto_upgrade_routerboot: boolean = true;
   public delivery_method: string = 'local_repo';
   public ptp_safe_ordering: boolean = true;
+  public latest_cloud_channel: string = 'stable';
   public repo_versions: string[] = [];
   public showPackageOptions: boolean = false;
 
@@ -388,7 +453,9 @@ export class DevicesComponent implements OnInit, OnDestroy {
   };
 
   applyFilterGlobal($event: any, stringVal: string) {
-    this.table.filterGlobal(($event.target as HTMLInputElement).value, stringVal);
+    const val = ($event.target as HTMLInputElement).value;
+    this.globalSearchQuery = val;
+    this.table.filterGlobal(val, stringVal);
   }
 
   public paging: any = {
@@ -475,6 +542,7 @@ export class DevicesComponent implements OnInit, OnDestroy {
     if (action === 'update') {
       this.load_firmware_versions();
       this.target_firmware_version = '';
+      this.latest_cloud_channel = 'stable';
       this.packages_mode = 'full';
       this.selected_extra_packages = [];
       this.showPackageOptions = false;
@@ -547,6 +615,7 @@ export class DevicesComponent implements OnInit, OnDestroy {
       case "update":
         this.load_firmware_versions();
         this.target_firmware_version = '';
+        this.latest_cloud_channel = 'stable';
         this.packages_mode = 'full';
         this.selected_extra_packages = [];
         this.ConfirmAction = "update";
@@ -651,7 +720,7 @@ export class DevicesComponent implements OnInit, OnDestroy {
         return !connTypes || connTypes.includes('ssh') || !connTypes.includes('telnet');
       }
       if (proto === 'telnet') return connTypes && connTypes.includes('telnet');
-      if (proto === 'webfig') return connTypes && connTypes.includes('webfig');
+      if (proto === 'webfig') return true;
       if (proto === 'winbox' || proto === 'webbox') return true;
     } else {
       const isWindows = device.device_type === 'windows' || device.brand === 'windows';
@@ -701,7 +770,7 @@ export class DevicesComponent implements OnInit, OnDestroy {
     if (device.protocol === proto && device.port) {
       return device.port;
     }
-    const defaults: Record<string, number> = { ssh: 22, telnet: 23, winbox: 8291, rdp: 3389, vnc: 5900, api: 8728 };
+    const defaults: Record<string, number> = { ssh: 22, telnet: 23, winbox: 8291, webbox: 8291, rdp: 3389, vnc: 5900, api: 8728, webfig: 80 };
     return device.port || defaults[proto] || '';
   }
 
@@ -1677,14 +1746,18 @@ export class DevicesComponent implements OnInit, OnDestroy {
       });
     }
     this.clearSelection();
+    // Router Native updates RouterOS and every installed package itself
+    const isNative = this.delivery_method === 'native';
     this.data_provider
       .update_firmware(
         targetIds.toString(),
-        this.target_firmware_version || undefined,
-        this.packages_mode,
-        this.selected_extra_packages.length > 0 && this.packages_mode !== 'firmware_only' ? this.selected_extra_packages : undefined,
+        isNative ? undefined : (this.target_firmware_version || undefined),
+        isNative ? 'full' : this.packages_mode,
+        !isNative && this.selected_extra_packages.length > 0 && this.packages_mode !== 'firmware_only' ? this.selected_extra_packages : undefined,
         this.auto_upgrade_routerboot,
-        this.delivery_method
+        this.delivery_method,
+        this.ptp_safe_ordering,
+        !isNative && this.target_firmware_version === 'latest_cloud' ? this.latest_cloud_channel : undefined
       )
       .then((res) => {
         if ("error" in res && res.error && res.error.indexOf("Unauthorized") > -1) {
@@ -1795,10 +1868,57 @@ export class DevicesComponent implements OnInit, OnDestroy {
     });
   }
 
+  updateDevicesData(res: any[]): void {
+    if (!Array.isArray(res)) return;
+
+    const existingMap = new Map<number, any>();
+    if (Array.isArray(this.originalSource)) {
+      for (const item of this.originalSource) {
+        if (item && item.id != null) {
+          existingMap.set(item.id, item);
+        }
+      }
+    }
+
+    this.upgrades = [];
+    this.updates = [];
+    const updatedSource: any[] = [];
+
+    for (const newItem of res) {
+      if (newItem.upgrade_availble) this.upgrades.push(newItem);
+      if (newItem.update_availble) this.updates.push(newItem);
+
+      const existingItem = existingMap.get(newItem.id);
+      if (existingItem) {
+        // In-place merge of properties so existing object references stay identical
+        Object.assign(existingItem, newItem);
+        updatedSource.push(existingItem);
+      } else {
+        updatedSource.push(newItem);
+      }
+    }
+
+    this.originalSource = updatedSource;
+    this.applyCurrentFilters();
+
+    // Restore selection references if user has items selected
+    if (this.Selectedrows && this.Selectedrows.length > 0) {
+      this.selected_rows = this.source.filter((d: any) => this.Selectedrows.includes(d.id));
+    }
+
+    // Preserve table pagination index
+    if (this.table && typeof this.table.first === 'number') {
+      const currentFirst = this.table.first;
+      const total = this.displayDevices ? this.displayDevices.length : 0;
+      if (currentFirst >= total) {
+        const rows = this.table.rows || 10;
+        this.table.first = Math.max(0, Math.floor((total - 1) / rows) * rows);
+      }
+    }
+  }
+
   initGridTable(): void {
     var _self = this;
-    _self.upgrades = [];
-    _self.updates = [];
     clearTimeout(this.list_update_timer);
     var data = {
       group_id: this.selected_group,
@@ -1812,23 +1932,32 @@ export class DevicesComponent implements OnInit, OnDestroy {
           "You are not authorized to perform this action",
           "danger"
         );
+      } else {
+        _self.updateDevicesData(res);
+        _self.loading = false;
+        _self.device_interval();
       }
-      else{
-      _self.originalSource = res.map((x: any) => {
-        if (x.upgrade_availble) _self.upgrades.push(x);
-        if (x.update_availble) _self.updates.push(x);
-        return x;
-      });
-      _self.source = [..._self.originalSource];
+    });
+  }
 
-      // Restore selection references if user has items selected
-      if (_self.Selectedrows && _self.Selectedrows.length > 0) {
-        _self.selected_rows = _self.source.filter((d: any) => _self.Selectedrows.includes(d.id));
+  refreshGridTableData(): void {
+    var _self = this;
+    var data = {
+      group_id: this.selected_group,
+      search: false,
+    };
+
+    _self.data_provider.get_dev_list(data).then((res) => {
+      if (res && !("error" in res)) {
+        if (_self.isUserInteracting()) {
+          _self.device_interval();
+          return;
+        }
+        _self.updateDevicesData(res);
       }
-
       _self.device_interval();
-      _self.loading = false;
-    }
+    }).catch(() => {
+      _self.device_interval();
     });
   }
 
@@ -1844,8 +1973,14 @@ export class DevicesComponent implements OnInit, OnDestroy {
     const pollInterval = hasActiveTasks ? 4000 : 10000;
 
     _self.list_update_timer = setTimeout(function () {
+      if (_self.isUserInteracting()) {
+        // Defer polling while user has an action menu open, filter popup open, or modal open
+        _self.device_interval();
+        return;
+      }
+
       if (hasActiveTasks || (!_self.Selectedrows || _self.Selectedrows.length < 1)) {
-        _self.initGridTable();
+        _self.refreshGridTableData();
       } else {
         // Reschedule to keep polling alive when user unselects rows
         _self.device_interval();
@@ -2045,16 +2180,41 @@ export class DevicesComponent implements OnInit, OnDestroy {
     this.detailsSearchTerm = '';
   }
 
+  applyCurrentFilters(): void {
+    if (!this.originalSource || !Array.isArray(this.originalSource)) {
+      this.source = [];
+      return;
+    }
+    switch (this.activeFirmwareFilter) {
+      case 'updates':
+        this.source = this.originalSource.filter((device: any) => device.update_availble);
+        break;
+      case 'upgrades':
+        this.source = this.originalSource.filter((device: any) => device.upgrade_availble);
+        break;
+      case 'failed':
+        this.source = this.originalSource.filter((device: any) => device.status === 'failed');
+        break;
+      case 'all':
+      default:
+        this.source = [...this.originalSource];
+        break;
+    }
+  }
+
   filterUpdatable() {
-    this.source = this.originalSource.filter(device => device.update_availble);
+    this.activeFirmwareFilter = this.activeFirmwareFilter === 'updates' ? 'all' : 'updates';
+    this.applyCurrentFilters();
   }
 
   filterUpgradable() {
-    this.source = this.originalSource.filter(device => device.upgrade_availble);
+    this.activeFirmwareFilter = this.activeFirmwareFilter === 'upgrades' ? 'all' : 'upgrades';
+    this.applyCurrentFilters();
   }
 
   filterFailedUpdates() {
-    this.source = this.originalSource.filter(device => device.status === 'failed');
+    this.activeFirmwareFilter = this.activeFirmwareFilter === 'failed' ? 'all' : 'failed';
+    this.applyCurrentFilters();
   }
 
   public get failedUpdatesCount(): number {
@@ -2063,7 +2223,8 @@ export class DevicesComponent implements OnInit, OnDestroy {
   }
 
   clearFilter() {
-    this.source = [...this.originalSource];
+    this.activeFirmwareFilter = 'all';
+    this.applyCurrentFilters();
   }
 
   webAccess(device: any) {
