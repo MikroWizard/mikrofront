@@ -99,6 +99,46 @@ export class DefaultHeaderComponent extends HeaderComponent {
     }
   }
 
+  get currentModeWord(): string {
+    switch (this.uiModeService.currentMode) {
+      case 'mikrotik': return 'MikroTik';
+      case 'pam': return 'PAM';
+      case 'both':
+      default:
+        return 'All';
+    }
+  }
+
+  get currentModeTooltip(): string {
+    switch (this.uiModeService.currentMode) {
+      case 'mikrotik': return 'Workspace Mode: MikroTik Only';
+      case 'pam': return 'Workspace Mode: PAM & Automation';
+      case 'both':
+      default:
+        return 'Workspace Mode: All Features';
+    }
+  }
+
+  get currentModeIcon(): string {
+    switch (this.uiModeService.currentMode) {
+      case 'mikrotik': return 'fa-solid fa-router';
+      case 'pam': return 'fa-solid fa-shield-halved';
+      case 'both':
+      default:
+        return 'fa-solid fa-layer-group';
+    }
+  }
+
+  get currentModeBadgeClass(): string {
+    switch (this.uiModeService.currentMode) {
+      case 'mikrotik': return 'mode-mikrotik';
+      case 'pam': return 'mode-pam';
+      case 'both':
+      default:
+        return 'mode-both';
+    }
+  }
+
   navigateToConnectionManager(): void {
     this.router.navigate(['/connection-manager']);
   }
@@ -118,6 +158,9 @@ export class DefaultHeaderComponent extends HeaderComponent {
     this.get_user_info();
     this.data_provider.getSessionInfo().then((res: any) => {
       _self.ispro = res.ISPRO;
+      try {
+        localStorage.setItem('mw_ispro', res.ISPRO ? 'true' : 'false');
+      } catch (e) {}
     });
     if (this.current_user && this.current_user.role === 'customer') {
       this.loadCustomerDevices();

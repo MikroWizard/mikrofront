@@ -54,6 +54,7 @@ export class dataProvider {
         _self.MikroWizardRPC.clearCookeis();
         this.MikroWizardRPC.setNewSession('', '');
         localStorage.removeItem('current_user');
+        localStorage.removeItem('mw_ispro');
         return this.MikroWizardRPC.sendJsonRequest("/api/logout", {});
     }
 

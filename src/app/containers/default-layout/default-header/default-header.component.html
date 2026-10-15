@@ -66,6 +66,13 @@
         <i class="fa-solid fa-terminal mgr-icon"></i>
         <span class="d-none d-sm-inline">Connection Manager</span>
       </button>
+      <span class="workspace-mode-pill me-3" 
+            [ngClass]="currentModeBadgeClass" 
+            [title]="currentModeTooltip" 
+            *ngIf="!current_user || current_user.role !== 'customer'">
+        <i [class]="currentModeIcon"></i>
+        <span>{{currentModeWord}}</span>
+      </span>
       <ng-container *ngTemplateOutlet="taskDropdown"></ng-container> | 
       <ng-container *ngTemplateOutlet="userDropdown"></ng-container>
     </c-header-nav>
