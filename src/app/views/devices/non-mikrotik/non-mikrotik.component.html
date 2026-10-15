@@ -121,6 +121,7 @@
                 <span class="badge bg-secondary-subtle text-dark ms-1">23</span>
               </button>
               <button type="button" class="btn btn-sm d-flex align-items-center gap-1"
+                *ngIf="ispro"
                 [class.btn-primary]="addData.protocol === 'rdp'"
                 [class.btn-outline-secondary]="addData.protocol !== 'rdp'"
                 (click)="setAddProto('rdp')">
@@ -129,6 +130,7 @@
                 <span class="badge bg-secondary-subtle text-dark ms-1">3389</span>
               </button>
               <button type="button" class="btn btn-sm d-flex align-items-center gap-1"
+                *ngIf="ispro"
                 [class.btn-primary]="addData.protocol === 'vnc'"
                 [class.btn-outline-secondary]="addData.protocol !== 'vnc'"
                 (click)="setAddProto('vnc')">
@@ -277,6 +279,7 @@
                 <span class="badge bg-secondary-subtle text-dark ms-1">23</span>
               </button>
               <button type="button" class="btn btn-sm d-flex align-items-center gap-1"
+                *ngIf="ispro"
                 [class.btn-primary]="editData.protocol === 'rdp'"
                 [class.btn-outline-secondary]="editData.protocol !== 'rdp'"
                 (click)="setEditProto('rdp')">
@@ -285,6 +288,7 @@
                 <span class="badge bg-secondary-subtle text-dark ms-1">3389</span>
               </button>
               <button type="button" class="btn btn-sm d-flex align-items-center gap-1"
+                *ngIf="ispro"
                 [class.btn-primary]="editData.protocol === 'vnc'"
                 [class.btn-outline-secondary]="editData.protocol !== 'vnc'"
                 (click)="setEditProto('vnc')">

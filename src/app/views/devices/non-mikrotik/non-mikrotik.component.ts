@@ -97,11 +97,13 @@ export class NonMikrotikComponent implements OnInit, OnChanges {
     const p = (proto || 'ssh').toLowerCase();
     if (!this.brands || !this.brands.length) return [];
     if (p === 'rdp') {
+      if (!this.ispro) return [];
       return this.brands.filter((b: any) => {
         const code = (b.brand || b.id || '').toLowerCase();
         return code === 'windows' || code === 'generic';
       });
     } else if (p === 'vnc') {
+      if (!this.ispro) return [];
       return this.brands.filter((b: any) => {
         const code = (b.brand || b.id || '').toLowerCase();
         return code === 'generic' || code === 'linux';
@@ -115,6 +117,7 @@ export class NonMikrotikComponent implements OnInit, OnChanges {
   }
 
   setAddProto(proto: string) {
+    if (!this.ispro && (proto === 'rdp' || proto === 'vnc')) return;
     const oldProto = this.addData.protocol;
     this.addData.protocol = proto;
     const defaults: Record<string, number> = { ssh: 22, telnet: 23, rdp: 3389, vnc: 5900 };
@@ -129,6 +132,7 @@ export class NonMikrotikComponent implements OnInit, OnChanges {
   }
 
   setEditProto(proto: string) {
+    if (!this.ispro && (proto === 'rdp' || proto === 'vnc')) return;
     const oldProto = this.editData.protocol;
     this.editData.protocol = proto;
     const defaults: Record<string, number> = { ssh: 22, telnet: 23, rdp: 3389, vnc: 5900 };

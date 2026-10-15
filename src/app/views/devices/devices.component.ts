@@ -16,6 +16,8 @@ import {
 import { Table } from 'primeng/table';
 import { AppToastComponent } from "../toast-simple/toast.component";
 import { formatInTimeZone } from "date-fns-tz";
+import { Subscription } from "rxjs";
+import { UiModeService, UiMode } from "../../providers/ui-mode.service";
 
 
 
@@ -28,7 +30,30 @@ export class DevicesComponent implements OnInit, OnDestroy {
   public uname!: string;
   public tz!: string;
   public ispro:boolean=false;
-  public deviceTab: string = 'all';
+  public hasUserSwitchedTab: boolean = false;
+  private modeSub?: Subscription;
+
+  public deviceTab: string = (function() {
+    try {
+      const mode = localStorage.getItem('mw_ui_mode');
+      if (mode === 'pam') return 'all';
+      if (mode === 'mikrotik') return 'mikrotik';
+      const cached = localStorage.getItem('mw_ispro');
+      if (cached === 'false') return 'mikrotik';
+    } catch (e) {}
+    return 'all';
+  })();
+
+  public getDefaultTabForCurrentMode(): string {
+    const mode = this.uiModeService?.currentMode || (localStorage.getItem('mw_ui_mode') as UiMode) || 'both';
+    if (mode === 'pam') {
+      return 'all';
+    }
+    if (mode === 'mikrotik') {
+      return 'mikrotik';
+    }
+    return (!this.ispro) ? 'mikrotik' : 'all';
+  }
 
   public get mikrotikCount(): number {
     if (!this.source || !Array.isArray(this.source)) return 0;
@@ -107,6 +132,10 @@ export class DevicesComponent implements OnInit, OnDestroy {
   }
 
   openPublishAppModal(server?: any) {
+    if (!this.ispro) {
+      this.show_toast("Pro Feature", "Publishing applications is only available in Pro tier", "warning");
+      return;
+    }
     if (!server) {
       const rdpServers = this.getAvailableRdpServers();
       server = rdpServers.length > 0 ? rdpServers[0] : null;
@@ -189,7 +218,8 @@ export class DevicesComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private login_checker: loginChecker,
-    private licenseService: LicenseService
+    private licenseService: LicenseService,
+    public uiModeService: UiModeService
   ) {
     var _self = this;
     if (!this.login_checker.isLoggedIn()) {
@@ -197,11 +227,33 @@ export class DevicesComponent implements OnInit, OnDestroy {
         _self.router.navigate(["login"]);
       }, 100);
     }
+
+    this.modeSub = this.uiModeService.mode$.subscribe((mode) => {
+      if (mode === 'pam') {
+        _self.deviceTab = 'all';
+        _self.hasUserSwitchedTab = false;
+      } else if (mode === 'mikrotik') {
+        _self.deviceTab = 'mikrotik';
+        _self.hasUserSwitchedTab = false;
+      } else if (mode === 'both') {
+        if (!_self.hasUserSwitchedTab) {
+          _self.deviceTab = !_self.ispro ? 'mikrotik' : 'all';
+        }
+      }
+    });
+
     this.data_provider.getSessionInfo().then((res) => {
       _self.uid = res.uid;
       _self.uname = res.name;
       _self.tz = res.tz;
-      _self.ispro = res.ISPRO;
+      _self.ispro = !!res.ISPRO;
+      try {
+        localStorage.setItem('mw_ispro', _self.ispro ? 'true' : 'false');
+      } catch (e) {}
+
+      if (!_self.hasUserSwitchedTab) {
+        _self.deviceTab = _self.getDefaultTabForCurrentMode();
+      }
       const userId = _self.uid;
 
       if (res.role != "admin") {
@@ -653,6 +705,7 @@ export class DevicesComponent implements OnInit, OnDestroy {
   }
 
   setDeviceTab(tab: string) {
+    this.hasUserSwitchedTab = true;
     this.deviceTab = tab;
   }
 
@@ -888,11 +941,13 @@ export class DevicesComponent implements OnInit, OnDestroy {
     if (!this.availableBrands || !this.availableBrands.length) return [];
     
     if (proto === 'rdp') {
+      if (!this.ispro) return [];
       return this.availableBrands.filter((b: any) => {
         const code = (b.brand || b.id || '').toLowerCase();
         return code === 'windows' || code === 'generic';
       });
     } else if (proto === 'vnc') {
+      if (!this.ispro) return [];
       return this.availableBrands.filter((b: any) => {
         const code = (b.brand || b.id || '').toLowerCase();
         return code === 'generic' || code === 'linux';
@@ -906,6 +961,9 @@ export class DevicesComponent implements OnInit, OnDestroy {
   }
 
   setNonMikrotikProto(proto: string) {
+    if (!this.ispro && (proto === 'rdp' || proto === 'vnc')) {
+      return;
+    }
     const target = this.getTargetNonMikrotikData();
     if (!target) return;
     const oldProto = target.protocol;
@@ -936,8 +994,24 @@ export class DevicesComponent implements OnInit, OnDestroy {
 
   onBrandChangeUnified() {
     const target = this.getTargetNonMikrotikData();
-    const devType = target ? target.device_type : '';
-    const proto = target ? (target.protocol || 'ssh') : 'ssh';
+    let devType = target ? target.device_type : '';
+    let proto = target ? (target.protocol || 'ssh') : 'ssh';
+
+    if (!this.ispro) {
+      if (proto === 'rdp' || proto === 'vnc') {
+        proto = 'ssh';
+        if (target) {
+          target.protocol = 'ssh';
+          target.port = 22;
+        }
+      }
+      if (devType === 'windows') {
+        devType = 'generic';
+        if (target) {
+          target.device_type = 'generic';
+        }
+      }
+    }
 
     const query: any = { protocol: proto };
     if (devType) {
@@ -1025,6 +1099,11 @@ export class DevicesComponent implements OnInit, OnDestroy {
 
   onCategoryChange() {
     if (this.unifiedCategory === 'app') {
+      if (!this.ispro) {
+        this.unifiedCategory = 'other';
+        this.onBrandChangeUnified();
+        return;
+      }
       const rdpServers = this.getAvailableRdpServers();
       if (!this.publishAppData.parent_id && rdpServers.length > 0) {
         this.publishAppData.parent_id = rdpServers[0].id;
@@ -1063,6 +1142,10 @@ export class DevicesComponent implements OnInit, OnDestroy {
     this.loadBrandsAndTemplates();
 
     if (this.isApp(dev)) {
+      if (!this.ispro) {
+        this.show_toast("Pro Feature", "Editing applications is only available in Pro tier", "warning");
+        return;
+      }
       this.unifiedCategory = 'app';
       this.unifiedModalMode = 'edit';
       this.editAppData = {
@@ -1138,6 +1221,10 @@ export class DevicesComponent implements OnInit, OnDestroy {
         }
       });
     } else {
+      if (!this.ispro && (this.isRdpOrVnc(dev) || dev.device_type === 'windows' || dev.brand === 'windows')) {
+        this.show_toast("Pro Feature", "Editing RDP, VNC, and Windows devices is only available in Pro tier", "warning");
+        return;
+      }
       this.unifiedCategory = 'other';
       this.unifiedModalMode = 'edit';
       this.editNonMikrotikData = { ...dev };
@@ -2313,10 +2400,23 @@ export class DevicesComponent implements OnInit, OnDestroy {
   loadBrandsAndTemplates() {
     this.data_provider.listBrands().then((res: any) => {
       const data = Array.isArray(res) ? res : (res.data || res || []);
-      this.availableBrands = data.filter((b: any) => b.brand !== 'mikrotik');
+      let brands = data.filter((b: any) => b.brand !== 'mikrotik');
+      if (!this.ispro) {
+        brands = brands.filter((b: any) => (b.brand || b.id || '').toLowerCase() !== 'windows');
+      }
+      this.availableBrands = brands;
     });
     this.data_provider.listTemplates({}).then((res: any) => {
-      const data = (res.data || res || []);
+      let data = (res.data || res || []);
+      if (!this.ispro) {
+        data = data.filter((t: any) => {
+          const brand = (t.brand || '').toLowerCase();
+          const conn = t.connection || {};
+          const pList = (conn.protocols ? [...conn.protocols] : (conn.protocol ? [conn.protocol] : ['ssh'])).map((p: string) => p.toLowerCase());
+          const hasProProto = pList.some((p: string) => p === 'rdp' || p === 'vnc');
+          return brand !== 'windows' && !hasProProto;
+        });
+      }
       this.availableTemplates = data.map((t: any) => {
         const conn = t.connection || {};
         const pList = conn.protocols ? [...conn.protocols] : (conn.protocol ? [conn.protocol] : ['ssh']);
@@ -2633,5 +2733,6 @@ export class DevicesComponent implements OnInit, OnDestroy {
     clearTimeout(this.scan_timer);
     clearTimeout(this.statusCheckTimer);
     clearTimeout(this.list_update_timer);
+    this.modeSub?.unsubscribe();
   }
 }
