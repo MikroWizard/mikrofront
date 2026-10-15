@@ -31,32 +31,28 @@ CYCLE_SLEEP = 120
 SSL_AGENT_RETRY = 5
 
 LOG_FILE = "/conf/logs/front-updater.log"
-LOG_MAX_AGE = 86400
-LOG_BACKUP_COUNT = 1
+LOG_MAX_BYTES = 2 * 1024 * 1024  # 2 MB
+LOG_BACKUP_COUNT = 5
+
 
 def _setup_logging():
+    # Called from main() only after the lock is held, so the short-lived cron
+    # duplicates never open (or rotate) the log owned by the running instance.
     os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
-    handler = RotatingFileHandler(LOG_FILE, maxBytes=10 * 1024 * 1024, backupCount=LOG_BACKUP_COUNT)
+    handler = RotatingFileHandler(
+        LOG_FILE,
+        maxBytes=LOG_MAX_BYTES,
+        backupCount=LOG_BACKUP_COUNT,
+        encoding="utf-8"
+    )
     handler.setLevel(logging.INFO)
     handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s"))
+    log.handlers.clear()
     log.addHandler(handler)
+    log.propagate = False
+    # Root keeps library warnings (requests/urllib3) in the same file;
+    # "updater" doesn't propagate, so its lines are not written twice.
     logging.getLogger().addHandler(handler)
-    _rotate_old_logs()
-
-
-def _rotate_old_logs():
-    if os.path.exists(LOG_FILE):
-        if time.time() - os.path.getmtime(LOG_FILE) > LOG_MAX_AGE:
-            backup = LOG_FILE + ".1"
-            if os.path.exists(backup):
-                os.remove(backup)
-            os.rename(LOG_FILE, backup)
-            log.info("Rotated old log (>24h)")
-            return True
-    return False
-
-
-_setup_logging()
 
 
 def check_sha256(filename, expect):
@@ -424,16 +420,17 @@ def main():
                 os.write(fd, str(os.getpid()).encode())
                 os.close(fd)
             except FileExistsError:
-                exit()
+                sys.exit(0)
         else:
-            print("Already running")
-            exit()
+            # Already running
+            sys.exit(0)
+
+    _setup_logging()
 
     try:
         _ensure_ssl_conf_files()
         while True:
             _reap_zombies()
-            _rotate_old_logs()
 
             agent_up = False
             try:

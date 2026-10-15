@@ -20,23 +20,24 @@ log = logging.getLogger("ssl-agent")
 log.setLevel(logging.INFO)
 
 SSL_AGENT_LOG = "/conf/logs/ssl-agent.log"
-SSL_AGENT_LOG_MAX_AGE = 86400
-SSL_AGENT_LOG_BACKUPS = 1
-
+SSL_AGENT_LOG_MAX_BYTES = 2 * 1024 * 1024  # 2 MB
+SSL_AGENT_LOG_BACKUPS = 5
 
 def _setup_agent_logging():
     os.makedirs(os.path.dirname(SSL_AGENT_LOG), exist_ok=True)
-    if os.path.exists(SSL_AGENT_LOG):
-        if _time.time() - os.path.getmtime(SSL_AGENT_LOG) > SSL_AGENT_LOG_MAX_AGE:
-            backup = SSL_AGENT_LOG + ".1"
-            if os.path.exists(backup):
-                os.remove(backup)
-            os.rename(SSL_AGENT_LOG, backup)
-    handler = RotatingFileHandler(SSL_AGENT_LOG, maxBytes=10 * 1024 * 1024, backupCount=SSL_AGENT_LOG_BACKUPS)
+    handler = RotatingFileHandler(
+        SSL_AGENT_LOG,
+        maxBytes=SSL_AGENT_LOG_MAX_BYTES,
+        backupCount=SSL_AGENT_LOG_BACKUPS,
+        encoding="utf-8"
+    )
     handler.setLevel(logging.INFO)
     handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s"))
+    log.handlers.clear()
     log.addHandler(handler)
+    # Still propagates to the basicConfig stderr handler so `docker logs` shows it
     logging.getLogger("werkzeug").setLevel(logging.WARNING)
+
 
 _setup_agent_logging()
 
@@ -133,7 +134,11 @@ def check_auth():
 
 
 def run_cmd(cmd, timeout=300):
-    log.info("Running: %s", " ".join(cmd) if isinstance(cmd, list) else cmd)
+    cmd_str = " ".join(cmd) if isinstance(cmd, list) else str(cmd)
+    if any(cmd_str.strip().startswith(prefix) for prefix in ("ss ", "openssl x509", "nginx -t")):
+        log.debug("Running: %s", cmd_str)
+    else:
+        log.info("Running: %s", cmd_str)
     try:
         if isinstance(cmd, str):
             result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=timeout)
