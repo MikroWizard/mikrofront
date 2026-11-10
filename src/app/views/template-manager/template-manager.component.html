@@ -25,10 +25,16 @@
                   <i class="fas fa-tag me-1"></i>Brands
                 </a>
               </div>
+              <div class="nav-item">
+                <a [class.active]="activeTab === 'updates'" class="nav-link" (click)="switchTab('updates')" style="cursor: pointer;">
+                  <i class="fas fa-cloud-arrow-down me-1"></i>Updates
+                  <span *ngIf="catalog?.pending > 0" class="badge bg-danger ms-1">{{catalog.pending}}</span>
+                </a>
+              </div>
             </div>
           </c-col>
           <c-col xs="auto" class="pe-3">
-            <button cButton color="success" size="sm" (click)="activeTab === 'templates' ? openCreateModal() : openBrandCreateModal()" style="color: #fff;">
+            <button *ngIf="activeTab !== 'updates'" cButton color="success" size="sm" (click)="activeTab === 'templates' ? openCreateModal() : openBrandCreateModal()" style="color: #fff;">
               <i class="fas fa-plus me-1"></i>{{activeTab === 'templates' ? 'Create Template' : 'Add Brand'}}
             </button>
           </c-col>
@@ -109,6 +115,104 @@
               </tr>
             </ng-template>
           </p-table>
+        </div>
+
+        <!-- ==================== UPDATES TAB (signed template catalog) ==================== -->
+        <div *ngIf="activeTab === 'updates'">
+          <div *ngIf="catalog && !catalog.available" class="alert alert-warning small">
+            <i class="fas fa-info-circle me-1"></i>{{catalog.err || 'Template updates are not available on this server yet.'}}
+          </div>
+          <div *ngIf="catalog?.available">
+            <div class="d-flex flex-wrap align-items-center gap-3 mb-3 small">
+              <span><b>Catalog:</b> {{catalog.catalog_version || '-'}} <span class="text-muted">({{catalog.origin || '-'}}, {{catalog.received_at | slice:0:16}})</span></span>
+              <span><b>Pending:</b> {{catalog.pending}} <span *ngIf="catalog.pending_review" class="text-warning">({{catalog.pending_review}} need review)</span>
+                <span *ngIf="catalog.conflicts" class="text-danger ms-1">{{catalog.conflicts}} name conflict(s)</span></span>
+              <span class="d-flex align-items-center gap-1">
+                <b>Mode</b>
+                <select cSelect size="sm" style="width:auto" [(ngModel)]="catalog.mode">
+                  <option value="notify">Notify only</option>
+                  <option value="auto">Auto-apply unmodified templates</option>
+                  <option value="off">Off (no online check)</option>
+                </select>
+                <select cSelect size="sm" style="width:auto" [(ngModel)]="catalog.channel">
+                  <option value="stable">Stable</option>
+                  <option value="beta">Beta</option>
+                </select>
+                <button cButton color="secondary" size="sm" variant="outline" (click)="catalogSaveSettings()">Save</button>
+              </span>
+              <span class="ms-auto d-flex gap-2">
+                <button cButton color="info" size="sm" class="text-white" [disabled]="catalogBusy" (click)="catalogCheckNow()">
+                  <i class="fas fa-rotate me-1"></i>Check now
+                </button>
+                <button cButton color="success" size="sm" class="text-white" [disabled]="catalogBusy || !catalog.pending" (click)="catalogApplyAllSafe()">
+                  <i class="fas fa-check-double me-1"></i>Apply all safe
+                </button>
+              </span>
+            </div>
+            <p class="text-muted small">Updates are signed by MikroWizard. <b>Safe</b>: the template is unchanged since MikroWizard set it.
+              <b>Review</b>: you edited it - for every changed setting choose yours or the new one. Every update can be reverted from its history.</p>
+
+            <div *ngIf="!catalogUpdates.length" class="text-center text-muted p-3">All system templates are up to date.</div>
+            <table *ngIf="catalogUpdates.length" class="table table-sm align-middle small">
+              <thead><tr><th>Template</th><th>Revision</th><th>Type</th><th>Changes</th><th class="text-end">Action</th></tr></thead>
+              <tbody>
+                <ng-container *ngFor="let u of catalogUpdates">
+                  <tr>
+                    <td><b>{{u.display_name}}</b><div class="text-muted">{{u.key}}</div></td>
+                    <td>{{u.installed_revision}} &rarr; {{u.revision}}</td>
+                    <td><c-badge [color]="u.kind === 'conflict' ? 'danger' : (u.kind === 'review' ? 'warning' : (u.kind === 'new' ? 'info' : 'success'))">{{u.kind}}</c-badge></td>
+                    <td><div *ngIf="u.message" class="text-danger">{{u.message}}</div><div *ngFor="let c of u.changelog">{{c}}</div>
+                      <a *ngIf="u.fields?.length" href="javascript:void(0)" (click)="catalogExpanded[u.key] = !catalogExpanded[u.key]">
+                        {{catalogExpanded[u.key] ? 'Hide' : 'Show'}} {{u.fields.length}} changed setting(s)</a></td>
+                    <td class="text-end text-nowrap">
+                      <button *ngIf="u.template_id" cButton color="secondary" size="sm" variant="ghost" (click)="catalogShowHistory(u.template_id, u.display_name)" title="History"><i class="fas fa-clock-rotate-left"></i></button>
+                      <button *ngIf="u.kind !== 'conflict'" cButton color="secondary" size="sm" variant="outline" class="me-1" (click)="catalogSkip(u)" [disabled]="u.kind === 'new'">Skip</button>
+                      <button *ngIf="u.kind !== 'conflict'" cButton color="primary" size="sm" [disabled]="catalogBusy" (click)="catalogApply(u)">Apply</button>
+                    </td>
+                  </tr>
+                  <tr *ngIf="catalogExpanded[u.key]">
+                    <td colspan="5" class="bg-light">
+                      <div *ngFor="let f of u.fields" class="mb-2">
+                        <div class="d-flex align-items-center gap-2">
+                          <b>{{f.field}}</b>
+                          <c-badge *ngIf="f.edited" color="warning">edited by you</c-badge>
+                          <span *ngIf="f.field === 'display_name'" class="ms-auto text-muted">set by MikroWizard</span>
+                          <span *ngIf="f.field !== 'display_name'" class="ms-auto">
+                            <label class="me-2"><input type="radio" [name]="u.key + f.field" value="mine" [(ngModel)]="catalogChoices[u.key][f.field]"> keep mine</label>
+                            <label><input type="radio" [name]="u.key + f.field" value="new" [(ngModel)]="catalogChoices[u.key][f.field]"> take new</label>
+                          </span>
+                        </div>
+                        <div class="row g-2">
+                          <div class="col-6"><div class="text-muted">Current</div><pre class="p-2 bg-white border rounded mb-0" style="max-height:160px;overflow:auto;font-size:0.75rem">{{catalogFieldText(f.current)}}</pre></div>
+                          <div class="col-6"><div class="text-muted">New</div><pre class="p-2 bg-white border rounded mb-0" style="max-height:160px;overflow:auto;font-size:0.75rem">{{catalogFieldText(f.new)}}</pre></div>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                </ng-container>
+              </tbody>
+            </table>
+
+            <div *ngIf="catalogHistoryFor" class="border rounded p-2 mt-3 small">
+              <div class="d-flex align-items-center mb-2"><b>History: {{catalogHistoryFor.name}}</b>
+                <button cButton color="secondary" size="sm" variant="ghost" class="ms-auto" (click)="catalogHistoryFor = null">Close</button></div>
+              <div *ngIf="!catalogHistory.length" class="text-muted">No saved versions.</div>
+              <div *ngFor="let h of catalogHistory" class="d-flex align-items-center gap-2 border-bottom py-1">
+                <span>{{h.changed_at | slice:0:19}}</span><c-badge color="secondary">{{h.reason}}</c-badge>
+                <span class="text-muted">{{h.changed_by}}</span>
+                <button cButton color="warning" size="sm" variant="outline" class="ms-auto" (click)="catalogRevert(h)">Revert to this</button>
+              </div>
+            </div>
+
+            <details class="mt-3 small">
+              <summary>Import a signed catalog file (servers without internet access)</summary>
+              <div class="d-flex flex-wrap gap-2 align-items-center mt-2">
+                <label>catalog.json <input type="file" accept=".json" (change)="catalogReadFile($event, 'catalog')"></label>
+                <label>catalog.json.sig <input type="file" (change)="catalogReadFile($event, 'signature')"></label>
+                <button cButton color="primary" size="sm" [disabled]="!catalogImport.catalog || !catalogImport.signature" (click)="catalogDoImport()">Import</button>
+              </div>
+            </details>
+          </div>
         </div>
 
         <!-- ==================== BRANDS TAB ==================== -->

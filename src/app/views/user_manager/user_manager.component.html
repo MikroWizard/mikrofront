@@ -42,6 +42,11 @@
               <input type="text" pInputText placeholder="Search users..." (input)="applyFilterGlobal($event, 'contains')"
                 class="form-control-sm" />
             </span>
+            <button cButton [color]="lockedUserCount > 0 ? 'danger' : 'secondary'" variant="outline" size="sm"
+              (click)="openLockModal()" pTooltip="Accounts locked after repeated failed logins">
+              <i class="fa-solid fa-user-lock me-1"></i> Locked Logins
+              <span *ngIf="lockedUserCount > 0" class="badge text-bg-danger ms-1">{{ lockedUserCount }}</span>
+            </button>
             <button cButton color="primary" size="sm" (click)="openExportModal()">
               <i class="fa-solid fa-file-export me-1"></i> Export Report
             </button>
@@ -108,6 +113,10 @@
                   </button>
                   <button cButton color="danger" size="sm" (click)="confirm_delete(item);" pTooltip="Delete User">
                     <i class="fa-regular fa-trash-can"></i>
+                  </button>
+                  <button cButton color="info" variant="outline" size="sm" (click)="unlockLogin(item.username, '')"
+                    pTooltip="Unlock Login (clears failed-login lockout for panel and router/terminal logins)">
+                    <i class="fa-solid fa-unlock-keyhole"></i>
                   </button>
                   <button *ngIf="ispro" cButton color="secondary" size="sm" (click)="showrest(item);"
                     pTooltip="Security Restrictions">
@@ -1021,6 +1030,88 @@
         <i class="fa-solid fa-save me-1"></i>Save Template
       </button>
       <button [cModalToggle]="SaveTemplateModal.id" cButton color="secondary">Cancel</button>
+    </c-modal-footer>
+  </c-modal>
+
+  <c-modal #LoginLocksModal backdrop="static" size="lg" [(visible)]="lockModalVisible" id="LoginLocksModal">
+    <c-modal-header>
+      <h5 cModalTitle><i class="fa-solid fa-user-lock me-2 text-danger"></i>Locked Logins</h5>
+      <button [cModalToggle]="LoginLocksModal.id" cButtonClose></button>
+    </c-modal-header>
+    <c-modal-body>
+      <p class="text-muted small mb-3">
+        After repeated failed logins, MikroWizard refuses further attempts for a while
+        (panel: 15 minutes, router/terminal RADIUS logins: 5 minutes). Unlocking clears both.
+      </p>
+
+      <p-table [value]="loginLocks" [loading]="loginLocksLoading" [paginator]="loginLocks.length > 10" [rows]="10"
+        styleClass="p-datatable-sm p-datatable-gridlines p-datatable-striped">
+        <ng-template pTemplate="header">
+          <tr>
+            <th>Type</th>
+            <th>Username</th>
+            <th>IP Address</th>
+            <th>Failures</th>
+            <th>Unlocks In</th>
+            <th style="width: 6rem" class="text-center">Action</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-lock>
+          <tr>
+            <td>
+              <span class="badge" [ngClass]="lock.type === 'ip' ? 'text-bg-warning' : 'text-bg-danger'">
+                {{ lock.type === 'ip' ? 'IP' : 'User' }}
+              </span>
+            </td>
+            <td>{{ lock.username || '-' }}</td>
+            <td>{{ lock.ip }}</td>
+            <td>{{ lock.failures }}</td>
+            <td>{{ formatLockTime(lock.seconds_left) }}</td>
+            <td class="text-center">
+              <button cButton color="success" size="sm"
+                (click)="unlockLogin(lock.type === 'user' ? lock.username : '', lock.type === 'ip' ? lock.ip : '')"
+                pTooltip="Unlock">
+                <i class="fa-solid fa-unlock"></i>
+              </button>
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="6" class="text-center p-3 text-muted">No locked panel logins.</td>
+          </tr>
+        </ng-template>
+      </p-table>
+
+      <hr>
+      <h6 class="fw-bold mb-2">Unlock by username or IP</h6>
+      <p class="text-muted small mb-2">
+        Router and terminal (RADIUS) lockouts are not listed above; unlock them here by username or router IP.
+      </p>
+      <c-row class="g-2 align-items-end">
+        <c-col xs="12" md="5">
+          <input cFormControl placeholder="Username" [(ngModel)]="lockFormUser" />
+        </c-col>
+        <c-col xs="12" md="5">
+          <input cFormControl placeholder="IP address" [(ngModel)]="lockFormIp" />
+        </c-col>
+        <c-col xs="12" md="2">
+          <button cButton color="primary" class="w-100" (click)="unlockLogin(lockFormUser.trim(), lockFormIp.trim())">
+            <i class="fa-solid fa-unlock me-1"></i> Unlock
+          </button>
+        </c-col>
+      </c-row>
+    </c-modal-body>
+    <c-modal-footer>
+      <button cButton color="danger" variant="outline" (click)="unlockLogin('', '', true)">
+        <i class="fa-solid fa-unlock-keyhole me-1"></i> Unlock All
+      </button>
+      <button cButton color="secondary" (click)="loadLoginLocks()">
+        <i class="fa-solid fa-rotate me-1"></i> Refresh
+      </button>
+      <button [cModalToggle]="LoginLocksModal.id" cButton color="info">
+        Close
+      </button>
     </c-modal-footer>
   </c-modal>
 

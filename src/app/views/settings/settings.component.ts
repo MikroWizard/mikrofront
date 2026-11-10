@@ -514,6 +514,37 @@ export class SettingsComponent implements OnInit {
       _self.sysconfigs["force_perms"]["value"] = /true/i.test(
         _self.sysconfigs["force_perms"]["value"]
       );
+      // RADIUS security settings (2.1.2): defaults match the backend when not saved yet
+      // router identity verification (device_trust): off unless chosen here
+      for (const [k, d] of [['device_tls_verify', 'off'], ['device_ssh_verify', 'off'], ['device_tls_cafile', '']]) {
+        if (!(k in _self.sysconfigs)) {
+          _self.sysconfigs[k] = { value: d };
+        }
+      }
+      if (!('radius_enforce_router_message_auth' in _self.sysconfigs)) {
+        _self.sysconfigs['radius_enforce_router_message_auth'] = { value: false };
+      } else {
+        _self.sysconfigs['radius_enforce_router_message_auth']['value'] = /true/i.test(
+          _self.sysconfigs['radius_enforce_router_message_auth']['value']
+        );
+      }
+      const maModes = ['verify', 'auto', 'yes', 'off'];
+      if (!('radius_require_message_auth' in _self.sysconfigs)
+          || maModes.indexOf(String(_self.sysconfigs['radius_require_message_auth']['value'] || '').toLowerCase()) === -1) {
+        _self.sysconfigs['radius_require_message_auth'] = { value: 'verify' };
+      } else {
+        _self.sysconfigs['radius_require_message_auth']['value'] =
+          String(_self.sysconfigs['radius_require_message_auth']['value']).toLowerCase();
+      }
+      const radiusNumbers: { [key: string]: number } = {
+        radius_fail_limit: 10, radius_fail_limit_source: 100,
+        radius_fail_window: 300, radius_block_seconds: 300
+      };
+      Object.keys(radiusNumbers).forEach((key) => {
+        const raw = (key in _self.sysconfigs) ? _self.sysconfigs[key]['value'] : null;
+        const num = parseInt(raw, 10);
+        _self.sysconfigs[key] = { value: isNaN(num) ? radiusNumbers[key] : num };
+      });
       _self.sysconfigs["safe_install"]["value"] = /true/i.test(
         _self.sysconfigs["safe_install"]["value"]
       );

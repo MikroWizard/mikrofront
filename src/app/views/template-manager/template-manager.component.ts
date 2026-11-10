@@ -65,6 +65,119 @@ export class TemplateManagerComponent implements OnInit {
   ngOnInit(): void {
     this.loadBrands();
     this.loadTemplates();
+    this.loadCatalog();
+  }
+
+  // ---- Template updates (signed catalog from MikroWizard)
+  public catalog: any = null;            // status; null = not loaded / not available
+  public catalogUpdates: any[] = [];
+  public catalogBusy: boolean = false;
+  public catalogExpanded: any = {};
+  public catalogChoices: any = {};       // key -> {field: 'mine' | 'new'}
+  public catalogHistory: any[] = [];
+  public catalogHistoryFor: any = null;
+  public catalogImport: any = { catalog: '', signature: '' };
+
+  loadCatalog(): void {
+    this.data_provider.catalog_status().then((res: any) => {
+      this.catalog = res && res.status === 'success' ? res : { available: false, err: res && res.err };
+      if (this.catalog.available) this.loadCatalogUpdates();
+    }).catch(() => { this.catalog = { available: false }; });
+  }
+
+  loadCatalogUpdates(): void {
+    this.data_provider.catalog_updates().then((res: any) => {
+      this.catalogUpdates = (res && res.updates) || [];
+      for (const u of this.catalogUpdates) {
+        const c: any = {};
+        for (const f of (u.fields || [])) c[f.field] = f.edited ? 'mine' : 'new';
+        this.catalogChoices[u.key] = c;
+      }
+    });
+  }
+
+  catalogFieldText(v: any): string {
+    return v === null || v === undefined ? '-' : JSON.stringify(v, null, 1);
+  }
+
+  catalogCheckNow(): void {
+    this.catalogBusy = true;
+    this.data_provider.catalog_check_now().then((res: any) => {
+      this.catalogBusy = false;
+      this.show_toast('Template updates', (res && res.result) || 'Checked', 'info');
+      this.loadCatalog();
+    }).catch(() => { this.catalogBusy = false; });
+  }
+
+  catalogApply(u: any): void {
+    this.catalogBusy = true;
+    this.data_provider.catalog_apply({ key: u.key, choices: this.catalogChoices[u.key] || {} }).then((res: any) => {
+      this.catalogBusy = false;
+      if (res && res.status === 'success') {
+        this.show_toast('Template updates', u.display_name + ': ' + res.result, 'success');
+        this.loadCatalog();
+        this.loadTemplates();
+      } else {
+        this.show_toast('Template updates', (res && res.err) || 'Failed', 'danger');
+      }
+    }).catch(() => { this.catalogBusy = false; });
+  }
+
+  catalogApplyAllSafe(): void {
+    this.catalogBusy = true;
+    this.data_provider.catalog_apply({ all_safe: true }).then((res: any) => {
+      this.catalogBusy = false;
+      const n = Object.keys((res && res.results) || {}).length;
+      this.show_toast('Template updates', n + ' template(s) updated', 'success');
+      this.loadCatalog();
+      this.loadTemplates();
+    }).catch(() => { this.catalogBusy = false; });
+  }
+
+  catalogSkip(u: any): void {
+    this.data_provider.catalog_skip(u.key).then(() => this.loadCatalog());
+  }
+
+  catalogSaveSettings(): void {
+    this.data_provider.catalog_settings(this.catalog.mode, this.catalog.channel).then((res: any) => {
+      this.show_toast('Template updates', res && res.status === 'success' ? 'Settings saved' : ((res && res.err) || 'Failed'),
+        res && res.status === 'success' ? 'success' : 'danger');
+    });
+  }
+
+  catalogShowHistory(templateId: number, name: string): void {
+    this.catalogHistoryFor = { id: templateId, name: name };
+    this.data_provider.catalog_history(templateId).then((res: any) => { this.catalogHistory = (res && res.history) || []; });
+  }
+
+  catalogRevert(h: any): void {
+    this.data_provider.catalog_revert(h.id).then((res: any) => {
+      this.show_toast('Template updates', res && res.status === 'success' ? res.result : ((res && res.err) || 'Failed'),
+        res && res.status === 'success' ? 'success' : 'danger');
+      this.catalogShowHistory(this.catalogHistoryFor.id, this.catalogHistoryFor.name);
+      this.loadCatalog();
+      this.loadTemplates();
+    });
+  }
+
+  catalogDoImport(): void {
+    this.data_provider.catalog_import(this.catalogImport.catalog, this.catalogImport.signature).then((res: any) => {
+      if (res && res.status === 'success') {
+        this.show_toast('Template updates', res.stored ? 'Catalog ' + res.catalog_version + ' imported' : 'Catalog is not newer', 'success');
+        this.catalogImport = { catalog: '', signature: '' };
+        this.loadCatalog();
+      } else {
+        this.show_toast('Template updates', (res && res.err) || 'Import failed', 'danger');
+      }
+    });
+  }
+
+  catalogReadFile(ev: any, field: string): void {
+    const file = ev?.target?.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => { this.catalogImport[field] = String(reader.result || ''); };
+    reader.readAsText(file);
   }
 
   show_toast(title: string, body: string, color: string) {
@@ -76,6 +189,7 @@ export class TemplateManagerComponent implements OnInit {
   switchTab(tab: string) {
     this.activeTab = tab;
     if (tab === 'brands') this.loadBrands();
+    else if (tab === 'updates') this.loadCatalog();
     else this.loadTemplates();
   }
 

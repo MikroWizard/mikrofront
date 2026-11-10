@@ -36,6 +36,7 @@ export class ExecutionsComponent implements OnInit, OnDestroy {
   public statusOptions = [
     { label: "All", value: "" },
     { label: "OK", value: "ok" },
+    { label: "Warning", value: "warning" },
     { label: "Error", value: "error" },
     { label: "Timeout", value: "timeout" },
     { label: "Auth Error", value: "auth_error" },
@@ -223,7 +224,7 @@ export class ExecutionsComponent implements OnInit, OnDestroy {
   }
 
   localStatusClass(status: string): string {
-    return status === "ok" ? "success" : status === "timeout" ? "warning" : status === "auth_error" ? "danger" : "danger";
+    return status === "ok" ? "success" : (status === "timeout" || status === "warning") ? "warning" : status === "auth_error" ? "danger" : "danger";
   }
 
   onPageChange(page: number) {

@@ -1,6 +1,6 @@
 FROM nginx:latest AS ngi
 
-RUN apt-get update && apt-get -y install cron openssl
+RUN apt-get update && apt-get -y install cron openssl procps
 RUN touch /var/log/cron.log
 COPY reqs.txt /reqs.txt
 RUN set -ex \
@@ -15,9 +15,9 @@ RUN set -ex \
 RUN pip install certbot --break-system-packages
 COPY front-update.py /
 COPY ssl-agent.py /
-COPY mwcrontab /etc/cron.d/mwcrontab
-RUN chmod 0644 /etc/cron.d/mwcrontab
-RUN crontab /etc/cron.d/mwcrontab
+# root crontab only: a second copy in /etc/cron.d would start the updater twice per minute
+COPY mwcrontab /tmp/mwcrontab
+RUN crontab /tmp/mwcrontab && rm /tmp/mwcrontab
 RUN mkdir -p /conf/ssl/letsencrypt /conf/ssl/letsencrypt-work /conf/ssl/letsencrypt-logs /conf/ssl/manual
 
 COPY entrypoint.sh /entrypoint.sh

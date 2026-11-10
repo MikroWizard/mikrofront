@@ -14,6 +14,7 @@ import shutil
 from cryptography.fernet import Fernet 
 import sys
 import signal
+import fcntl
 from logging.handlers import RotatingFileHandler
 
 
@@ -24,7 +25,7 @@ log.setLevel(logging.INFO)
 API_URL="http://host.docker.internal:8181"
 Config_File="/conf/server-conf.json"
 Version_File="/usr/share/nginx/html/version.json"
-SCRIPT_VERSION="2.0"
+SCRIPT_VERSION="2.1"
 UPDATE_CHECK_FILE = "/conf/front-update-last-check"
 CHECK_INTERVAL = 1800
 CYCLE_SLEEP = 120
@@ -230,8 +231,15 @@ def extract_zip_reload(filename,dst):
         log.error("nginx.conf update failed: %s", e)
 
     # --- ssl-agent.py handling (isolated) ---
+    # Packages ship it as ssl-agent/ssl-agent.py: updater 2.0 (old images) crashes on a
+    # top-level ssl-agent.py (it calls pkill, which the nginx image does not have) and
+    # then never reaches post_update.sh / its own update. post_update.sh installs it for
+    # those; this updater takes it from either place.
     try:
-        ssl_agent_src = os.path.join(dst, "ssl-agent.py")
+        ssl_agent_dir = os.path.join(dst, "ssl-agent")
+        ssl_agent_src = os.path.join(ssl_agent_dir, "ssl-agent.py")
+        if not os.path.exists(ssl_agent_src):
+            ssl_agent_src = os.path.join(dst, "ssl-agent.py")
         if os.path.exists(ssl_agent_src):
             log.info("Updating ssl-agent.py...")
             shutil.move(ssl_agent_src, "/ssl-agent.py")
@@ -239,6 +247,8 @@ def extract_zip_reload(filename,dst):
             kill_ssl_agent()
             time.sleep(1)
             start_ssl_agent()
+        if os.path.isdir(ssl_agent_dir):
+            shutil.rmtree(ssl_agent_dir, ignore_errors=True)
     except Exception as e:
         log.error("ssl-agent.py update failed: %s", e)
 
@@ -401,56 +411,41 @@ LOCK_FILE = "/tmp/front-update.lock"
 
 
 def main():
+    # flock is released by the kernel when the process dies, so a lock file left
+    # in /tmp across a container restart can never block the updater (a stored
+    # PID could be reused by cron/nginx after restart and look "alive").
+    lock_fd = os.open(LOCK_FILE, os.O_CREAT | os.O_RDWR, 0o644)
     try:
-        fd = os.open(LOCK_FILE, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
-        os.write(fd, str(os.getpid()).encode())
-        os.close(fd)
-    except FileExistsError:
-        try:
-            with open(LOCK_FILE, "r") as f:
-                old_pid = int(f.read().strip())
-            os.kill(old_pid, 0)
-        except (OSError, ValueError):
-            try:
-                os.remove(LOCK_FILE)
-            except Exception:
-                pass
-            try:
-                fd = os.open(LOCK_FILE, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
-                os.write(fd, str(os.getpid()).encode())
-                os.close(fd)
-            except FileExistsError:
-                sys.exit(0)
-        else:
-            # Already running
-            sys.exit(0)
+        fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        # Already running
+        os.close(lock_fd)
+        sys.exit(0)
+    os.ftruncate(lock_fd, 0)
+    os.write(lock_fd, str(os.getpid()).encode())
 
     _setup_logging()
 
-    try:
-        _ensure_ssl_conf_files()
-        while True:
-            _reap_zombies()
+    # The lock file is never removed: unlinking it would let a new instance
+    # lock a fresh inode while this one still holds the old one.
+    _ensure_ssl_conf_files()
+    while True:
+        _reap_zombies()
 
-            agent_up = False
-            try:
-                agent_up = check_ssl_agent() or start_ssl_agent()
-            except Exception as e:
-                log.error("ssl-agent health check failed: %s", e)
-
-            if should_check_update():
-                try:
-                    mark_update_checked()
-                    do_update_check()
-                except Exception as e:
-                    log.error("update check failed: %s", e)
-
-            time.sleep(CYCLE_SLEEP if agent_up else SSL_AGENT_RETRY)
-    finally:
+        agent_up = False
         try:
-            os.remove(LOCK_FILE)
-        except Exception:
-            pass
+            agent_up = check_ssl_agent() or start_ssl_agent()
+        except Exception as e:
+            log.error("ssl-agent health check failed: %s", e)
+
+        if should_check_update():
+            try:
+                mark_update_checked()
+                do_update_check()
+            except Exception as e:
+                log.error("update check failed: %s", e)
+
+        time.sleep(CYCLE_SLEEP if agent_up else SSL_AGENT_RETRY)
 
     
 if __name__ == '__main__':

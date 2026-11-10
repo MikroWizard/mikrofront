@@ -185,6 +185,11 @@
                 <i class="fas fa-circle-check me-1"></i>Clear Failed<span *ngIf="selectedNonMikrotikCount > 0"
                   class="ms-1">({{selectedMikrotikCount}})</span>
               </button>
+              <button cButton color="success" size="sm" class="text-white shadow-sm" (click)="openBulkEdit()"
+                [cTooltip]="'Change SSL / API port / SSH port / credentials of ' + selectedMikrotikCount + ' MikroTik device(s)'">
+                <i class="fas fa-pen-to-square me-1"></i>Bulk Edit<span *ngIf="selectedNonMikrotikCount > 0"
+                  class="ms-1">({{selectedMikrotikCount}})</span>
+              </button>
               <button cButton color="dark" size="sm" class="text-white shadow-sm" (click)="triggerBatchAction('reboot')"
                 [cTooltip]="selectedNonMikrotikCount > 0 ? 'Reboot ' + selectedMikrotikCount + ' MikroTik device(s) (non-MikroTik skipped)' : 'Reboot selected MikroTik devices'">
                 <i class="fas fa-power-off me-1"></i>Reboot<span *ngIf="selectedNonMikrotikCount > 0"
@@ -812,106 +817,6 @@
   </c-col>
 </c-row>
 
-<c-modal #ScannerModal [visible]="scanwizard_modal" (visibleChange)="handleScanwizard_modal($event)" backdrop="static"
-  id="ScannerModal">
-  <c-modal-header>
-    <h5 cModalTitle>Scanner Wizard</h5>
-    <button [cModalToggle]="ScannerModal.id" cButtonClose></button>
-  </c-modal-header>
-  <c-modal-body>
-    <div *ngIf="scanwizard_step==1" class="mb-5" style="text-align: center;">
-      <h5 class="mb-5">Please select searching method</h5>
-      <button *ngIf="false" cButton color="info" (click)="scanwizard(2,'chip')" [disabled]="true" class="mx-1"
-        size="lg"><img width="100px" src="assets/img/chip.png" /><br />Layer2 Scan</button>
-      <button cButton color="info" (click)="scanwizard(2,'ip')" class="mx-1" size="lg"><img width="100px"
-          src="assets/img/tcpip.png" /><br />TCP/IP Scan</button>
-    </div>
-    <div *ngIf="scanwizard_step==2 && scan_type=='ip'" class="mb-2" style="text-align: center;">
-      <h5 class="mb-5">Please Provide needed information</h5>
-      <c-input-group class="mb-3">
-        <span cInputGroupText>Start IP</span>
-        <input aria-label="start" cFormControl [(ngModel)]="ip_scanner['start']" [valid]="checkvalid('start')"
-          placeholder="192.168.1.1" />
-        <span cInputGroupText>End IP</span>
-        <input aria-label="end" cFormControl [(ngModel)]="ip_scanner['end']" [valid]="checkvalid('end')"
-          placeholder="192.168.1.255" />
-      </c-input-group>
-      <c-input-group class="mb-3">
-        <span cInputGroupText>Username</span>
-        <input aria-label="start" cFormControl [(ngModel)]="ip_scanner['user']" placeholder="Default username" />
-      </c-input-group>
-      <c-input-group class="mb-3">
-        <span cInputGroupText>Password</span>
-        <input aria-label="end" cFormControl [(ngModel)]="ip_scanner['password']" placeholder="********" />
-      </c-input-group>
-      <c-input-group class="mb-3">
-        <span cInputGroupText>Port</span>
-        <input aria-label="end" cFormControl [valid]="checkvalid('port')" [(ngModel)]="ip_scanner['port']"
-          [placeholder]="ip_scanner['ssl'] ? '8729' : '8728'" />
-      </c-input-group>
-      <c-input-group class="mb-3 align-items-center">
-        <label class="form-label small m-0 me-3">SSL Support (API-SSL)</label>
-        <c-form-check sizing="lg" switch>
-          <input cFormCheckInput type="checkbox" [(ngModel)]="ip_scanner['ssl']" (change)="onScanSslChange()" />
-        </c-form-check>
-      </c-input-group>
-      <button cButton color="info" (click)="scanwizard(3,'ip')" class="mx-1" size="lg">Start Scanning</button>
-    </div>
-    <div class="mwand" *ngIf="scanwizard_step==3">
-      <svg viewBox="0 0 203 148.27">
-        <g id="wand">
-          <g class="cls-1">
-            <path d="M194.63,152.18v-7.76C194.6,147,194.6,149.59,194.63,152.18Z" transform="translate(-10 -31.06)" />
-          </g>
-          <rect class="cls-2" x="5.07" y="129.83" width="117.08" height="17.1"
-            transform="translate(-77.95 30.6) rotate(-35.06)" />
-          <rect class="cls-3" x="106.38" y="88.26" width="32.89" height="17.1"
-            transform="translate(-43.33 57.07) rotate(-35.06)" />
-          <ellipse class="cls-4" cx="136.21" cy="87.42" rx="3.29" ry="8.55"
-            transform="translate(-35.5 63.06) rotate(-35.06)" />
-          <ellipse class="cls-2" cx="15.6" cy="172.07" rx="3.29" ry="8.55"
-            transform="translate(-106.02 9.13) rotate(-35.06)" />
-          <ellipse class="cls-3" cx="109.5" cy="106.16" rx="3.29" ry="8.55"
-            transform="translate(-51.12 51.12) rotate(-35.06)" />
-          <path class="cls-5" d="M138.71,85.25s4.26,6.06,2.68,9L20.15,179.32s-3.27.49-7.53-5.57Z"
-            transform="translate(-10 -31.06)" />
-        </g>
-        <g id="stars">
-          <g id="star1">
-            <polygon class="cls-6"
-              points="142.22 4.88 138.59 13.13 147.13 17.7 137.94 19.78 139.9 28.82 132.07 23.15 125.96 29.86 125.38 20.71 115.81 20.03 122.93 14.3 117.1 6.74 126.55 8.74 128.85 0 133.51 8.22 142.22 4.88" />
-            <polygon class="cls-7"
-              points="142.29 4.89 136.56 13.87 144.96 17.35 136.17 18.98 138.3 26.2 131.33 20.74 125.88 29.85 132.06 23.11 139.91 28.82 137.95 19.81 147.12 17.74 138.59 13.11 142.29 4.89" />
-          </g>
-          <g id="star2">
-            <polygon class="cls-6"
-              points="166.3 14.45 165.13 17.09 167.87 18.55 164.93 19.22 165.55 22.12 163.04 20.3 161.09 22.45 160.9 19.52 157.83 19.3 160.11 17.46 158.25 15.04 161.27 15.68 162.01 12.88 163.51 15.52 166.3 14.45" />
-            <polygon class="cls-7"
-              points="166.32 14.45 164.48 17.33 167.18 18.44 164.36 18.96 165.04 21.28 162.81 19.53 161.06 22.45 163.04 20.29 165.56 22.12 164.93 19.23 167.87 18.57 165.13 17.08 166.32 14.45" />
-          </g>
-          <g id="star3">
-            <polygon class="cls-6"
-              points="202.01 38.12 194.78 46.34 203 54.75 191.61 53.79 190.56 64.97 183.57 55.54 174.05 61.06 176.73 50.27 165.91 45.98 176.24 41.95 172.26 31.08 182.46 36.84 188.33 27.58 190.71 38.8 202.01 38.12" />
-            <polygon class="cls-7"
-              points="202.08 38.15 192.17 46.45 200.62 53.55 189.85 52.21 189.67 61.34 183.6 52.48 173.96 61.03 183.58 55.49 190.57 64.97 191.6 53.83 202.97 54.79 194.8 46.31 202.08 38.15" />
-          </g>
-          <g id="star4">
-            <polygon class="cls-6"
-              points="155.07 63.05 153.01 67.75 157.87 70.35 152.64 71.52 153.75 76.67 149.3 73.44 145.83 77.25 145.5 72.05 140.06 71.67 144.1 68.41 140.79 64.11 146.16 65.25 147.47 60.28 150.13 64.95 155.07 63.05" />
-            <polygon class="cls-7"
-              points="155.11 63.06 151.86 68.17 156.63 70.14 151.63 71.07 152.84 75.17 148.88 72.07 145.78 77.25 149.29 73.42 153.76 76.67 152.65 71.54 157.86 70.36 153.01 67.73 155.11 63.06" />
-          </g>
-        </g>
-      </svg>
-      <h5>{{scanwizard_prompt}}</h5>
-    </div>
-  </c-modal-body>
-  <c-modal-footer>
-    <small *ngIf="scan_type=='ip'">Empty username and password means system default
-      configuration. Enabling SSL defaults the port to 8729.</small>
-  </c-modal-footer>
-</c-modal>
-
 
 <c-modal #ExecutedDataModal backdrop="static" size="xl" [(visible)]="ExecutedDataModalVisible" id="ExecutedDataModal">
   <c-modal-header>
@@ -1346,6 +1251,20 @@
     <!-- SECTION 1: ADD MIKROTIK DEVICE                -->
     <!-- ============================================== -->
     <ng-container *ngIf="unifiedModalMode === 'add' && unifiedCategory === 'mikrotik'">
+      <div class="d-flex gap-4 mb-3">
+        <div class="form-check form-check-inline m-0">
+          <input class="form-check-input" type="radio" [(ngModel)]="addMikrotikMode" value="single"
+            id="addMikrotikModeSingle" name="addMikrotikMode" />
+          <label class="form-check-label small fw-semibold" for="addMikrotikModeSingle">Single device</label>
+        </div>
+        <div class="form-check form-check-inline m-0">
+          <input class="form-check-input" type="radio" [(ngModel)]="addMikrotikMode" value="range"
+            id="addMikrotikModeRange" name="addMikrotikMode" />
+          <label class="form-check-label small fw-semibold" for="addMikrotikModeRange">IP range (network scan)</label>
+        </div>
+      </div>
+
+      <ng-container *ngIf="addMikrotikMode === 'single'">
       <div class="alert alert-info d-flex align-items-center mb-3 py-2" role="alert">
         <i class="fas fa-info-circle me-2 fs-5"></i>
         <div class="small">
@@ -1406,7 +1325,65 @@
             </div>
           </div>
         </c-col>
+      </c-row>
+      </ng-container>
 
+      <!-- IP range: the network scanner adds every MikroTik that logs in on the API port -->
+      <ng-container *ngIf="addMikrotikMode === 'range'">
+        <div class="alert alert-info d-flex align-items-center mb-3 py-2" role="alert">
+          <i class="fas fa-info-circle me-2 fs-5"></i>
+          <div class="small">
+            Every address from start to end is checked on the API port. Each MikroTik that logs in with these
+            credentials is added. Empty username and password mean the system default. Results are listed in
+            History (IP Scan).
+          </div>
+        </div>
+        <c-row class="g-3">
+          <c-col xs="12" md="6">
+            <label class="form-label small fw-semibold">Start IP *</label>
+            <input cFormControl size="sm" placeholder="192.168.88.1" [(ngModel)]="ip_scanner['start']"
+              [valid]="ip_scanner['start'] ? checkvalid('start') : undefined" />
+          </c-col>
+          <c-col xs="12" md="6">
+            <label class="form-label small fw-semibold">End IP *</label>
+            <input cFormControl size="sm" placeholder="192.168.88.254" [(ngModel)]="ip_scanner['end']"
+              [valid]="ip_scanner['end'] ? checkvalid('end') : undefined" />
+          </c-col>
+          <c-col xs="12" md="6">
+            <label class="form-label small fw-semibold">Username</label>
+            <input cFormControl size="sm" placeholder="Default username" [(ngModel)]="ip_scanner['user']" />
+          </c-col>
+          <c-col xs="12" md="6">
+            <label class="form-label small fw-semibold">Password</label>
+            <c-input-group size="sm">
+              <input cFormControl [type]="show_pass ? 'text' : 'password'" autocomplete="new-password"
+                [(ngModel)]="ip_scanner['password']" placeholder="Default password" />
+              <button cButton (click)="show_pass = !show_pass" color="secondary" variant="outline">
+                <i *ngIf="show_pass" class="fa-solid fa-eye"></i>
+                <i *ngIf="!show_pass" class="fa-solid fa-eye-slash"></i>
+              </button>
+            </c-input-group>
+          </c-col>
+          <c-col xs="12" md="6">
+            <label class="form-label small fw-semibold">API Port</label>
+            <input cFormControl size="sm" [(ngModel)]="ip_scanner['port']" [valid]="checkvalid('port') ? undefined : false"
+              [placeholder]="ip_scanner['ssl'] ? '8729' : '8728'" />
+          </c-col>
+          <c-col xs="12" md="6">
+            <div class="d-flex align-items-center mt-2">
+              <c-form-check sizing="lg" switch class="m-0 me-2">
+                <input cFormCheckInput type="checkbox" [(ngModel)]="ip_scanner['ssl']" (change)="onScanSslChange()"
+                  id="addScanSslSwitch" />
+              </c-form-check>
+              <label class="form-label small m-0 fw-semibold" for="addScanSslSwitch">API-SSL Support (Default port:
+                8729)</label>
+            </div>
+          </c-col>
+        </c-row>
+      </ng-container>
+
+      <!-- groups of the added device(s): both modes; every device is also in the default group -->
+      <c-row class="g-3 mt-1">
         <c-col xs="12" *ngIf="groups && groups.length > 0">
           <div class="d-flex justify-content-between align-items-center mb-1">
             <label class="form-label small fw-semibold m-0">
@@ -1512,6 +1489,12 @@
           </div>
         </c-col>
       </c-row>
+      <div *ngIf="rangeScanRunning && addMikrotikMode === 'range'" class="mt-3 p-3 bg-light rounded text-center border">
+        <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+        <span class="small fw-semibold text-secondary">{{rangeScanStatus || 'Scanning network...'}}</span>
+        <div class="small text-muted mt-1">You can close this window: the scan continues on the server and the
+          device list reloads when it is done.</div>
+      </div>
     </ng-container>
 
     <!-- ============================================== -->
@@ -1598,6 +1581,25 @@
                 (change)="onSslChange()" id="edit_mikrotik_ssl" />
             </c-form-check>
             <label class="form-label small m-0 fw-semibold" for="edit_mikrotik_ssl">SSL Support (API-SSL)</label>
+          </div>
+        </c-col>
+
+        <c-col xs="12" *ngIf="deviceTrust">
+          <div class="p-2 border rounded bg-light small">
+            <div class="fw-semibold mb-1"><i class="fas fa-fingerprint me-1 text-primary"></i>Trusted router identity</div>
+            <div *ngIf="deviceTrust.tls_mode === 'pin'" class="d-flex align-items-center gap-2 mb-1">
+              <span class="text-secondary" style="width:110px">API-SSL cert</span>
+              <code class="flex-grow-1 text-truncate">{{deviceTrust.trust?.tls_fingerprint || 'not seen yet (trusted on next connection)'}}</code>
+              <button cButton color="warning" size="sm" variant="outline" (click)="resetDeviceTrust('tls')"
+                [disabled]="!deviceTrust.trust?.tls_fingerprint">Reset</button>
+            </div>
+            <div *ngIf="deviceTrust.ssh_mode === 'pin'" class="d-flex align-items-center gap-2">
+              <span class="text-secondary" style="width:110px">SSH host key</span>
+              <code class="flex-grow-1 text-truncate">{{deviceTrust.trust?.ssh_host_key || 'not seen yet (trusted on next connection)'}}</code>
+              <button cButton color="warning" size="sm" variant="outline" (click)="resetDeviceTrust('ssh')"
+                [disabled]="!deviceTrust.trust?.ssh_host_key">Reset</button>
+            </div>
+            <div class="text-muted mt-1">Reset only after an expected change (new certificate, reinstalled router).</div>
           </div>
         </c-col>
       </c-row>
@@ -2414,13 +2416,13 @@
   </c-modal-body>
 
   <c-modal-footer>
-    <button cButton color="primary" (click)="saveUnifiedDevice()" [disabled]="savingUnifiedDevice"
+    <button cButton color="primary" (click)="saveUnifiedDevice()" [disabled]="savingUnifiedDevice || isRangeScanForm() && rangeScanRunning"
       [class.btn-success]="unifiedModalMode === 'add'">
       <i *ngIf="!savingUnifiedDevice && unifiedModalMode === 'add'" class="fas fa-plus me-1"></i>
       <i *ngIf="!savingUnifiedDevice && unifiedModalMode === 'edit'" class="fas fa-save me-1"></i>
       <span *ngIf="savingUnifiedDevice">Saving...</span>
       <span *ngIf="!savingUnifiedDevice && unifiedModalMode === 'add'">
-        {{ unifiedCategory === 'app' ? 'Publish Application' : 'Add Device' }}
+        {{ unifiedCategory === 'app' ? 'Publish Application' : (isRangeScanForm() ? 'Start Scan' : 'Add Device') }}
       </span>
       <span *ngIf="!savingUnifiedDevice && unifiedModalMode === 'edit'">Save Changes</span>
     </button>
@@ -3128,6 +3130,76 @@
       <i class="fa-solid fa-check me-1" *ngIf="!isPublishingApp"></i>
       <span class="spinner-border spinner-border-sm me-1" *ngIf="isPublishingApp" role="status"></span>
       {{ isPublishingApp ? 'Publishing...' : 'Publish Application' }}
+    </button>
+  </c-modal-footer>
+</c-modal>
+
+<c-modal #BulkEditModal backdrop="static" size="lg" [(visible)]="bulkEditVisible" id="BulkEditModal">
+  <c-modal-header>
+    <h5 cModalTitle><i class="fas fa-pen-to-square me-2"></i>Bulk Edit ({{bulkEditTargets.length}} MikroTik device(s))</h5>
+    <button (click)="bulkEditVisible=false" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body>
+    <p class="small text-muted mb-3">Only the ticked settings change; everything else stays as it is on each device.</p>
+    <div class="d-flex align-items-center gap-2 mb-2">
+      <input type="checkbox" class="form-check-input mt-0" id="be_ssl" [(ngModel)]="bulkEdit.use.ssl" [disabled]="bulkEditRunning">
+      <label for="be_ssl" class="form-label mb-0" style="width:150px">SSL Support (API-SSL)</label>
+      <select cSelect size="sm" style="max-width:160px" [(ngModel)]="bulkEdit.ssl" [disabled]="!bulkEdit.use.ssl || bulkEditRunning">
+        <option [ngValue]="true">Enabled</option>
+        <option [ngValue]="false">Disabled</option>
+      </select>
+    </div>
+    <div class="d-flex align-items-center gap-2 mb-2">
+      <input type="checkbox" class="form-check-input mt-0" id="be_api" [(ngModel)]="bulkEdit.use.api_port" [disabled]="bulkEditRunning">
+      <label for="be_api" class="form-label mb-0" style="width:150px">API Port</label>
+      <input cFormControl sizing="sm" type="number" min="1" max="65535" style="max-width:160px" [(ngModel)]="bulkEdit.api_port"
+        [disabled]="!bulkEdit.use.api_port || bulkEditRunning" placeholder="8729">
+    </div>
+    <div class="d-flex align-items-center gap-2 mb-2">
+      <input type="checkbox" class="form-check-input mt-0" id="be_ssh" [(ngModel)]="bulkEdit.use.ssh_port" [disabled]="bulkEditRunning">
+      <label for="be_ssh" class="form-label mb-0" style="width:150px">SSH Port</label>
+      <input cFormControl sizing="sm" type="number" min="1" max="65535" style="max-width:160px" [(ngModel)]="bulkEdit.ssh_port"
+        [disabled]="!bulkEdit.use.ssh_port || bulkEditRunning" placeholder="22">
+    </div>
+    <div class="d-flex align-items-center gap-2 mb-2">
+      <input type="checkbox" class="form-check-input mt-0" id="be_cred" [(ngModel)]="bulkEdit.use.credentials" [disabled]="bulkEditRunning">
+      <label for="be_cred" class="form-label mb-0" style="width:150px">Username / Password</label>
+      <input cFormControl sizing="sm" style="max-width:160px" [(ngModel)]="bulkEdit.user_name" [disabled]="!bulkEdit.use.credentials || bulkEditRunning"
+        placeholder="Username" autocomplete="off">
+      <input cFormControl sizing="sm" type="password" style="max-width:160px" [(ngModel)]="bulkEdit.password"
+        [disabled]="!bulkEdit.use.credentials || bulkEditRunning" placeholder="Password (empty = keep)" autocomplete="new-password">
+    </div>
+    <hr>
+    <div class="form-check mb-1">
+      <input type="checkbox" class="form-check-input" id="be_router" [(ngModel)]="bulkEdit.apply_on_router" [disabled]="bulkEditRunning">
+      <label for="be_router" class="form-check-label">Also apply the SSL / port changes on the routers (/ip service)</label>
+    </div>
+    <div class="small text-muted mb-2">
+      Each router is changed first and must answer with the new settings; only then is its MikroWizard record saved.
+      A router that does not answer gets its previous services back. Credentials are only changed in MikroWizard.
+      API-SSL needs a certificate on the router's api-ssl service.
+    </div>
+    <div *ngIf="bulkEditResults.length > 0" class="mt-3">
+      <div class="small mb-1"><b>{{bulkEditCount('success')}}</b> saved, <b>{{bulkEditCount('failed')}}</b> failed,
+        <b>{{bulkEditCount('skipped')}}</b> skipped<span *ngIf="bulkEditRunning"> - working...</span></div>
+      <div style="max-height:260px; overflow:auto">
+        <table class="table table-sm table-striped small mb-0">
+          <thead><tr><th>Device</th><th>IP</th><th>Result</th><th>Details</th></tr></thead>
+          <tbody>
+            <tr *ngFor="let r of bulkEditResults">
+              <td>{{r.name || r.id}}</td><td>{{r.ip}}</td>
+              <td><c-badge [color]="r.status === 'success' ? 'success' : (r.status === 'skipped' ? 'secondary' : 'danger')">{{r.status}}</c-badge></td>
+              <td>{{r.message}}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </c-modal-body>
+  <c-modal-footer>
+    <button cButton color="secondary" (click)="bulkEditVisible=false" [disabled]="bulkEditRunning">Close</button>
+    <button cButton color="success" class="text-white" (click)="runBulkEdit()" [disabled]="bulkEditRunning || !bulkEditHasChanges()">
+      <span class="spinner-border spinner-border-sm me-1" *ngIf="bulkEditRunning" role="status"></span>Apply
     </button>
   </c-modal-footer>
 </c-modal>

@@ -156,6 +156,42 @@ export class dataProvider {
     save_editform(data: any) {
         return this.MikroWizardRPC.sendJsonRequest("/api/dev/save_editform", data);
     }
+    catalog_status() {
+        return this.MikroWizardRPC.sendJsonRequest("/api/pam/templates/catalog/status", {});
+    }
+    catalog_updates() {
+        return this.MikroWizardRPC.sendJsonRequest("/api/pam/templates/catalog/updates", {});
+    }
+    catalog_apply(data: any) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/pam/templates/catalog/apply", data);
+    }
+    catalog_skip(key: string) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/pam/templates/catalog/skip", { key: key });
+    }
+    catalog_history(template_id: number) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/pam/templates/catalog/history", { template_id: template_id });
+    }
+    catalog_revert(history_id: number) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/pam/templates/catalog/revert", { history_id: history_id });
+    }
+    catalog_check_now() {
+        return this.MikroWizardRPC.sendJsonRequest("/api/pam/templates/catalog/check_now", {});
+    }
+    catalog_import(catalog: string, signature: string) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/pam/templates/catalog/import", { catalog: catalog, signature: signature });
+    }
+    catalog_settings(mode: string, channel: string) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/pam/templates/catalog/settings", { mode: mode, channel: channel });
+    }
+    device_trust(devid: number) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/dev/trust", { devid: devid });
+    }
+    device_trust_reset(devid: number, kind: string | null) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/dev/trust/reset", { devid: devid, kind: kind });
+    }
+    bulk_edit(devices: number[], changes: any, apply_on_router: boolean) {
+        return this.MikroWizardRPC.sendJsonRequest("/api/dev/bulk_edit", { devices: devices, changes: changes, apply_on_router: apply_on_router });
+    }
     get_editform_pro(id: number) {
         let data = { devid: id };
         return this.MikroWizardRPC.sendJsonRequest("/api/pro/dev/get_editform", data);
@@ -588,6 +624,20 @@ export class dataProvider {
             'uid': id
         }
         return this.MikroWizardRPC.sendJsonRequest("/api/user/delete", data);
+    }
+    // Failed-login throttling: current panel lockouts / unlock (panel + RADIUS)
+    login_locks() {
+        return this.MikroWizardRPC.sendJsonRequest("/api/user/login_locks", {});
+    }
+    unlock_login(username: string, ip: string, all: boolean = false) {
+        var data: any = {};
+        if (all) {
+            data['all'] = true;
+        } else {
+            if (username) data['username'] = username;
+            if (ip) data['ip'] = ip;
+        }
+        return this.MikroWizardRPC.sendJsonRequest("/api/user/unlock_login", data);
     }
     togglePam(uid: string, enable: boolean) {
         var data = {

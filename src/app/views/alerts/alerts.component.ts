@@ -36,7 +36,28 @@ export class AlertsComponent implements OnInit {
   public ruleFilterRole: string = 'all';
   public ruleFilterSearch: string = '';
   
+  // p-table re-sorts / re-filters - and goes back to page 1 - every time [value] gets a new
+  // array: the same inputs give the same array
+  private filteredRulesCache: any[] = [];
+  private filteredRulesFor: any[] = [];
+  private filteredUsersCache: any[] = [];
+  private filteredUsersFor: any[] = [];
+
+  private sameInputs(prev: any[], next: any[]): boolean {
+    return prev.length === next.length && next.every((v, i) => v === prev[i]);
+  }
+
   get filteredRules() {
+    const inputs = [this.rules, this.rules ? this.rules.length : 0, this.users, this.users ? this.users.length : 0,
+                    this.isAdmin, this.ruleFilterRole, this.ruleFilterSearch];
+    if (!this.sameInputs(this.filteredRulesFor, inputs)) {
+      this.filteredRulesFor = inputs;
+      this.filteredRulesCache = this.computeFilteredRules();
+    }
+    return this.filteredRulesCache;
+  }
+
+  private computeFilteredRules(): any[] {
     if (!this.rules) return [];
     if (!this.isAdmin) return this.rules;
 
@@ -226,6 +247,15 @@ export class AlertsComponent implements OnInit {
   }
   
   get filteredUsers() {
+    const inputs = [this.users, this.users ? this.users.length : 0, this.userRoleFilter];
+    if (!this.sameInputs(this.filteredUsersFor, inputs)) {
+      this.filteredUsersFor = inputs;
+      this.filteredUsersCache = this.computeFilteredUsers();
+    }
+    return this.filteredUsersCache;
+  }
+
+  private computeFilteredUsers(): any[] {
     let list = this.users;
     
     if (this.userRoleFilter === 'staff') {

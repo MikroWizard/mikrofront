@@ -83,7 +83,26 @@ export class DevicesComponent implements OnInit, OnDestroy {
     return this.expandedParentServers.has(id);
   }
 
+  // p-table re-sorts / re-filters - and goes back to page 1 - every time [value] gets a new
+  // array. The list is rebuilt only when the devices, their order, the tab or the expanded
+  // servers change; a refresh that only updates device fields keeps the same array.
+  private displayDevicesCache: any[] = [];
+  private displayDevicesKey: string | null = null;
+
   public get displayDevices(): any[] {
+    const src = Array.isArray(this.source) ? this.source : [];
+    let key = this.deviceTab + '|' + Array.from(this.expandedParentServers).join(',') + '|';
+    for (const d of src) {
+      key += d.id + ':' + (d.parent_id || '') + ':' + (d.device_type || '') + ':' + (d.brand || '') + ',';
+    }
+    if (key !== this.displayDevicesKey) {
+      this.displayDevicesKey = key;
+      this.displayDevicesCache = this.buildDisplayDevices();
+    }
+    return this.displayDevicesCache;
+  }
+
+  private buildDisplayDevices(): any[] {
     if (!this.source || !Array.isArray(this.source)) return [];
     if (this.deviceTab === 'mikrotik') {
       return this.source.filter((d: any) => this.isMikrotik(d));
@@ -274,15 +293,16 @@ export class DevicesComponent implements OnInit, OnDestroy {
   public loading: boolean = true;
   public upgrades: any = [];
   public updates: any = [];
-  public scanwizard_step: number = 1;
-  public scanwizard_modal: boolean = false;
   public ConfirmModalVisible: boolean = false;
   public EditDevModalVisible: boolean = false;
   public ConfirmAction: string = "checkfirm";
-  public scan_type: string = "ip";
   public scan_timer: any;
   public list_update_timer: any;
-  public scanwizard_prompt: string = "Scanning Network!";
+  // Add Device → MikroTik: one device, or an IP range scanned by the network scanner
+  public addMikrotikMode: string = "single";
+  public rangeScanRunning: boolean = false;
+  public rangeScanStatus: string = "";
+  private rangeScanErrors: number = 0;
   public groups: any = [];
   public selected_group: number = 0;
   public groupFilterSearch: string = '';
@@ -316,7 +336,6 @@ export class DevicesComponent implements OnInit, OnDestroy {
     return !!(
       this.ConfirmModalVisible ||
       this.EditDevModalVisible ||
-      this.scanwizard_modal ||
       this.ExecutedDataModalVisible ||
       this.detailsModalVisible ||
       this.showWebAccessModal ||
@@ -534,6 +553,96 @@ export class DevicesComponent implements OnInit, OnDestroy {
     this.selected_rows = value;
     this.Selectedrows = value ? value.map(item => item.id) : [];
     this.rows = value; // For legacy compat if needed
+  }
+
+  // ---- Router identity (trusted API-SSL certificate / SSH host key, Settings > device verification)
+  public deviceTrust: any = null;
+
+  loadDeviceTrust(devid: number): void {
+    this.deviceTrust = null;
+    this.data_provider.device_trust(devid).then((res: any) => {
+      if (res && res.status === 'success' && res.available && (res.tls_mode === 'pin' || res.ssh_mode === 'pin')) {
+        this.deviceTrust = { devid: devid, ...res };
+      }
+    }).catch(() => { this.deviceTrust = null; });
+  }
+
+  resetDeviceTrust(kind: string | null): void {
+    if (!this.deviceTrust) return;
+    const devid = this.deviceTrust.devid;
+    this.data_provider.device_trust_reset(devid, kind).then((res: any) => {
+      if (res && res.status === 'success') {
+        this.show_toast('Router identity', 'Trust reset: the next connection is trusted again', 'success');
+        this.loadDeviceTrust(devid);
+      } else {
+        this.show_toast('Router identity', (res && res.err) || 'Reset failed', 'danger');
+      }
+    });
+  }
+
+  // ---- Bulk edit (SSL / API port / SSH port / credentials of the selected MikroTik devices)
+  public bulkEditVisible: boolean = false;
+  public bulkEditRunning: boolean = false;
+  public bulkEditTargets: any[] = [];
+  public bulkEditResults: any[] = [];
+  public bulkEdit: any = this.emptyBulkEdit();
+  private readonly bulkEditChunk = 25;
+
+  emptyBulkEdit(): any {
+    return {
+      use: { ssl: false, api_port: false, ssh_port: false, credentials: false },
+      ssl: true, api_port: 8729, ssh_port: 22, user_name: '', password: '', apply_on_router: false,
+    };
+  }
+
+  openBulkEdit(): void {
+    this.bulkEditTargets = (this.selected_rows || []).filter((d: any) => this.isMikrotik(d));
+    this.bulkEdit = this.emptyBulkEdit();
+    this.bulkEditResults = [];
+    this.bulkEditVisible = true;
+  }
+
+  bulkEditHasChanges(): boolean {
+    const u = this.bulkEdit.use;
+    return u.ssl || u.api_port || u.ssh_port || (u.credentials && (this.bulkEdit.user_name || this.bulkEdit.password));
+  }
+
+  bulkEditCount(status: string): number {
+    return this.bulkEditResults.filter((r: any) => r.status === status).length;
+  }
+
+  async runBulkEdit(): Promise<void> {
+    const b = this.bulkEdit;
+    const changes: any = {};
+    if (b.use.ssl) changes.ssl = !!b.ssl;
+    if (b.use.api_port) changes.api_port = b.api_port;
+    if (b.use.ssh_port) changes.ssh_port = b.ssh_port;
+    if (b.use.credentials) {
+      if (b.user_name) changes.user_name = b.user_name;
+      if (b.password) changes.password = b.password;
+    }
+    const ids = this.bulkEditTargets.map((d: any) => d.id);
+    if (!ids.length || !Object.keys(changes).length) return;
+    this.bulkEditRunning = true;
+    this.bulkEditResults = [];
+    try {
+      for (let i = 0; i < ids.length; i += this.bulkEditChunk) {
+        const res: any = await this.data_provider.bulk_edit(ids.slice(i, i + this.bulkEditChunk), changes, !!b.apply_on_router);
+        if (res && res.status === 'success') {
+          this.bulkEditResults = this.bulkEditResults.concat(res.results || []);
+        } else {
+          this.show_toast('Bulk Edit', (res && (res.err || res.error)) || 'Bulk edit failed', 'danger');
+          break;
+        }
+      }
+      const ok = this.bulkEditCount('success');
+      this.show_toast('Bulk Edit', ok + ' of ' + ids.length + ' device(s) updated', ok === ids.length ? 'success' : 'warning');
+      this.refreshGridTableData();
+    } catch (e: any) {
+      this.show_toast('Bulk Edit', 'Bulk edit failed: ' + (e?.error || e), 'danger');
+    } finally {
+      this.bulkEditRunning = false;
+    }
   }
 
   get selectedMikrotikCount(): number {
@@ -1069,6 +1178,12 @@ export class DevicesComponent implements OnInit, OnDestroy {
       ip: '', username: 'admin', password: '', port: 8728, ssl: false,
       mikrotik_protocol: 'ssh', connection_port: 22, group_ids: []
     };
+    if (!this.rangeScanRunning) {
+      this.addMikrotikMode = 'single';
+      this.ip_scanner = { start: "", end: "", port: "", user: "", password: "", ssl: false };
+    } else {
+      this.addMikrotikMode = 'range';          // show the running scan
+    }
     this.addNonMikrotikData = {
       name: '', ip: '', device_type: 'generic', device_model: '',
       username: '', password: '', enable_password: '', template_id: null,
@@ -1212,6 +1327,7 @@ export class DevicesComponent implements OnInit, OnDestroy {
           this.show_toast("Error", "You are not authorized to perform this action", "danger");
         } else {
           this.selected_device["editform"] = res;
+          this.loadDeviceTrust(dev.id);
           const types = res["connection_types"] || [];
           res["mikrotik_protocol"] = types.includes("ssh") ? "ssh" : (types.includes("telnet") ? "telnet" : "ssh");
           res["mikrotik_webfig"] = types.includes("webfig");
@@ -1361,6 +1477,10 @@ export class DevicesComponent implements OnInit, OnDestroy {
         return;
       }
       if (this.unifiedCategory === 'mikrotik') {
+        if (this.addMikrotikMode === 'range') {
+          this.startRangeScan();
+          return;
+        }
         if (!this.addMikrotikData.ip || !this.addMikrotikData.username) {
           this.show_toast('Validation', 'Please provide both IP and Username', 'warning');
           return;
@@ -1372,7 +1492,9 @@ export class DevicesComponent implements OnInit, OnDestroy {
           username: this.addMikrotikData.username,
           password: this.addMikrotikData.password,
           port: this.addMikrotikData.port || (this.addMikrotikData.ssl ? 8729 : 8728),
-          group_ids: (this.addMikrotikData.group_ids || []).join(',')
+          group_ids: (this.addMikrotikData.group_ids || []).join(','),
+          protocol: this.addMikrotikData.mikrotik_protocol || 'ssh',
+          connection_port: this.addMikrotikData.connection_port || null
         }];
         this.data_provider.bulk_add_devices(singleDevice).then((res: any) => {
           if (res && res.taskId) {
@@ -1606,116 +1728,103 @@ export class DevicesComponent implements OnInit, OnDestroy {
     } else return false;
   }
 
-  scanwizard(step: number, type: string) {
-    var _self = this;
-    this.data_provider.scan_devs(this.scan_type, {}).then((res) => {
-      if (res.status == true) {
-        _self.scanwizard_step = 3;
-        this.wait_scan();
-        return;
-      }
-      if (step == 1) {
-        _self.scan_type = "";
-        _self.ip_scanner = {
-          start: "",
-          end: "",
-          port: "",
-          user: "",
-          password: "",
-          ssl: false,
-        };
-      }
-      if (step == 2) {
-        _self.scan_type = "";
-        if (type == "ip") {
-          _self.scan_type = "ip";
-          if (!_self.ip_scanner) {
-            _self.ip_scanner = {
-              start: "",
-              end: "",
-              port: "",
-              user: "",
-              password: "",
-              ssl: false,
-            };
-          }
-        } else if (type == "chip") {
-          _self.scan_type = "mac";
-        }
-      }
-      if (step == 3) {
-        if (_self.scan_type == "ip") {
-          if (_self.ip_scanner.start == "" || _self.ip_scanner.end == "") {
-            return;
-          }
-          //test if start and end are valid ip addresses and port is valid
-          if (
-            !_self.checkvalid("start") ||
-            !_self.checkvalid("end") ||
-            !_self.checkvalid("port")
-          ) {
-            return;
-          }
-          if (_self.ip_scanner.port == "") {
-            _self.ip_scanner.port = false;
-          }
-          if (_self.ip_scanner.user == "") {
-            _self.ip_scanner.user = false;
-          }
-          if (_self.ip_scanner.password == "") {
-            _self.ip_scanner.password = false;
-          }
-
-          _self.data_provider
-            .scan_devs(_self.scan_type, _self.ip_scanner)
-            .then((res) => {
-              _self.scanwizard_prompt = "Scanning Network!";
-              _self.wait_scan();
-            });
-        } else if (type == "chip") {
-          _self.data_provider
-            .scan_devs(_self.scan_type, _self.ip_scanner)
-            .then((res) => {
-              //   console.dir(res);
-            });
-        }
-      }
-      if ("error" in res && res.error && res.error.indexOf("Unauthorized") !== -1) {
-        _self.show_toast(
-          "Error",
-          "You are not authorized to perform this action",
-          "danger"
-        );
-      }
-      else
-      _self.scanwizard_step = step;
-    });
-  }
-
-  wait_scan() {
-    clearTimeout(this.scan_timer);
-    var _self = this;
-    this.scan_timer = setTimeout(function () {
-      _self.data_provider.scan_devs(_self.scan_type, {}).then((res) => {
-        if (res.status == false) {
-          _self.initGridTable();
-          _self.scanwizard_prompt = "Scanning done! Reloading data";
-          setTimeout(function () {
-            _self.scanwizard_modal = false;
-          }, 3000);
-        } else {
-          _self.wait_scan();
-        }
-      });
-    }, 3000);
-  }
-
   logger(item: any) {
     console.dir(item);
   }
 
-  handleScanwizard_modal(event: any) {
-    this.scanwizard_modal = event;
+  isRangeScanForm(): boolean {
+    return this.unifiedModalMode === 'add' && this.unifiedCategory === 'mikrotik' && this.addMikrotikMode === 'range';
+  }
+
+  private scanUnauthorized(res: any): boolean {
+    if (res && res.error && String(res.error).indexOf("Unauthorized") !== -1) {
+      this.show_toast("Error", "You are not authorized to perform this action", "danger");
+      return true;
+    }
+    return false;
+  }
+
+  /** IP range of the Add Device form -> /api/scanner/scan (one scan at a time on the server). */
+  startRangeScan() {
+    if (this.rangeScanRunning) return;
+    const s = this.ip_scanner;
+    if (!this.checkvalid("start") || !this.checkvalid("end")) {
+      this.show_toast("Validation", "Please enter a valid start and end IP address", "warning");
+      return;
+    }
+    if (!this.checkvalid("port")) {
+      this.show_toast("Validation", "API port must be a number", "warning");
+      return;
+    }
+    // empty fields mean the system default: sent as false, as the scanner expects
+    const payload: any = {
+      start: s.start,
+      end: s.end,
+      port: (s.port === "" || s.port === null || s.port === undefined) ? false : s.port,
+      user: s.user ? s.user : false,
+      password: s.password ? s.password : false,
+      ssl: !!s.ssl,
+      group_ids: (this.addMikrotikData.group_ids || []).slice(),
+    };
+    this.rangeScanRunning = true;
+    this.rangeScanErrors = 0;
+    this.rangeScanStatus = "Starting scan...";
+    this.data_provider.scan_devs("ip", {}).then((res: any) => {
+      if (this.scanUnauthorized(res)) {
+        this.rangeScanRunning = false;
+        return;
+      }
+      if (res && res.status == true) {
+        // a scan started earlier (by anyone) is still running: follow it
+        this.rangeScanStatus = "Another network scan is running. Waiting for it to finish...";
+        this.show_toast("Network scan", "A scan is already running; start yours when it is done.", "warning");
+        this.waitRangeScan();
+        return;
+      }
+      this.data_provider.scan_devs("ip", payload).then((r: any) => {
+        if (this.scanUnauthorized(r)) {
+          this.rangeScanRunning = false;
+          return;
+        }
+        this.rangeScanStatus = "Scanning " + s.start + " - " + s.end + "...";
+        this.waitRangeScan();
+      }).catch(() => {
+        this.rangeScanRunning = false;
+        this.show_toast("Error", "Could not start the network scan", "danger");
+      });
+    }).catch(() => {
+      this.rangeScanRunning = false;
+      this.show_toast("Error", "Could not reach the server", "danger");
+    });
+  }
+
+  waitRangeScan() {
+    clearTimeout(this.scan_timer);
+    this.scan_timer = setTimeout(() => {
+      this.data_provider.scan_devs("ip", {}).then((res: any) => {
+        this.rangeScanErrors = 0;
+        if (res && res.status == false) {
+          this.rangeScanRunning = false;
+          this.rangeScanStatus = "";
+          this.show_toast("Network scan", "Scan finished. Added devices are in the list; details in History (IP Scan).", "success");
+          if (this.unifiedModalVisible && this.isRangeScanForm()) {
+            this.closeUnifiedModal();
+          }
+          this.initGridTable();
+        } else {
+          this.waitRangeScan();
+        }
+      }).catch(() => {
+        this.rangeScanErrors++;
+        if (this.rangeScanErrors >= 20) {
+          this.rangeScanRunning = false;
+          this.rangeScanStatus = "";
+          this.show_toast("Network scan", "Lost contact with the server; check History (IP Scan) for the result.", "warning");
+          return;
+        }
+        this.waitRangeScan();
+      });
+    }, 3000);
   }
   show_toast(title: string, body: string, color: string) {
     const { ...props } = { ...this.toasterForm, color, title, body };

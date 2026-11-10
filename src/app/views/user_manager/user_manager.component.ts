@@ -98,7 +98,22 @@ export class UserManagerComponent implements OnInit {
     this.selectedRoleFilter = filter;
   }
 
+  // p-table re-sorts / re-filters - and goes back to page 1 - every time [value] gets a new
+  // array: the same inputs give the same array
+  private filteredUsersCache: Array<any> = [];
+  private filteredUsersFor: any[] = [];
+
   getFilteredUsers(): Array<any> {
+    const inputs = [this.source, this.source ? this.source.length : 0, this.selectedRoleFilter];
+    if (inputs.length === this.filteredUsersFor.length && inputs.every((v, i) => v === this.filteredUsersFor[i])) {
+      return this.filteredUsersCache;
+    }
+    this.filteredUsersFor = inputs;
+    this.filteredUsersCache = this.computeFilteredUsers();
+    return this.filteredUsersCache;
+  }
+
+  private computeFilteredUsers(): Array<any> {
     if (this.selectedRoleFilter === 'all') {
       return this.source;
     } else if (this.selectedRoleFilter === 'staff') {
@@ -594,6 +609,7 @@ export class UserManagerComponent implements OnInit {
 
   ngOnInit(): void {
     this.initGridTable();
+    this.loadLoginLocks();
   }
 
   show_toast(title: string, body: string, color: string) {
@@ -776,6 +792,65 @@ export class UserManagerComponent implements OnInit {
     this.data_provider.get_user_restrictions(this.SelectedUser["id"]).then((res) => {
       _self.userresttrictions = res;
       _self.RestrictionsTaskModalVisible = true;
+    });
+  }
+
+  // ---- Locked logins (failed-login throttling) ----
+  public lockModalVisible: boolean = false;
+  public loginLocks: Array<any> = [];
+  public loginLocksLoading: boolean = false;
+  public lockFormUser: string = '';
+  public lockFormIp: string = '';
+
+  get lockedUserCount(): number {
+    return this.loginLocks.length;
+  }
+
+  openLockModal() {
+    this.lockFormUser = '';
+    this.lockFormIp = '';
+    this.lockModalVisible = true;
+    this.loadLoginLocks();
+  }
+
+  loadLoginLocks() {
+    const _self = this;
+    this.loginLocksLoading = true;
+    this.data_provider.login_locks().then((res) => {
+      _self.loginLocks = (res && res.status === 'success' && Array.isArray(res.locks)) ? res.locks : [];
+      _self.loginLocksLoading = false;
+    }).catch(() => {
+      _self.loginLocks = [];
+      _self.loginLocksLoading = false;
+    });
+  }
+
+  formatLockTime(seconds: number): string {
+    const s = Math.max(0, Math.floor(seconds || 0));
+    const m = Math.floor(s / 60);
+    return m > 0 ? `${m} min ${s % 60} s` : `${s} s`;
+  }
+
+  unlockLogin(username: string, ip: string, all: boolean = false) {
+    const _self = this;
+    if (!all && !username && !ip) {
+      this.show_toast("Warning", "Enter a username or an IP address", "warning");
+      return;
+    }
+    this.data_provider.unlock_login(username, ip, all).then((res) => {
+      if (res && "error" in res && String(res.error).indexOf("Unauthorized") > -1) {
+        _self.show_toast("Error", "You are not authorized to perform this action", "danger");
+      } else if (!res || res.status !== 'success') {
+        _self.show_toast("Error", res && res.err ? res.err : "Unlock failed", "danger");
+      } else {
+        const target = all ? "all logins" : [username, ip].filter((x: string) => !!x).join(" / ");
+        _self.show_toast("Unlocked", `Login unlocked for ${target} (panel and router/terminal logins)`, "success");
+        _self.lockFormUser = '';
+        _self.lockFormIp = '';
+        _self.loadLoginLocks();
+      }
+    }).catch(() => {
+      _self.show_toast("Error", "Unlock failed", "danger");
     });
   }
 

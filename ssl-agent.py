@@ -977,84 +977,167 @@ MIGRATION_SCRIPT_PATH = os.path.join(CONF_DIR, "recreate-ssl.sh")
 
 
 def _generate_migration_script():
-    script = """#!/bin/bash
-set -e
+    script = r"""#!/bin/bash
+# MikroWizard - recreate the frontend container with HTTPS (port 443) published.
+# Nothing is removed before the new container runs: the old container is renamed and stopped,
+# and it is started again if the new one does not come up. Ports, volumes, network, restart
+# policy and extra hosts of the old container are kept.
+#   HTTPS_PORT=8443 bash recreate-ssl.sh   publish HTTPS on another host port (443 in use)
+#   Behind a reverse proxy that terminates TLS (host nginx, traefik, ...): this script is not
+#   needed - MikroWizard keeps working on its current ports.
+set -u -o pipefail
+
 if [ "$EUID" -ne 0 ]; then
     echo "Please run as root: sudo bash /opt/mikrowizard/recreate-ssl.sh"
     exit 1
 fi
+HTTPS_PORT="${HTTPS_PORT:-443}"
 
 CONTAINER=""
-
 matches=$(docker ps -a --format '{{.Names}}' | grep -i mikrofront || true)
-count=$(echo "$matches" | grep -c . 2>/dev/null || echo 0)
+count=$(printf '%s\n' "$matches" | grep -c . || true)
 
 if [ "$count" -eq 1 ]; then
-    CONTAINER=$(echo "$matches")
+    CONTAINER="$matches"
     echo "Found container: $CONTAINER"
 elif [ "$count" -gt 1 ]; then
     echo "Multiple containers found matching 'mikrofront':"
     echo ""
     i=1
-    echo "$matches" | while read name; do
+    printf '%s\n' "$matches" | while read -r name; do
         status=$(docker inspect -f '{{.State.Status}}' "$name" 2>/dev/null || echo "unknown")
-        ports=$(docker port "$name" 2>/dev/null | tr '\\n' ' ' || echo "none")
+        ports=$(docker port "$name" 2>/dev/null | tr '\n' ' ' || echo "none")
         echo "  $i) $name  (status: $status, ports: $ports)"
         i=$((i+1))
     done
     echo ""
-    read -p "Select number (1-$count): " choice
-    CONTAINER=$(echo "$matches" | sed -n "${choice}p")
+    read -r -p "Select number (1-$count): " choice
+    CONTAINER=$(printf '%s\n' "$matches" | sed -n "${choice}p")
 else
     echo "No container with 'mikrofront' in name found."
     echo "Available containers:"
     docker ps -a --format '  {{.Names}}  ({{.Status}})'
     echo ""
-    read -p "Type container name to add port 443: " CONTAINER
+    read -r -p "Type container name to add port 443: " CONTAINER
 fi
 
-if [ -z "$CONTAINER" ]; then
-    echo "No container selected. Aborting."
+if [ -z "$CONTAINER" ] || ! docker inspect "$CONTAINER" >/dev/null 2>&1; then
+    echo "No valid container selected. Aborting - nothing was changed."
     exit 1
 fi
 
-ISRUNNING=$(docker inspect -f '{{.State.Running}}' "$CONTAINER" 2>/dev/null || echo "false")
+NETWORK=$(docker inspect -f '{{.HostConfig.NetworkMode}}' "$CONTAINER")
+if [ "$NETWORK" = "host" ]; then
+    echo "$CONTAINER uses the host network: port 443 needs no publishing. Nothing to do."
+    exit 0
+fi
+
+# current settings of the container
+PORTS=$(docker inspect -f '{{range $p, $conf := .HostConfig.PortBindings}}{{range $conf}}{{if .HostIp}}{{.HostIp}}:{{end}}{{.HostPort}}:{{$p}} {{end}}{{end}}' "$CONTAINER")
+if printf '%s\n' $PORTS | grep -qE ':443/tcp$'; then
+    echo "$CONTAINER already publishes HTTPS (container port 443): $PORTS"
+    echo "Nothing to do."
+    exit 0
+fi
+BINDS=$(docker inspect -f '{{range .HostConfig.Binds}}{{.}}{{"\n"}}{{end}}' "$CONTAINER")
+VOLUMES=$(docker inspect -f '{{range .Mounts}}{{if eq .Type "volume"}}{{.Name}}:{{.Destination}}{{"\n"}}{{end}}{{end}}' "$CONTAINER")
+HOSTS=$(docker inspect -f '{{range .HostConfig.ExtraHosts}}{{.}}{{"\n"}}{{end}}' "$CONTAINER")
+RESTART=$(docker inspect -f '{{.HostConfig.RestartPolicy.Name}}' "$CONTAINER")
+[ -z "$RESTART" ] || [ "$RESTART" = "no" ] && RESTART="unless-stopped"
+WASRUNNING=$(docker inspect -f '{{.State.Running}}' "$CONTAINER")
+
+ARGS=(-d --restart "$RESTART" --name "$CONTAINER")
+[ -n "$NETWORK" ] && [ "$NETWORK" != "default" ] && [ "$NETWORK" != "bridge" ] && ARGS+=(--network "$NETWORK")
+for p in $PORTS; do ARGS+=(-p "$p"); done
+ARGS+=(-p "$HTTPS_PORT:443")
+while IFS= read -r b; do [ -n "$b" ] && ARGS+=(-v "$b"); done <<< "$BINDS"
+while IFS= read -r v; do [ -n "$v" ] && ARGS+=(-v "$v"); done <<< "$VOLUMES"
+if ! printf '%s\n' "$BINDS" | grep -q ':/conf'; then ARGS+=(-v /opt/mikrowizard/:/conf/); fi
+while IFS= read -r h; do [ -n "$h" ] && ARGS+=(--add-host "$h"); done <<< "$HOSTS"
+if ! printf '%s\n' "$HOSTS" | grep -q '^host.docker.internal:'; then ARGS+=(--add-host=host.docker.internal:host-gateway); fi
+
+# the HTTPS host port must be free (another web server / reverse proxy may use it)
+port_in_use() {
+    if command -v ss >/dev/null 2>&1; then
+        ss -H -ltn "sport = :$1" 2>/dev/null | grep -q .
+    else
+        (exec 3<>"/dev/tcp/127.0.0.1/$1") 2>/dev/null
+    fi
+}
+if port_in_use "$HTTPS_PORT"; then
+    echo "Host port $HTTPS_PORT is already in use (another web server or reverse proxy)."
+    echo "Nothing was changed."
+    echo "  - Behind a reverse proxy that terminates TLS: this script is not needed."
+    echo "  - Other free port: sudo HTTPS_PORT=8443 bash /opt/mikrowizard/recreate-ssl.sh"
+    exit 1
+fi
 
 echo ""
 echo "Container: $CONTAINER"
+echo "Ports now: ${PORTS:-none}   ->   adding $HTTPS_PORT:443"
 echo "This will:"
-echo "  1. Save all updates to a snapshot image"
-echo "  2. Recreate it with port 443 exposed"
+echo "  1. Save all updates to a snapshot image (mikrofront-updated)"
+echo "  2. Stop the current container and keep it as a backup"
+echo "  3. Start the container again with the same settings plus HTTPS"
+echo "  4. If it does not start: restore the old container"
 echo ""
-read -p "Proceed? [Y/n] " confirm
+read -r -p "Proceed? [Y/n] " confirm
 if [ "$confirm" = "n" ] || [ "$confirm" = "N" ]; then
     echo "Aborted."
     exit 0
 fi
 
 echo "Committing $CONTAINER to snapshot (preserving updates)..."
-docker commit "$CONTAINER" mikrofront-updated
-
-echo "Stopping $CONTAINER..."
-docker stop "$CONTAINER" 2>/dev/null || true
-docker rm "$CONTAINER" 2>/dev/null || true
-
-echo "Starting $CONTAINER with HTTPS (ports 80 + 443)..."
-docker run -d --restart unless-stopped \\
-    --add-host=host.docker.internal:host-gateway \\
-    --name "$CONTAINER" \\
-    -p 80:80 -p 443:443 \\
-    -v /opt/mikrowizard/:/conf/ \\
-    mikrofront-updated
-
-sleep 3
-if docker ps --filter "name=$CONTAINER" --filter "status=running" | grep -q "$CONTAINER"; then
-    echo ""
-    echo "SUCCESS: $CONTAINER is running with HTTPS on port 443."
-    echo "All updates have been preserved."
-else
-    echo "ERROR: Container failed. Run: docker logs $CONTAINER"
+if ! docker commit "$CONTAINER" mikrofront-updated >/dev/null; then
+    echo "ERROR: snapshot failed. Nothing was changed."
+    exit 1
 fi
+
+BACKUP="${CONTAINER}-before-ssl-$(date +%Y%m%d%H%M%S)"
+restore() {
+    echo "Restoring the previous container..."
+    docker rm -f "$CONTAINER" >/dev/null 2>&1 || true
+    docker rename "$BACKUP" "$CONTAINER" >/dev/null 2>&1 || true
+    if [ "$WASRUNNING" = "true" ]; then
+        docker start "$CONTAINER" >/dev/null 2>&1 || true
+    fi
+    echo "Previous container restored: $CONTAINER (nothing else was changed)."
+}
+
+echo "Stopping $CONTAINER (kept as $BACKUP)..."
+if ! docker rename "$CONTAINER" "$BACKUP"; then
+    echo "ERROR: could not rename $CONTAINER. Nothing was changed."
+    exit 1
+fi
+docker stop "$BACKUP" >/dev/null 2>&1 || true
+
+echo "Starting $CONTAINER with HTTPS..."
+if ! docker run "${ARGS[@]}" mikrofront-updated; then
+    echo "ERROR: the new container could not be created (see the message above)."
+    restore
+    exit 1
+fi
+
+ok=false
+for _ in 1 2 3 4 5 6 7 8 9 10; do
+    sleep 1
+    if [ "$(docker inspect -f '{{.State.Running}}' "$CONTAINER" 2>/dev/null)" = "true" ]; then
+        ok=true
+    else
+        ok=false
+    fi
+done
+if [ "$ok" != "true" ]; then
+    echo "ERROR: the new container stopped. Its last log lines:"
+    docker logs --tail 20 "$CONTAINER" 2>&1 || true
+    restore
+    exit 1
+fi
+
+docker rm "$BACKUP" >/dev/null 2>&1 || true
+echo ""
+echo "SUCCESS: $CONTAINER is running with HTTPS on host port $HTTPS_PORT."
+echo "All updates have been preserved."
 """
     os.makedirs(os.path.dirname(MIGRATION_SCRIPT_PATH), exist_ok=True)
     with open(MIGRATION_SCRIPT_PATH, "w") as f:

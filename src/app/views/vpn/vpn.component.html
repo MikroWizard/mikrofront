@@ -547,6 +547,11 @@
               <option value="off">Off (Direct Routing)</option>
             </select>
           </c-input-group>
+          <div *ngIf="peerForm.nat_mode === 'full'" class="small text-muted mb-3">
+            <i class="fa-solid fa-circle-info me-1"></i>All traffic of the router goes through the tunnel. The generated
+            script keeps a route to the MikroWizard server through the router's current default gateway, so the tunnel
+            itself stays up. Use Split Tunnel if only management traffic should use the tunnel.
+          </div>
 
           <div *ngIf="peerForm.nat_mode === 'split'" class="mt-3">
             <h6>Split Tunnel Targets</h6>

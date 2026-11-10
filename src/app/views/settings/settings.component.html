@@ -521,6 +521,53 @@
               <div class="switch-item">
                 <div class="switch-content">
                   <div class="switch-info">
+                    <h6 class="switch-title">Require Message-Authenticator on Routers
+                      <i class="fa-solid fa-question-circle ms-1 text-info help-icon"
+                        [cTooltip]="'Sets require-message-auth=yes-for-request-resp on the MikroWizard RADIUS entry of each router (RouterOS 7.15+), protecting against forged RADIUS replies (BlastRADIUS). MikroWizard replies work with this on or off. Off: the router setting is left as it is.'"
+                        cTooltipPlacement="top"></i>
+                    </h6>
+                    <p class="switch-description">🛡️ Routers only accept signed RADIUS replies (RouterOS 7.15+)
+                      <br><small class="text-info">💡 Applied during the regular device sync; needs Force RADIUS. Older RouterOS is skipped.</small>
+                    </p>
+                  </div>
+                  <c-form-check [switch]="true" sizing="lg">
+                    <input cFormCheckInput [(ngModel)]="sysconfigs['radius_enforce_router_message_auth']['value']" type="checkbox" />
+                    <label cFormCheckLabel></label>
+                  </c-form-check>
+                </div>
+              </div>
+
+              <div class="switch-item">
+                <div class="switch-content">
+                  <div class="switch-info">
+                    <h6 class="switch-title">Router Identity Verification
+                      <i class="fa-solid fa-question-circle ms-1 text-info help-icon"
+                        [cTooltip]="'Pin: the first API-SSL certificate / SSH host key of each router is trusted and a different one later is refused (Critical device event, reset in the device edit form). CA: API-SSL certificates must be signed by the CA file. Off: no check (as before).'"
+                        cTooltipPlacement="top"></i>
+                    </h6>
+                    <p class="switch-description">🔐 Protects router credentials against impersonated routers
+                      <br><small class="text-info">💡 API-SSL applies to devices with SSL support.</small>
+                    </p>
+                  </div>
+                  <div class="d-flex flex-column gap-1" style="min-width:220px">
+                    <select cSelect size="sm" [(ngModel)]="sysconfigs['device_tls_verify']['value']" title="API-SSL certificate">
+                      <option value="off">API-SSL: Off</option>
+                      <option value="pin">API-SSL: Pin certificate</option>
+                      <option value="ca">API-SSL: Verify with CA file</option>
+                    </select>
+                    <input cFormControl sizing="sm" *ngIf="sysconfigs['device_tls_verify']['value'] === 'ca'"
+                      [(ngModel)]="sysconfigs['device_tls_cafile']['value']" placeholder="/conf/ssl/routers-ca.pem" />
+                    <select cSelect size="sm" [(ngModel)]="sysconfigs['device_ssh_verify']['value']" title="SSH host key">
+                      <option value="off">SSH: Off</option>
+                      <option value="pin">SSH: Pin host key</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div class="switch-item">
+                <div class="switch-content">
+                  <div class="switch-info">
                     <h6 class="switch-title">Force Syslog
                       <i class="fa-solid fa-exclamation-triangle ms-1 text-warning help-icon"
                         [cTooltip]="'CRITICAL: Will overwrite syslog configuration on all devices. If MikroWizard server is unreachable, devices may stop logging or experience performance issues.'"
@@ -597,6 +644,66 @@
                 </div>
               </div>
             </div>
+          </div>
+
+          <!-- RADIUS Login Protection -->
+          <div class="config-section mb-4">
+            <h5 class="section-title mb-3">
+              <i class="fa-solid fa-user-lock me-2 text-danger"></i>RADIUS Login Protection
+              <i class="fa-solid fa-info-circle ms-2 text-info help-icon"
+                [cTooltip]="'Protects the built-in RADIUS server (router, terminal and WebFig logins) against password guessing. Applied by the RADIUS service within a minute after saving.'"
+                cTooltipPlacement="top"></i>
+            </h5>
+            <c-row>
+              <c-col md="6">
+                <div class="setting-group">
+                  <label class="setting-label">Message-Authenticator in Requests
+                    <i class="fa-solid fa-question-circle ms-1 text-info help-icon"
+                      [cTooltip]="'How the RADIUS server checks the Message-Authenticator routers send. Verify (default): checked when present, routers without it (RouterOS before 7.15) keep working. Auto: a router that sent one must keep sending it. Always require: refuses routers that do not send it.'"
+                      cTooltipPlacement="top"></i>
+                  </label>
+                  <select cFormControl [(ngModel)]="sysconfigs['radius_require_message_auth']['value']" class="form-control">
+                    <option value="verify">Verify when present (default)</option>
+                    <option value="auto">Auto: require from routers that send it</option>
+                    <option value="yes">Always require (RouterOS 7.15+ only)</option>
+                    <option value="off">Off (no check)</option>
+                  </select>
+                  <small class="setting-help">Requests with a wrong Message-Authenticator (wrong secret) are always dropped, except when Off.</small>
+                </div>
+              </c-col>
+              <c-col md="6">
+                <div class="setting-group">
+                  <label class="setting-label">Block Duration (seconds)
+                    <i class="fa-solid fa-question-circle ms-1 text-info help-icon"
+                      [cTooltip]="'How long a source / user is refused after too many failed logins. Admins can unlock in User Management > Locked Logins.'"
+                      cTooltipPlacement="top"></i>
+                  </label>
+                  <input cFormControl type="number" min="30" max="86400" [(ngModel)]="sysconfigs['radius_block_seconds']['value']" class="form-control" />
+                  <small class="setting-help">Default 300 (5 minutes)</small>
+                </div>
+              </c-col>
+              <c-col md="4">
+                <div class="setting-group">
+                  <label class="setting-label">Failures per User and Source</label>
+                  <input cFormControl type="number" min="0" max="1000" [(ngModel)]="sysconfigs['radius_fail_limit']['value']" class="form-control" />
+                  <small class="setting-help">Default 10 · 0 disables</small>
+                </div>
+              </c-col>
+              <c-col md="4">
+                <div class="setting-group">
+                  <label class="setting-label">Failures per Source (all users)</label>
+                  <input cFormControl type="number" min="0" max="10000" [(ngModel)]="sysconfigs['radius_fail_limit_source']['value']" class="form-control" />
+                  <small class="setting-help">Default 100 · 0 disables</small>
+                </div>
+              </c-col>
+              <c-col md="4">
+                <div class="setting-group">
+                  <label class="setting-label">Counting Window (seconds)</label>
+                  <input cFormControl type="number" min="30" max="86400" [(ngModel)]="sysconfigs['radius_fail_window']['value']" class="form-control" />
+                  <small class="setting-help">Default 300 (5 minutes)</small>
+                </div>
+              </c-col>
+            </c-row>
           </div>
           <div class="save-section mt-4">
             <button cButton color="primary" size="lg" (click)="saveSysSetting()">
@@ -1308,7 +1415,8 @@
             <i class="fa-solid fa-triangle-exclamation me-2"></i>
             <div class="flex-grow-1">
               <strong>Port 443 is not exposed.</strong> HTTPS requires port 443 to be mapped in the Docker container. Run the command below or click Copy to use it.
-              <br><small class="text-danger">This script recreates the container — no data will be lost. The persistent volume at /opt/mikrowizard/ is preserved.</small>
+              <br><small class="text-danger">This script recreates the container — no data will be lost. The persistent volume at /opt/mikrowizard/ is preserved, the current ports and volumes are kept, and the previous container is restored if the new one does not start.</small>
+              <br><small class="text-muted">Port 443 used by another web server? Use another port: <code>sudo HTTPS_PORT=8443 bash /opt/mikrowizard/recreate-ssl.sh</code>. If a reverse proxy on the host terminates TLS, this step is not needed.</small>
             </div>
           </div>
           <div class="d-flex gap-2 mb-4" *ngIf="sslStatus && !sslStatus.port_443_available">
